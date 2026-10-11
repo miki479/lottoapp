@@ -45,15 +45,15 @@
       "routeTypes": [
         3
       ],
-      "licenseVerified": false,
+      "licenseVerified": true,
       "attribution": {
-        "name": "GTT S.p.A. / Comune di Torino (open data)",
-        "license": "To be confirmed from the real-time dataset page on aperto.comune.torino.it (the static GTFS is listed as CC BY 4.0 by the OSM wiki, secondary source)",
+        "name": "GTT – Gruppo Torinese Trasporti (via Comune di Torino open data)",
+        "license": "Creative Commons Attribution (CC BY), as shown on the dataset page (read 2026-10-11); rights holder GTT S.p.A.",
         "licenseUrl": "https://aperto.comune.torino.it/id/dataset/feed-gtfs-real-time-trasporti-gtt",
         "url": "https://aperto.comune.torino.it/"
       },
       "staticGtfsUrl": "https://www.gtt.to.it/open_data/gtt_gtfs.zip",
-      "note": "DISABLED until the licence of the real-time dataset is read (the portal answers 403 from this environment). The feed has predicted times only, so delays come from the static timetable (kind trip_updates_times). Set licenseVerified true once confirmed."
+      "note": "Licence confirmed from the dataset page. The feed has predicted times only: delays are computed against the static timetable (kind trip_updates_times). Attribution required; no endorsement implied."
     },
     {
       "id": "open-meteo-torino",

@@ -30,6 +30,9 @@ jobs:
       - name: Oslo buses
         if: github.event.schedule != '41 2 * * *'
         run: node scripts/generate-markets.mjs --city oslo --feed entur-ruter-trip-update --max 30 --apply
+      - name: Turin buses
+        if: github.event.schedule != '41 2 * * *'
+        run: node scripts/generate-markets.mjs --city torino --feed gtt-trip-update --max 30 --apply
       - name: Dutch trains
         if: github.event.schedule == '41 2 * * *' || github.event_name == 'workflow_dispatch'
         run: |
