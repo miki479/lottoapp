@@ -36,10 +36,12 @@ export function BusSide(p: P) {
 export function CloudRainSide(p: P) {
   const h = p.size ?? 24;
   return (
-    <svg width={h * 1.7} height={h} viewBox="0 0 34 20" class={p.class} style={p.style} aria-hidden="true">
-      <path d="M9 13a5 5 0 0 1-.4-10 6.500 6.500 0 0 1 12.200-1.200A5.200 5.200 0 0 1 25 13z" fill="#cfe0ff" transform="translate(2 1)" />
-      <path d="M9 13a5 5 0 0 1-.4-10 6.500 6.500 0 0 1 12.200-1.200A5.200 5.200 0 0 1 25 13z" fill="none" stroke="#7da2ff" stroke-width="1.200" transform="translate(2 1)" />
-      <path d="M10 16.800l-1 2.200M16 16.800l-1 2.200M22 16.800l-1 2.200" stroke="#5b8cff" stroke-width="1.700" stroke-linecap="round" />
+    <svg width={h * 1.7} height={h} viewBox="0 0 34 20" overflow="visible" class={p.class} style={p.style} aria-hidden="true">
+      <g fill="#cfe0ff">
+        <circle cx="10" cy="11.500" r="5" /><circle cx="17" cy="8" r="6.500" /><circle cx="24.500" cy="11" r="5" />
+        <rect x="10" y="11" width="14.500" height="5.500" rx="2.700" />
+      </g>
+      <path d="M10 17.800l-1 2M16 17.800l-1 2M22 17.800l-1 2" stroke="#5b8cff" stroke-width="1.700" stroke-linecap="round" />
     </svg>
   );
 }
