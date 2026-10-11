@@ -1,4 +1,4 @@
-import { Bus, Cloud, CloudRain, Clock, Star, TrainFront, Zap } from "lucide-preact";
+import { Megaphone, Bus, Cloud, CloudRain, Clock, Star, TrainFront, Zap } from "lucide-preact";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { countdown, fmtOdds, money, per10, question, type MarketRow } from "../lib/format.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -15,7 +15,7 @@ export function liveLabel(msg: Messages, l: LiveDelay) {
 }
 
 /** One event: what it is (detail row), the question (title), then two big, equal choices. */
-export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now: number; live?: LiveDelay; index: number; top?: boolean; showCity: boolean; onPick: (m: MarketRow, pick: Pick) => void }) {
+export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now: number; live?: LiveDelay; index: number; top?: boolean; hasLadder?: boolean; showCity: boolean; onPick: (m: MarketRow, pick: Pick) => void }) {
   const { m, msg, locale, now, live } = p;
   const city = cityOf(m.city_id), Kind = KIND[m.category];
   const left = Date.parse(m.closes_at) - now;
@@ -24,7 +24,7 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
   const flashOn = (m.flash_multiplier ?? 1) > 1 && !!m.flash_until && Date.parse(m.flash_until) > now;
   return (
     <article class={`card event ${m.category} ${p.top ? "is-top" : ""} ${flashOn ? "is-flash" : ""}`} style={`--i:${Math.min(p.index, 10)}`}>
-      {(p.top || flashOn || left < 300_000) && <div class="badges">{flashOn && <span class="badge-flash"><Zap size={13} fill="currentColor" />FLASH ×{m.flash_multiplier} · {countdown(Date.parse(m.flash_until!) - now)}</span>}{p.top && <span class="badge-top"><Star size={13} fill="currentColor" />{msg.card.topOdds}</span>}{left < 300_000 && <span class="badge-hot"><Zap size={13} fill="currentColor" />{msg.card.hot}</span>}</div>}
+      {(p.top || flashOn || p.hasLadder || left < 300_000) && <div class="badges">{p.hasLadder && <span class="badge-sorry"><Megaphone size={13} />{msg.ladder.chip}</span>}{flashOn && <span class="badge-flash"><Zap size={13} fill="currentColor" />FLASH ×{m.flash_multiplier} · {countdown(Date.parse(m.flash_until!) - now)}</span>}{p.top && <span class="badge-top"><Star size={13} fill="currentColor" />{msg.card.topOdds}</span>}{left < 300_000 && <span class="badge-hot"><Zap size={13} fill="currentColor" />{msg.card.hot}</span>}</div>}
       <div class={`scene ${m.category}`} aria-hidden="true">
         {m.category === "weather" ? <><Cloud size={20} class="cloud" />{[0, 1, 2, 3, 4, 5].map((i) => <i key={i} class="drop" style={`left:${14 + i * 15}%;animation-delay:${-i * 170}ms`} />)}</> : <><span class="road" /><span class="rider"><Kind size={16} /></span></>}
       </div>

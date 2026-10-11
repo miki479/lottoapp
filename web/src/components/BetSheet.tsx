@@ -11,7 +11,7 @@ import { StakeControl } from "./StakeControl.tsx";
 
 /** Bet slip for one event: pick, stake, then place it (guests do the "last step" sign-up right here when it is required). */
 export function BetSheet(p: {
-  m: MarketRow; initial: Pick; msg: Messages; locale: Locale; credits: number; ready: boolean; needJoin: boolean; quickJoin: boolean; inSlip: boolean;
+  m: MarketRow; initial: Pick; msg: Messages; locale: Locale; credits: number; ready: boolean; needJoin: boolean; googleOn: boolean; inSlip: boolean; ladder: MarketRow[]; onSwitch: (m: MarketRow) => void;
   onClose: () => void; onAddSlip: (m: MarketRow, pick: Pick) => void; onJoined: () => Promise<void>; onPlace: (m: MarketRow, pick: Pick, stake: number) => Promise<string | null>;
 }) {
   const [pick, setPick] = useState<Pick>(p.initial);
@@ -43,10 +43,24 @@ export function BetSheet(p: {
           ))}
         </div>
       </div>
+      {p.ladder.length > 0 && (
+        <div class="ladder">
+          <b>{p.msg.ladder.title}</b>
+          <span class="hint">{p.msg.ladder.sub(Math.round(Number(p.ladder[0]!.params.baseDelaySec) / 60))}</span>
+          <div class="rungs">
+            {p.ladder.map((r) => (
+              <button key={r.id} class={`rung ${r.id === p.m.id ? "sel" : ""}`} onClick={() => p.onSwitch(r)} aria-pressed={r.id === p.m.id}>
+                <b>+{String(r.params.extraMin)}′</b><span>≥ +{Math.round(Number(r.params.thresholdSec) / 60)}′</span><i class="num">{fmtOdds(Number(r.odds_yes), p.locale)}</i>
+              </button>
+            ))}
+          </div>
+          <span class="hint">{p.msg.ladder.estimate}</span>
+        </div>
+      )}
       <StakeControl value={amount} onChange={setStake} cap={cap} odds={odds} locale={p.locale} msg={p.msg} />
       {err && <p class="formerr" role="alert">{err}</p>}
       {p.needJoin
-        ? <JoinForm msg={p.msg} locale={p.locale} quick={p.quickJoin} stakeLabel={money(amount, p.locale)} onJoined={place} />
+        ? <JoinForm msg={p.msg} locale={p.locale} googleOn={p.googleOn} stakeLabel={money(amount, p.locale)} onJoined={place} />
         : <button class="btn primary wide" disabled={busy || !p.ready} onClick={place}>{busy ? p.msg.sheet.confirming : `${p.msg.sheet.confirm} · ${money(amount, p.locale)}`}</button>}
       <button class="btn secondary wide" onClick={() => { p.onAddSlip(p.m, pick); haptic.tap(); }} disabled={p.inSlip}><Layers size={18} />{p.inSlip ? p.msg.slip.added : p.msg.slip.add}</button>
     </Sheet>

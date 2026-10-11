@@ -413,3 +413,12 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 @keyframes sheen { from { background-position: 130% 0; } to { background-position: -130% 0; } }
 @keyframes breathe { 50% { filter: drop-shadow(0 0 calc(var(--halo) * 1.7) var(--hot)); } }
 @media (prefers-reduced-motion: reduce) { .stakectl .glow, .shine { animation: none !important; background: none; -webkit-text-fill-color: currentColor; } .shine { color: var(--star); } }
+
+/* "Sorry about the delay": rungs on a trip that is already late */
+.badge-sorry { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; background: var(--c-bus-soft); color: var(--c-bus); }
+.ladder { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: var(--radius-card); background: linear-gradient(135deg, rgba(255,163,26,.16), var(--surface-2)); border: 1px solid rgba(255,163,26,.4); }
+.ladder > b { font-size: 18px; letter-spacing: var(--ls-title); }
+.rungs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.rung { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; min-height: var(--touch); border-radius: var(--radius-control); border: 1px solid var(--border-strong); background: var(--surface); font: inherit; color: var(--text); transition: border-color var(--dur-fast), background var(--dur-fast), transform var(--dur-fast); }
+.rung:active { transform: scale(.97); } .rung.sel { border-color: var(--c-bus); background: var(--c-bus-soft); }
+.rung b { font-size: 18px; } .rung span { font-size: 12px; color: var(--muted); } .rung i { font-style: normal; font-weight: 800; color: var(--star); }

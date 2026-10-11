@@ -70,6 +70,20 @@ try {
   const st = (await rpc("my_stats", {}, P.token)).body[0];
   check("my_stats counts parlays", Number(st.total) === 4 && Number(st.won) === 2 && Number(st.lost) === 1, JSON.stringify(st));
 
+  // ---------- "Ci scusiamo per il disagio": rungs on a trip that is already late ----------
+  const base = await market("late1", 2.0, 1.5);
+  await call("/rest/v1/markets?id=eq." + base, { method: "PATCH", key: SRV, body: { kind: "train_delay_gt", category: "train" } });
+  await call("/rest/v1/delay_observations", { method: "POST", key: SRV, body: { city_id: "e2e-test", feed_id: "e2e-test", route_id: "r", trip_id: "late1", stop_id: "y", observed_at: new Date().toISOString(), delay_sec: 600 } });
+  await rpc("spawn_ladders", {}, undefined, SRV);
+  const rungs = (await call(`/rest/v1/markets?select=id,params,odds_yes,odds_no&params->>ladderOf=eq.${base}&order=odds_yes.asc`, { key: SRV })).body;
+  rungs.forEach((r) => cleanup.markets.push(r.id));
+  check("four rungs are created for a trip already 10 min late", rungs.length === 4, `(${rungs.length})`);
+  check("rung thresholds are current delay + 5/10/20/40 min", JSON.stringify(rungs.map((r) => r.params.thresholdSec / 60).sort((a, b) => a - b)) === JSON.stringify([15, 20, 30, 50]));
+  await rpc("spawn_ladders", {}, undefined, SRV);
+  check("rungs are created only once", (await call(`/rest/v1/markets?select=id&params->>ladderOf=eq.${base}`, { key: SRV })).body.length === 4);
+  check("clients cannot spawn rungs", (await rpc("spawn_ladders", {}, P.token)).status >= 400);
+  await call("/rest/v1/delay_observations?feed_id=eq.e2e-test", { method: "DELETE", key: SRV });
+
   // ---------- invite a friend ----------
   const inviter = await registered("i"), friend = await registered("f");
   const ref = (await rpc("my_referral", {}, inviter.token)).body[0];

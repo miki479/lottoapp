@@ -71,7 +71,6 @@ export function App() {
   const [parlayOpen, setParlayOpen] = useState(false);
   const [parlays, setParlays] = useState<ParlayRow[]>([]);
   const [needSignup, setNeedSignup] = useState(false);
-  const [quickJoin, setQuickJoin] = useState(false);
   const [referral, setReferral] = useState<{ code: string; invited: number; paid: number } | null>(null);
   const [voiceOn, setVoiceOn] = useState(voiceEnabled());
   const [installEvt, setInstallEvt] = useState<Event | null>(null);
@@ -131,7 +130,7 @@ export function App() {
       if (event === "SIGNED_IN" || event === "USER_UPDATED") setTimeout(() => bootstrap(), 0);
     });
     bootstrap().catch(() => {});
-    fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY } }).then((r) => r.json()).then((s) => { setGoogleOn(!!s?.external?.google); setQuickJoin(!!s?.mailer_autoconfirm); }).catch(() => {});
+    fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY } }).then((r) => r.json()).then((s) => { setGoogleOn(!!s?.external?.google); }).catch(() => {});
     return () => sub.data.subscription.unsubscribe();
   }, []);
   useEffect(() => { if (profile && !profile.country && region()) sb.rpc("set_country", { p_country: region() }).then(loadProfile); }, [profile?.id]);
@@ -157,7 +156,14 @@ export function App() {
   }, [trackable.join()]);
 
   // ---------- derived ----------
-  const open = useMemo(() => (markets ?? []).filter((m) => Date.parse(m.closes_at) > now), [markets, Math.floor(now / 1000)]);
+  const open = useMemo(() => (markets ?? []).filter((m) => Date.parse(m.closes_at) > now && !m.params.ladderOf), [markets, Math.floor(now / 1000)]);
+  /** "Sorry about the delay" rungs, grouped by the market they extend. */
+  const ladders = useMemo(() => {
+    const g: Record<string, MarketRow[]> = {};
+    for (const m of markets ?? []) { const k = m.params.ladderOf as string | undefined; if (k && Date.parse(m.closes_at) > now) (g[k] ??= []).push(m); }
+    for (const k of Object.keys(g)) g[k]!.sort((a, b) => Number(a.params.extraMin) - Number(b.params.extraMin));
+    return g;
+  }, [markets, Math.floor(now / 30000)]);
   const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter), [open, filter]);
   const byCat = (c: CatId) => inFilter.filter((m) => m.category === c);
   useEffect(() => { if (catChosen || !markets) return; const first = (["bus", "train", "weather"] as CatId[]).find((c) => byCat(c).length > 0); if (first && byCat(cat).length === 0) setCat(first); }, [markets, filter, catChosen]);
@@ -274,7 +280,7 @@ export function App() {
         <main class="content">
           {offline && <p class="note" style="margin-bottom:12px">{msg.common.offline}</p>}
           {stale && <p class="note warn" style="margin-bottom:12px">{msg.feedWarning}</p>}
-          {screen === "home" && <Home msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} attributions={sources} installEvt={installEvt} />}
+          {screen === "home" && <Home msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} ladders={ladders} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "ranking" && <Ranking msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
           {screen === "profile" && <ProfileView referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
@@ -283,8 +289,8 @@ export function App() {
       <TabBar value={screen} onPick={go} msg={msg} openBets={openBets} />
 
       <ParlayBar count={slip.length} odds={slipOdds(slip)} msg={msg} locale={locale} onOpen={() => setParlayOpen(true)} />
-      {sheet && <BetSheet m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} quickJoin={quickJoin} inSlip={slipIds.has(sheet.m.id)} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
-      {parlayOpen && slip.length > 0 && <ParlaySheet legs={slip} msg={msg} locale={locale} credits={profile?.credits ?? 0} needJoin={needJoin} quickJoin={quickJoin} onClose={() => setParlayOpen(false)} onRemove={(id) => setSlip((s) => s.filter((l) => l.m.id !== id))} onClear={() => { setSlip([]); setParlayOpen(false); }} onJoined={async () => {}} onPlace={placeParlay} />}
+      {sheet && <BetSheet key={sheet.m.id} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
+      {parlayOpen && slip.length > 0 && <ParlaySheet legs={slip} msg={msg} locale={locale} credits={profile?.credits ?? 0} needJoin={needJoin} googleOn={googleOn} onClose={() => setParlayOpen(false)} onRemove={(id) => setSlip((s) => s.filter((l) => l.m.id !== id))} onClear={() => { setSlip([]); setParlayOpen(false); }} onJoined={async () => {}} onPlace={placeParlay} />}
       {auth && <AuthSheet msg={msg} guest={!registered} googleOn={googleOn} onClose={() => setAuth(false)} onDone={(text) => { setAuth(false); flash(text); }} />}
       {nick && <NicknameSheet msg={msg} current={profile?.display_name ?? null} onClose={() => setNick(false)} onSaved={(n) => { setNick(false); loadProfile(); flash(n); }} />}
       {resultBet && <ResultScreen bet={resultBet} msg={msg} locale={locale} remaining={Math.max(0, unseen.filter((b) => b.id !== resultBet.id).length)} onClose={closeResult} onShare={shareResult} onNext={() => { markSeen(resultBet.id); const next = unseen.find((b) => b.id !== resultBet.id); setResultBet(next ?? null); }} />}

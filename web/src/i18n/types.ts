@@ -29,6 +29,7 @@ export interface Messages {
   join: { step: string; title: string; body: (credits: string) => string; nickname: string; password: string; hint: string; cta: (stake: string) => string; haveProfile: string; newProfile: string; emailInstead: string; checkMail: string };
   referral: { title: string; body: (bonus: string) => string; code: string; copy: string; copied: string; share: string; shareText: (code: string) => string; counts: (invited: number, paid: number) => string; guest: string; accepted: string };
   voice: { on: string; off: string; placed: (win: string) => string; won: (amount: string) => string; lost: string; flash: string; label: string };
+  ladder: { title: string; sub: (min: number) => string; estimate: string; chip: string };
   top: { late: string; popular: string; city: string; closing: string; avg: (min: number) => string; players: (n: number) => string; ontime: string; open: string };
   card: { late: string; onTime: string; per10: (win: number) => string; closes: string; forecast: string; live: string; yes: string; no: string; over: (min: number) => string; topOdds: string; hot: string };
   question: { bus: (q: BusQ) => string; train: (q: BusQ) => string; rain: (q: RainQ) => string };

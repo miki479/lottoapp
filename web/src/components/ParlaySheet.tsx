@@ -12,7 +12,7 @@ import { StakeControl } from "./StakeControl.tsx";
 export const slipOdds = (legs: SlipLeg[]) => Math.min(100, legs.reduce((a, l) => a * Number(l.pick === "yes" ? l.m.odds_yes : l.m.odds_no), 1));
 
 export function ParlaySheet(p: {
-  legs: SlipLeg[]; msg: Messages; locale: Locale; credits: number; needJoin: boolean; quickJoin: boolean;
+  legs: SlipLeg[]; msg: Messages; locale: Locale; credits: number; needJoin: boolean; googleOn: boolean;
   onClose: () => void; onRemove: (id: string) => void; onClear: () => void; onJoined: () => Promise<void>; onPlace: (legs: SlipLeg[], stake: number) => Promise<string | null>;
 }) {
   const [stake, setStake] = useState(50);
@@ -49,7 +49,7 @@ export function ParlaySheet(p: {
       <p class="hint">{m.slip.maxWin}</p>
       {err && <p class="formerr" role="alert">{err}</p>}
       {p.needJoin
-        ? <JoinForm msg={m} locale={p.locale} quick={p.quickJoin} stakeLabel={money(amount, p.locale)} onJoined={place} />
+        ? <JoinForm msg={m} locale={p.locale} googleOn={p.googleOn} stakeLabel={money(amount, p.locale)} onJoined={place} />
         : <button class="btn primary wide" disabled={busy || p.legs.length < 2} onClick={place}>{busy ? m.sheet.confirming : `${m.slip.confirm} · ${money(amount, p.locale)}`}</button>}
       <button class="btn secondary wide" onClick={p.onClear}>{m.slip.clear}</button>
     </Sheet>

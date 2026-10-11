@@ -13,7 +13,7 @@ import type { LiveDelay, Pick, Progress } from "../lib/types.ts";
 export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>;
   cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void;
-  top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
+  ladders: Record<string, MarketRow[]>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
   attributions: { name: string; via?: string; license: string; licenseUrl: string; url: string }[]; installEvt: Event | null;
 }
 
@@ -49,7 +49,7 @@ export function Home(p: HomeProps) {
           {p.markets === null && [0, 1, 2].map((i) => <div class="sk" key={i} />)}
           {p.markets !== null && p.cat === "traffic" && <div style="grid-column:1/-1"><Empty icon={CloudRain} title={msg.tabs.traffic} body={msg.home.trafficSoon} /></div>}
           {p.markets !== null && p.cat !== "traffic" && p.list.length === 0 && <div style="grid-column:1/-1"><Empty icon={CloudRain} title={msg.home.empty.title} body={msg.home.empty.body} cta={p.filter !== "world" ? msg.home.empty.cta : undefined} onCta={() => p.onFilter("world")} /></div>}
-          {p.list.slice(0, 40).map((m, i) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} live={p.live[m.id]} index={i} top={m.id === topId && p.list.length > 3} showCity={p.filter === "world"} onPick={p.onPick} />)}
+          {p.list.slice(0, 40).map((m, i) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} live={p.live[m.id]} index={i} hasLadder={(p.ladders[m.id]?.length ?? 0) > 0} top={m.id === topId && p.list.length > 3} showCity={p.filter === "world"} onPick={p.onPick} />)}
         </div>
         <footer class="legal">
           <p><strong style="color:var(--text)">{msg.disclaimerShort}</strong> {msg.disclaimerFull}</p>
