@@ -361,7 +361,9 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .meter .cells i.on { background: hsl(var(--h) 95% 62%); opacity: 1; }
 .meter .cells i.on:last-of-type, .meter .cells i.on:has(+ i:not(.on)) { animation: cellpulse 1.4s ease-in-out infinite; }
 @keyframes cellpulse { 50% { transform: scaleY(1.35); } }
-.meter .cells em { position: absolute; top: -3px; bottom: 11px; width: 0; border-left: 2px dashed var(--text-2); font-style: normal; }
+.meter .cells em { position: absolute; top: -4px; bottom: 12px; width: 2px; margin-left: -1px; font-style: normal; background: repeating-linear-gradient(180deg, var(--text) 0 4px, transparent 4px 8px); background-size: 2px 8px; animation: march 700ms linear infinite; }
+.meter .cells u.sweep { position: absolute; left: 0; right: 0; top: 0; height: 12px; border-radius: 4px; pointer-events: none; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%); background-size: 220% 100%; animation: sweep 2.4s ease-in-out infinite; mix-blend-mode: overlay; }
+@keyframes march { to { background-position: 0 8px; } } @keyframes sweep { from { background-position: 120% 0; } to { background-position: -120% 0; } }
 .meter .cells em span { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px; white-space: nowrap; font-size: 10px; font-weight: 700; letter-spacing: var(--ls-detail); text-transform: uppercase; color: var(--muted); }
 .topcard .meter { background: rgba(0,0,0,.18); }
 
@@ -372,4 +374,4 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .ticker .tk b { color: var(--text); } .ticker .tk::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--star); margin-left: 22px; opacity: .8; }
 .ticker .amt { font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; } .ticker .amt.won { color: var(--won-fg); } .ticker .amt.lost { color: var(--lost-fg); } .ticker .amt.placed { color: var(--c-pop); }
 @keyframes tick { to { transform: translateX(-50%); } }
-@media (prefers-reduced-motion: reduce) { .ticker { overflow-x: auto; } .ticker .track { animation: none !important; } .meter .cells i.on { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .meter .cells em, .meter .cells u.sweep { animation: none !important; } .ticker { overflow-x: auto; } .ticker .track { animation: none !important; } .meter .cells i.on { animation: none !important; } }

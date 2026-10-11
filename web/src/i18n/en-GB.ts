@@ -13,7 +13,7 @@ const enGB: Messages = {
     trafficSoon: "Traffic is coming soon. You may, of course, simply look at the M25.",
   },
   streak: { title: "Streak", days: (n) => (n === 1 ? "1 day" : `${n} days`), next: (d, b) => `Next reward at ${d} days: ${b}`, max: "Every reward claimed. Legend.", milestone: (n, b) => `${n}-day streak! ${b} on the house`, flash: "Flash" },
-  meter: { threshold: (m) => `limit ${m}′`, up: (m) => `+${m}′ in 10 min`, down: (m) => `−${m}′ in 10 min`, steady: "steady", forecast: "forecast", late: "late" },
+  meter: { threshold: (m) => `Over ${m} min = late`, up: (m) => `+${m} min in 10 min`, down: (m) => `−${m} min in 10 min`, steady: "steady", forecast: "forecast", late: "late" },
   ticker: { anon: "A punter", won: "won", lost: "lost", placed: "had a go with", on: "on" },
   top: { late: "Most delayed now", popular: "Most played", city: "Most delayed city", closing: "Closing shortly", avg: (m) => `${m} min average delay`, players: (n) => (n === 1 ? "1 bet" : `${n} bets`), ontime: "On time", open: "Open" },
   card: { late: "Late", onTime: "On time", per10: (w) => `10 → ${w}`, closes: "Closes", forecast: "forecast", live: "Live", yes: "Yes", no: "No", topOdds: "Top odds", hot: "Closing soon", over: (m) => `over ${m} min` },

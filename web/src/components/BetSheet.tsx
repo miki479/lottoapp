@@ -20,8 +20,10 @@ export function BetSheet(p: { m: MarketRow; initial: Pick; msg: Messages; locale
   // The bigger the stake, the hotter the colour (violet -> magenta -> orange); the bar and a small pop follow it.
   const heat = (stake - 10) / 490;
   const hot = `hsl(${(260 + 130 * heat) % 360} 95% 68%)`;
-  const clamp = (n: number) => Math.max(10, Math.min(500, Math.min(Math.max(10, p.credits), n)));
-  const quick = [25, 50, 100, 250, 500].filter((c) => c <= Math.max(25, p.credits));
+  // Upper limit: 500, or the balance when it is known and at least 10 (the server checks it again).
+  const cap = p.credits >= 10 ? Math.min(500, Math.floor(p.credits)) : 500;
+  const clamp = (n: number) => Math.max(10, Math.min(cap, n));
+  const quick = [25, 50, 100, 250, 500].filter((c) => c <= cap);
   const submit = async () => {
     setBusy(true); setErr(null); haptic.tap();
     const out = await p.onPlace(p.m, pick, stake);

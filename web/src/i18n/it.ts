@@ -13,7 +13,7 @@ const it: Messages = {
     trafficSoon: "Il traffico arriva presto. Per ora basta guardare fuori dalla finestra.",
   },
   streak: { title: "Serie", days: (n) => (n === 1 ? "1 giorno" : `${n} giorni`), next: (d, b) => `Prossimo premio a ${d} giorni: ${b}`, max: "Tutti i premi presi. Leggenda.", milestone: (n, b) => `Serie di ${n} giorni! ${b} in regalo`, flash: "Flash" },
-  meter: { threshold: (m) => `soglia ${m}′`, up: (m) => `+${m}′ in 10 min`, down: (m) => `−${m}′ in 10 min`, steady: "stabile", forecast: "previsto", late: "di ritardo" },
+  meter: { threshold: (m) => `Oltre ${m} min = in ritardo`, up: (m) => `+${m} min in 10 min`, down: (m) => `−${m} min in 10 min`, steady: "stabile", forecast: "previsto", late: "di ritardo" },
   ticker: { anon: "Un giocatore", won: "ha vinto", lost: "ha perso", placed: "ha puntato", on: "su" },
   top: { late: "Più in ritardo ora", popular: "Più giocato", city: "Città più in ritardo", closing: "Chiude tra poco", avg: (m) => `${m} min di ritardo medio`, players: (n) => (n === 1 ? "1 puntata" : `${n} puntate`), ontime: "In orario", open: "Apri" },
   card: { late: "In ritardo", onTime: "In orario", per10: (w) => `10 → ${w}`, closes: "Chiude", forecast: "previsto", live: "In diretta", yes: "Sì", no: "No", over: (m) => `oltre ${m} min`, topOdds: "Top quota", hot: "Chiude presto" },

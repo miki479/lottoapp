@@ -19,14 +19,15 @@ export function DelayMeter(p: { sec: number; prev: number | null; limitSec: numb
   const Trend = diff > 0 ? TrendingUp : diff < 0 ? TrendingDown : Minus;
   const text = diff > 0 ? msg.meter.up(diff) : diff < 0 ? msg.meter.down(-diff) : msg.meter.steady;
   return (
-    <div class={`meter ${p.big ? "big" : ""}`} aria-label={`${shown}′ ${msg.meter.late}`}>
+    <div class={`meter ${p.big ? "big" : ""}`} aria-label={`${shown} min ${msg.meter.late}`}>
       <div class="mtop">
-        <b class="mnum num" style={`color:hsl(${hue(ratio)} 95% 66%)`}>{sec < 0 ? "−" : "+"}{Math.abs(shown)}<small>′</small></b>
+        <b class="mnum num" style={`color:hsl(${hue(ratio)} 95% 66%)`}>{sec < 0 ? "−" : "+"}{Math.abs(shown)}<small> min</small></b>
         <span class="mtrend"><Trend size={14} />{p.prev === null ? (p.forecast ? msg.meter.forecast : msg.meter.late) : text}</span>
       </div>
       <div class="cells" aria-hidden="true">
         {Array.from({ length: CELLS }, (_, i) => <i key={i} class={i < filled ? "on" : ""} style={`--h:${hue(i / (CELLS - 1))};--d:${i * 28}ms`} />)}
         <em style={`left:${100 / 2}%`}><span>{msg.meter.threshold(Math.round(p.limitSec / 60))}</span></em>
+        <u class="sweep" />
       </div>
     </div>
   );
