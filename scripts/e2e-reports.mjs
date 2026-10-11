@@ -15,3 +15,5 @@ ok((await rpc("admin_overview")).status >= 400, "admin overview refused to a gue
 ok((await rpc("is_admin")).body === false, "guest is not admin");
 ok((await j("/rest/v1/reports?select=id", {}, tok)).body?.length === 0 || (await j("/rest/v1/reports?select=id", {}, tok)).status >= 400, "reports table not readable by players");
 await rpc("delete_my_account");
+// the report row outlives the deleted user (user_id becomes null): clean up the test row
+if (process.env.SUPABASE_SERVICE_ROLE_KEY) await fetch(`${U}/rest/v1/reports?note=eq.e2e`, { method: "DELETE", headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` } });

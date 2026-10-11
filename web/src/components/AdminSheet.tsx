@@ -18,7 +18,9 @@ function feedState(f: Overview["feeds"][number], now: number): "ok" | "late" | "
   const ok = Date.parse(f.last_ok_at), err = f.last_error_at ? Date.parse(f.last_error_at) : 0;
   const age = (now - ok) / 1000;
   if (err > ok && age > 900) return "down";
-  return age > (f.id.startsWith("open-meteo") ? 7200 : 300) ? "late" : "ok";
+  // Hourly feeds (weather, USGS) are not late after a few minutes.
+  const hourly = f.id.startsWith("open-meteo") || f.id === "usgs" || f.id === "mit-scioperi";
+  return age > (hourly ? 7200 : 300) ? "late" : "ok";
 }
 const ago = (iso: string | null, now: number) => { if (!iso) return "—"; const s = Math.max(0, Math.round((now - Date.parse(iso)) / 1000)); return s < 90 ? `${s}s` : s < 5400 ? `${Math.round(s / 60)}m` : s < 172800 ? `${Math.round(s / 3600)}h` : `${Math.round(s / 86400)}d`; };
 
