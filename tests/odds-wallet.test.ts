@@ -60,3 +60,14 @@ describe("wallet", () => {
     expect(dailyRefill(0, "2026-01-10", lateUtc, tz)?.refillDate).toBe("2026-01-11");
   });
 });
+
+import { settleBet } from "../shared/settle.ts";
+describe("settlement", () => {
+  const bet = { pick: "yes" as const, stake: 100, odds: 2.5 };
+  it("pays winners the locked odds, floored", () => expect(settleBet(bet, "yes")).toEqual({ status: "won", payout: 250 }));
+  it("pays nothing to losers", () => expect(settleBet(bet, "no")).toEqual({ status: "lost", payout: 0 }));
+  it("refunds the stake on void, whatever the pick", () => {
+    expect(settleBet(bet, "void")).toEqual({ status: "void", payout: 100 });
+    expect(settleBet({ ...bet, pick: "no" }, "void")).toEqual({ status: "void", payout: 100 });
+  });
+});

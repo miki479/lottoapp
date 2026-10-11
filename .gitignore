@@ -3,8 +3,10 @@ dist/
 .env
 .env.*
 !.env.example
-.supabase/
-supabase/.temp/
 *.log
 .DS_Store
-supabase/functions/_shared/
+functions/src/_shared/
+functions/lib/
+functions/.env
+.firebaserc
+firebase-debug.log
