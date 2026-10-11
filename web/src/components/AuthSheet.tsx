@@ -13,7 +13,7 @@ export function authError(e: { message?: string; code?: string } | null, msg: Me
     : t.includes("rate") ? "email_rate"
     : t.includes("validate email") || t.includes("email_address_invalid") ? "email_invalid"
     : t.includes("not enabled") || t.includes("unsupported provider") ? "provider_off" : "generic";
-  return msg.errors[k]!;
+  return k === "generic" && e?.message ? `${msg.errors[k]!} (${e.message})` : msg.errors[k]!;
 }
 
 export function AuthSheet({ msg, guest, googleOn, onClose, onDone }: { msg: Messages; guest: boolean; googleOn: boolean; onClose: () => void; onDone: (text: string) => void }) {

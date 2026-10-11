@@ -113,6 +113,10 @@ export function App() {
     const p = await loadProfile(); setSeen(new Set(JSON.parse(store.get(`seen.${uid}`) ?? "[]")));
     await Promise.all([loadTrophies(), loadBets(), loadParlays(), loadProgress(p?.timezone)]);
     // Invite link: remember ?ref=CODE and redeem it as soon as the player has a registered account.
+    // Sign-in providers report problems back in the URL (query or hash): show them instead of failing silently.
+    const back = new URLSearchParams(location.hash.replace(/^#/, "") || location.search);
+    const backErr = back.get("error_description") ?? back.get("error");
+    if (backErr) { flash(`${msg.errors.generic} (${backErr.replace(/\+/g, " ")})`, "err"); history.replaceState(null, "", location.pathname); }
     const ref = new URLSearchParams(location.search).get("ref"); if (ref) { store.set("ref", ref.toUpperCase()); history.replaceState(null, "", location.pathname); }
     const { data: reg } = await sb.rpc("is_registered");
     if (reg) {
