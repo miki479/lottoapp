@@ -459,29 +459,34 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .walletbtn { position: relative; cursor: pointer; font: inherit; color: inherit; }
 .walletbtn .dotbadge { position: absolute; top: -4px; right: -2px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--c-pop); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; animation: popnum 220ms var(--ease); }
 
-/* ---------- chips: a short, clean 2D motion on hover or tap (no 3D, nothing leaves the chip) ---------- */
-.cc { overflow: hidden; perspective: none; z-index: auto; }
-.cc .ico { overflow: visible; }
-.cc .ico svg { transform-origin: 50% 60%; }
-.cc .ico .trail { display: none; }
-.cc .ico .drops { position: absolute; left: 0; right: 0; top: 4px; height: 0; pointer-events: none; }
-.cc .ico .drops i { position: absolute; width: 2px; height: 7px; border-radius: 2px; background: var(--cat); opacity: 0; }
-.cc .ico .drops i:nth-child(1) { left: 13px; } .cc .ico .drops i:nth-child(2) { left: 20px; } .cc .ico .drops i:nth-child(3) { left: 27px; }
-@media (hover: hover) {
-  .cc.bus:not(:disabled):hover .ico svg, .cc.pop.bus .ico svg { animation: hop 650ms var(--ease); }
-  .cc.train:not(:disabled):hover .ico svg, .cc.pop.train .ico svg { animation: dash 800ms var(--ease); }
-  .cc.weather:not(:disabled):hover .ico svg, .cc.pop.weather .ico svg { animation: hop 650ms var(--ease); }
-  .cc.weather:not(:disabled):hover .ico .drops i, .cc.pop.weather .ico .drops i { animation: drizzle 800ms ease-in 1 both; }
-}
-.cc.pop.bus .ico svg { animation: hop 650ms var(--ease); }
-.cc.pop.train .ico svg { animation: dash 800ms var(--ease); }
-.cc.pop.weather .ico svg { animation: hop 650ms var(--ease); }
-.cc.pop.weather .ico .drops i { animation: drizzle 800ms ease-in 1 both; }
-.cc .ico .drops i:nth-child(2) { animation-delay: 120ms !important; } .cc .ico .drops i:nth-child(3) { animation-delay: 240ms !important; }
-@keyframes hop { 0%, 100% { transform: translateY(0) scale(1); } 35% { transform: translateY(-5px) scale(1.12); } 65% { transform: translateY(0) scale(1.04); } }
-@keyframes dash { 0%, 100% { transform: translateX(0); } 35% { transform: translateX(7px); } 70% { transform: translateX(-3px); } }
-@keyframes drizzle { 0% { opacity: 0; transform: translateY(14px); } 30% { opacity: .9; } 100% { opacity: 0; transform: translateY(32px); } }
-@media (prefers-reduced-motion: reduce) { .cc .ico svg, .cc .ico .drops i { animation: none !important; } }
+/* ---------- chips: big see-through pictures, one short scene on hover or tap, nothing leaves the chip ---------- */
+.cc { position: relative; overflow: hidden; perspective: none; z-index: auto; min-height: 84px; }
+.cc .ghost { position: absolute; inset: 5px; display: grid; place-items: center; pointer-events: none; }
+.cc .gh { width: 100%; height: 100%; opacity: .42; transition: opacity .3s; overflow: visible; }
+.cc.on .gh, .cc:not(:disabled):hover .gh { opacity: .62; }
+.cc .gh-veh { width: auto; height: auto; max-width: 98%; max-height: 66%; }
+.cc.traffic .gh { width: 70%; opacity: .25; }
+.cc .lbl { position: relative; z-index: 1; margin-top: auto; font-weight: 800; text-shadow: 0 0 6px var(--surface), 0 0 2px var(--surface); }
+.cc em { z-index: 1; }
+.gh * { transform-box: fill-box; }
+.gh-bolt { opacity: 0; } .gh-drops path { opacity: 0; }
+.gh-leaves ellipse { opacity: 0; }
+@media (hover: hover) { .cc.bus:not(:disabled):hover .gh-veh, .cc.train:not(:disabled):hover .gh-veh { animation: drive 1.1s ease-in-out 1 both; } }
+.cc.pop.bus .gh-veh, .cc.pop.train .gh-veh { animation: drive 1.1s ease-in-out 1 both; }
+@media (hover: hover) { .cc.weather:not(:disabled):hover .gh-drops path { animation: fall 0.9s linear 2 both; } }
+.cc.pop.weather .gh-drops path { animation: fall 0.9s linear 2 both; }
+.cc.pop.weather .gh-bolt { animation: flash .6s ease-out 1 both; }
+.gh-drops path:nth-child(2n) { animation-delay: .15s !important; } .gh-drops path:nth-child(3n) { animation-delay: .3s !important; }
+@media (hover: hover) { .cc.nature:not(:disabled):hover .gh-sway { animation: sway 1.8s ease-in-out 1 both; } .cc.nature:not(:disabled):hover .gh-leaves ellipse { animation: leaf 2s ease-in 1 both; } }
+.cc.pop.nature .gh-sway { animation: sway 1.8s ease-in-out 1 both; } .cc.pop.nature .gh-leaves ellipse { animation: leaf 2s ease-in 1 both; }
+.gh-sway { transform-origin: 50% 100%; }
+.gh-leaves .l2 { animation-delay: .15s !important; } .gh-leaves .l3 { animation-delay: .3s !important; } .gh-leaves .l4 { animation-delay: .45s !important; } .gh-leaves .l5 { animation-delay: .6s !important; }
+@keyframes drive { 0% { transform: translateX(0); } 42% { transform: translateX(130%); } 43% { transform: translateX(-130%); } 100% { transform: translateX(0); } }
+@keyframes fall { 0% { opacity: 0; transform: translateY(-6px); } 25% { opacity: .95; } 100% { opacity: 0; transform: translateY(12px); } }
+@keyframes flash { 0%, 100% { opacity: 0; } 15% { opacity: .95; } 30% { opacity: .1; } 45% { opacity: .9; } 70% { opacity: 0; } }
+@keyframes sway { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(4deg); } 55% { transform: rotate(-3deg); } 80% { transform: rotate(1.5deg); } }
+@keyframes leaf { 0% { opacity: 0; transform: translate(0, 0) rotate(0); } 15% { opacity: .95; } 100% { opacity: 0; transform: translate(28px, 22px) rotate(220deg); } }
+@media (prefers-reduced-motion: reduce) { .cc .gh *, .cc .gh-veh { animation: none !important; } }
 
 .switchrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--touch); font-weight: 600; cursor: pointer; }
 .switchrow input { width: 22px; height: 22px; accent-color: var(--brand); }
@@ -596,7 +601,6 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .wxpills button.on { background: var(--brand); color: #fff; border-color: transparent; }
 .cc.nature { --cat: #b0562e; --cat-soft: color-mix(in srgb, #b0562e 12%, var(--surface)); }
 .cc { font-size: 13px; } .cc span:last-of-type { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@media (prefers-reduced-motion: no-preference) { .cc.nature:not(:disabled):hover .ico svg, .cc.pop.nature .ico svg { animation: quakeshake 600ms ease-in-out 1; } }
 
 /* earthquake scene: skyscrapers sway while "yes" is held and settle slowly afterwards */
 .quakescene { position: relative; border-radius: var(--radius-md, 14px); overflow: hidden; background: #2a1a3a; }

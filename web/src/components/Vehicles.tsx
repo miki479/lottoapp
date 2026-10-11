@@ -45,3 +45,28 @@ export function CloudRainSide(p: P) {
     </svg>
   );
 }
+
+/** Big, see-through rain cloud for the Weather chip. Drops fall when the chip is hovered or tapped, and a bolt flashes once on tap. */
+export function CloudRainGhost() {
+  return (
+    <svg viewBox="0 0 60 56" class="gh gh-cloud" aria-hidden="true">
+      <g class="gh-cl" fill="#6f8fd8"><circle cx="19" cy="24" r="10" /><circle cx="31" cy="18" r="12" /><circle cx="43" cy="24" r="9" /><rect x="14" y="24" width="35" height="10" rx="5" /></g>
+      <g class="gh-drops" stroke="#3f66c0" stroke-width="2.200" stroke-linecap="round"><path d="M18 38v6" /><path d="M27 38v7" /><path d="M36 38v6" /><path d="M45 38v7" /><path d="M23 44v5" /><path d="M40 44v5" /></g>
+      <path class="gh-bolt" d="M33 22l-8 14h6l-3 12 11-17h-6z" fill="#ffd23f" />
+    </svg>
+  );
+}
+
+/** Big, see-through tree for the Nature chip: the wind sways it and takes a few leaves with it. */
+export function TreeGhost() {
+  return (
+    <svg viewBox="0 0 60 56" class="gh gh-tree" aria-hidden="true">
+      <g class="gh-sway">
+        <rect x="28" y="30" width="4" height="22" rx="2" fill="#8a5a36" />
+        <path d="M30 40l-7-6M30 36l8-7" stroke="#8a5a36" stroke-width="2" stroke-linecap="round" />
+        <g fill="#3f9a4f"><circle cx="30" cy="20" r="12" /><circle cx="19" cy="26" r="8" /><circle cx="41" cy="26" r="8" /></g>
+      </g>
+      <g class="gh-leaves" fill="#7cc36a"><ellipse class="l1" cx="30" cy="22" rx="2.600" ry="1.500" /><ellipse class="l2" cx="38" cy="26" rx="2.600" ry="1.500" /><ellipse class="l3" cx="22" cy="24" rx="2.600" ry="1.500" /><ellipse class="l4" cx="34" cy="18" rx="2.600" ry="1.500" /><ellipse class="l5" cx="26" cy="28" rx="2.600" ry="1.500" /></g>
+    </svg>
+  );
+}
