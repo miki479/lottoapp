@@ -3,7 +3,7 @@ import { resolveEvent } from "../_shared/shared/resolve.ts";
 import { historyKey, marketToEvent, type MarketRow } from "../_shared/shared/market.ts";
 import type { DelayObservation, WeatherObservation } from "../_shared/shared/types.ts";
 import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
-import { lastNotifyError, notifyResults } from "../_lib/notify.ts";
+import { lastNotifyError, notifyFlash, notifyResults, notifyStreak } from "../_lib/notify.ts";
 
 Deno.serve(safe(async (req) => {
   const denied = requireCron(req);
@@ -69,6 +69,7 @@ Deno.serve(safe(async (req) => {
       out.errors++; // left open: it will be retried next minute, never settled on a guess
     }
   }
-  const notified = await notifyResults(sb).catch((e) => { console.error("notify failed", e); return 0; });
+  const safeCount = (p: Promise<number>) => p.catch((e) => { console.error("notify failed", e); return 0; });
+  const notified = await safeCount(notifyResults(sb)) + await safeCount(notifyFlash(sb)) + await safeCount(notifyStreak(sb));
   return Response.json({ ...out, notified, notifyError: lastNotifyError.msg });
 }));

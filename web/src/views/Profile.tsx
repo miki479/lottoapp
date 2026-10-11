@@ -13,7 +13,7 @@ import { INTL_TAG } from "../i18n/index.ts";
 const TROPHY_ICON: Record<TrophyId, LucideIcon> = { first_win: Sparkles, all_rings: Target, long_shot: Telescope, rain_man: Umbrella, streak_7: CalendarCheck, train_whisperer: TrainFront, high_roller: Gem, streak_30: Medal, ghost_feed: Ghost };
 
 export function ProfileView(p: {
-  push: { on: boolean; denied: boolean; toggle: () => void } | null; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
+  push: { on: boolean; denied: boolean; toggle: () => void; flash: boolean; streak: boolean; setPrefs: (f: boolean, s: boolean) => void } | null; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
   onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => void; onDelete: () => Promise<void>; sources: { name: string; via?: string; license: string; licenseUrl: string; url: string }[];
 }) {
   const m = p.msg.profile;
@@ -50,6 +50,13 @@ export function ProfileView(p: {
               <Bell size={22} style="color:var(--brand);flex:none" />
               <div style="flex:1"><b>{p.msg.push.title}</b><p class="hint">{p.push.denied ? p.msg.push.denied : p.msg.push.body}</p></div>
               <button class={`btn ${p.push.on ? "secondary" : "primary"}`} onClick={p.push.toggle} disabled={p.push.denied}>{p.push.on ? p.msg.push.disable : p.msg.push.enable}</button>
+            </section>
+          )}
+          {p.push?.on && (
+            <section class="card stack">
+              <label class="switchrow"><input type="checkbox" checked={p.push.flash} onChange={(e) => p.push!.setPrefs((e.target as HTMLInputElement).checked, p.push!.streak)} /><span>{p.msg.push.flashPref}</span></label>
+              <label class="switchrow"><input type="checkbox" checked={p.push.streak} onChange={(e) => p.push!.setPrefs(p.push!.flash, (e.target as HTMLInputElement).checked)} /><span>{p.msg.push.streakPref}</span></label>
+              <p class="hint">{p.msg.push.prefsHint}</p>
             </section>
           )}
           <section class="card stack referral">

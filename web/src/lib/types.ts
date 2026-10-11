@@ -9,7 +9,7 @@ export interface ActivityRow { kind: "placed" | "won" | "lost"; who: string | nu
 export interface ResultRow { id: string; city_id: string; kind: MarketRow["kind"]; status: string; outcome: string | null; void_reason: string | null; params: Record<string, unknown>; evidence: { delaySec?: number } | null }
 export interface Profile {
   id: string; credits: number; city_id: string; locale: string; timezone: string; country: string | null;
-  streak: number; best_streak: number; freezes: number; boosts: number; display_name: string | null; last_play_date: string | null;
+  streak: number; best_streak: number; freezes: number; boosts: number; push_flash?: boolean; push_streak?: boolean; display_name: string | null; last_play_date: string | null;
 }
 export interface Progress { day: string; bus: number; train: number; weather: number; traffic: number; bonus_claimed: boolean }
 export interface MyBet {

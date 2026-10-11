@@ -486,3 +486,6 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 @keyframes trail3d { 0% { opacity: 0; transform: scaleX(.3); } 30% { opacity: .8; } 100% { opacity: 0; transform: scaleX(1.4) translateX(-10px); } }
 @keyframes rain3d { 0% { opacity: 0; transform: translate3d(0, -6px, 40px); } 25% { opacity: .95; } 100% { opacity: 0; transform: translate3d(0, 46px, 40px); } }
 @media (prefers-reduced-motion: reduce) { .cc .ico svg, .cc .ico .trail, .cc .ico .drops i { animation: none !important; } }
+
+.switchrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--touch); font-weight: 600; cursor: pointer; }
+.switchrow input { width: 22px; height: 22px; accent-color: var(--brand); }
