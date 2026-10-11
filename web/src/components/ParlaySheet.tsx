@@ -1,4 +1,4 @@
-import { Trash2, X } from "lucide-preact";
+import { Rocket, Trash2, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { fmtOdds, money, question } from "../lib/format.ts";
@@ -12,20 +12,21 @@ import { StakeControl } from "./StakeControl.tsx";
 export const slipOdds = (legs: SlipLeg[]) => Math.min(100, legs.reduce((a, l) => a * Number(l.pick === "yes" ? l.m.odds_yes : l.m.odds_no), 1));
 
 export function ParlaySheet(p: {
-  legs: SlipLeg[]; msg: Messages; locale: Locale; credits: number; needJoin: boolean; googleOn: boolean;
-  onClose: () => void; onRemove: (id: string) => void; onClear: () => void; onJoined: () => Promise<void>; onPlace: (legs: SlipLeg[], stake: number) => Promise<string | null>;
+  legs: SlipLeg[]; msg: Messages; locale: Locale; credits: number; boosts: number; needJoin: boolean; googleOn: boolean;
+  onClose: () => void; onRemove: (id: string) => void; onClear: () => void; onJoined: () => Promise<void>; onPlace: (legs: SlipLeg[], stake: number, boost: boolean) => Promise<string | null>;
 }) {
   const [stake, setStake] = useState(50);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
+  const [boost, setBoost] = useState(false);
   const odds = slipOdds(p.legs);
   const cap = p.credits >= 10 ? Math.min(500, Math.floor(p.credits)) : 500;
   const amount = Math.min(stake, cap);
   const m = p.msg;
   const place = async () => {
     setBusy(true); setErr(null); haptic.tap();
-    const out = await p.onPlace(p.legs, amount);
+    const out = await p.onPlace(p.legs, amount, boost && p.boosts > 0);
     if (out) { setErr(out); setBusy(false); haptic.error(); } else haptic.success();
   };
   if (joining) return <JoinStep msg={m} locale={p.locale} googleOn={p.googleOn} stakeLabel={money(amount, p.locale)} onBack={() => setJoining(false)} onClose={p.onClose} onJoined={place} />;
@@ -47,7 +48,8 @@ export function ParlaySheet(p: {
       </ul>
       <div class="summary"><span>{m.slip.odds}</span><b class="num pop" key={odds.toFixed(2)} style="color:var(--c-pop)">{fmtOdds(odds, p.locale)}×</b></div>
       {p.legs.length < 2 && <p class="note">{m.slip.need2}</p>}
-      <StakeControl value={amount} onChange={setStake} cap={cap} odds={odds} locale={p.locale} msg={m} />
+      <StakeControl value={amount} onChange={setStake} cap={cap} odds={odds} boost={boost && p.boosts > 0} locale={p.locale} msg={m} />
+      {p.boosts > 0 && <label class={`boosttoggle ${boost ? "on" : ""}`}><input type="checkbox" checked={boost} onChange={(e) => setBoost((e.target as HTMLInputElement).checked)} /><Rocket size={20} /><span><b>{m.boost.toggle}</b> · {m.boost.have(p.boosts)}<small>{m.boost.hint}</small></span></label>}
       <p class="hint">{m.slip.maxWin}</p>
       {err && <p class="formerr" role="alert">{err}</p>}
       <button class="btn primary wide" disabled={busy || p.legs.length < 2} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? m.sheet.confirming : `${m.slip.confirm} · ${money(amount, p.locale)}`}</button>

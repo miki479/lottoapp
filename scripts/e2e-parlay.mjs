@@ -13,6 +13,8 @@ const rpc = (fn, args, token, key) => call(`/rest/v1/rpc/${fn}`, { method: "POST
 let failed = 0;
 const check = (name, ok, extra = "") => { console.log(`${ok ? "OK  " : "FAIL"} ${name} ${extra}`); if (!ok) failed++; };
 const cleanup = { users: [], markets: [] };
+// The registration rule is flipped during the run and put back to whatever it was.
+const ruleBefore = ((await call("/rest/v1/app_settings?key=eq.registration_required&select=value", { key: SRV })).body[0] ?? {}).value ?? "false";
 
 async function registered(label) {
   const email = `e2e-${label}-${randomUUID().slice(0, 8)}@example.invalid`, password = randomUUID();
@@ -84,6 +86,42 @@ try {
   check("clients cannot spawn rungs", (await rpc("spawn_ladders", {}, P.token)).status >= 400);
   await call("/rest/v1/delay_observations?feed_id=eq.e2e-test", { method: "DELETE", key: SRV });
 
+  // ---------- welcome gift and boost ----------
+  const prof = async (u) => (await call(`/rest/v1/profiles?id=eq.${u.id}&select=freezes,boosts,credits`, { token: u.token })).body[0];
+  const before = await prof(P);
+  check("a player starts with 1 freeze and no boost", before.freezes === 1 && before.boosts === 0, JSON.stringify(before));
+  check("a boost cannot be used without owning one", JSON.stringify((await rpc("place_bet", { p_market: await market("nb", 2.0, 1.5), p_pick: "yes", p_stake: 10, p_boost: true }, P.token)).body).includes("no_boost"));
+  check("welcome gift is granted once", (await rpc("claim_welcome_gift", {}, P.token)).body === true && (await rpc("claim_welcome_gift", {}, P.token)).body === false);
+  const gift = await prof(P);
+  check("gift: +1 freeze and 1 boost", gift.freezes === 2 && gift.boosts === 1, JSON.stringify(gift));
+  const bm = await market("b1", 2.0, 1.5), bm2 = await market("b2", 2.0, 1.5);
+  const c0 = gift.credits;
+  const bb = await rpc("place_bet", { p_market: bm, p_pick: "yes", p_stake: 100, p_boost: true }, P.token);
+  check("boosted bet placed, boost used", bb.status < 300 && bb.body.boosted === true && (await prof(P)).boosts === 0, JSON.stringify(bb.body).slice(0, 120));
+  await settle(bm, "yes");
+  check("boosted win doubles the net win: 100 x 2.0 = 200, +100 boost = 300", (await credits(P)) === c0 - 100 + 300, `(credits ${await credits(P)})`);
+  const gift2 = await prof(P);
+  await call(`/rest/v1/profiles?id=eq.${P.id}`, { method: "PATCH", key: SRV, body: { boosts: 1 } });
+  await rpc("place_bet", { p_market: bm2, p_pick: "yes", p_stake: 100, p_boost: true }, P.token);
+  await settle(bm2, "void");
+  check("a void boosted bet returns the boost and the stake", (await prof(P)).boosts === 1 && (await credits(P)) === gift2.credits, JSON.stringify(await prof(P)));
+  check("guests cannot claim the gift", (await rpc("claim_welcome_gift", {}, (await call("/auth/v1/signup", { method: "POST", body: {} }).then((r) => { cleanup.users.push(r.body.user.id); return r.body.access_token; })))).status >= 400);
+
+  // ---------- quests ----------
+  const qs = async (u) => (await rpc("my_quests", {}, u.token)).body;
+  const qid = (list, id) => list.find((q) => q.id === id);
+  let ql = await qs(P);
+  check("quests listed: daily and one-time", ql.length === 8 && ql.some((q) => q.kind === "daily") && ql.some((q) => q.kind === "once"));
+  check("a quest that is not done cannot be claimed", (await rpc("claim_quest", { p_id: "o_push" }, P.token)).status >= 400);
+  check("done quests are flagged (bet today, parlay, first win)", qid(ql, "d_bet").done && qid(ql, "o_parlay").done && qid(ql, "o_win").done && !qid(ql, "o_push").done, JSON.stringify(ql.filter((q) => q.done).map((q) => q.id)));
+  const c1 = await credits(P);
+  check("claim pays the reward once", (await rpc("claim_quest", { p_id: "o_parlay" }, P.token)).body === 150 && (await credits(P)) === c1 + 150 && (await rpc("claim_quest", { p_id: "o_parlay" }, P.token)).body === 0 && (await credits(P)) === c1 + 150);
+  check("claimed quests are marked", qid(await qs(P), "o_parlay").claimed === true);
+  await rpc("set_push_ok", {}, P.token);
+  check("push quest becomes claimable after opting in", qid(await qs(P), "o_push").done === true);
+  check("a daily quest claimed today stays claimed today", (await rpc("claim_quest", { p_id: "d_bet" }, P.token)).body === 25 && qid(await qs(P), "d_bet").claimed === true);
+  check("unknown quest rejected", (await rpc("claim_quest", { p_id: "nope" }, P.token)).status >= 400);
+
   // ---------- invite a friend ----------
   const inviter = await registered("i"), friend = await registered("f");
   const ref = (await rpc("my_referral", {}, inviter.token)).body[0];
@@ -93,9 +131,9 @@ try {
   check("no bonus before the friend's first bet", (await credits(inviter)) === 1000);
   const r1 = await market("r1", 2.0, 1.5), r2 = await market("r2", 2.0, 1.5);
   await rpc("place_bet", { p_market: r1, p_pick: "no", p_stake: 10 }, friend.token);
-  check("inviter earns 1000 on the friend's first bet", (await credits(inviter)) === 2000, `(credits ${await credits(inviter)})`);
+  check("inviter earns 1000 on the friend's first bet", (await credits(inviter)) === 2500, `(credits ${await credits(inviter)})`);
   await rpc("place_bet", { p_market: r2, p_pick: "no", p_stake: 10 }, friend.token);
-  check("the bonus is paid once", (await credits(inviter)) === 2000);
+  check("the bonus is paid once", (await credits(inviter)) === 2500);
   const again = await rpc("redeem_referral", { p_code: ref.code }, friend.token);
   check("a player cannot switch inviter", again.body === false);
   const refAfter = (await rpc("my_referral", {}, inviter.token)).body[0];
@@ -117,7 +155,7 @@ try {
   check("with the rule on, a guest cannot bet", blocked.status >= 400 && JSON.stringify(blocked.body).includes("registration_required"));
   check("with the rule on, a registered player can", (await rpc("place_bet", { p_market: mg, p_pick: "no", p_stake: 10 }, P.token)).status < 300);
 } finally {
-  await call("/rest/v1/app_settings?key=eq.registration_required", { method: "PATCH", key: SRV, body: { value: "false" } });
+  await call("/rest/v1/app_settings?key=eq.registration_required", { method: "PATCH", key: SRV, body: { value: ruleBefore } });
   for (const id of cleanup.markets) await call(`/rest/v1/markets?id=eq.${id}`, { method: "DELETE", key: SRV });
   for (const id of cleanup.users) await call(`/auth/v1/admin/users/${id}`, { method: "DELETE", key: SRV });
   console.log(`cleanup: ${cleanup.users.length} users, ${cleanup.markets.length} test markets`);

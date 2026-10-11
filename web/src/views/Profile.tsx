@@ -1,4 +1,4 @@
-import { Bell, Gift, Calendar, CalendarCheck, ChevronRight, Flame, Gem, Ghost, LogOut, Medal, Pencil, Percent, Share2, Snowflake, Sparkles, Target, Telescope, Trash2, TrainFront, TrendingUp, Trophy, Umbrella, User } from "lucide-preact";
+import { Bell, Gift, Rocket, Calendar, CalendarCheck, ChevronRight, Flame, Gem, Ghost, LogOut, Medal, Pencil, Percent, Share2, Snowflake, Sparkles, Target, Telescope, Trash2, TrainFront, TrendingUp, Trophy, Umbrella, User } from "lucide-preact";
 import type { LucideIcon } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Missions } from "../components/Missions.tsx";
@@ -53,7 +53,7 @@ export function ProfileView(p: {
             </section>
           )}
           <section class="card stack referral">
-            <div style="display:flex;gap:12px;align-items:center"><span class="refico"><Gift size={22} /></span><div><b>{p.msg.referral.title}</b><p class="hint">{p.msg.referral.body(money(1000, p.locale))}</p></div></div>
+            <div style="display:flex;gap:12px;align-items:center"><span class="refico"><Gift size={22} /></span><div><b>{p.msg.referral.title}</b><p class="hint">{p.msg.referral.body(money(1500, p.locale))}</p></div></div>
             {p.referral
               ? <><div class="refcode"><span class="detail">{p.msg.referral.code}</span><b class="num">{p.referral.code}</b></div>
                   <button class="btn primary wide" onClick={p.onShareReferral}><Share2 size={18} />{p.msg.referral.share}</button>
@@ -74,6 +74,7 @@ export function ProfileView(p: {
             <div class="card cell span2" style="--i:5"><span class="detail">{m.stats.trophies}</span><span class="v num"><Trophy size={22} class="ic" style="vertical-align:-3px;margin-right:6px" />{owned}<small>/ {TROPHY_IDS.length}</small></span></div>
           </div>
           <div class="card" style="display:flex;gap:12px;align-items:center"><Snowflake size={22} style="color:var(--brand)" /><div><b>{m.freezes(p.profile?.freezes ?? 0)}</b><p class="hint">{m.freezeHint}</p></div></div>
+          <div class="card" style="display:flex;gap:12px;align-items:center"><Rocket size={22} style="color:var(--c-pop)" /><div><b>{p.msg.boost.title} · {(p.profile?.boosts ?? 0) > 0 ? p.msg.boost.have(p.profile?.boosts ?? 0) : p.msg.boost.none}</b><p class="hint">{p.msg.boost.explain}</p></div></div>
         </div>
 
         <div class="stack">

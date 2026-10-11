@@ -22,11 +22,12 @@ import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
 import { countdown, currencySymbol, dayIn, money, question, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
+import { RewardsSheet } from "./components/RewardsSheet.tsx";
 import { PushAsk } from "./components/PushAsk.tsx";
 import { disablePush, enablePush, pushAsked, pushAvailable, pushDenied, pushEnabled, rememberPush } from "./lib/push.ts";
 import { announce, setVoice, voiceEnabled, voiceSupported } from "./lib/voice.ts";
 import { makeProfileCard, makeResultCard, shareImage } from "./lib/share.ts";
-import type { ActivityRow, ParlayRow, SlipLeg, LiveDelay, MyBet, MyStats, Pick, PopularRow, Profile, Progress, ResultRow } from "./lib/types.ts";
+import type { QuestRow, ActivityRow, ParlayRow, SlipLeg, LiveDelay, MyBet, MyStats, Pick, PopularRow, Profile, Progress, ResultRow } from "./lib/types.ts";
 import { Bets } from "./views/Bets.tsx";
 import { Home } from "./views/Home.tsx";
 import { ProfileView } from "./views/Profile.tsx";
@@ -37,7 +38,7 @@ const store = {
   set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
 };
 const region = () => { try { return new Intl.Locale(navigator.language).maximize().region ?? null; } catch { return null; } };
-const PROFILE_COLS = "id,credits,city_id,locale,timezone,country,streak,best_streak,freezes,display_name,last_play_date";
+const PROFILE_COLS = "id,credits,city_id,locale,timezone,country,streak,best_streak,freezes,boosts,display_name,last_play_date";
 const BET_COLS = "id,pick,stake,odds,status,payout,markets(id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,void_reason,outcome,evidence)";
 
 export function App() {
@@ -69,6 +70,8 @@ export function App() {
   const [stale, setStale] = useState(false);
   const [offline, setOffline] = useState(!navigator.onLine);
   const [rank, setRank] = useState<{ rank: number | null; scope: string }>({ rank: null, scope: "" });
+  const [quests, setQuests] = useState<QuestRow[]>([]);
+  const [rewardsOpen, setRewardsOpen] = useState(false);
   const [pushOn, setPushOn] = useState(false);
   const [askPush, setAskPush] = useState(false);
   const [slip, setSlip] = useState<SlipLeg[]>([]);
@@ -103,6 +106,7 @@ export function App() {
   const loadBets = useCallback(async () => { const { data } = await sb.from("bets").select(BET_COLS).order("placed_at", { ascending: false }).limit(60); setBets((data ?? []) as unknown as MyBet[]); }, []);
 
   const loadParlays = useCallback(async () => { const { data } = await sb.from("parlays").select("id,stake,odds,status,payout,placed_at,settled_at,parlay_legs(market_id,pick,odds,status,markets(city_id,kind,params))").order("placed_at", { ascending: false }).limit(40); setParlays((data ?? []) as unknown as ParlayRow[]); }, []);
+  const loadQuests = useCallback(async () => { const { data } = await sb.rpc("my_quests"); setQuests(((data ?? []) as QuestRow[]).map((q) => ({ ...q, reward: +q.reward }))); }, []);
   const loadReferral = useCallback(async () => {
     const { data } = await sb.rpc("my_referral"); const r = (data as { code: string; invited: number; paid: number }[] | null)?.[0];
     if (r) setReferral({ code: r.code, invited: +r.invited, paid: +r.paid });
@@ -115,7 +119,7 @@ export function App() {
     await sb.rpc("ensure_profile", { p_city: prefer, p_locale: locale, p_country: region() });
     await sb.rpc("claim_daily_refill");
     const p = await loadProfile(); setSeen(new Set(JSON.parse(store.get(`seen.${uid}`) ?? "[]")));
-    await Promise.all([loadTrophies(), loadBets(), loadParlays(), loadProgress(p?.timezone)]);
+    await Promise.all([loadTrophies(), loadBets(), loadParlays(), loadQuests(), loadProgress(p?.timezone)]);
     // Invite link: remember ?ref=CODE and redeem it as soon as the player has a registered account.
     // Sign-in providers report problems back in the URL (query or hash): show them instead of failing silently.
     const back = new URLSearchParams(location.hash.replace(/^#/, "") || location.search);
@@ -127,6 +131,7 @@ export function App() {
       const code = store.get("ref");
       if (code) { const { data: okRef } = await sb.rpc("redeem_referral", { p_code: code }); store.set("ref", ""); if (okRef) flash(msg.referral.accepted); }
       loadReferral();
+      const { data: gift } = await sb.rpc("claim_welcome_gift"); if (gift) { flash(msg.boost.gift); loadProfile(); haptic.success(); }
     }
     const { data: need } = await sb.rpc("registration_required"); setNeedSignup(!!need);
     setReady(true);
@@ -154,7 +159,7 @@ export function App() {
   const loadActivity = useCallback(async () => { const { data } = await sb.rpc("activity_feed", { p_limit: 12 }); setActivity(((data ?? []) as ActivityRow[]).map((r) => ({ ...r, amount: +r.amount }))); }, []);
   const loadResults = useCallback(async () => { const { data } = await sb.from("markets").select("id,city_id,kind,status,outcome,void_reason,params,evidence").neq("status", "open").order("target_at", { ascending: false }).limit(12); setResults((data ?? []) as ResultRow[]); }, []);
   useEffect(() => { loadMarkets(); loadResults(); loadActivity(); const a = setInterval(loadMarkets, 30000), b = setInterval(() => { loadResults(); loadActivity(); }, 60000); return () => { clearInterval(a); clearInterval(b); }; }, [loadMarkets, loadResults, loadActivity]);
-  useEffect(() => { if (!ready) return; const i = setInterval(() => { loadBets(); loadProfile(); }, 30000); return () => clearInterval(i); }, [ready]);
+  useEffect(() => { if (!ready) return; const i = setInterval(() => { loadBets(); loadProfile(); loadQuests(); }, 30000); return () => clearInterval(i); }, [ready]);
 
   const trackable = useMemo(() => (markets ?? []).filter((m) => m.kind !== "rain_at" && Date.parse(m.target_at) - Date.now() < 3 * 3600_000).slice(0, 80).map((m) => m.id), [markets]);
   useEffect(() => {
@@ -229,12 +234,12 @@ export function App() {
   const closeResult = () => { if (resultBet) markSeen(resultBet.id); setResultBet(null); };
 
   // ---------- actions ----------
-  const place = async (m: MarketRow, pick: Pick, stake: number) => {
+  const place = async (m: MarketRow, pick: Pick, stake: number, boost = false) => {
     const before = { bonus: progress?.bonus_claimed ?? false, trophies: new Set(trophies), streak: profile?.streak ?? 0 };
-    const { error } = await sb.rpc("place_bet", { p_market: m.id, p_pick: pick, p_stake: stake });
+    const { error } = await sb.rpc("place_bet", { p_market: m.id, p_pick: pick, p_stake: stake, p_boost: boost });
     if (error) return msg.errors[Object.keys(msg.errors).find((k) => error.message.includes(k)) ?? "generic"]!;
     setSheet(null);
-    const [pf] = await Promise.all([loadProfile(), loadBets()]);
+    const [pf] = await Promise.all([loadProfile(), loadBets(), loadQuests()]);
     const reached = pf && pf.streak > before.streak ? STREAK_MILESTONES[pf.streak] : undefined;
     const [pr, tr] = [await loadProgress(), await loadTrophies()];
     const won = TROPHY_IDS.filter((id) => tr.has(id) && !before.trophies.has(id));
@@ -247,20 +252,28 @@ export function App() {
     return null;
   };
   const addSlip = (m: MarketRow, pick: Pick) => { setSlip((s) => (s.some((l) => l.m.id === m.id) ? s : [...s, { m, pick }])); setSheet(null); flash(msg.slip.added); };
-  const placeParlay = async (legs: SlipLeg[], stake: number) => {
-    const { error } = await sb.rpc("place_parlay", { p_legs: legs.map((l) => ({ market: l.m.id, pick: l.pick })), p_stake: stake });
+  const placeParlay = async (legs: SlipLeg[], stake: number, boost = false) => {
+    const { error } = await sb.rpc("place_parlay", { p_legs: legs.map((l) => ({ market: l.m.id, pick: l.pick })), p_stake: stake, p_boost: boost });
     if (error) return msg.errors[Object.keys(msg.errors).find((k) => error.message.includes(k)) ?? "generic"]!;
     const win = money(Math.floor(stake * slipOdds(legs)), locale);
     setSlip([]); setParlayOpen(false);
-    await Promise.all([loadProfile(), loadParlays(), loadProgress(), loadTrophies()]);
+    await Promise.all([loadProfile(), loadParlays(), loadProgress(), loadTrophies(), loadQuests()]);
     flash(msg.slip.placed(win)); announce(`parlay-${Date.now()}`, msg.voice.placed(win), locale);
     return null;
   };
+  const claimQuest = async (id: string) => {
+    const { data, error } = await sb.rpc("claim_quest", { p_id: id });
+    if (error) { flash(msg.errors.generic!, "err"); return; }
+    if (+data > 0) { flash(`+${money(+data, locale)}`); haptic.success(); }
+    await Promise.all([loadProfile(), loadQuests()]);
+  };
+  const goQuest = (id: string) => { setRewardsOpen(false); if (id === "o_nick") { if (registered) setNick(true); else setAuth(true); } else if (id === "o_push") { go("profile"); turnPush(true); } };
+  const claimable = quests.filter((q) => q.done && !q.claimed).length;
   const turnPush = async (on: boolean) => {
     setAskPush(false);
     if (!on) { await disablePush().catch(() => {}); rememberPush(false); setPushOn(false); flash(msg.push.off); return; }
     const uid = profile?.id; if (!uid) return;
-    try { const ok = await enablePush(uid); rememberPush(ok); setPushOn(ok); flash(ok ? msg.push.on : msg.push.denied, ok ? "ok" : "err"); } catch { flash(msg.errors.generic!, "err"); }
+    try { const ok = await enablePush(uid); rememberPush(ok); setPushOn(ok); if (ok) { await sb.rpc("set_push_ok"); loadQuests(); } flash(ok ? msg.push.on : msg.push.denied, ok ? "ok" : "err"); } catch { flash(msg.errors.generic!, "err"); }
   };
   useEffect(() => { if (ready) pushEnabled().then(setPushOn).catch(() => {}); }, [ready]);
   useEffect(() => { if (new URLSearchParams(location.search).get("open") === "bets") { setScreen("bets"); history.replaceState(null, "", location.pathname); } }, []);
@@ -293,7 +306,7 @@ export function App() {
     <div class="shell">
       <Sidebar value={screen} onPick={go} msg={msg} openBets={openBets} />
       <div>
-        <Header voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} wallet={profile ? new Intl.NumberFormat(INTL_TAG[locale]).format(Math.round(wallet)) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
+        <Header claimable={claimable} onWallet={() => setRewardsOpen(true)} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} wallet={profile ? new Intl.NumberFormat(INTL_TAG[locale]).format(Math.round(wallet)) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
         <Ticker items={tickerItems} />
         <main class="content">
           {offline && <p class="note" style="margin-bottom:12px">{msg.common.offline}</p>}
@@ -306,12 +319,13 @@ export function App() {
       </div>
       <TabBar value={screen} onPick={go} msg={msg} openBets={openBets} />
 
-      {askPush && <PushAsk msg={msg} onYes={() => turnPush(true)} onNo={() => { rememberPush(false); setAskPush(false); }} />}
+      {rewardsOpen && <RewardsSheet msg={msg} locale={locale} now={now} profile={profile} quests={quests} referral={referral} registered={registered} onClaim={claimQuest} onGo={goQuest} onShare={shareReferral} onClose={() => setRewardsOpen(false)} />}
+      {askPush && <PushAsk lifted={slip.length > 0} msg={msg} onYes={() => turnPush(true)} onNo={() => { rememberPush(false); setAskPush(false); }} />}
       <ParlayBar count={slip.length} odds={slipOdds(slip)} msg={msg} locale={locale} onOpen={() => setParlayOpen(true)} />
-      {sheet && <BetSheet key={sheet.m.id} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
-      {parlayOpen && slip.length > 0 && <ParlaySheet legs={slip} msg={msg} locale={locale} credits={profile?.credits ?? 0} needJoin={needJoin} googleOn={googleOn} onClose={() => setParlayOpen(false)} onRemove={(id) => setSlip((s) => s.filter((l) => l.m.id !== id))} onClear={() => { setSlip([]); setParlayOpen(false); }} onJoined={async () => {}} onPlace={placeParlay} />}
+      {sheet && <BetSheet boosts={profile?.boosts ?? 0} key={sheet.m.id} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
+      {parlayOpen && slip.length > 0 && <ParlaySheet boosts={profile?.boosts ?? 0} legs={slip} msg={msg} locale={locale} credits={profile?.credits ?? 0} needJoin={needJoin} googleOn={googleOn} onClose={() => setParlayOpen(false)} onRemove={(id) => setSlip((s) => s.filter((l) => l.m.id !== id))} onClear={() => { setSlip([]); setParlayOpen(false); }} onJoined={async () => {}} onPlace={placeParlay} />}
       {auth && <AuthSheet msg={msg} guest={!registered} googleOn={googleOn} onClose={() => setAuth(false)} onDone={(text) => { setAuth(false); flash(text); }} />}
-      {nick && <NicknameSheet msg={msg} current={profile?.display_name ?? null} onClose={() => setNick(false)} onSaved={(n) => { setNick(false); loadProfile(); flash(n); }} />}
+      {nick && <NicknameSheet msg={msg} current={profile?.display_name ?? null} onClose={() => setNick(false)} onSaved={(n) => { setNick(false); loadProfile(); loadQuests(); flash(n); }} />}
       {resultBet && <ResultScreen bet={resultBet} msg={msg} locale={locale} remaining={Math.max(0, unseen.filter((b) => b.id !== resultBet.id).length)} onClose={closeResult} onShare={shareResult} onNext={() => { markSeen(resultBet.id); const next = unseen.find((b) => b.id !== resultBet.id); setResultBet(next ?? null); }} />}
       {toast && <Toast text={toast.text} kind={toast.kind} />}
     </div>

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { LOCALES, type Locale } from "../i18n/index.ts";
 
 /** Sticky top bar: it gains a light blur and a hairline once the page scrolls under it. */
-export function Header({ voice, locale, onLocale, wallet, coin, languageLabel, creditsLabel, onHome }: { locale: Locale; onLocale: (l: Locale) => void; wallet: string; coin: string; voice: { on: boolean; label: string; toggle: () => void } | null; languageLabel: string; creditsLabel: string; onHome: () => void }) {
+export function Header({ claimable, onWallet, voice, locale, onLocale, wallet, coin, languageLabel, creditsLabel, onHome }: { locale: Locale; onLocale: (l: Locale) => void; wallet: string; coin: string; claimable: number; onWallet: () => void; voice: { on: boolean; label: string; toggle: () => void } | null; languageLabel: string; creditsLabel: string; onHome: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -35,7 +35,7 @@ export function Header({ voice, locale, onLocale, wallet, coin, languageLabel, c
             </div>
           )}
         </div>
-        <div class="wallet" aria-live="polite" title={creditsLabel}><i class="coin" aria-hidden="true">{coin}</i><span class="num">{wallet}</span></div>
+        <button class="wallet walletbtn" aria-live="polite" title={creditsLabel} aria-label={creditsLabel} onClick={onWallet}><i class="coin" aria-hidden="true">{coin}</i><span class="num">{wallet}</span>{claimable > 0 && <span class="dotbadge">{claimable}</span>}</button>
       </div>
     </header>
   );

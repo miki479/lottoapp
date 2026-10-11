@@ -45,7 +45,7 @@ p { margin: 0; }
 
 /* ---------- chips ---------- */
 .catchips { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
-.cc { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 76px; padding: 10px 4px; border-radius: var(--radius-card); border: 1px solid var(--border); background: var(--surface); color: var(--text-2); font-size: 13px; font-weight: 600; transition: border-color var(--dur), background var(--dur), color var(--dur), transform var(--dur-fast); }
+.cc { position: relative; overflow: visible; perspective: 520px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 76px; padding: 10px 4px; border-radius: var(--radius-card); border: 1px solid var(--border); background: var(--surface); color: var(--text-2); font-size: 13px; font-weight: 600; transition: border-color var(--dur), background var(--dur), color var(--dur), transform var(--dur-fast); }
 .cc:not(:disabled):active { transform: scale(.98); }
 .cc.on { border-color: var(--brand); background: var(--brand-soft); color: var(--text); }
 .cc:disabled { opacity: .5; }
@@ -53,12 +53,6 @@ p { margin: 0; }
 .cc.on .ico { color: var(--brand); }
 .cc em { position: absolute; top: 6px; right: 8px; font-style: normal; font-size: 11px; font-weight: 700; color: var(--muted); }
 .cc.on em { color: var(--brand); }
-.cc.on.bus .ico svg { animation: busin 300ms var(--ease) both; }
-.cc.on.train .ico svg { animation: trainin 320ms var(--ease) both; }
-.cc.on.train .trail { position: absolute; left: -6px; top: 12px; width: 18px; height: 2px; border-radius: 2px; background: var(--brand); box-shadow: 0 5px 0 -0px var(--brand); opacity: 0; animation: trail 420ms ease-out both; }
-.cc.on.weather .drops { position: absolute; inset: 0; pointer-events: none; }
-.cc.on.weather .drops i { position: absolute; top: 18px; width: 2px; height: 6px; border-radius: 2px; background: var(--brand); opacity: 0; animation: fall 900ms linear infinite; }
-.cc.on.weather .drops i:nth-child(1) { left: 12px; } .cc.on.weather .drops i:nth-child(2) { left: 19px; animation-delay: -300ms; } .cc.on.weather .drops i:nth-child(3) { left: 26px; animation-delay: -600ms; }
 .cc.traffic .ico svg { opacity: .8; }
 
 .chiprow { display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; padding: 2px 0; margin: 0 calc(var(--gutter) * -1); padding-inline: var(--gutter); scroll-snap-type: x proximity; }
@@ -295,7 +289,7 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .cc.bus { --cat: var(--c-bus); --cat-soft: var(--c-bus-soft); } .cc.train { --cat: var(--c-train); --cat-soft: var(--c-train-soft); } .cc.weather { --cat: var(--c-weather); --cat-soft: var(--c-weather-soft); }
 .cc:not(.traffic) .ico { color: var(--cat); } .cc:not(.traffic) { background: var(--cat-soft); border-color: transparent; }
 .cc.on { border-color: var(--cat, var(--brand)); background: var(--cat-soft, var(--brand-soft)); } .cc.on .ico, .cc.on em { color: var(--cat, var(--brand)); }
-.cc.on.train .trail { background: var(--cat); box-shadow: 0 5px 0 0 var(--cat); } .cc.on.weather .drops i { background: var(--cat); }
+
 
 .topcard.c0 { background: linear-gradient(145deg, rgba(255,163,26,.24), var(--surface) 70%); border-color: rgba(255,163,26,.4); } .topcard.c0 .head svg { color: var(--c-bus); }
 .topcard.c1 { background: linear-gradient(145deg, rgba(255,95,162,.24), var(--surface) 70%); border-color: rgba(255,95,162,.4); } .topcard.c1 .head svg { color: var(--c-pop); }
@@ -333,8 +327,20 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .scene { position: relative; height: 26px; margin: -2px 0 -4px; overflow: hidden; color: var(--cat); }
 .scene .road { position: absolute; left: 0; right: 0; bottom: 5px; height: 2px; background: repeating-linear-gradient(90deg, currentColor 0 10px, transparent 10px 20px); opacity: .55; animation: road 1.1s linear infinite; }
 .scene.train .road { height: 3px; background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 14px); }
-.scene .rider { position: absolute; bottom: 7px; left: -24px; animation: ride 5.5s linear infinite; display: grid; }
-.scene.train .rider { animation-duration: 4s; }
+.scene .rider { position: absolute; bottom: 6px; left: 0; display: grid; opacity: 0; animation: tripcycle var(--cyc, 24s) ease-in-out var(--off, 0s) infinite; }
+.scene .done { position: absolute; left: 0; bottom: 5px; height: 3px; border-radius: 3px; background: currentColor; width: calc((100% - 18px) * var(--p)); opacity: .9; transition: width 1s linear; }
+.scene .done::after { content: ""; position: absolute; right: -4px; top: -2.5px; width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 25%, transparent); }
+/* the vehicle shows up at the start, runs to where the trip is now, waits a moment, fades, and comes back later */
+@keyframes tripcycle {
+  0% { left: 0; opacity: 0; } 4% { left: 0; opacity: 1; }
+  38% { left: calc((100% - var(--w)) * var(--p)); opacity: 1; }
+  52% { left: calc((100% - var(--w)) * var(--p)); opacity: 1; }
+  60%, 100% { left: calc((100% - var(--w)) * var(--p)); opacity: 0; }
+}
+.scene .dest { position: absolute; right: 0; bottom: 4px; color: var(--cat); opacity: .9; }
+.scene .road { right: 18px; animation: none; opacity: .6; }
+.scene .puff { position: absolute; right: 100%; width: 7px; height: 7px; margin-right: 1px; border-radius: 50%; background: currentColor; opacity: 0; animation: puff var(--t, 2s) ease-out infinite; }
+@keyframes puff { 0% { transform: translateX(0) scale(.5); opacity: 0; } 20% { opacity: .45; } 100% { transform: translateX(-34px) scale(1.5); opacity: 0; } }
 .scene.weather .cloud { position: absolute; top: 0; left: 10%; animation: drift 6s ease-in-out infinite alternate; }
 .scene .drop { position: absolute; top: 14px; width: 2px; height: 7px; border-radius: 2px; background: currentColor; opacity: 0; animation: fall 900ms linear infinite; }
 @keyframes road { to { background-position: -20px 0; } }
@@ -374,7 +380,7 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .ticker .tk b { color: var(--text); } .ticker .tk::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--star); margin-left: 22px; opacity: .8; }
 .ticker .amt { font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; } .ticker .amt.won { color: var(--won-fg); } .ticker .amt.lost { color: var(--lost-fg); } .ticker .amt.placed { color: var(--c-pop); }
 @keyframes tick { to { transform: translateX(-50%); } }
-@media (prefers-reduced-motion: reduce) { .meter .cells em, .meter .cells u.sweep { animation: none !important; } .ticker { overflow-x: auto; } .ticker .track { animation: none !important; } .meter .cells i.on { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .scene .puff { display: none; } .scene .rider { animation: none; opacity: 1; left: calc((100% - var(--w)) * var(--p)); } .scene .done { transition: none; } .meter .cells em, .meter .cells u.sweep { animation: none !important; } .ticker { overflow-x: auto; } .ticker .track { animation: none !important; } .meter .cells i.on { animation: none !important; } }
 
 /* ==========================================================================
    Stake control (glowing number + slider), parlay, join form, referral, voice
@@ -429,3 +435,54 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .pushask .pt { display: flex; flex-direction: column; gap: 2px; } .pushask .pt span { font-size: 14px; color: var(--text-2); }
 .pushask .pb { grid-column: 1 / -1; display: flex; gap: 8px; } .pushask .pb .btn { flex: 1; }
 @media (min-width: 1024px) { .pushask { left: auto; right: 24px; bottom: 24px; max-width: 420px; } }
+
+.pushask.lifted { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 12px + 66px); }
+@media (min-width: 1024px) { .pushask.lifted { bottom: 90px; } }
+
+.event .meta .kind { width: auto; min-width: 28px; padding: 0 5px; }
+.boosttoggle { display: flex; align-items: center; gap: 12px; padding: 12px 14px; min-height: var(--touch); border-radius: var(--radius-control); border: 1px solid var(--border-strong); background: var(--surface-2); cursor: pointer; transition: border-color var(--dur-fast), background var(--dur-fast); }
+.boosttoggle input { position: absolute; opacity: 0; pointer-events: none; } .boosttoggle svg { color: var(--c-pop); flex: none; }
+.boosttoggle small { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+.boosttoggle.on { border-color: var(--c-pop); background: var(--c-pop-soft); box-shadow: 0 0 18px rgba(255, 95, 162, .35); }
+
+/* rewards */
+.rbal { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: var(--radius-card); background: var(--surface-2); }
+.rbal b { font-size: 28px; letter-spacing: var(--ls-title); flex: 1; } .rstock { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: var(--c-train); } .rstock + .rstock { color: var(--c-pop); }
+.quests { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.quest { display: flex; align-items: center; gap: 12px; padding: 12px 14px; min-height: 64px; border-radius: var(--radius-control); background: var(--surface-2); border: 1px solid transparent; transition: border-color var(--dur), background var(--dur); }
+.quest .qt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; } .quest .qt b { font-size: 15px; } .quest .qt span { font-size: 13px; color: var(--muted); }
+.quest.ready { border-color: var(--star); background: color-mix(in srgb, var(--star) 12%, var(--surface-2)); animation: glow 2s ease-in-out infinite; }
+.quest.claimed { opacity: .6; }
+.qbtn { min-height: 40px; padding: 0 14px; white-space: nowrap; } .qreward { font-weight: 800; color: var(--star); font-variant-numeric: tabular-nums; }
+.qdone { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; color: var(--text-2); }
+.walletbtn { position: relative; cursor: pointer; font: inherit; color: inherit; }
+.walletbtn .dotbadge { position: absolute; top: -4px; right: -2px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--c-pop); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; animation: popnum 220ms var(--ease); }
+
+/* ---------- chips: the vehicle / the rain comes out of the chip in 3D on hover or tap, then settles back ---------- */
+.cc { z-index: 0; } .cc:hover, .cc.pop { z-index: 4; }
+.cc .ico { transform-style: preserve-3d; overflow: visible; }
+.cc .ico svg { transform-origin: 50% 70%; transition: filter var(--dur); will-change: transform; }
+.cc .ico .trail { position: absolute; left: -4px; top: 12px; width: 22px; height: 2px; border-radius: 2px; background: var(--cat); box-shadow: 0 5px 0 0 var(--cat); opacity: 0; }
+.cc .ico .drops { position: absolute; left: 0; right: 0; top: 18px; height: 0; pointer-events: none; }
+.cc .ico .drops i { position: absolute; width: 2px; height: 8px; border-radius: 2px; background: var(--cat); opacity: 0; }
+.cc .ico .drops i:nth-child(1) { left: 12px; } .cc .ico .drops i:nth-child(2) { left: 19px; } .cc .ico .drops i:nth-child(3) { left: 26px; }
+@media (hover: hover) {
+  .cc.bus:not(:disabled):hover .ico svg { animation: pop-bus 900ms var(--ease) both; }
+  .cc.train:not(:disabled):hover .ico svg { animation: pop-train 1000ms var(--ease) both; }
+  .cc.train:not(:disabled):hover .ico .trail { animation: trail3d 1000ms ease-out both; }
+  .cc.weather:not(:disabled):hover .ico svg { animation: pop-cloud 1100ms var(--ease) both; }
+  .cc.weather:not(:disabled):hover .ico .drops i { animation: rain3d 900ms ease-in 150ms 1 both; }
+  .cc.weather:not(:disabled):hover .ico .drops i:nth-child(2) { animation-delay: 300ms; } .cc.weather:not(:disabled):hover .ico .drops i:nth-child(3) { animation-delay: 450ms; }
+}
+.cc.pop.bus .ico svg { animation: pop-bus 900ms var(--ease) both; }
+.cc.pop.train .ico svg { animation: pop-train 1000ms var(--ease) both; }
+.cc.pop.train .ico .trail { animation: trail3d 1000ms ease-out both; }
+.cc.pop.weather .ico svg { animation: pop-cloud 1100ms var(--ease) both; }
+.cc.pop.weather .ico .drops i { animation: rain3d 900ms ease-in 150ms 1 both; }
+.cc.pop.weather .ico .drops i:nth-child(2) { animation-delay: 300ms; } .cc.pop.weather .ico .drops i:nth-child(3) { animation-delay: 450ms; }
+@keyframes pop-bus { 0%, 100% { transform: none; filter: none; } 30% { transform: translate3d(0, -14px, 70px) rotateX(-14deg) rotateY(-16deg) scale(1.7); filter: drop-shadow(0 14px 8px rgba(0,0,0,.55)); } 60% { transform: translate3d(8px, -12px, 60px) rotateX(-10deg) rotateY(-8deg) scale(1.6); filter: drop-shadow(0 12px 8px rgba(0,0,0,.5)); } }
+@keyframes pop-train { 0%, 100% { transform: none; filter: none; } 25% { transform: translate3d(-4px, -12px, 60px) rotateX(-12deg) rotateY(-18deg) scale(1.6); filter: drop-shadow(0 14px 8px rgba(0,0,0,.55)); } 70% { transform: translate3d(16px, -12px, 70px) rotateX(-10deg) rotateY(-8deg) scale(1.7); filter: drop-shadow(0 14px 8px rgba(0,0,0,.5)); } }
+@keyframes pop-cloud { 0%, 100% { transform: none; filter: none; } 30%, 70% { transform: translate3d(0, -14px, 70px) rotateX(-12deg) scale(1.7); filter: drop-shadow(0 12px 8px rgba(0,0,0,.5)); } }
+@keyframes trail3d { 0% { opacity: 0; transform: scaleX(.3); } 30% { opacity: .8; } 100% { opacity: 0; transform: scaleX(1.4) translateX(-10px); } }
+@keyframes rain3d { 0% { opacity: 0; transform: translate3d(0, -6px, 40px); } 25% { opacity: .95; } 100% { opacity: 0; transform: translate3d(0, 46px, 40px); } }
+@media (prefers-reduced-motion: reduce) { .cc .ico svg, .cc .ico .trail, .cc .ico .drops i { animation: none !important; } }

@@ -34,3 +34,10 @@ export function dailyRefill(
   if (balance >= REFILL_THRESHOLD) return null;
   return { balance: REFILL_TO, refillDate: today };
 }
+
+export const BOOST_MAX_EXTRA = 1000;
+/** A boost doubles the NET win of one bet (stake x odds - stake), the extra being capped at BOOST_MAX_EXTRA. Mirrors the SQL in migration 0015. */
+export function boostedPayout(stake: number, odds: number): number {
+  const base = payout(stake, odds);
+  return base + Math.min(BOOST_MAX_EXTRA, base - stake);
+}

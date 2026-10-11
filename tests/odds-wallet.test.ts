@@ -71,3 +71,9 @@ describe("settlement", () => {
     expect(settleBet({ ...bet, pick: "no" }, "void")).toEqual({ status: "void", payout: 100 });
   });
 });
+
+import { boostedPayout } from "../shared/wallet.ts";
+describe("boost", () => {
+  it("doubles the net win", () => { expect(boostedPayout(100, 2)).toBe(300); expect(boostedPayout(100, 3.07)).toBe(100 * 3.07 > 0 ? 307 + 207 : 0); });
+  it("caps the extra at 1000", () => { expect(boostedPayout(500, 15)).toBe(7500 + 1000); });
+});
