@@ -1,4 +1,5 @@
-import { Clock, MapPin, TrendingUp, Users } from "lucide-preact";
+import { Clock, MapPin, TrendingUp, Users, Zap } from "lucide-preact";
+import { RING_BONUS, STREAK_MILESTONES } from "../../shared/rewards.ts";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import { AuthSheet } from "./components/AuthSheet.tsx";
 import { BetSheet } from "./components/BetSheet.tsx";
@@ -15,7 +16,7 @@ import { ensureGuest, sb } from "./lib/api.ts";
 import { CITIES, cityInfos, cityName, cityOf } from "./lib/cities.ts";
 import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
-import { countdown, dayIn, question, type MarketRow } from "./lib/format.ts";
+import { countdown, currencySymbol, dayIn, money, question, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import { makeProfileCard, makeResultCard, shareImage } from "./lib/share.ts";
 import type { LiveDelay, MyBet, MyStats, Pick, PopularRow, Profile, Progress, ResultRow } from "./lib/types.ts";
@@ -108,7 +109,7 @@ export function App() {
   useEffect(() => { if (profile && !profile.country && region()) sb.rpc("set_country", { p_country: region() }).then(loadProfile); }, [profile?.id]);
 
   const loadMarkets = useCallback(async () => {
-    const { data, error } = await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status").eq("status", "open").gt("closes_at", new Date().toISOString()).order("closes_at").limit(300);
+    const { data, error } = await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").gt("closes_at", new Date().toISOString()).order("closes_at").limit(300);
     if (!error) setMarkets((data ?? []) as MarketRow[]);
     const { data: h } = await sb.from("feed_health").select("feed_id,last_ok_at");
     const nowMs = Date.now();
@@ -131,11 +132,14 @@ export function App() {
   const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter), [open, filter]);
   const byCat = (c: CatId) => inFilter.filter((m) => m.category === c);
   useEffect(() => { if (catChosen || !markets) return; const first = (["bus", "train", "weather"] as CatId[]).find((c) => byCat(c).length > 0); if (first && byCat(cat).length === 0) setCat(first); }, [markets, filter, catChosen]);
-  const list = byCat(cat);
+  const flashFirst = (a: MarketRow[]) => [...a].sort((x, y) => Number((y.flash_multiplier ?? 1) > 1) - Number((x.flash_multiplier ?? 1) > 1));
+  const list = flashFirst(byCat(cat));
   const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, traffic: 0 };
 
   const top: TopItem[] = useMemo(() => {
     const items: TopItem[] = [];
+    const fl = open.filter((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now && (filter === "world" || m.city_id === filter))[0];
+    if (fl) items.push({ id: "flash", icon: Zap, label: msg.streak.flash, big: <>×{fl.flash_multiplier}<small class="num">{countdown(Date.parse(fl.flash_until!) - now)}</small></>, sub: question(fl, msg, locale, cityName(cityOf(fl.city_id), locale), cityOf(fl.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: fl, pick: "yes" }) });
     const facts = inFilter.filter((m) => live[m.id] && !live[m.id]!.is_forecast && live[m.id]!.delay_sec >= 60).sort((a, b) => live[b.id]!.delay_sec - live[a.id]!.delay_sec)[0];
     if (facts) items.push({ id: "late", icon: TrendingUp, label: msg.top.late, big: <>+{Math.round(live[facts.id]!.delay_sec / 60)}<small>min</small></>, sub: `${facts.params.routeName ?? ""} → ${facts.params.headsign ?? ""}`, onClick: () => setSheet({ m: facts, pick: "yes" }) });
     const pop = popular.map((p) => ({ p, m: inFilter.find((m) => m.id === p.market_id) })).find((x) => x.m);
@@ -173,16 +177,18 @@ export function App() {
 
   // ---------- actions ----------
   const place = async (m: MarketRow, pick: Pick, stake: number) => {
-    const before = { bonus: progress?.bonus_claimed ?? false, trophies: new Set(trophies) };
+    const before = { bonus: progress?.bonus_claimed ?? false, trophies: new Set(trophies), streak: profile?.streak ?? 0 };
     const { error } = await sb.rpc("place_bet", { p_market: m.id, p_pick: pick, p_stake: stake });
     if (error) return msg.errors[Object.keys(msg.errors).find((k) => error.message.includes(k)) ?? "generic"]!;
     setSheet(null);
-    await Promise.all([loadProfile(), loadBets()]);
+    const [pf] = await Promise.all([loadProfile(), loadBets()]);
+    const reached = pf && pf.streak > before.streak ? STREAK_MILESTONES[pf.streak] : undefined;
     const [pr, tr] = [await loadProgress(), await loadTrophies()];
     const won = TROPHY_IDS.filter((id) => tr.has(id) && !before.trophies.has(id));
     if (won.length) { setFresh(new Set(won)); flash(`${msg.profile.trophy[won[0]!].name}`); }
-    else if (pr?.bonus_claimed && !before.bonus) flash(`${msg.home.missionsDone} · +100`);
-    else flash(msg.sheet.placed(Math.floor(stake * Number(pick === "yes" ? m.odds_yes : m.odds_no))));
+    else if (reached) { flash(msg.streak.milestone(pf!.streak, `+${money(reached, locale)}`)); haptic.success(); }
+    else if (pr?.bonus_claimed && !before.bonus) flash(`${msg.home.missionsDone} · +${money(RING_BONUS, locale)}`);
+    else flash(msg.sheet.placed(money(Math.floor(stake * Number(pick === "yes" ? m.odds_yes : m.odds_no)), locale)));
     return null;
   };
   const shareResult = async () => { if (!resultBet) return; const blob = await makeResultCard(resultBet, msg, locale); if ((await shareImage(blob, "LateLotto", msg.result.shareText)) === "saved") flash(msg.result.saved); };
@@ -206,14 +212,14 @@ export function App() {
     <div class="shell">
       <Sidebar value={screen} onPick={go} msg={msg} openBets={openBets} />
       <div>
-        <Header locale={locale} onLocale={changeLocale} wallet={profile ? wallet.toLocaleString(INTL_TAG[locale]) : "···"} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
+        <Header locale={locale} onLocale={changeLocale} wallet={profile ? new Intl.NumberFormat(INTL_TAG[locale]).format(Math.round(wallet)) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
         <main class="content">
           {offline && <p class="note" style="margin-bottom:12px">{msg.common.offline}</p>}
           {stale && <p class="note warn" style="margin-bottom:12px">{msg.feedWarning}</p>}
-          {screen === "home" && <Home msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} progress={progress} liveItems={liveItems} onPick={(m, pick) => setSheet({ m, pick })} attributions={sources} installEvt={installEvt} />}
+          {screen === "home" && <Home msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} liveItems={liveItems} onPick={(m, pick) => setSheet({ m, pick })} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "ranking" && <Ranking msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
-          {screen === "profile" && <ProfileView msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
+          {screen === "profile" && <ProfileView progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
         </main>
       </div>
       <TabBar value={screen} onPick={go} msg={msg} openBets={openBets} />

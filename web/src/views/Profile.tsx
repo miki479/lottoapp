@@ -1,16 +1,19 @@
 import { Calendar, CalendarCheck, ChevronRight, Flame, Gem, Ghost, LogOut, Medal, Pencil, Percent, Share2, Snowflake, Sparkles, Target, Telescope, Trash2, TrainFront, TrendingUp, Trophy, Umbrella, User } from "lucide-preact";
 import type { LucideIcon } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
+import { Missions } from "../components/Missions.tsx";
 import { Sheet } from "../components/Sheet.tsx";
+import { StreakCard } from "../components/StreakCard.tsx";
+import { money } from "../lib/format.ts";
 import { LOCALES, TROPHY_IDS, TROPHY_RARITY, type Locale, type Messages, type TrophyId } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
-import type { MyStats, Profile } from "../lib/types.ts";
+import type { MyStats, Profile, Progress } from "../lib/types.ts";
 import { INTL_TAG } from "../i18n/index.ts";
 
 const TROPHY_ICON: Record<TrophyId, LucideIcon> = { first_win: Sparkles, all_rings: Target, long_shot: Telescope, rain_man: Umbrella, streak_7: CalendarCheck, train_whisperer: TrainFront, high_roller: Gem, streak_30: Medal, ghost_feed: Ghost };
 
 export function ProfileView(p: {
-  msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
+  progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
   onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => void; onDelete: () => Promise<void>; sources: { name: string; via?: string; license: string; licenseUrl: string; url: string }[];
 }) {
   const m = p.msg.profile;
@@ -40,6 +43,9 @@ export function ProfileView(p: {
             {!p.registered ? <button class="btn primary wide" onClick={p.onAuth}>{m.signIn}</button> : !p.profile?.display_name && <button class="btn secondary wide" onClick={p.onNickname}>{m.nickname.title}</button>}
           </section>
 
+          <StreakCard streak={p.profile?.streak ?? 0} freezes={p.profile?.freezes ?? 0} msg={p.msg} locale={p.locale} />
+          <Missions progress={p.progress} msg={p.msg} />
+
           <h2 style="margin-top:8px">{m.stats.title}</h2>
           <div class="bento">
             <div class="card cell big span2 row2" style="--i:0">
@@ -47,9 +53,9 @@ export function ProfileView(p: {
               <span class="detail"><Percent size={12} style="vertical-align:-1px" /> {m.stats.winRate}</span>
             </div>
             <div class="card cell span2" style="--i:1"><span class="detail">{m.stats.streak}</span><span class="v"><Flame size={22} class="ic" style="vertical-align:-3px;margin-right:6px" />{p.profile?.streak ?? 0}<small>{p.profile?.streak === 1 ? "" : ""}</small></span></div>
-            <div class="card cell span2" style="--i:2"><span class="detail">{m.stats.best}</span><span class="v num">+{nf.format(stats?.best_win ?? 0)}</span></div>
+            <div class="card cell span2" style="--i:2"><span class="detail">{m.stats.best}</span><span class="v num">+{money(stats?.best_win ?? 0, p.locale)}</span></div>
             <div class="card cell" style="--i:3"><span class="detail">{m.stats.bets}</span><span class="v num">{stats?.total ?? 0}</span></div>
-            <div class={`card cell ${net > 0 ? "won" : net < 0 ? "lost" : ""}`} style="--i:4"><span class="detail">{m.stats.net}</span><span class="v num">{net > 0 ? "+" : net < 0 ? "−" : ""}{nf.format(Math.abs(net))}</span></div>
+            <div class={`card cell ${net > 0 ? "won" : net < 0 ? "lost" : ""}`} style="--i:4"><span class="detail">{m.stats.net}</span><span class="v num">{net > 0 ? "+" : net < 0 ? "−" : ""}{money(Math.abs(net), p.locale)}</span></div>
             <div class="card cell span2" style="--i:5"><span class="detail">{m.stats.trophies}</span><span class="v num"><Trophy size={22} class="ic" style="vertical-align:-3px;margin-right:6px" />{owned}<small>/ {TROPHY_IDS.length}</small></span></div>
           </div>
           <div class="card" style="display:flex;gap:12px;align-items:center"><Snowflake size={22} style="color:var(--brand)" /><div><b>{m.freezes(p.profile?.freezes ?? 0)}</b><p class="hint">{m.freezeHint}</p></div></div>

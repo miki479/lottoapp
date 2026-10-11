@@ -44,7 +44,7 @@ try {
   check("two rings closed: no bonus yet", p.credits === 900, `(credits ${p.credits})`);
   await rpc("place_bet", { p_market: weather[0].id, p_pick: "yes", p_stake: 50 }, A.token);
   p = await credits();
-  check("third ring closes: +100 bonus (1000-150+100)", p.credits === 950, `(credits ${p.credits})`);
+  check("third ring closes: +150 bonus (1000-150+150)", p.credits === 1000, `(credits ${p.credits})`);
   const prog = (await call(`/rest/v1/daily_progress?select=*`, { token: A.token })).body[0];
   check("daily progress recorded", prog && prog.bus === 1 && prog.train === 1 && prog.weather === 1 && prog.bonus_claimed === true, JSON.stringify(prog));
   await rpc("place_bet", { p_market: bus[1].id, p_pick: "no", p_stake: 50 }, A.token);

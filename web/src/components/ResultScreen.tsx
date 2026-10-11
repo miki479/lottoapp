@@ -1,7 +1,7 @@
 import { Check, RotateCcw, Share2, X } from "lucide-preact";
 import { useEffect } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
-import { fmtOdds, question } from "../lib/format.ts";
+import { fmtOdds, money, question, resultAmount } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { MyBet } from "../lib/types.ts";
@@ -21,7 +21,7 @@ export function ResultScreen({ bet, msg, locale, remaining, onClose, onShare, on
   const st = bet.status as "won" | "lost" | "void";
   const m = bet.markets, city = cityOf(m.city_id);
   useEffect(() => { st === "won" ? haptic.success() : st === "lost" ? haptic.error() : haptic.tap(); }, [bet.id]);
-  const amount = st === "won" ? msg.result.amountWon(bet.payout - bet.stake) : st === "lost" ? msg.result.amountLost(bet.stake) : msg.result.amountVoid(bet.stake);
+  const amount = resultAmount(st, bet.stake, bet.payout, locale);
   const Icon = st === "won" ? Check : st === "lost" ? X : RotateCcw;
   const sub = st === "won" ? msg.result.subWon : st === "lost" ? msg.result.subLost : msg.result.subVoid;
   const lines = st === "void" ? [msg.bets.voidReason[m.void_reason ?? ""] ?? ""] : evidenceLines(bet, msg);
@@ -35,7 +35,7 @@ export function ResultScreen({ bet, msg, locale, remaining, onClose, onShare, on
         <p style="color:var(--text-2)">{sub}</p>
         <p class="q" style="font-weight:600">{question(m, msg, locale, cityName(city, locale), city.timezone)}</p>
         {lines.filter(Boolean).map((l) => <p class="hint" key={l}>{l}</p>)}
-        <div class="facts"><div><span class="detail">{msg.result.stake}</span><b class="num">{bet.stake}</b></div><div><span class="detail">{msg.result.odds}</span><b class="num">{fmtOdds(Number(bet.odds), locale)}</b></div></div>
+        <div class="facts"><div><span class="detail">{msg.result.stake}</span><b class="num">{money(bet.stake, locale)}</b></div><div><span class="detail">{msg.result.odds}</span><b class="num">{fmtOdds(Number(bet.odds), locale)}</b></div></div>
       </div>
       <div class="btns">
         <button class="btn primary wide" onClick={onShare}><Share2 size={18} />{msg.result.share}</button>

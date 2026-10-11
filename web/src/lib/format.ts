@@ -11,6 +11,9 @@ export interface MarketRow {
   odds_yes: number;
   odds_no: number;
   status: string;
+  flash_multiplier?: number;
+  flash_until?: string | null;
+  flash_kind?: "weather_alert" | "rush" | null;
 }
 
 /** "08:30", or "Mon 08:30" when the day differs from today in that timezone. */
@@ -61,3 +64,17 @@ export function seasonDaysLeft(now = new Date()): number {
 
 /** "3,07" in Italian, "3.07" in English. */
 export const fmtOdds = (odds: number, locale: Locale) => new Intl.NumberFormat(INTL_TAG[locale], { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(odds);
+
+/** Play money is shown with the currency of the audience ($ / € / £). It is fake: the disclaimer says so everywhere. */
+const CURRENCY: Record<Locale, string> = { it: "EUR", "en-US": "USD", "en-GB": "GBP" };
+export function currencySymbol(locale: Locale): string {
+  return new Intl.NumberFormat(INTL_TAG[locale], { style: "currency", currency: CURRENCY[locale], currencyDisplay: "narrowSymbol" }).formatToParts(0).find((p) => p.type === "currency")?.value ?? "";
+}
+export function money(n: number, locale: Locale): string {
+  return new Intl.NumberFormat(INTL_TAG[locale], { style: "currency", currency: CURRENCY[locale], currencyDisplay: "narrowSymbol", maximumFractionDigits: 0 }).format(n);
+}
+
+/** "+€40" / "−€10" / "€10" for the outcome screen, card and list. */
+export function resultAmount(st: "won" | "lost" | "void", stake: number, payout: number, locale: Locale): string {
+  return st === "won" ? `+${money(payout - stake, locale)}` : st === "lost" ? `−${money(stake, locale)}` : money(stake, locale);
+}

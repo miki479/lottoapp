@@ -1,3 +1,5 @@
+import { nextMilestone } from "../shared/rewards.ts";
+import { currencySymbol, money, resultAmount } from "../web/src/lib/format.ts";
 import { describe, expect, it } from "vitest";
 import { MESSAGES } from "../web/src/i18n/index.ts";
 import { pickCity, pickLocale, type CityInfo } from "../web/src/lib/detect.ts";
@@ -88,5 +90,23 @@ describe("market text", () => {
   it("counts minutes to closing without going negative", () => {
     expect(minutesUntil("2026-10-11T13:39:00Z", Date.parse("2026-10-11T13:00:00Z"))).toBe(39);
     expect(minutesUntil("2026-10-11T13:39:00Z", Date.parse("2026-10-11T14:00:00Z"))).toBe(0);
+  });
+});
+
+describe("play money and rewards", () => {
+  it("shows the currency of the audience", () => {
+    expect(money(1000, "en-US")).toBe("$1,000");
+    expect(money(1000, "en-GB")).toBe("£1,000");
+    expect(money(1000, "it").replace(/\s/g, " ")).toMatch(/^1\.?000\s?€$/);
+    expect(currencySymbol("it")).toBe("€");
+  });
+  it("formats outcomes with sign", () => {
+    expect(resultAmount("won", 50, 200, "en-US")).toBe("+$150");
+    expect(resultAmount("lost", 50, 0, "en-US")).toBe("−$50");
+  });
+  it("finds the next streak reward", () => {
+    expect(nextMilestone(0)).toEqual({ day: 3, bonus: 50 });
+    expect(nextMilestone(3)).toEqual({ day: 7, bonus: 150 });
+    expect(nextMilestone(30)).toBeNull();
   });
 });

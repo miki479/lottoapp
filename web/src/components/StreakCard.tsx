@@ -1,0 +1,21 @@
+import { Flame, Snowflake } from "lucide-preact";
+import { nextMilestone } from "../../../shared/rewards.ts";
+import type { Locale, Messages } from "../i18n/index.ts";
+import { money } from "../lib/format.ts";
+
+/** Current streak, the next reward on the way and the freezes in stock. Rewards are paid by the server. */
+export function StreakCard({ streak, freezes, msg, locale }: { streak: number; freezes: number; msg: Messages; locale: Locale }) {
+  const next = nextMilestone(streak);
+  const pct = next ? Math.min(100, Math.round((streak / next.day) * 100)) : 100;
+  return (
+    <section class="card streakcard" aria-label={msg.streak.title}>
+      <div class="srow">
+        <span class={`flame ${streak > 0 ? "lit" : ""}`}><Flame size={26} fill={streak > 0 ? "currentColor" : "none"} /></span>
+        <div class="stxt"><span class="detail">{msg.streak.title}</span><b class="num">{msg.streak.days(streak)}</b></div>
+        <span class="freezes"><Snowflake size={16} />{freezes}</span>
+      </div>
+      <div class="bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><i style={`width:${pct}%`} /></div>
+      <p class="hint">{next ? msg.streak.next(next.day, `+${money(next.bonus, locale)}`) : msg.streak.max}</p>
+    </section>
+  );
+}

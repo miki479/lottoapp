@@ -4,7 +4,6 @@ import { Empty } from "../components/Empty.tsx";
 import { EventCard } from "../components/EventCard.tsx";
 import { Flag } from "../components/Flag.tsx";
 import { LiveLine } from "../components/LiveLine.tsx";
-import { Missions } from "../components/Missions.tsx";
 import { TopCards, type TopItem } from "../components/TopCards.tsx";
 import { Globe, Sparkles } from "lucide-preact";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -15,7 +14,7 @@ import type { LiveDelay, Pick, Progress } from "../lib/types.ts";
 export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>;
   cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void;
-  top: TopItem[]; progress: Progress | null; liveItems: string[]; onPick: (m: MarketRow, p: Pick) => void;
+  top: TopItem[]; liveItems: string[]; onPick: (m: MarketRow, p: Pick) => void;
   attributions: { name: string; via?: string; license: string; licenseUrl: string; url: string }[]; installEvt: Event | null;
 }
 
@@ -34,7 +33,6 @@ export function Home(p: HomeProps) {
         <p>{msg.home.hero.body}</p>
       </section>
       <div class="aside">
-        <Missions progress={p.progress} msg={msg} />
         {p.top.length > 0 && (
           <section class="stack" style="gap:8px">
             <div class="sectionhead"><h2>{msg.home.top}</h2></div>

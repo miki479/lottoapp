@@ -1,6 +1,6 @@
-import { Bus, CloudRain, Clock, Star, TrainFront, Zap } from "lucide-preact";
+import { Bus, Cloud, CloudRain, Clock, Star, TrainFront, Zap } from "lucide-preact";
 import { cityName, cityOf } from "../lib/cities.ts";
-import { countdown, fmtOdds, per10, question, type MarketRow } from "../lib/format.ts";
+import { countdown, fmtOdds, money, per10, question, type MarketRow } from "../lib/format.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { LiveDelay, Pick } from "../lib/types.ts";
 import { Flag } from "./Flag.tsx";
@@ -20,10 +20,14 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
   const left = Date.parse(m.closes_at) - now;
   const isRain = m.kind === "rain_at";
   const who = isRain ? cityName(city, locale) : `${String(m.params.routeName ?? "")} · ${cityName(city, locale)}`;
+  const flashOn = (m.flash_multiplier ?? 1) > 1 && !!m.flash_until && Date.parse(m.flash_until) > now;
   const warn = live && live.delay_sec > Number(m.params.thresholdSec ?? 180) / 2;
   return (
-    <article class={`card event ${m.category} ${p.top ? "is-top" : ""}`} style={`--i:${Math.min(p.index, 10)}`}>
-      {(p.top || left < 300_000) && <div class="badges">{p.top && <span class="badge-top"><Star size={13} fill="currentColor" />{msg.card.topOdds}</span>}{left < 300_000 && <span class="badge-hot"><Zap size={13} fill="currentColor" />{msg.card.hot}</span>}</div>}
+    <article class={`card event ${m.category} ${p.top ? "is-top" : ""} ${flashOn ? "is-flash" : ""}`} style={`--i:${Math.min(p.index, 10)}`}>
+      {(p.top || flashOn || left < 300_000) && <div class="badges">{flashOn && <span class="badge-flash"><Zap size={13} fill="currentColor" />FLASH ×{m.flash_multiplier} · {countdown(Date.parse(m.flash_until!) - now)}</span>}{p.top && <span class="badge-top"><Star size={13} fill="currentColor" />{msg.card.topOdds}</span>}{left < 300_000 && <span class="badge-hot"><Zap size={13} fill="currentColor" />{msg.card.hot}</span>}</div>}
+      <div class={`scene ${m.category}`} aria-hidden="true">
+        {m.category === "weather" ? <><Cloud size={20} class="cloud" />{[0, 1, 2, 3, 4, 5].map((i) => <i key={i} class="drop" style={`left:${14 + i * 15}%;animation-delay:${-i * 170}ms`} />)}</> : <><span class="road" /><span class="rider"><Kind size={16} /></span></>}
+      </div>
       <div class="meta">
         <span class="kind"><Kind size={16} /></span>
         <span class="detail">{who}</span>
@@ -33,8 +37,16 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
       <p class="q">{question(m, msg, locale, cityName(city, locale), city.timezone, new Date(now))}</p>
       {live && <span class={`live ${warn ? "warn" : ""}`}><i class="dot" />{liveLabel(msg, live)}</span>}
       <div class="actions2">
-        <button class="opt" onClick={() => p.onPick(m, "yes")}><span class="l">{isRain ? msg.card.yes : msg.card.late}</span><b>{fmtOdds(Number(m.odds_yes), locale)}</b><span class="s">{msg.card.per10(per10(Number(m.odds_yes)))}</span></button>
-        <button class="opt" onClick={() => p.onPick(m, "no")}><span class="l">{isRain ? msg.card.no : msg.card.onTime}</span><b>{fmtOdds(Number(m.odds_no), locale)}</b><span class="s">{msg.card.per10(per10(Number(m.odds_no)))}</span></button>
+        {(["yes", "no"] as const).map((k) => {
+          const o = Number(k === "yes" ? m.odds_yes : m.odds_no), boosted = k === "yes" && flashOn;
+          return (
+            <button key={k} class={`opt ${k} ${boosted ? "boosted" : ""}`} onClick={() => p.onPick(m, k)}>
+              <span class="l">{k === "yes" ? (isRain ? msg.card.yes : msg.card.late) : (isRain ? msg.card.no : msg.card.onTime)}</span>
+              <b class="num">{fmtOdds(o, locale)}</b>
+              <span class="s num">{money(10, locale)} → {money(per10(o), locale)}</span>
+            </button>
+          );
+        })}
       </div>
     </article>
   );

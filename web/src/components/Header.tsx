@@ -1,9 +1,9 @@
-import { Clock3, Coins, Languages } from "lucide-preact";
+import { Clock3, Languages } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { LOCALES, type Locale } from "../i18n/index.ts";
 
 /** Sticky top bar: it gains a light blur and a hairline once the page scrolls under it. */
-export function Header({ locale, onLocale, wallet, languageLabel, creditsLabel, onHome }: { locale: Locale; onLocale: (l: Locale) => void; wallet: string; languageLabel: string; creditsLabel: string; onHome: () => void }) {
+export function Header({ locale, onLocale, wallet, coin, languageLabel, creditsLabel, onHome }: { locale: Locale; onLocale: (l: Locale) => void; wallet: string; coin: string; languageLabel: string; creditsLabel: string; onHome: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -34,7 +34,7 @@ export function Header({ locale, onLocale, wallet, languageLabel, creditsLabel, 
             </div>
           )}
         </div>
-        <div class="wallet" aria-live="polite" title={creditsLabel}><Coins size={18} /><span class="num">{wallet}</span></div>
+        <div class="wallet" aria-live="polite" title={creditsLabel}><i class="coin" aria-hidden="true">{coin}</i><span class="num">{wallet}</span></div>
       </div>
     </header>
   );

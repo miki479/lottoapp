@@ -1,6 +1,7 @@
 /* Component styles. Every value comes from tokens.css. */
 *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { background: var(--bg); }
+html { background: var(--bg); touch-action: manipulation; }
+input, select, textarea { font-size: 16px; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 400 var(--fs-body)/1.5 var(--font); -webkit-text-size-adjust: 100%; font-variant-numeric: tabular-nums; overflow-x: hidden; }
 button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; }
 button:disabled { cursor: not-allowed; }
@@ -303,3 +304,45 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .missions { background: linear-gradient(135deg, rgba(107,91,255,.18), rgba(255,95,162,.12)); border-color: rgba(107,91,255,.35); }
 .wallet svg { color: var(--star); }
 .sectionhead h2::after { content: ""; display: inline-block; width: 10px; height: 10px; margin-left: 8px; background: var(--star); clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); vertical-align: 2px; }
+
+/* ==========================================================================
+   Play: flash events, bet-slip number pop, moving scenes on the cards, streak card
+   ========================================================================== */
+.liveline { padding-left: 4px; overflow: visible; } .liveline .dot { flex: none; }
+.coin { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 800; font-size: 13px; background: var(--star); color: #3a2a00; }
+.wallet svg { display: none; }
+
+/* odds buttons: one-line label, big tabular number, small payout line */
+.opt { min-height: 72px; gap: 1px; }
+.opt .l { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; text-transform: uppercase; letter-spacing: var(--ls-detail); font-weight: 700; }
+.opt b { font-size: 26px; font-variant-numeric: tabular-nums; }
+.opt .s { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.opt.boosted { box-shadow: 0 0 0 1.5px var(--star) inset; animation: glow 1.8s ease-in-out infinite; } .opt.boosted b { color: var(--star); }
+@keyframes glow { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.25); } }
+.badge-flash { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 800; letter-spacing: .04em; background: var(--grad-hero); color: #fff; font-variant-numeric: tabular-nums; }
+.badge-flash svg { animation: twinkle 1.2s ease-in-out infinite; }
+.event.is-flash { border-color: var(--c-pop); }
+
+/* bet slip: the number pops and warms up as the stake grows */
+.pop { display: inline-block; animation: popnum 220ms var(--ease); font-variant-numeric: tabular-nums; transition: color 200ms; }
+@keyframes popnum { 0% { transform: scale(.86); opacity: .5; } 60% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+.heat { height: 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; margin-bottom: var(--space-2); } .heat i { display: block; height: 100%; border-radius: 6px; transition: width 200ms var(--ease), background 200ms; }
+
+/* scenes: a dashed road/rail that keeps moving, and rain that keeps falling */
+.scene { position: relative; height: 26px; margin: -2px 0 -4px; overflow: hidden; color: var(--cat); }
+.scene .road { position: absolute; left: 0; right: 0; bottom: 5px; height: 2px; background: repeating-linear-gradient(90deg, currentColor 0 10px, transparent 10px 20px); opacity: .55; animation: road 1.1s linear infinite; }
+.scene.train .road { height: 3px; background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 14px); }
+.scene .rider { position: absolute; bottom: 7px; left: -24px; animation: ride 5.5s linear infinite; display: grid; }
+.scene.train .rider { animation-duration: 4s; }
+.scene.weather .cloud { position: absolute; top: 0; left: 10%; animation: drift 6s ease-in-out infinite alternate; }
+.scene .drop { position: absolute; top: 14px; width: 2px; height: 7px; border-radius: 2px; background: currentColor; opacity: 0; animation: fall 900ms linear infinite; }
+@keyframes road { to { background-position: -20px 0; } }
+@keyframes ride { from { transform: translateX(0); } to { transform: translateX(calc(100cqw + 48px)); } }
+@keyframes drift { to { transform: translateX(40px); } }
+.event { container-type: inline-size; }
+
+.streakcard { display: flex; flex-direction: column; gap: var(--space-3); background: linear-gradient(135deg, rgba(255,163,26,.2), rgba(255,95,162,.14)); border-color: rgba(255,163,26,.4); }
+.streakcard .srow { display: flex; align-items: center; gap: 12px; } .streakcard .stxt { flex: 1; display: flex; flex-direction: column; } .streakcard .stxt b { font-size: var(--fs-title); letter-spacing: var(--ls-title); }
+.streakcard .flame { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); } .streakcard .flame.lit { background: var(--c-bus-soft); color: var(--c-bus); animation: glow 1.8s ease-in-out infinite; }
+.streakcard .freezes { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: var(--c-train); }
+.streakcard .bar { height: 8px; border-radius: 8px; background: var(--surface-2); overflow: hidden; } .streakcard .bar i { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--c-bus), var(--c-pop)); transition: width 400ms var(--ease); }

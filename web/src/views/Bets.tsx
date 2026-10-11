@@ -3,7 +3,7 @@ import { useState } from "preact/hooks";
 import { Empty } from "../components/Empty.tsx";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, cityOf } from "../lib/cities.ts";
-import { countdown, fmtOdds, question } from "../lib/format.ts";
+import { countdown, fmtOdds, money, question } from "../lib/format.ts";
 import type { MyBet } from "../lib/types.ts";
 
 export function Bets({ bets, msg, locale, now, onOpen, onHome }: { bets: MyBet[]; msg: Messages; locale: Locale; now: number; onOpen: (b: MyBet) => void; onHome: () => void }) {
@@ -26,13 +26,13 @@ export function Bets({ bets, msg, locale, now, onOpen, onHome }: { bets: MyBet[]
             <button class="card bet pressable" key={b.id} style={`--i:${Math.min(i, 10)}; text-align:left`} onClick={() => (st !== "open" ? onOpen(b) : undefined)} disabled={st === "open"}>
               <div class="row1">
                 <span class={`pill ${st === "won" ? "won" : st === "lost" ? "lost" : ""}`}><Icon size={14} strokeWidth={2.6} />{label}</span>
-                {st === "won" && <span class="amt won num">+{b.payout - b.stake}</span>}
-                {st === "lost" && <span class="amt lost num">−{b.stake}</span>}
-                {st === "void" && <span class="amt num">{b.stake}</span>}
+                {st === "won" && <span class="amt won num">+{money(b.payout - b.stake, locale)}</span>}
+                {st === "lost" && <span class="amt lost num">−{money(b.stake, locale)}</span>}
+                {st === "void" && <span class="amt num">{money(b.stake, locale)}</span>}
                 {st === "open" && <span class="detail">{msg.bets.settles} · {countdown(Date.parse(m.target_at) - now)}</span>}
               </div>
               <p class="q">{question(m, msg, locale, cityName(city, locale), city.timezone, new Date(now))}</p>
-              <div class="info"><span>{msg.bets.yourPick(b.pick === "yes")}</span><span class="num">{b.stake} × {fmtOdds(Number(b.odds), locale)}</span></div>
+              <div class="info"><span>{msg.bets.yourPick(b.pick === "yes")}</span><span class="num">{money(b.stake, locale)} × {fmtOdds(Number(b.odds), locale)}</span></div>
             </button>
           );
         })}

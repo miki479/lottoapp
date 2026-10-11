@@ -1,5 +1,5 @@
 import { TROPHY_IDS, type Locale, type Messages, type TrophyId } from "../i18n/index.ts";
-import { fmtOdds, question } from "./format.ts";
+import { fmtOdds, money, question, resultAmount } from "./format.ts";
 import { cityName, cityOf } from "./cities.ts";
 import type { MyBet, MyStats } from "./types.ts";
 import { evidenceLines } from "../components/ResultScreen.tsx";
@@ -40,14 +40,14 @@ export async function makeResultCard(bet: MyBet, msg: Messages, locale: Locale):
   g.stroke();
   g.textAlign = "center"; g.fillStyle = C.muted; g.font = F(700, 30); g.fillText(msg.result[st].toUpperCase(), 540, 548);
   g.fillStyle = fg; g.font = F(800, 200);
-  const amount = st === "won" ? msg.result.amountWon(bet.payout - bet.stake) : st === "lost" ? msg.result.amountLost(bet.stake) : msg.result.amountVoid(bet.stake);
+  const amount = resultAmount(st, bet.stake, bet.payout, locale);
   g.fillText(amount, 540, 730);
   const m = bet.markets, city = cityOf(m.city_id);
   g.fillStyle = C.text; g.font = F(600, 42); wrap(g, question(m, msg, locale, cityName(city, locale), city.timezone), 540, 840, 880, 56, 4);
   g.fillStyle = C.text2; g.font = F(600, 34);
   evidenceLines(bet, msg).forEach((l, i) => g.fillText(l, 540, 1080 + i * 46));
   g.fillStyle = C.surface; g.beginPath(); g.roundRect(72, 1170, 936, 96, 24); g.fill();
-  g.fillStyle = C.text2; g.font = F(600, 30); g.textAlign = "left"; g.fillText(`${msg.result.stake}  ${bet.stake}`, 112, 1232); g.textAlign = "right"; g.fillText(`${msg.result.odds}  ${fmtOdds(Number(bet.odds), locale)}`, 968, 1232);
+  g.fillStyle = C.text2; g.font = F(600, 30); g.textAlign = "left"; g.fillText(`${msg.result.stake}  ${money(bet.stake, locale)}`, 112, 1232); g.textAlign = "right"; g.fillText(`${msg.result.odds}  ${fmtOdds(Number(bet.odds), locale)}`, 968, 1232);
   g.textAlign = "center"; g.fillStyle = C.muted; g.font = F(600, 26); g.fillText(`${msg.disclaimerShort}`, 540, 1312);
   return toBlob(c);
 }
