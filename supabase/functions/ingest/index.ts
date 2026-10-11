@@ -88,7 +88,7 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
   if (!msg.entity?.length) throw new Error("empty feed");
 
   let schedule: ScheduleLookup | undefined;
-  if (feed.kind === "vehicle_positions") {
+  if (feed.kind === "vehicle_positions" || feed.kind === "trip_updates_times") {
     const { data } = await sb.from("trip_schedule").select("trip_id,stop_sequence,stop_id,scheduled_time").eq("feed_id", feed.id).in("trip_id", [...trips]);
     const map = new Map((data ?? []).map((r) => [`${r.trip_id}|${r.stop_sequence}`, { stopId: r.stop_id as string, time: r.scheduled_time as string }]));
     schedule = (trip, seq) => map.get(`${trip}|${seq}`) ?? null;

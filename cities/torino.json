@@ -1,0 +1,76 @@
+{
+  "id": "torino",
+  "country": "IT",
+  "name": {
+    "it": "Torino",
+    "en-US": "Turin",
+    "en-GB": "Turin",
+    "ja": "トリノ"
+  },
+  "timezone": "Europe/Rome",
+  "defaultLocale": "it",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 45.0703,
+    "lon": 7.6869
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": false
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "gtt-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_times",
+      "url": "https://percorsieorari.gtt.to.it/das_gtfsrt/trip_update.aspx",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        3
+      ],
+      "licenseVerified": false,
+      "attribution": {
+        "name": "GTT S.p.A. / Comune di Torino (open data)",
+        "license": "To be confirmed from the real-time dataset page on aperto.comune.torino.it (the static GTFS is listed as CC BY 4.0 by the OSM wiki, secondary source)",
+        "licenseUrl": "https://aperto.comune.torino.it/id/dataset/feed-gtfs-real-time-trasporti-gtt",
+        "url": "https://aperto.comune.torino.it/"
+      },
+      "staticGtfsUrl": "https://www.gtt.to.it/open_data/gtt_gtfs.zip",
+      "note": "DISABLED until the licence of the real-time dataset is read (the portal answers 403 from this environment). The feed has predicted times only, so delays come from the static timetable (kind trip_updates_times). Set licenseVerified true once confirmed."
+    },
+    {
+      "id": "open-meteo-torino",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

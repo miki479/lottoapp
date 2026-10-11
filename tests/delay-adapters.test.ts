@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { delayFromPosition, delayFromTripUpdate } from "../shared/delay.ts";
-import { tripUpdatesAdapter, vehiclePositionsAdapter } from "../shared/adapters/gtfsrt.ts";
+import { tripUpdatesAdapter, tripUpdatesTimesAdapter, vehiclePositionsAdapter } from "../shared/adapters/gtfsrt.ts";
 import { openMeteoAdapter } from "../shared/adapters/openmeteo.ts";
 import { localDayStart, parseGtfsTime } from "../shared/time.ts";
 
@@ -69,6 +69,25 @@ describe("gtfs-rt adapters", () => {
       ctx,
     );
     expect(obs).toEqual([{ feedId: "toei", tripId: "K1", stopId: "A", routeId: "R", observedAt: jst(8, 30), delaySec: 180, predictedAt: jst(8, 33) }]);
+  });
+});
+
+describe("trip updates with times only", () => {
+  const sched = (trip: string, seq: number) => (trip === "T1" && seq === 3 ? { stopId: "S3", time: "08:30:00" } : null);
+  const base = { feedId: "gtt", timezone: tz, fetchedAt: jst(8, 20), schedule: sched };
+  it("computes the delay against the timetable of the same stop sequence", () => {
+    const obs = tripUpdatesTimesAdapter(
+      { header: { timestamp: jst(8, 20) }, entity: [{ tripUpdate: { trip: { tripId: "T1", routeId: "R" }, stopTimeUpdate: [{ stopSequence: 3, stopId: "S3", arrival: { time: jst(8, 34) } }] } }] },
+      base,
+    );
+    expect(obs).toEqual([{ feedId: "gtt", tripId: "T1", stopId: "S3", stopSequence: 3, routeId: "R", observedAt: jst(8, 20), delaySec: 240, predictedAt: jst(8, 34) }]);
+  });
+  it("skips unknown stops, re-routed stops and missing times", () => {
+    const upd = (stu: object) => ({ entity: [{ tripUpdate: { trip: { tripId: "T1" }, stopTimeUpdate: [stu] } }] });
+    expect(tripUpdatesTimesAdapter(upd({ stopSequence: 9, arrival: { time: jst(8, 34) } }), base)).toEqual([]);
+    expect(tripUpdatesTimesAdapter(upd({ stopSequence: 3, stopId: "OTHER", arrival: { time: jst(8, 34) } }), base)).toEqual([]);
+    expect(tripUpdatesTimesAdapter(upd({ stopSequence: 3, arrival: { delay: 120 } }), base)).toEqual([]);
+    expect(tripUpdatesTimesAdapter(upd({ stopSequence: 3, arrival: { time: jst(8, 34) } }), { ...base, schedule: undefined })).toEqual([]);
   });
 });
 

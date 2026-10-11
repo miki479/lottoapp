@@ -13,7 +13,7 @@ export interface FeedConfig {
   category: Category;
   /** Selects the adapter, e.g. "gtfs-rt", "open-meteo". */
   type: string;
-  /** For gtfs-rt: "vehicle_positions" | "trip_updates". */
+  /** For gtfs-rt: "vehicle_positions" | "trip_updates" (explicit delays) | "trip_updates_times" (predicted times only; delay computed against the static timetable). */
   kind?: string;
   url: string;
   staticGtfsUrl?: string;

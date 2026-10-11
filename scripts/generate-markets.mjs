@@ -101,7 +101,7 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget) {
     const key = historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone);
     const priced = buildDelayMarket({ ...{ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: trip.trip_id, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold }, history: hist(key) });
     markets.push(priced);
-    if (feed.kind === "vehicle_positions") {
+    if (feed.kind === "vehicle_positions" || feed.kind === "trip_updates_times") {
       const sd = `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
       for (const s of stops) schedule.push({ feed_id: feed.id, trip_id: trip.trip_id, stop_sequence: s.seq, stop_id: s.stopId, scheduled_time: s.time, service_date: sd });
     }

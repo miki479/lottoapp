@@ -49,3 +49,32 @@ export const tripUpdatesAdapter: DelayAdapter = (feed, ctx) => {
   }
   return out;
 };
+
+/**
+ * TripUpdates that carry only predicted TIMES, no delay field (GTT Torino, many US/Nordic feeds):
+ * delay = predicted time - scheduled time of the same stop_sequence (from the static timetable).
+ * Like every TripUpdate this is a forecast, so `predictedAt` is kept and the resolver's freshness rule applies.
+ */
+export const tripUpdatesTimesAdapter: DelayAdapter = (feed, ctx) => {
+  const out: DelayObservation[] = [];
+  if (!ctx.schedule) return out;
+  const headerTs = num(feed.header?.timestamp) ?? ctx.fetchedAt;
+  for (const e of feed.entity ?? []) {
+    const tu = e.tripUpdate;
+    const tripId = tu?.trip?.tripId;
+    if (!tripId) continue;
+    for (const stu of tu?.stopTimeUpdate ?? []) {
+      const seq = stu.stopSequence;
+      const predictedAt = num(stu.arrival?.time) ?? num(stu.departure?.time);
+      if (seq == null || predictedAt === null) continue;
+      const sched = ctx.schedule(tripId, seq);
+      if (!sched) continue;
+      // A reported stop_id that disagrees with the timetable means the trip was re-routed: skip.
+      if (stu.stopId && stu.stopId !== sched.stopId) continue;
+      const delaySec = delayFromPosition(predictedAt, sched.time, ctx.timezone);
+      if (delaySec === null) continue;
+      out.push({ feedId: ctx.feedId, tripId, stopId: sched.stopId, stopSequence: seq, routeId: tu?.trip?.routeId ?? "", observedAt: headerTs, delaySec, predictedAt });
+    }
+  }
+  return out;
+};
