@@ -44,7 +44,7 @@ Deno.serve(safe(async (req) => {
         const list = await strikeList();
         if (list) { strike = { present: list.some((s) => s.guid === event.guid && s.date === event.date) }; await sb.from("feed_health").upsert({ feed_id: "mit-scioperi", last_ok_at: new Date().toISOString(), last_error: null }); }
       } else if (event.kind === "quake_m") {
-        quake = await usgsWindow(event.closesAt, event.targetAt, event.minMag);
+        quake = await usgsWindow(event.closesAt, event.targetAt, event.minMag, event.bbox);
         if (quake) await sb.from("feed_health").upsert({ feed_id: "usgs", last_ok_at: new Date().toISOString(), last_error: null });
       } else if (event.kind === "metric_gt") {
         const hour = new Date(Math.floor(event.targetAt / 3600) * 3600 * 1000).toISOString();
@@ -94,9 +94,10 @@ Deno.serve(safe(async (req) => {
 }));
 
 /** Earthquakes of magnitude >= minMag between two instants, from the USGS FDSN service (null if it cannot be read). */
-async function usgsWindow(from: number, to: number, minMag: number): Promise<QuakeReading | null> {
+async function usgsWindow(from: number, to: number, minMag: number, bbox?: [number, number, number, number]): Promise<QuakeReading | null> {
   try {
     const q = new URLSearchParams({ format: "geojson", starttime: new Date(from * 1000).toISOString(), endtime: new Date(to * 1000).toISOString(), minmagnitude: String(minMag), orderby: "magnitude", limit: "20" });
+    if (bbox) { q.set("minlatitude", String(bbox[0])); q.set("maxlatitude", String(bbox[1])); q.set("minlongitude", String(bbox[2])); q.set("maxlongitude", String(bbox[3])); }
     const res = await fetch(`https://earthquake.usgs.gov/fdsnws/event/1/query?${q}`, { headers: { "User-Agent": `LateLotto/0.1 (play-money game; contact: ${Deno.env.get("CONTACT_EMAIL") ?? "unset"})` }, signal: AbortSignal.timeout(20_000) });
     if (!res.ok) return null;
     const j = await res.json() as { features?: { properties?: { mag?: number } }[] };

@@ -27,10 +27,12 @@ export function Home(p: HomeProps) {
   const tiles = (["bus", "train", "weather", "nature", "traffic"] as CatId[]).map((id) => ({ id, label: msg.tabs[id], count: p.counts[id], disabled: id === "traffic" }));
   // Weather has sub-pills (rain, temperature, wind…) so the category row stays short; only the kinds that exist today are shown.
   const [wxSel, setWx] = useState<string>("all");
-  const wxKey = (m: MarketRow) => (m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : "");
-  const wxKinds = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi"].filter((k) => p.list.some((m) => wxKey(m) === k)) : [];
+  const wxKey = (m: MarketRow) => (m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : m.kind === "quake_m" ? String(m.params.region ?? "world") : "");
+  const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi"] : p.cat === "nature" ? ["world", "jp", "it", "ca", "tr"] : [];
+  const wxKinds = order.filter((k) => p.list.some((m) => wxKey(m) === k));
   const wx = wxKinds.includes(wxSel) ? wxSel : "all";
-  const shown = p.cat === "weather" && wx !== "all" ? p.list.filter((m) => wxKey(m) === wx) : p.list;
+  const picked = wx !== "all" ? p.list.filter((m) => wxKey(m) === wx) : p.list;
+  const shown = p.cat === "nature" ? [...picked].sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at) || Number(a.params.minMag) - Number(b.params.minMag)) : picked;
   const topId = shown.reduce<MarketRow | null>((b, m) => (!b || Number(m.odds_yes) > Number(b.odds_yes) ? m : b), null)?.id;
   const cities = CITIES.filter((c) => enabledCategories(c).length > 0);
   return (
@@ -48,7 +50,6 @@ export function Home(p: HomeProps) {
             <TopCards items={p.top} />
           </section>
         )}
-        {p.nearNode}
       </div>
       <div class="main stack">
         {p.strikes.length > 0 && (
@@ -60,7 +61,7 @@ export function Home(p: HomeProps) {
         )}
         <div class="sectionhead"><h2>{msg.home.events}</h2></div>
         <CatChips tiles={tiles} value={p.cat} onPick={p.onCat} />
-        {wxKinds.length > 1 && <div class="wxpills" role="tablist">{["all", ...wxKinds].map((k) => <button key={k} role="tab" aria-selected={wx === k} class={wx === k ? "on" : ""} onClick={() => setWx(k)}>{k === "all" ? msg.wx.all : k === "rain" ? msg.wx.rain : msg.wx.names[k as "temp"]}</button>)}</div>}
+        {wxKinds.length > 1 && <div class="wxpills" role="tablist">{["all", ...wxKinds].map((k) => <button key={k} role="tab" aria-selected={wx === k} class={wx === k ? "on" : ""} onClick={() => setWx(k)}>{k === "all" ? msg.wx.all : k === "rain" ? msg.wx.rain : k === "world" ? msg.wx.world : msg.wx.regions[k] ?? msg.wx.names[k as "temp"]}</button>)}</div>}
         <div class="chiprow" role="tablist">
           <button class={`chip ${p.filter === "world" ? "on" : ""}`} role="tab" aria-selected={p.filter === "world"} onClick={() => p.onFilter("world")}><Globe size={16} />{msg.world}</button>
           {cities.filter((c) => FEATURED_CITY_IDS.includes(c.id)).map((c) => <button key={c.id} class={`chip ${p.filter === c.id ? "on" : ""}`} role="tab" aria-selected={p.filter === c.id} onClick={() => p.onFilter(c.id)}><Flag cc={c.country} size={13} />{cityName(c, p.locale)}</button>)}
@@ -76,6 +77,7 @@ export function Home(p: HomeProps) {
           {p.markets !== null && p.cat !== "traffic" && shown.length === 0 && !(p.cat === "train" && p.filter === "tokyo") && <div style="grid-column:1/-1"><Empty icon={CloudRain} title={msg.home.empty.title} body={msg.home.empty.body} cta={p.filter !== "world" ? msg.home.empty.cta : undefined} onCta={() => p.onFilter("world")} /></div>}
           {shown.slice(0, 40).map((m, i) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} live={p.live[m.id]} index={i} mm={p.outlook[m.id]} hasLadder={(p.ladders[m.id]?.length ?? 0) > 0} top={m.id === topId && shown.length > 3} showCity={p.filter === "world"} onPick={p.onPick} />)}
         </div>
+        {p.nearNode}
         <footer class="legal">
           <p><strong style="color:var(--text)">{msg.disclaimerShort}</strong> {msg.disclaimerFull}</p>
           <details style="margin-top:8px"><summary>{msg.attributionTitle}</summary>

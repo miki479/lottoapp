@@ -33,8 +33,10 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
   if (m.kind === "strike_on") return msg.question.strike({ date: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone }).format(new Date(m.target_at)), who: [m.params.sector, m.params.unions].filter(Boolean).join(" · "), hours: String(m.params.hours ?? "") });
   if (m.kind === "quake_m") {
     // The window is global, so it is shown in the player's own time zone.
-    const from = formatWhen(m.closes_at, locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now), to = formatWhen(m.target_at, locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now);
-    return msg.question.quake({ mag: Number(m.params.minMag).toFixed(1), from, to });
+    // A regional question is told in that region's local time; a worldwide one in the player's own.
+    const regionKey = m.params.region as string | undefined;
+    const tz = regionKey ? String(m.params.tz ?? timeZone) : Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return msg.question.quake({ mag: Number(m.params.minMag).toFixed(1), from: formatWhen(m.closes_at, locale, tz, now), to: formatWhen(m.target_at, locale, tz, now), region: regionKey ? msg.wx.regions[regionKey] ?? regionKey : undefined });
   }
   const p = m.params;
   const q = {

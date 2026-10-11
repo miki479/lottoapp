@@ -1,5 +1,5 @@
 import { Car } from "lucide-preact";
-import { BusSide, CloudRainGhost, TrainSide, TreeGhost } from "./Vehicles.tsx";
+import { BusGhost, CloudRainGhost, TrainGhost, TreeGhost } from "./Vehicles.tsx";
 import { useState } from "preact/hooks";
 
 export type CatId = "bus" | "train" | "weather" | "nature" | "traffic";
@@ -7,8 +7,8 @@ export interface CatTile { id: CatId; label: string; count: number; disabled?: b
 
 /** The chip's picture: big, see-through, filling most of the chip. */
 function Art({ id }: { id: CatId }) {
-  if (id === "bus") return <BusSide size={44} class="gh gh-veh" />;
-  if (id === "train") return <TrainSide size={32} class="gh gh-veh" />;
+  if (id === "bus") return <BusGhost />;
+  if (id === "train") return <TrainGhost />;
   if (id === "weather") return <CloudRainGhost />;
   if (id === "nature") return <TreeGhost />;
   return <Car size={44} strokeWidth={1.6} class="gh" />;

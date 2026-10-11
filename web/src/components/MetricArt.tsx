@@ -27,6 +27,11 @@ function QuakeScene({ hint, label, mag }: { hint?: "yes" | "no" | null; label: s
         <defs><linearGradient id="qsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a3a8a" /><stop offset=".45" stop-color="#e2557c" /><stop offset=".8" stop-color="#ffae57" /><stop offset="1" stop-color="#ffe29a" /></linearGradient></defs>
         <rect width="320" height="110" fill="url(#qsky)" />
         <circle cx="206" cy="92" r="28" fill="#fff1b8" opacity=".95" />
+        <g class="birds">
+          {[[0, 20, 9, 0], [1, 34, 12, 2.2], [2, 14, 7, 4.5], [3, 28, 10, 6.4], [4, 40, 8, 8.8]].map(([k, y, d, delay]) => (
+            <g key={k} class="bird" style={`--y:${y}px;--d:${d}s;--w:${delay}s`}><path d="M0 0q3-4 6 0q3-4 6 0" fill="none" stroke="#1a1424" stroke-width="1.300" stroke-linecap="round" /></g>
+          ))}
+        </g>
         <g class="towers">
           {TOWERS.map(([x, w, h], k) => (
             <g key={x} class="tw" style={`--a:${(0.8 + (k % 4) * 0.35).toFixed(2)};--o:${(-k * 0.11).toFixed(2)}s`}>
@@ -48,7 +53,7 @@ const ICON = { temp: Thermometer, wind: Wind, snow: Snowflake, uv: Sun, aqi: Clo
 /** Small illustration for non-rain weather questions and earthquakes: an icon, plus what the forecast says. */
 export function MetricArt({ m, msg, hint }: { m: MarketRow; msg: Messages; hint?: "yes" | "no" | null }) {
   if (m.kind === "strike_on") return <div class={`metricart strike ${hint ?? ""}`} aria-hidden="true"><Megaphone size={30} /><b>{msg.strikes.art}</b>{typeof m.params.hours === "string" && m.params.hours && <span class="num">{String(m.params.hours).slice(0, 40)}</span>}</div>;
-  if (m.kind === "quake_m") return <QuakeScene hint={hint} label={msg.wx.quakeArt} mag={Number(m.params.minMag ?? 5)} />;
+  if (m.kind === "quake_m") return <QuakeScene hint={hint} label={m.params.region ? msg.wx.regions[String(m.params.region)] ?? msg.wx.quakeArt : msg.wx.quakeArt} mag={Number(m.params.minMag ?? 5)} />;
   const metric = (m.params.metric as keyof typeof ICON) ?? "temp";
   const Icon = ICON[metric] ?? Thermometer;
   const f = m.params.forecast;

@@ -461,10 +461,9 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 
 /* ---------- chips: big see-through pictures, one short scene on hover or tap, nothing leaves the chip ---------- */
 .cc { position: relative; overflow: hidden; perspective: none; z-index: auto; min-height: 84px; }
-.cc .ghost { position: absolute; inset: 5px; display: grid; place-items: center; pointer-events: none; }
-.cc .gh { width: 100%; height: 100%; opacity: .42; transition: opacity .3s; overflow: visible; }
-.cc.on .gh, .cc:not(:disabled):hover .gh { opacity: .62; }
-.cc .gh-veh { width: auto; height: auto; max-width: 98%; max-height: 66%; }
+.cc .ghost { position: absolute; inset: 1px 1px 14px; display: grid; place-items: center; pointer-events: none; }
+.cc .gh { width: 100%; height: 100%; opacity: .55; transition: opacity .3s; overflow: visible; }
+.cc.on .gh, .cc:not(:disabled):hover .gh { opacity: .78; }
 .cc.traffic .gh { width: 70%; opacity: .25; }
 .cc .lbl { position: relative; z-index: 1; margin-top: auto; font-weight: 800; text-shadow: 0 0 6px var(--surface), 0 0 2px var(--surface); }
 .cc em { z-index: 1; }
@@ -479,8 +478,8 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .gh-drops path:nth-child(2n) { animation-delay: .15s !important; } .gh-drops path:nth-child(3n) { animation-delay: .3s !important; }
 @media (hover: hover) { .cc.nature:not(:disabled):hover .gh-sway { animation: sway 1.8s ease-in-out 1 both; } .cc.nature:not(:disabled):hover .gh-leaves ellipse { animation: leaf 2s ease-in 1 both; } }
 .cc.pop.nature .gh-sway { animation: sway 1.8s ease-in-out 1 both; } .cc.pop.nature .gh-leaves ellipse { animation: leaf 2s ease-in 1 both; }
-.gh-sway { transform-origin: 50% 100%; }
-.gh-leaves .l2 { animation-delay: .15s !important; } .gh-leaves .l3 { animation-delay: .3s !important; } .gh-leaves .l4 { animation-delay: .45s !important; } .gh-leaves .l5 { animation-delay: .6s !important; }
+.gh-sway { transform-origin: 30% 100%; } .gh-sway2 { transform-origin: 70% 100%; animation-delay: .2s !important; }
+.gh-leaves .l6 { animation-delay: .75s !important; } .gh-leaves .l7 { animation-delay: .9s !important; } .gh-leaves .l2 { animation-delay: .15s !important; } .gh-leaves .l3 { animation-delay: .3s !important; } .gh-leaves .l4 { animation-delay: .45s !important; } .gh-leaves .l5 { animation-delay: .6s !important; }
 @keyframes drive { 0% { transform: translateX(0); } 42% { transform: translateX(130%); } 43% { transform: translateX(-130%); } 100% { transform: translateX(0); } }
 @keyframes fall { 0% { opacity: 0; transform: translateY(-6px); } 25% { opacity: .95; } 100% { opacity: 0; transform: translateY(12px); } }
 @keyframes flash { 0%, 100% { opacity: 0; } 15% { opacity: .95; } 30% { opacity: .1; } 45% { opacity: .9; } 70% { opacity: 0; } }
@@ -631,3 +630,14 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .crowdscale summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; color: var(--text-2); font-size: 14px; }
 .crowdscale ul { padding-left: 18px; font-size: 13px; color: var(--text-2); display: grid; gap: 4px; }
 .metricart.strike svg { color: #d8423a; }
+
+/* birds crossing the sunset: the scene is never static */
+.quakescene .bird { transform-box: fill-box; opacity: .8; animation: birdfly var(--d) linear var(--w) infinite; transform: translate(-20px, var(--y)); }
+.quakescene .bird path { transform-box: fill-box; transform-origin: 50% 100%; animation: flap .5s ease-in-out infinite alternate; }
+.quakescene.shake .bird path, .quakescene.settle .bird path { animation-duration: .18s; }
+@keyframes birdfly { 0% { transform: translate(-16px, calc(var(--y) + 6px)); } 50% { transform: translate(170px, calc(var(--y) - 4px)); } 100% { transform: translate(340px, calc(var(--y) + 4px)); } }
+@keyframes flap { from { transform: scaleY(1); } to { transform: scaleY(-.55); } }
+@media (prefers-reduced-motion: reduce) { .quakescene .bird, .quakescene .bird path { animation: none !important; } .quakescene .bird { transform: translate(120px, var(--y)); } }
+
+.neartoggle { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; text-align: left; cursor: pointer; }
+.neartoggle svg:last-child { transition: transform .25s; color: var(--muted); } .neartoggle svg.flip { transform: rotate(180deg); }

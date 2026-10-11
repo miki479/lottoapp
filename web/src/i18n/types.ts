@@ -11,7 +11,7 @@ export interface RainQ { city: string; time: string }
 export type MetricKey = "temp" | "wind" | "snow" | "uv" | "aqi";
 export interface MetricQ { metric: MetricKey; city: string; time: string; value: number; unit: string }
 export interface StrikeQ { date: string; day: string; who: string; hours: string }
-export interface QuakeQ { mag: string; from: string; to: string }
+export interface QuakeQ { mag: string; from: string; to: string; region?: string }
 export type TrophyId = "first_win" | "long_shot" | "rain_man" | "train_whisperer" | "ghost_feed" | "high_roller" | "all_rings" | "streak_7" | "streak_30";
 export const TROPHY_IDS: TrophyId[] = ["first_win", "all_rings", "long_shot", "rain_man", "streak_7", "train_whisperer", "high_roller", "streak_30", "ghost_feed"];
 export const TROPHY_RARITY: Record<TrophyId, "common" | "rare" | "epic"> = {
@@ -24,7 +24,7 @@ export interface Messages {
   nav: { home: string; bets: string; ranking: string; profile: string };
   common: { backOnline: string; close: string; cancel: string; save: string; retry: string; soon: string; offline: string; install: string; language: string; credits: string; copied: string; back: string };
   tabs: { bus: string; train: string; weather: string; nature: string; traffic: string };
-  wx: { all: string; rain: string; names: Record<MetricKey, string>; forecast: (v: string) => string; quakeArt: string };
+  wx: { all: string; rain: string; world: string; regions: Record<string, string>; localTime: string; names: Record<MetricKey, string>; forecast: (v: string) => string; quakeArt: string };
   world: string;
   strikes: { title: string; sub: string; art: string };
   home: { hero: { title: string; body: string }; missions: string; missionsLeft: (n: number) => string; missionsDone: string; bonusTease: string; top: string; events: string; live: string; idle: string[]; empty: { title: string; body: string; cta: string }; trafficSoon: string };

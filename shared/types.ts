@@ -59,6 +59,8 @@ export interface QuakeEvent extends BaseEvent {
   kind: "quake_m";
   category: "nature";
   minMag: number;
+  /** Optional box [minLat, maxLat, minLon, maxLon]; without it the question is about the whole world. */
+  bbox?: [number, number, number, number];
 }
 
 export interface MetricObservation {
