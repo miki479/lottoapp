@@ -10,7 +10,7 @@ const TOWERS: [number, number, number][] = [[6, 26, 50], [30, 22, 70], [52, 30, 
  * Black skyscrapers against a sunset. Hovering or pressing "yes" makes the quake build up and the towers sway;
  * the tremor builds up gradually as a rolling wave; moving to "no" (or away) lets it die down slowly.
  */
-function QuakeScene({ hint, label }: { hint?: "yes" | "no" | null; label: string }) {
+function QuakeScene({ hint, label, mag }: { hint?: "yes" | "no" | null; label: string; mag: number }) {
   const [phase, setPhase] = useState<"idle" | "shake" | "settle">("idle");
   useEffect(() => {
     if (hint === "yes") { setPhase("shake"); return; }
@@ -22,7 +22,7 @@ function QuakeScene({ hint, label }: { hint?: "yes" | "no" | null; label: string
     return () => clearTimeout(t);
   }, [phase]);
   return (
-    <div class={`quakescene ${phase}`} aria-hidden="true">
+    <div class={`quakescene ${phase}`} style={`--mag:${Math.min(1.5, Math.max(0.7, 0.7 + (mag - 5) * 0.4)).toFixed(2)}`} aria-hidden="true">
       <svg viewBox="0 0 320 110" preserveAspectRatio="xMidYMax slice">
         <defs><linearGradient id="qsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a3a8a" /><stop offset=".45" stop-color="#e2557c" /><stop offset=".8" stop-color="#ffae57" /><stop offset="1" stop-color="#ffe29a" /></linearGradient></defs>
         <rect width="320" height="110" fill="url(#qsky)" />
@@ -47,7 +47,7 @@ const ICON = { temp: Thermometer, wind: Wind, snow: Snowflake, uv: Sun, aqi: Clo
 
 /** Small illustration for non-rain weather questions and earthquakes: an icon, plus what the forecast says. */
 export function MetricArt({ m, msg, hint }: { m: MarketRow; msg: Messages; hint?: "yes" | "no" | null }) {
-  if (m.kind === "quake_m") return <QuakeScene hint={hint} label={msg.wx.quakeArt} />;
+  if (m.kind === "quake_m") return <QuakeScene hint={hint} label={msg.wx.quakeArt} mag={Number(m.params.minMag ?? 5)} />;
   const metric = (m.params.metric as keyof typeof ICON) ?? "temp";
   const Icon = ICON[metric] ?? Thermometer;
   const f = m.params.forecast;

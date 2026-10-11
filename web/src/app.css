@@ -610,6 +610,6 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 /* a rolling wave runs through the skyline (each tower is a little behind the one before), with a fast tremor on top */
 .quakescene.shake .tw, .quakescene.settle .tw { animation: towersway .95s ease-in-out var(--o) infinite alternate; }
 .quakescene.shake svg, .quakescene.settle svg { animation: quaketremor .11s linear infinite alternate; }
-@keyframes towersway { from { transform: rotate(calc(var(--a) * var(--amp) * -1.6deg)); } to { transform: rotate(calc(var(--a) * var(--amp) * 1.6deg)); } }
-@keyframes quaketremor { from { transform: translate(calc(var(--amp) * -1.6px), calc(var(--amp) * .6px)); } to { transform: translate(calc(var(--amp) * 1.6px), calc(var(--amp) * -.6px)); } }
+@keyframes towersway { from { transform: rotate(calc(var(--a) * var(--amp) * var(--mag, 1) * -1.6deg)); } to { transform: rotate(calc(var(--a) * var(--amp) * var(--mag, 1) * 1.6deg)); } }
+@keyframes quaketremor { from { transform: translate(calc(var(--amp) * var(--mag, 1) * -1.6px), calc(var(--amp) * var(--mag, 1) * .6px)); } to { transform: translate(calc(var(--amp) * var(--mag, 1) * 1.6px), calc(var(--amp) * var(--mag, 1) * -.6px)); } }
 @media (prefers-reduced-motion: reduce) { .quakescene .tw, .quakescene svg { animation: none !important; } }
