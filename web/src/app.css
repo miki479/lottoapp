@@ -659,17 +659,21 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .mscene.temp .m-sun { transform-origin: 50% 50%; opacity: .7; } .mscene.temp.s-yes .m-sun { transform: scale(1.35); opacity: 1; } .mscene.temp.s-no .m-sun { opacity: .15; transform: scale(.8); }
 .mscene.temp .m-waves, .mscene.temp .m-snowf { opacity: 0; } .mscene.temp.s-yes .m-waves { opacity: .8; animation: heatwave 1.1s ease-in-out infinite alternate; } .mscene.temp.s-no .m-snowf { opacity: .9; }
 @keyframes heatwave { from { transform: translateY(2px); } to { transform: translateY(-3px); } }
-/* wind */
-.mscene.wind .m-clouds .c1 { animation: cloudrun 14s linear infinite; } .mscene.wind .m-clouds .c2 { animation: cloudrun 20s linear -6s infinite; }
-.mscene.wind.s-yes .m-clouds .c1 { animation-duration: 3.5s; } .mscene.wind.s-yes .m-clouds .c2 { animation-duration: 5s; } .mscene.wind.s-no .m-clouds .c1, .mscene.wind.s-no .m-clouds .c2 { animation-duration: 40s; }
-.mscene.wind .m-gust { opacity: .25; stroke-dasharray: 60 40; animation: gust 2.6s linear infinite; } .mscene.wind.s-yes .m-gust { opacity: .95; animation-duration: .7s; } .mscene.wind.s-no .m-gust { opacity: 0; }
-.mscene.wind .m-tree { transform-origin: 50% 100%; animation: treebend 2.2s ease-in-out infinite alternate; } .mscene.wind.s-yes .m-tree { animation: treebend .45s ease-in-out infinite alternate; --bend: 9deg; } .mscene.wind.s-no .m-tree { animation: none; }
-.mscene.wind .m-flag .fl { transform-origin: 0 50%; animation: flagwave 1s ease-in-out infinite alternate; } .mscene.wind.s-yes .m-flag .fl { animation-duration: .2s; } .mscene.wind.s-no .m-flag .fl { animation: none; transform: scaleX(.6) rotate(18deg); }
-.mscene.wind .m-leaves { opacity: 0; } .mscene.wind.s-yes .m-leaves { opacity: 1; animation: leafblow 1.2s linear infinite; }
+/* wind: one "amplitude" value eases between states, so everything speeds up and slows down gradually */
+@property --wamp { syntax: "<number>"; inherits: true; initial-value: .35; }
+.mscene.wind { --wamp: .35; transition: --wamp 2.2s ease-in; }
+.mscene.wind.s-yes { --wamp: 1; transition: --wamp 2.2s ease-in; }
+.mscene.wind.s-no { --wamp: 0; transition: --wamp 4.5s ease-out; }
+.mscene.wind .m-clouds .c1 { animation: cloudrun 16s linear infinite; } .mscene.wind .m-clouds .c2 { animation: cloudrun 22s linear -6s infinite; }
+.mscene.wind.s-yes .m-clouds .c1 { animation-duration: 6s; } .mscene.wind.s-yes .m-clouds .c2 { animation-duration: 8s; }
+.mscene.wind .m-gust { opacity: calc(.1 + var(--wamp) * .85); stroke-dasharray: 60 40; animation: gust 1.4s linear infinite; }
+.mscene.wind .m-tree { transform-origin: 50% 100%; animation: treebend .8s ease-in-out infinite alternate; }
+.mscene.wind .m-flag .fl { transform-origin: 0 50%; animation: flagwave .45s ease-in-out infinite alternate; }
+.mscene.wind .m-leaves { opacity: calc(var(--wamp) * var(--wamp)); animation: leafblow 1.4s linear infinite; }
 @keyframes cloudrun { from { transform: translateX(-120px); } to { transform: translateX(380px); } }
 @keyframes gust { to { stroke-dashoffset: -200; } }
-@keyframes treebend { from { transform: rotate(0); } to { transform: rotate(var(--bend, 3deg)); } }
-@keyframes flagwave { from { transform: scaleX(1) skewY(-4deg); } to { transform: scaleX(.8) skewY(5deg); } }
+@keyframes treebend { from { transform: rotate(calc(var(--wamp) * -10deg)); } to { transform: rotate(calc(var(--wamp) * 10deg)); } }
+@keyframes flagwave { from { transform: scaleX(calc(1 - var(--wamp) * .05)) skewY(calc(var(--wamp) * -6deg)); } to { transform: scaleX(calc(1 - var(--wamp) * .3)) skewY(calc(var(--wamp) * 6deg)); } }
 @keyframes leafblow { from { transform: translate(-30px, 0) rotate(0); } to { transform: translate(90px, 12px) rotate(300deg); } }
 /* snow */
 .mscene.snow .fk { opacity: 0; animation: snowfall 3.4s linear infinite; }
@@ -700,3 +704,19 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .cc.strike { --cat: #d8322b; --cat-soft: color-mix(in srgb, #d8322b 11%, var(--surface)); }
 @media (max-width: 440px) { .catchips { gap: 6px; } .cc { font-size: 12px; } .cc em { right: 5px; } }
 .catchips.many .cc { padding-left: 2px; padding-right: 2px; } .catchips.many .cc .lbl { font-size: 11.5px; letter-spacing: -.2px; max-width: 100%; overflow: visible; text-overflow: clip; }
+
+/* UV: the man under the sun sweats, pants and turns red when YES; relieved in the shade on NO */
+.mscene.uv .face { transition: fill .9s ease; } .mscene.uv.s-yes .face { fill: #ff7b6b; }
+.mscene.uv .m-pant, .mscene.uv .m-steam, .mscene.uv .m-puddle { opacity: 0; transition: opacity .6s; } .mscene.uv.s-yes .m-pant { opacity: 1; } .mscene.uv.s-yes .m-smile { opacity: 0; } .mscene.uv.s-yes .m-steam { opacity: .85; animation: steam 1.4s ease-in-out infinite; } .mscene.uv.s-yes .m-puddle { opacity: .85; }
+.mscene.uv .m-sweat path { opacity: 0; } .mscene.uv .m-sweat .d1 { opacity: .55; animation: sweatslow 3.2s ease-in infinite; }
+.mscene.uv.s-yes .m-sweat path { animation: sweat .9s ease-in infinite; } .mscene.uv.s-yes .m-sweat .d2 { animation-delay: .15s; } .mscene.uv.s-yes .m-sweat .d3 { animation-delay: .3s; } .mscene.uv.s-yes .m-sweat .d4 { animation-delay: .45s; } .mscene.uv.s-yes .m-sweat .d5 { animation-delay: .6s; } .mscene.uv.s-yes .m-sweat .d6 { animation-delay: .75s; }
+.mscene.uv .m-arm { transform-origin: 100% 0; } .mscene.uv.s-yes .m-arm { animation: wipe .5s ease-in-out infinite alternate; }
+.mscene.uv .m-head { transform-origin: 50% 100%; } .mscene.uv.s-yes .m-head { animation: wobble .35s ease-in-out infinite alternate; }
+.mscene.uv .m-person { transition: transform .8s; } .mscene.uv.s-no .m-person { transform: translateX(8px) scale(.97); }
+@keyframes sweat { 0% { opacity: 0; transform: translate(0, -2px) scale(.6); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx, 0), 22px) scale(1.1); } }
+.mscene.uv .m-sweat .d1 { --dx: -8px; } .mscene.uv .m-sweat .d2 { --dx: 9px; } .mscene.uv .m-sweat .d3 { --dx: -10px; } .mscene.uv .m-sweat .d4 { --dx: 10px; } .mscene.uv .m-sweat .d5 { --dx: -3px; } .mscene.uv .m-sweat .d6 { --dx: 4px; }
+@keyframes sweatslow { 0% { opacity: 0; transform: translateY(0); } 30% { opacity: .7; } 100% { opacity: 0; transform: translateY(16px); } }
+@keyframes steam { 0%, 100% { transform: translateY(0); opacity: .4; } 50% { transform: translateY(-3px); opacity: .9; } }
+@keyframes wipe { from { transform: rotate(-12deg); } to { transform: rotate(14deg); } }
+@keyframes wobble { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+.mscene.uv b { left: auto; right: 10px; }

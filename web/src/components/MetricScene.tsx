@@ -72,7 +72,19 @@ const Uv = () => (
     <g class="m-sunw"><circle class="m-glow" cx="236" cy="38" r="52" fill="url(#mu-glow)" /><g class="m-rays" stroke="#ffd23f" stroke-width="4" stroke-linecap="round"><path d="M236 4v10M236 62v10M202 38h10M260 38h10M212 14l7 7M253 55l7 7M260 14l-7 7M219 55l-7 7" /></g><circle cx="236" cy="38" r="17" fill="#ffd23f" /></g>
     <g class="m-ucloud" fill="#fff"><circle cx="222" cy="40" r="11" /><circle cx="236" cy="34" r="14" /><circle cx="252" cy="41" r="10" /><rect x="212" y="41" width="50" height="10" rx="5" /></g>
     <path d="M0 74Q80 64 160 72T320 68V84H0Z" fill="#7bbf68" />
-    <g><circle cx="60" cy="60" r="6" fill="#f5c9a6" /><rect x="55" y="66" width="10" height="12" rx="3" fill="#e5484d" /></g>
+    <g class="m-person">
+      <ellipse cx="74" cy="80" rx="22" ry="3" fill="#000" opacity=".12" /><ellipse class="m-puddle" cx="74" cy="80" rx="14" ry="2.600" fill="#6fb8ff" opacity=".8" />
+      <rect x="62" y="52" width="24" height="24" rx="9" fill="#e5484d" /><rect x="66" y="72" width="6" height="8" rx="2" fill="#3b4a6b" /><rect x="76" y="72" width="6" height="8" rx="2" fill="#3b4a6b" />
+      <path class="m-arm" d="M64 58q-10 -2 -12 -14" stroke="#f1c9a5" stroke-width="5" stroke-linecap="round" fill="none" /><path d="M84 58q8 6 6 14" stroke="#f1c9a5" stroke-width="5" stroke-linecap="round" fill="none" />
+      <g class="m-head"><circle class="face" cx="74" cy="40" r="13" fill="#f1c9a5" /><path d="M62 36q12 -14 24 0q-12 -4 -24 0z" fill="#4a3220" />
+        <circle cx="69" cy="39" r="2.200" fill="#fff" /><circle cx="79" cy="39" r="2.200" fill="#fff" /><circle class="eye" cx="69" cy="39.500" r="1.100" fill="#1c2a44" /><circle class="eye" cx="79" cy="39.500" r="1.100" fill="#1c2a44" />
+        <path class="m-brow" d="M66 35l5 1.500M82 35l-5 1.500" stroke="#4a3220" stroke-width="1.400" stroke-linecap="round" />
+        <path class="m-smile" d="M69 46q5 4 10 0" stroke="#7a3b2a" stroke-width="1.600" fill="none" stroke-linecap="round" />
+        <g class="m-pant"><ellipse cx="74" cy="47.500" rx="4.500" ry="3.500" fill="#7a2a22" /><path d="M72 49.500q2 7 4 0z" fill="#ff7a8a" /></g>
+      </g>
+      <g class="m-sweat" fill="#6fc3ff"><path class="d1" d="M58 34q3 5 0 8q-3 -3 0 -8z" /><path class="d2" d="M90 33q3 5 0 8q-3 -3 0 -8z" /><path class="d3" d="M60 44q3 5 0 8q-3 -3 0 -8z" /><path class="d4" d="M89 45q3 5 0 8q-3 -3 0 -8z" /><path class="d5" d="M74 24q3 5 0 8q-3 -3 0 -8z" /><path class="d6" d="M82 27q3 5 0 8q-3 -3 0 -8z" /></g>
+      <g class="m-steam" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".8"><path d="M66 22q-3 -4 0 -8t0 -7" /><path d="M74 20q-3 -4 0 -8t0 -7" /><path d="M82 22q-3 -4 0 -8t0 -7" /></g>
+    </g>
   </>
 );
 
