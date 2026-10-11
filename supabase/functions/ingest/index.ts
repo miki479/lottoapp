@@ -3,6 +3,7 @@
 import GtfsRt from "npm:gtfs-realtime-bindings@2.2.0";
 import { delayAdapterFor, weatherAdapterFor } from "../_shared/shared/adapters/index.ts";
 import type { RtFeed, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
+import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
 
 const FETCH_TIMEOUT_MS = 25_000;
@@ -56,8 +57,83 @@ Deno.serve(safe(async (req) => {
     }
   }
   report["open-meteo-places"] = await ingestPlaces(sb, now, lastAttempt.get("open-meteo-places") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
+  report["open-meteo-metrics"] = await ingestMetrics(sb, now, lastAttempt.get("open-meteo-metrics") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
+  report["usgs"] = await pingUsgs(sb, now, lastAttempt.get("usgs") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   return Response.json(report);
 }));
+
+/** Hourly health check of the USGS earthquake feed (the actual window counts are read by `resolve`). */
+async function pingUsgs(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
+  if (now - last < 3600 - 5) return "not due";
+  await sb.from("feed_health").upsert({ feed_id: "usgs", last_attempt_at: new Date(now * 1000).toISOString() });
+  try {
+    const j = JSON.parse(new TextDecoder().decode(await fetchBytes("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_hour.geojson")));
+    if (!Array.isArray(j?.features)) throw new Error("unexpected USGS response");
+  } catch (e) {
+    await sb.from("feed_health").upsert({ feed_id: "usgs", last_error: String((e as Error).message ?? e).slice(0, 300), last_error_at: new Date().toISOString() });
+    throw e;
+  }
+  await sb.from("feed_health").upsert({ feed_id: "usgs", last_ok_at: new Date().toISOString(), last_error: null });
+  return "ok";
+}
+
+/**
+ * Hourly: temperature, gusts, snow, UV (forecast API) and air quality (air-quality API) for every city and active place.
+ * The same readings price the new questions and, once the hour is over, settle them.
+ */
+async function ingestMetrics(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
+  if (now - last < 3600 - 5) return "not due";
+  await sb.from("feed_health").upsert({ feed_id: "open-meteo-metrics", last_attempt_at: new Date(now * 1000).toISOString() });
+  const targets: { id: string; lat: number; lon: number; tz: string }[] = [];
+  for (const c of await loadCities()) if (c.categories.weather?.enabled && c.location) targets.push({ id: c.id, lat: c.location.lat, lon: c.location.lon, tz: c.timezone });
+  const { data: places } = await sb.from("places").select("id,lat,lon,timezone").gt("last_used_at", new Date((now - 3 * 86400) * 1000).toISOString()).limit(300);
+  for (const p of places ?? []) targets.push({ id: p.id as string, lat: Number(p.lat), lon: Number(p.lon), tz: p.timezone as string });
+  let rows = 0, created = 0;
+  try {
+    for (let i = 0; i < targets.length; i += 40) {
+      const chunk = targets.slice(i, i + 40);
+      const loc = { latitude: chunk.map((p) => p.lat).join(","), longitude: chunk.map((p) => p.lon).join(",") };
+      const fapi = METRIC_IDS.filter((m) => METRICS[m].source === "forecast").map((m) => METRICS[m].api).join(",");
+      const get = async (base: string, hourly: string) => {
+        const q = new URLSearchParams({ ...loc, hourly, timezone: "GMT", forecast_days: "3", past_days: "1" });
+        const json = JSON.parse(new TextDecoder().decode(await fetchBytes(`${base}?${q}`)));
+        return Array.isArray(json) ? json : [json];
+      };
+      const forecast = await get("https://api.open-meteo.com/v1/forecast", fapi);
+      const air = await get("https://air-quality-api.open-meteo.com/v1/air-quality", METRICS.aqi.api).catch(() => null);
+      const obsRows: Record<string, unknown>[] = [];
+      const fetchedAt = new Date().toISOString();
+      const markets: Record<string, unknown>[] = [];
+      chunk.forEach((t, k) => {
+        const series: Partial<Record<MetricId, Map<number, number>>> = {};
+        for (const m of METRIC_IDS) {
+          const src = METRICS[m].source === "forecast" ? forecast[k] : air?.[k];
+          const times: string[] | undefined = src?.hourly?.time; const vals: Array<number | null> | undefined = src?.hourly?.[METRICS[m].api];
+          if (!times || !vals) continue;
+          const map = new Map<number, number>();
+          times.forEach((ts, h) => { const v = vals[h]; if (typeof v !== "number") return; const e = Date.parse(`${ts}:00Z`) / 1000; if (!Number.isFinite(e)) return; map.set(e, v); obsRows.push({ feed_id: `om-${t.id}`, metric: m, hour_start: new Date(e * 1000).toISOString(), value: v, fetched_at: fetchedAt }); });
+          series[m] = map;
+        }
+        markets.push(...buildMetricMarkets({ id: t.id, tz: t.tz, nowEpoch: now, series }));
+      });
+      for (let j = 0; j < obsRows.length; j += 500) {
+        const { error } = await sb.from("metric_observations").upsert(obsRows.slice(j, j + 500), { onConflict: "feed_id,metric,hour_start" });
+        if (error) throw new Error(error.message);
+      }
+      rows += obsRows.length;
+      if (markets.length) {
+        const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true });
+        if (error) throw new Error(error.message);
+        created += markets.length;
+      }
+    }
+  } catch (e) {
+    await sb.from("feed_health").upsert({ feed_id: "open-meteo-metrics", last_error: String((e as Error).message ?? e).slice(0, 300), last_error_at: new Date().toISOString() });
+    throw e;
+  }
+  await sb.from("feed_health").upsert({ feed_id: "open-meteo-metrics", last_ok_at: new Date().toISOString(), last_error: null });
+  return `ok ${rows} obs, ${created} markets offered`;
+}
 
 /** Weather of every active place (used in the last 3 days), hourly, in batched Open-Meteo requests (up to 40 places per call). */
 async function ingestPlaces(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
@@ -76,7 +152,7 @@ async function ingestPlaces(sb: ReturnType<typeof db>, now: number, last: number
       list.forEach((one, k) => {
         const place = chunk[k]; if (!place) return;
         const obs = weatherAdapterFor({ type: "open-meteo" } as FeedConfig)!(one, `om-${place.id}`);
-        for (const o of obs) out.push({ city_id: place.id, feed_id: `om-${place.id}`, hour_start: new Date(o.hourStart * 1000).toISOString(), precipitation_mm: Math.max(0, o.precipitationMm) });
+        for (const o of obs) out.push({ city_id: place.id, feed_id: `om-${place.id}`, hour_start: new Date(o.hourStart * 1000).toISOString(), precipitation_mm: Math.max(0, o.precipitationMm), fetched_at: new Date().toISOString() });
       });
       for (let j = 0; j < out.length; j += 500) {
         const { error } = await sb.from("weather_observations").upsert(out.slice(j, j + 500), { onConflict: "feed_id,hour_start" });
@@ -107,7 +183,7 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
     const adapter = weatherAdapterFor(feed)!;
     const obs = adapter(JSON.parse(new TextDecoder().decode(await fetchBytes(url))), feed.id);
     if (obs.length === 0) throw new Error("no weather data in response");
-    const rows = obs.map((o) => ({ city_id: city.id, feed_id: feed.id, hour_start: new Date(o.hourStart * 1000).toISOString(), precipitation_mm: Math.max(0, o.precipitationMm) }));
+    const rows = obs.map((o) => ({ city_id: city.id, feed_id: feed.id, hour_start: new Date(o.hourStart * 1000).toISOString(), precipitation_mm: Math.max(0, o.precipitationMm), fetched_at: new Date().toISOString() }));
     const { error } = await sb.from("weather_observations").upsert(rows, { onConflict: "feed_id,hour_start" });
     if (error) throw new Error(error.message);
     return rows.length;

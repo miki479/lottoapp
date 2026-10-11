@@ -1,8 +1,13 @@
+import { METRICS } from "./metrics.ts";
 import type {
   DelayEvent,
   DelayObservation,
   FeedHealth,
   MarketEvent,
+  MetricEvent,
+  MetricObservation,
+  QuakeEvent,
+  QuakeReading,
   RainEvent,
   Resolution,
   WeatherObservation,
@@ -16,6 +21,9 @@ export interface ResolveInput {
   staleAfterSec: number;
   delays: DelayObservation[];
   weather: WeatherObservation[];
+  metrics?: MetricObservation[];
+  /** USGS result for the event's window (earthquake events only); null = USGS could not be read. */
+  quake?: QuakeReading | null;
 }
 
 /** A bus delay reading counts only if taken within this window around the scheduled time. */
@@ -34,6 +42,8 @@ export const MAX_STOP_SKIP = 2;
 export const FORECAST_FRESHNESS_SEC = 120;
 /** Weather reading must come from the hour that contains the target instant. */
 const HOUR = 3600;
+/** USGS needs a little time to publish and review events after a window ends. */
+const QUAKE_SETTLE_SEC = 30 * 60;
 
 /**
  * Decide the outcome of an event. The contract:
@@ -45,10 +55,15 @@ const HOUR = 3600;
 export function resolveEvent(input: ResolveInput): Resolution {
   const { event, now } = input;
   // Rain is measured over the whole hour containing the target, so wait for that hour to end.
-  const readyAt = event.kind === "rain_at" ? Math.floor(event.targetAt / HOUR) * HOUR + HOUR : event.targetAt;
+  const hourEnd = Math.floor(event.targetAt / HOUR) * HOUR + HOUR;
+  const readyAt = event.kind === "rain_at" || event.kind === "metric_gt" ? hourEnd : event.kind === "quake_m" ? event.targetAt + QUAKE_SETTLE_SEC : event.targetAt;
   if (now < readyAt) return { status: "pending" };
 
-  const reading = event.kind !== "rain_at" ? delayReading(event, input) : rainReading(event, input);
+  const reading =
+    event.kind === "rain_at" ? rainReading(event, input) :
+    event.kind === "metric_gt" ? metricReading(event, input) :
+    event.kind === "quake_m" ? quakeReading(event, input) :
+    delayReading(event, input);
 
   if (reading.kind === "none") {
     if (now < event.deadlineAt) return { status: "pending" };
@@ -97,10 +112,27 @@ function delayReading(event: DelayEvent, input: ResolveInput): Reading {
   };
 }
 
+function metricReading(event: MetricEvent, input: ResolveInput): Reading {
+  const hourStart = Math.floor(event.targetAt / HOUR) * HOUR;
+  const obs = (input.metrics ?? []).find((m) => m.feedId === event.feedId && m.metric === event.metric && m.hourStart === hourStart);
+  // A value fetched before its hour ended is still a forecast: wait for a fresher fetch.
+  if (!obs || (obs.fetchedAt !== undefined && obs.fetchedAt < hourStart + HOUR)) return { kind: "none" };
+  const def = METRICS[event.metric];
+  if (!Number.isFinite(obs.value) || obs.value < def.min || obs.value > def.max) return { kind: "implausible" };
+  return { kind: "ok", yes: obs.value >= event.threshold, evidence: { metric: event.metric, value: obs.value, hourStart, threshold: event.threshold } };
+}
+
+function quakeReading(event: QuakeEvent, input: ResolveInput): Reading {
+  const q = input.quake;
+  if (!q) return { kind: "none" };
+  if (!Number.isFinite(q.count) || q.count < 0) return { kind: "implausible" };
+  return { kind: "ok", yes: q.count > 0, evidence: { count: q.count, maxMag: q.maxMag ?? 0, minMag: event.minMag } };
+}
+
 function rainReading(event: RainEvent, input: ResolveInput): Reading {
   const hourStart = Math.floor(event.targetAt / HOUR) * HOUR;
   const obs = input.weather.find((w) => w.feedId === event.feedId && w.hourStart === hourStart);
-  if (!obs) return { kind: "none" };
+  if (!obs || (obs.fetchedAt !== undefined && obs.fetchedAt < hourStart + HOUR)) return { kind: "none" };
   if (!Number.isFinite(obs.precipitationMm) || obs.precipitationMm < 0) return { kind: "implausible" };
   return {
     kind: "ok",

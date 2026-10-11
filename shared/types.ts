@@ -1,11 +1,13 @@
-export type Category = "bus" | "train" | "weather" | "traffic";
+export type Category = "bus" | "train" | "weather" | "traffic" | "nature";
 export type Outcome = "yes" | "no";
 export type BetStatus = "open" | "won" | "lost" | "void";
 
 /** What the house offers. One row per bettable question. */
 export type MarketEvent =
   | DelayEvent
-  | RainEvent;
+  | RainEvent
+  | MetricEvent
+  | QuakeEvent;
 
 interface BaseEvent {
   id: string;
@@ -43,6 +45,33 @@ export interface RainEvent extends BaseEvent {
   minMm: number;
 }
 
+/** "Will <metric> be at least <threshold> in the hour containing the target?" (temperature, gusts, snow, UV, air quality). */
+export interface MetricEvent extends BaseEvent {
+  kind: "metric_gt";
+  category: "weather";
+  metric: "temp" | "wind" | "snow" | "uv" | "aqi";
+  threshold: number;
+}
+
+/** "Will an earthquake of magnitude >= minMag strike anywhere between closesAt and targetAt?" */
+export interface QuakeEvent extends BaseEvent {
+  kind: "quake_m";
+  category: "nature";
+  minMag: number;
+}
+
+export interface MetricObservation {
+  feedId: string;
+  metric: "temp" | "wind" | "snow" | "uv" | "aqi";
+  hourStart: number;
+  value: number;
+  /** When it was fetched (epoch seconds): a reading fetched before its hour ended is still a forecast. */
+  fetchedAt?: number;
+}
+
+/** Earthquakes reported by USGS in a window. */
+export interface QuakeReading { count: number; maxMag: number | null }
+
 export interface DelayObservation {
   feedId: string;
   tripId: string;
@@ -66,6 +95,8 @@ export interface WeatherObservation {
   /** Start of the observed hour (epoch seconds). */
   hourStart: number;
   precipitationMm: number;
+  /** When it was fetched (epoch seconds). A value fetched before its hour ended is a forecast, not a measurement. */
+  fetchedAt?: number;
 }
 
 export interface FeedHealth {

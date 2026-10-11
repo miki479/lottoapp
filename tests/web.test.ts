@@ -12,10 +12,11 @@ describe("locale detection", () => {
     expect(pickLocale(["en-AU"])).toBe("en-GB");
     expect(pickLocale(["en-US"])).toBe("en-US");
     expect(pickLocale(["en"])).toBe("en-US");
+    expect(pickLocale(["ja-JP", "en-US"])).toBe("ja");
   });
   it("skips languages we have no copy for and falls back to en-US", () => {
-    expect(pickLocale(["ja-JP", "it"])).toBe("it");
-    expect(pickLocale(["ja-JP"])).toBe("en-US");
+    expect(pickLocale(["fr-FR", "it"])).toBe("it");
+    expect(pickLocale(["fr-FR"])).toBe("en-US");
     expect(pickLocale([])).toBe("en-US");
   });
 });

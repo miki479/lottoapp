@@ -1,13 +1,15 @@
 import { Layers, Rocket, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
-import { fmtOdds, money, question, type MarketRow } from "../lib/format.ts";
+import { fmtOdds, isYesNo, money, question, type MarketRow } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { Pick } from "../lib/types.ts";
 import { JoinStep } from "./JoinStep.tsx";
 import { boostedPayout } from "../../../shared/wallet.ts";
+import { ReportLink } from "./ReportLink.tsx";
 import { Sheet } from "./Sheet.tsx";
+import { MetricArt } from "./MetricArt.tsx";
 import { Sky } from "./Sky.tsx";
 import { TripScene } from "./TripScene.tsx";
 import { StakeControl } from "./StakeControl.tsx";
@@ -23,7 +25,7 @@ export function BetSheet(p: {
   const [err, setErr] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
   const [boost, setBoost] = useState(false);
-  const city = cityOf(p.m.city_id), isRain = p.m.kind === "rain_at";
+  const city = cityOf(p.m.city_id), isRain = isYesNo(p.m.kind);
   const odds = Number(pick === "yes" ? p.m.odds_yes : p.m.odds_no);
   // Upper limit: 500, or the balance when it is known and at least 10 (the server checks it again).
   const cap = p.credits >= 10 ? Math.min(500, Math.floor(p.credits)) : 500;
@@ -39,7 +41,7 @@ export function BetSheet(p: {
     <Sheet onClose={p.onClose} label={p.msg.sheet.title}>
       <div class="shead"><h2>{p.msg.sheet.title}</h2><button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>
       <p class="q" style="font-weight:600">{question(p.m, p.msg, p.locale, cityName(city, p.locale), city.timezone)}</p>
-      {p.m.category === "weather" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.category === "traffic" ? null : <TripScene m={p.m} now={p.now} hint={pick} />}
+      {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : <TripScene m={p.m} now={p.now} hint={pick} />}
       <div>
         <span class="detail">{p.msg.sheet.pick}</span>
         <div class="actions2" style="margin-top:8px">
@@ -69,6 +71,7 @@ export function BetSheet(p: {
       {err && <p class="formerr" role="alert">{err}</p>}
       <button class="btn primary wide" disabled={busy || !p.ready} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? p.msg.sheet.confirming : `${p.msg.sheet.confirm} · ${money(amount, p.locale)}`}</button>
       <button class="btn secondary wide" onClick={() => { p.onAddSlip(p.m, pick); haptic.tap(); }} disabled={p.inSlip}><Layers size={18} />{p.inSlip ? p.msg.slip.added : p.msg.slip.add}</button>
+      <ReportLink marketId={p.m.id} msg={p.msg} />
     </Sheet>
   );
 }

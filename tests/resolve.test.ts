@@ -126,3 +126,48 @@ describe("position feeds that skip a stop between samples", () => {
     expect(resolveEvent(base({ event: ev, delays: [obs({ delaySec: 200 })] }))).toMatchObject({ outcome: "yes" });
   });
 });
+
+import { buildMetricMarkets, metricOdds, thresholdFor, normalCdf } from "../shared/metrics.ts";
+
+describe("metric and quake events", () => {
+  const base = { id: "m", cityId: "tokyo", feedId: "om-tokyo", closesAt: 0, deadlineAt: 10 * 3600 };
+  const feed = { feedId: "om-tokyo", lastOkAt: 100_000 };
+  const ev = { ...base, kind: "metric_gt" as const, category: "weather" as const, metric: "temp" as const, threshold: 20, targetAt: 1800 };
+  it("settles on a reading fetched after its hour ended", () => {
+    const r = resolveEvent({ event: ev, now: 5000, feed, staleAfterSec: 99999, delays: [], weather: [], metrics: [{ feedId: "om-tokyo", metric: "temp", hourStart: 0, value: 21, fetchedAt: 4000 }] });
+    expect(r).toMatchObject({ status: "resolved", outcome: "yes" });
+  });
+  it("does not settle on a value fetched while the hour was still running", () => {
+    const r = resolveEvent({ event: ev, now: 5000, feed, staleAfterSec: 99999, delays: [], weather: [], metrics: [{ feedId: "om-tokyo", metric: "temp", hourStart: 0, value: 25, fetchedAt: 1000 }] });
+    expect(r.status).toBe("pending");
+  });
+  it("voids implausible values after the deadline path", () => {
+    const r = resolveEvent({ event: ev, now: 5000, feed, staleAfterSec: 99999, delays: [], weather: [], metrics: [{ feedId: "om-tokyo", metric: "temp", hourStart: 0, value: 999, fetchedAt: 4000 }] });
+    expect(r).toMatchObject({ status: "void", reason: "implausible_data" });
+  });
+  const q = { ...base, feedId: "usgs", kind: "quake_m" as const, category: "nature" as const, minMag: 5, targetAt: 21600 };
+  it("quake: waits for USGS to settle, then counts events", () => {
+    expect(resolveEvent({ event: q, now: 21700, feed, staleAfterSec: 1, delays: [], weather: [], quake: { count: 2, maxMag: 5.4 } }).status).toBe("pending");
+    expect(resolveEvent({ event: q, now: 21600 + 1900, feed, staleAfterSec: 1, delays: [], weather: [], quake: { count: 0, maxMag: null } })).toMatchObject({ status: "resolved", outcome: "no" });
+    expect(resolveEvent({ event: q, now: 21600 + 1900, feed, staleAfterSec: 1, delays: [], weather: [], quake: { count: 1, maxMag: 5.2 } })).toMatchObject({ status: "resolved", outcome: "yes" });
+  });
+  it("quake: unreadable USGS is pending, then void after the deadline", () => {
+    expect(resolveEvent({ event: q, now: 21600 + 1900, feed, staleAfterSec: 1, delays: [], weather: [], quake: null }).status).toBe("pending");
+    expect(resolveEvent({ event: q, now: 10 * 3600 + 1, feed, staleAfterSec: 1, delays: [], weather: [], quake: null }).status).toBe("void");
+  });
+  it("pricing: a threshold at the forecast is a near coin flip; higher thresholds pay more", () => {
+    expect(normalCdf(0)).toBeCloseTo(0.5, 2);
+    expect(thresholdFor("temp", 17.4)).toBe(17);
+    const fair = metricOdds("temp", 17, 17), high = metricOdds("temp", 17, 21);
+    expect(fair.pYes).toBeCloseTo(0.5, 1);
+    expect(high.yes).toBeGreaterThan(fair.yes);
+  });
+  it("builds at most one market per metric per day and skips useless ones", () => {
+    const now = Date.UTC(2026, 5, 1, 0, 0) / 1000;
+    const series = (v: number) => new Map(Array.from({ length: 96 }, (_, i) => [Math.floor(now / 3600) * 3600 + i * 3600, v]));
+    const out = buildMetricMarkets({ id: "x", tz: "UTC", nowEpoch: now, series: { temp: series(18), uv: series(0.5), snow: series(0), wind: series(30) } });
+    expect(out.filter((m) => m.params.metric === "temp")).toHaveLength(2);
+    expect(out.some((m) => m.params.metric === "uv" || m.params.metric === "snow")).toBe(false);
+    expect(out.filter((m) => m.params.metric === "wind")).toHaveLength(2);
+  });
+});

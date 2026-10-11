@@ -4,11 +4,14 @@ import { cityName, cityOf } from "../lib/cities.ts";
 import { fmtOdds, money, question, resultAmount } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
+import { ReportLink } from "./ReportLink.tsx";
 import type { MyBet } from "../lib/types.ts";
 
 /** What the market measured, in words ("Measured delay: 1 min 44 s"). */
 export function evidenceLines(b: MyBet, msg: Messages): string[] {
   const m = b.markets, ev = m.evidence;
+  if (m.kind === "metric_gt") return typeof ev?.value === "number" ? [msg.result.metricMeasured(msg.wx.names[m.params.metric as "temp"], `${ev.value}${String(m.params.unit ?? "")}`)] : [];
+  if (m.kind === "quake_m") return typeof ev?.count === "number" ? [msg.result.quakeMeasured(ev.count, `M${Number(ev.maxMag ?? 0).toFixed(1)}`)] : [];
   if (m.kind === "rain_at") return typeof ev?.precipitationMm === "number" ? [msg.result.rainMeasured(Math.round(ev.precipitationMm * 10) / 10)] : [];
   const out: string[] = [];
   if (typeof ev?.delaySec === "number") { const s = Math.abs(Math.round(ev.delaySec)); out.push(msg.result.measured(Math.floor(s / 60), s % 60)); }
@@ -40,6 +43,7 @@ export function ResultScreen({ bet, msg, locale, remaining, onClose, onShare, on
       <div class="btns">
         <button class="btn primary wide" onClick={onShare}><Share2 size={18} />{msg.result.share}</button>
         {remaining > 0 ? <button class="btn secondary wide" onClick={onNext}>{msg.result.more(remaining)}</button> : <button class="btn secondary wide" onClick={onClose}>{msg.result.close}</button>}
+        <ReportLink marketId={m.id} msg={msg} />
       </div>
     </div>
   );

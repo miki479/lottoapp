@@ -7,7 +7,7 @@ export function pickLocale(languages: readonly string[]): Locale {
     if (l.startsWith("it")) return "it";
     if (/^en-(gb|au|nz|ie|za|in|sg)\b/.test(l)) return "en-GB";
     if (l.startsWith("en")) return "en-US";
-    // ja and others: no translation yet, keep looking at the next preference
+    if (l.startsWith("ja")) return "ja";
   }
   return "en-US";
 }
@@ -24,6 +24,7 @@ export function pickCity(cities: CityInfo[], opts: { country?: string | null; ti
     byCountry(opts.country) ??
     byCountry(opts.timezone ? TZ_COUNTRY[opts.timezone] : undefined) ??
     (opts.locale === "it" ? byCountry("IT") : undefined) ??
+    (opts.locale === "ja" ? byCountry("JP") : undefined) ??
     usable.find((c) => c.id === "tokyo") ??
     usable[0];
   return hit?.id ?? "tokyo";

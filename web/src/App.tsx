@@ -21,7 +21,7 @@ import { ensureGuest, guestState, sb } from "./lib/api.ts";
 import { CITIES, cityInfos, cityName, cityOf } from "./lib/cities.ts";
 import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
-import { countdown, currencySymbol, dayIn, money, question, type MarketRow } from "./lib/format.ts";
+import { countdown, currencySymbol, dayIn, isYesNo, money, question, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import { NearYou, type NearState } from "./components/NearYou.tsx";
 import { PlacePicker } from "./components/PlacePicker.tsx";
@@ -200,7 +200,7 @@ export function App() {
     const go = () => sb.rpc("weather_outlook", { p_markets: rainIds }).then(({ data }) => setOutlook(Object.fromEntries(((data ?? []) as { market_id: string; mm: number }[]).map((r) => [r.market_id, +r.mm]))));
     go(); const i = setInterval(go, 300000); return () => clearInterval(i);
   }, [rainIds.join()]);
-  const trackable = useMemo(() => (markets ?? []).filter((m) => m.kind !== "rain_at" && Date.parse(m.target_at) - Date.now() < 3 * 3600_000).slice(0, 80).map((m) => m.id), [markets]);
+  const trackable = useMemo(() => (markets ?? []).filter((m) => (m.category === "bus" || m.category === "train") && Date.parse(m.target_at) - Date.now() < 3 * 3600_000).slice(0, 80).map((m) => m.id), [markets]);
   useEffect(() => {
     if (trackable.length === 0) { setLive({}); return; }
     const go = () => sb.rpc("live_delays", { p_markets: trackable }).then(({ data }) => setLive(Object.fromEntries(((data ?? []) as LiveDelay[]).map((d) => [d.market_id, d]))));
@@ -216,12 +216,12 @@ export function App() {
     for (const k of Object.keys(g)) g[k]!.sort((a, b) => Number(a.params.extraMin) - Number(b.params.extraMin));
     return g;
   }, [markets, Math.floor(now / 30000)]);
-  const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter), [open, filter]);
+  const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter || m.category === "nature"), [open, filter]);
   const byCat = (c: CatId) => inFilter.filter((m) => m.category === c);
   useEffect(() => { if (catChosen || !markets) return; const first = (["bus", "train", "weather"] as CatId[]).find((c) => byCat(c).length > 0); if (first && byCat(cat).length === 0) setCat(first); }, [markets, filter, catChosen]);
   const flashFirst = (a: MarketRow[]) => [...a].sort((x, y) => Number((y.flash_multiplier ?? 1) > 1) - Number((x.flash_multiplier ?? 1) > 1));
   const list = flashFirst(byCat(cat));
-  const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, traffic: 0 };
+  const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: byCat("nature").length, traffic: 0 };
 
   const top: TopItem[] = useMemo(() => {
     const items: TopItem[] = [];
@@ -247,13 +247,13 @@ export function App() {
   const tickerItems = useMemo(() => {
     const out: { id: string; node: preact.ComponentChildren }[] = [];
     for (const a of activity) {
-      const c = cityOf(a.city_id), what = a.market_kind === "rain_at" ? cityName(c, locale) : a.label || cityName(c, locale);
+      const c = cityOf(a.city_id), what = isYesNo(a.market_kind) ? cityName(c, locale) : a.label || cityName(c, locale);
       const verb = msg.ticker[a.kind];
       out.push({ id: `a${a.at}${a.who}${a.amount}`, node: <><b>{a.who ?? msg.ticker.anon}</b> {verb} <i class={`amt ${a.kind}`}>{a.kind === "won" ? "+" : a.kind === "lost" ? "−" : ""}{money(a.amount, locale)}</i> {msg.ticker.on} {what}</> });
     }
     for (const r of results) {
       const c = cityOf(r.city_id), route = String(r.params.routeName ?? "");
-      const txt = r.status === "void" ? msg.bets.void : r.kind === "rain_at" ? (r.outcome === "yes" ? msg.card.yes : msg.card.no) : r.outcome === "yes" ? msg.card.late : msg.card.onTime;
+      const txt = r.status === "void" ? msg.bets.void : isYesNo(r.kind) ? (r.outcome === "yes" ? msg.card.yes : msg.card.no) : r.outcome === "yes" ? msg.card.late : msg.card.onTime;
       out.push({ id: `r${r.id}`, node: <>{route || cityName(c, locale)} · {txt}</> });
     }
     msg.home.idle.forEach((s, i) => out.splice(Math.min(out.length, 1 + i * 2), 0, { id: `t${i}`, node: <>{s}</> }));
@@ -263,7 +263,12 @@ export function App() {
   const sources = useMemo(() => {
     const map = new Map<string, (typeof CITIES)[number]["feeds"][number]["attribution"]>();
     for (const c of CITIES) for (const f of c.feeds) if (f.licenseVerified && c.categories[f.category]?.enabled) map.set(f.attribution.name, f.attribution);
-    return [...map.values()];
+    // Added by the metric and earthquake questions (not tied to a city feed).
+    const extra = [
+      { name: "USGS Earthquake Hazards Program", license: "Public domain", licenseUrl: "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits", url: "https://earthquake.usgs.gov" },
+      { name: "Copernicus Atmosphere Monitoring Service", via: "Open-Meteo", license: "Copernicus licence", licenseUrl: "https://atmosphere.copernicus.eu/terms-of-use", url: "https://open-meteo.com/en/docs/air-quality-api" },
+    ];
+    return [...map.values(), ...extra] as NonNullable<ReturnType<typeof map.values> extends IterableIterator<infer T> ? T : never>[];
   }, []);
 
   // ---------- results (Esito) ----------

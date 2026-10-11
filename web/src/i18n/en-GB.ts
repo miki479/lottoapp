@@ -3,7 +3,8 @@ import type { Messages } from "./types.ts";
 const enGB: Messages = {
   nav: { home: "Home", bets: "My bets", ranking: "League", profile: "Profile" },
   common: { backOnline: "Back online", close: "Close", cancel: "Cancel", save: "Save", retry: "Try again", soon: "Soon", offline: "You're offline: data may be out of date and bets can't be placed.", install: "Install the app", language: "Language", credits: "credits", copied: "Copied", back: "Back" },
-  tabs: { bus: "Buses", train: "Trains", weather: "Weather", traffic: "Traffic" },
+  tabs: { bus: "Bus", train: "Trains", weather: "Weather", nature: "Nature", traffic: "Traffic" },
+  wx: { all: "All", rain: "Rain", names: { temp: "Temperature", wind: "Wind", snow: "Snow", uv: "UV", aqi: "Air" }, forecast: (v) => `forecast ${v}`, quakeArt: "Earthquakes worldwide" },
   world: "Worldwide",
   home: { hero: { title: "Bus late again? Make it count.", body: "Real data, fake credits. Pick an event and have a go." },
     missions: "Today's missions", missionsLeft: (n) => (n === 1 ? "1 to go" : `${n} to go`), missionsDone: "All done", bonusTease: "+150 bonus for closing all three",
@@ -35,6 +36,14 @@ const enGB: Messages = {
     bus: (q) => `Will the ${q.route} towards ${q.headsign} be more than ${q.min} minutes late at ${q.stop} at ${q.time}?`,
     train: (q) => `Will the ${q.route} to ${q.headsign} reach ${q.stop} more than ${q.min} minutes late at ${q.time}?`,
     rain: (q) => `Will it rain in ${q.city} at ${q.time}? (Reasonable odds that it will.)`,
+    metric: (q) => ({
+      temp: `Will it be at least ${q.value}${q.unit} in ${q.city} at ${q.time}?`,
+      wind: `Will gusts reach ${q.value} ${q.unit} or more in ${q.city} at ${q.time}?`,
+      snow: `Will it snow in ${q.city} at ${q.time}?`,
+      uv: `Will the UV index in ${q.city} at ${q.time} be at least ${q.value}?`,
+      aqi: `Will the European air quality index (EAQI) in ${q.city} at ${q.time} be at least ${q.value}?`,
+    })[q.metric],
+    quake: (q) => `Will an earthquake of magnitude ${q.mag} or more strike anywhere in the world between ${q.from} and ${q.to}?`,
   },
   sheet: { title: "Bet slip", pick: "Your pick", stake: "Stake", potential: "Possible win", confirm: "Confirm bet", confirming: "One moment…", odds: "Odds", placed: (w) => `Bet placed. Possible win: ${w}.` },
   bets: {
@@ -46,7 +55,7 @@ const enGB: Messages = {
   result: {
     won: "Won", lost: "Lost", void: "Returned", amountWon: (n) => `+${n}`, amountLost: (n) => `−${n}`, amountVoid: (n) => `${n}`,
     subWon: "Called it. Rather well, too.", subLost: "The data had other ideas this time.", subVoid: "The data wasn't reliable, so your stake came back in full.",
-    measured: (m, s) => (m > 0 ? `Measured delay: ${m} min ${s} s` : `Measured delay: ${s} s`), threshold: (m) => `Line: over ${m} min`, rainMeasured: (mm) => `Measured rain: ${mm} mm`,
+    measured: (m, s) => (m > 0 ? `Measured delay: ${m} min ${s} s` : `Measured delay: ${s} s`), threshold: (m) => `Line: over ${m} min`, metricMeasured: (n, v) => `${n} measured: ${v}`, quakeMeasured: (c, m) => (c === 0 ? "No earthquakes in that window" : `${c} earthquake${c === 1 ? "" : "s"}, strongest ${m}`), rainMeasured: (mm) => `Measured rain: ${mm} mm`,
     stake: "Stake", odds: "Odds", share: "Share result", shareText: "My result on LateLotto", close: "Close", more: (n) => `${n} more results to see`, saved: "Image saved",
   },
   ranking: {
@@ -81,10 +90,12 @@ const enGB: Messages = {
     google: "Continue with Google", or: "or", magic: "Email me a sign-in link", magicSent: "Check your inbox: we've sent you the link.", confirmSent: "We've sent a confirmation email. Follow the link to finish.",
     signinCta: "Sign in", signupCta: "Create profile", guestKeep: "Your guest credits and progress stay with the new profile.", guestLose: "Signing in to an existing profile doesn't merge this guest's progress.", welcome: "Profile connected",
   },
+  report: { link: "Report a problem", title: "What looks wrong?", kinds: { wrong_data: "The data looks wrong", wrong_result: "The result doesn't add up", other: "Something else" }, notePh: "Details (optional)", send: "Send report", sent: "Thanks, we got your report." },
+  admin: { open: "Admin", title: "Admin", feeds: "Feed health", ok: "ok", late: "late", down: "down", never: "never read", markets: "Markets", opened: "Open", resolved24: "Resolved 24h", void24: "Voided 24h", users: "Users", registered: "Registered", guests: "Guests", bets24: "Bets 24h", places: "Active places", reports: "Reports", noReports: "No open reports.", resolve: "Close", refresh: "Refresh", forbidden: "You can't access this page." },
   disclaimerShort: "Only a game: pretend credits, no real value whatsoever.",
   disclaimerFull: "LateLotto is a game. Credits are fictional, worth nothing, and cannot be bought, sold or swapped for prizes. No real money, now or ever. The data is real; the money rather isn't.",
   attributionTitle: "Data sources",
-  errors: { no_boost: "You have no boosts to use.", google_retry: "Google didn’t finish signing you in (the code had already been used). Start over and tap it just once.", google_exists: "This Google account is already registered. Leave this guest profile and sign in with Google.", duplicate_leg: "Two selections on the same trip can't go in one accumulator.", bad_legs: "An accumulator has 2 to 5 selections.", 
+  errors: { no_boost: "You have no boosts to use.", google_retry: "Google didn’t finish signing you in (the code had already been used). Start over and tap it just once.", google_exists: "This Google account is already registered. Leave this guest profile and sign in with Google.", duplicate_leg: "You can't combine two linked events (same vehicle, same place and hour, or same earthquake window).", bad_legs: "An accumulator has 2 to 5 selections.", 
     generic: "Something has gone wrong. Please try again.", market_closed: "Too late, I'm afraid. Betting on this one has closed.", insufficient_credits: "You haven't enough credits.", bad_stake: "Stakes run from 10 to 500 credits.",
     bad_pick: "That pick isn't valid.", already_bet: "You've already had a go at this one.", not_authenticated: "Still setting up. Try again in a moment.", rate_limited: "Too many bets, too quickly. Take a breath and try again in a minute.",
     registration_required: "That needs a saved profile.", unknown_group: "That code doesn't exist.", bad_nickname: "Invalid nickname: 2-24 characters, letters, numbers, space and - _ .", nickname_not_allowed: "That nickname isn't allowed.", nickname_taken: "That nickname is taken.",

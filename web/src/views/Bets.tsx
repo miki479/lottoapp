@@ -3,7 +3,7 @@ import { useState } from "preact/hooks";
 import { Empty } from "../components/Empty.tsx";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, cityOf } from "../lib/cities.ts";
-import { countdown, fmtOdds, money, question } from "../lib/format.ts";
+import { countdown, fmtOdds, isYesNo, money, question } from "../lib/format.ts";
 import type { MyBet, ParlayRow } from "../lib/types.ts";
 
 export function Bets({ parlays, bets, msg, locale, now, onOpen, onHome }: { parlays: ParlayRow[]; bets: MyBet[]; msg: Messages; locale: Locale; now: number; onOpen: (b: MyBet) => void; onHome: () => void }) {
@@ -35,7 +35,7 @@ export function Bets({ parlays, bets, msg, locale, now, onOpen, onHome }: { parl
               </div>
               <ul class="legmini">
                 {x.parlay_legs.map((l) => {
-                  const c = cityOf(l.markets.city_id), rain = l.markets.kind === "rain_at";
+                  const c = cityOf(l.markets.city_id), rain = isYesNo(l.markets.kind);
                   const pickLabel = l.pick === "yes" ? (rain ? msg.card.yes : msg.card.late) : (rain ? msg.card.no : msg.card.onTime);
                   return <li key={l.market_id} class={l.status}><span>{(String(l.markets.params.routeName ?? "") || cityName(c, locale))} · {pickLabel}</span><b class="num">{fmtOdds(Number(l.odds), locale)}</b></li>;
                 })}

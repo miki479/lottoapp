@@ -3,8 +3,8 @@
 // them by external_id = their user id). Nothing is sent without the secrets: results are then simply not announced.
 type Db = ReturnType<typeof import("./common.ts").db>;
 
-const CURRENCY: Record<string, string> = { it: "EUR", "en-US": "USD", "en-GB": "GBP" };
-const TAG: Record<string, string> = { it: "it-IT", "en-US": "en-US", "en-GB": "en-GB" };
+const CURRENCY: Record<string, string> = { it: "EUR", "en-US": "USD", "en-GB": "GBP", ja: "JPY" };
+const TAG: Record<string, string> = { it: "it-IT", "en-US": "en-US", "en-GB": "en-GB", ja: "ja-JP" };
 const money = (n: number, loc: string) =>
   new Intl.NumberFormat(TAG[loc] ?? "en-US", { style: "currency", currency: CURRENCY[loc] ?? "USD", currencyDisplay: "narrowSymbol", maximumFractionDigits: 0 }).format(n);
 
@@ -12,6 +12,7 @@ const TEXT = {
   it: { won: (a: string, w: string) => `Hai vinto ${a} · ${w}`, lost: (w: string) => `Stavolta no · ${w}`, void: (w: string) => `Puntata rimborsata · ${w}`, parlay: "Multipla" },
   "en-US": { won: (a: string, w: string) => `You won ${a} · ${w}`, lost: (w: string) => `Not this time · ${w}`, void: (w: string) => `Bet refunded · ${w}`, parlay: "Parlay" },
   "en-GB": { won: (a: string, w: string) => `You won ${a} · ${w}`, lost: (w: string) => `Not this time · ${w}`, void: (w: string) => `Bet refunded · ${w}`, parlay: "Accumulator" },
+  ja: { won: (a: string, w: string) => `${a}を獲得しました · ${w}`, lost: (w: string) => `今回は残念でした · ${w}`, void: (w: string) => `予想を返金しました · ${w}`, parlay: "複数予想" },
 } as const;
 
 export const lastNotifyError: { msg: string | null } = { msg: null };
@@ -35,6 +36,7 @@ const OPT = {
   it: { flash: (m: number) => `Evento flash: quota ×${m} per una mezz'ora`, streak: (n: number) => `Serie di ${n} giorni: una puntata oggi la tiene viva` },
   "en-US": { flash: (m: number) => `Flash event: odds ×${m} for half an hour`, streak: (n: number) => `${n}-day streak: a bet today keeps it alive` },
   "en-GB": { flash: (m: number) => `Flash event: odds ×${m} for half an hour`, streak: (n: number) => `${n}-day streak: a bet today keeps it going` },
+  ja: { flash: (m: number) => `フラッシュイベント：30分間オッズ×${m}`, streak: (n: number) => `${n}日連続中：今日1回予想すれば記録が続きます` },
 } as const;
 
 type Pref = { id: string; locale: string; timezone: string; city_id: string; streak: number; last_play_date: string | null; push_day: string | null; push_count: number; streak_push_day?: string | null };

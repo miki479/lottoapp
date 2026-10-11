@@ -3,8 +3,8 @@ import { INTL_TAG, type Locale, type Messages } from "../i18n/index.ts";
 export interface MarketRow {
   id: string;
   city_id: string;
-  category: "bus" | "train" | "weather" | "traffic";
-  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at";
+  category: "bus" | "train" | "weather" | "traffic" | "nature";
+  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at" | "metric_gt" | "quake_m";
   params: Record<string, unknown>;
   closes_at: string;
   target_at: string;
@@ -29,6 +29,12 @@ export function formatWhen(iso: string, locale: Locale, timeZone: string, now = 
 export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: string, timeZone: string, now = new Date()): string {
   const time = formatWhen(m.target_at, locale, timeZone, now);
   if (m.kind === "rain_at") return msg.question.rain({ city: cityName, time });
+  if (m.kind === "metric_gt") return msg.question.metric({ metric: m.params.metric as "temp", city: cityName, time, value: Number(m.params.threshold), unit: String(m.params.unit ?? "") });
+  if (m.kind === "quake_m") {
+    // The window is global, so it is shown in the player's own time zone.
+    const from = formatWhen(m.closes_at, locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now), to = formatWhen(m.target_at, locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now);
+    return msg.question.quake({ mag: Number(m.params.minMag).toFixed(1), from, to });
+  }
   const p = m.params;
   const q = {
     route: String(p.routeName ?? p.routeId ?? ""),
@@ -66,7 +72,7 @@ export function seasonDaysLeft(now = new Date()): number {
 export const fmtOdds = (odds: number, locale: Locale) => new Intl.NumberFormat(INTL_TAG[locale], { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(odds);
 
 /** Play money is shown with the currency of the audience ($ / € / £). It is fake: the disclaimer says so everywhere. */
-const CURRENCY: Record<Locale, string> = { it: "EUR", "en-US": "USD", "en-GB": "GBP" };
+const CURRENCY: Record<Locale, string> = { it: "EUR", "en-US": "USD", "en-GB": "GBP", ja: "JPY" };
 export function currencySymbol(locale: Locale): string {
   return new Intl.NumberFormat(INTL_TAG[locale], { style: "currency", currency: CURRENCY[locale], currencyDisplay: "narrowSymbol" }).formatToParts(0).find((p) => p.type === "currency")?.value ?? "";
 }
@@ -78,3 +84,6 @@ export function money(n: number, locale: Locale): string {
 export function resultAmount(st: "won" | "lost" | "void", stake: number, payout: number, locale: Locale): string {
   return st === "won" ? `+${money(payout - stake, locale)}` : st === "lost" ? `−${money(stake, locale)}` : money(stake, locale);
 }
+
+/** Delay questions have a "late / on time" answer; everything else (rain, temperature, quakes…) is a plain yes / no. */
+export const isYesNo = (kind: string) => !kind.endsWith("_delay_gt");

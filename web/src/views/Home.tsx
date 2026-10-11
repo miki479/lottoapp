@@ -5,6 +5,7 @@ import { EventCard } from "../components/EventCard.tsx";
 import { Flag } from "../components/Flag.tsx";
 import { TopCards, type TopItem } from "../components/TopCards.tsx";
 import { Globe, Sparkles } from "lucide-preact";
+import { useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
 import { Flame, Plus } from "lucide-preact";
@@ -22,8 +23,14 @@ export interface HomeProps {
 
 export function Home(p: HomeProps) {
   const { msg } = p;
-  const tiles = (["bus", "train", "weather", "traffic"] as CatId[]).map((id) => ({ id, label: msg.tabs[id], count: p.counts[id], disabled: id === "traffic" }));
-  const topId = p.list.reduce<MarketRow | null>((b, m) => (!b || Number(m.odds_yes) > Number(b.odds_yes) ? m : b), null)?.id;
+  const tiles = (["bus", "train", "weather", "nature", "traffic"] as CatId[]).map((id) => ({ id, label: msg.tabs[id], count: p.counts[id], disabled: id === "traffic" }));
+  // Weather has sub-pills (rain, temperature, wind…) so the category row stays short; only the kinds that exist today are shown.
+  const [wxSel, setWx] = useState<string>("all");
+  const wxKey = (m: MarketRow) => (m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : "");
+  const wxKinds = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi"].filter((k) => p.list.some((m) => wxKey(m) === k)) : [];
+  const wx = wxKinds.includes(wxSel) ? wxSel : "all";
+  const shown = p.cat === "weather" && wx !== "all" ? p.list.filter((m) => wxKey(m) === wx) : p.list;
+  const topId = shown.reduce<MarketRow | null>((b, m) => (!b || Number(m.odds_yes) > Number(b.odds_yes) ? m : b), null)?.id;
   const cities = CITIES.filter((c) => enabledCategories(c).length > 0);
   return (
     <div class="home screen">
@@ -45,6 +52,7 @@ export function Home(p: HomeProps) {
       <div class="main stack">
         <div class="sectionhead"><h2>{msg.home.events}</h2></div>
         <CatChips tiles={tiles} value={p.cat} onPick={p.onCat} />
+        {wxKinds.length > 1 && <div class="wxpills" role="tablist">{["all", ...wxKinds].map((k) => <button key={k} role="tab" aria-selected={wx === k} class={wx === k ? "on" : ""} onClick={() => setWx(k)}>{k === "all" ? msg.wx.all : k === "rain" ? msg.wx.rain : msg.wx.names[k as "temp"]}</button>)}</div>}
         <div class="chiprow" role="tablist">
           <button class={`chip ${p.filter === "world" ? "on" : ""}`} role="tab" aria-selected={p.filter === "world"} onClick={() => p.onFilter("world")}><Globe size={16} />{msg.world}</button>
           {cities.filter((c) => FEATURED_CITY_IDS.includes(c.id)).map((c) => <button key={c.id} class={`chip ${p.filter === c.id ? "on" : ""}`} role="tab" aria-selected={p.filter === c.id} onClick={() => p.onFilter(c.id)}><Flag cc={c.country} size={13} />{cityName(c, p.locale)}</button>)}
@@ -56,8 +64,8 @@ export function Home(p: HomeProps) {
         <div class="cardgrid">
           {p.markets === null && [0, 1, 2].map((i) => <div class="sk" key={i} />)}
           {p.markets !== null && p.cat === "traffic" && <div style="grid-column:1/-1"><Empty icon={CloudRain} title={msg.tabs.traffic} body={msg.home.trafficSoon} /></div>}
-          {p.markets !== null && p.cat !== "traffic" && p.list.length === 0 && <div style="grid-column:1/-1"><Empty icon={CloudRain} title={msg.home.empty.title} body={msg.home.empty.body} cta={p.filter !== "world" ? msg.home.empty.cta : undefined} onCta={() => p.onFilter("world")} /></div>}
-          {p.list.slice(0, 40).map((m, i) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} live={p.live[m.id]} index={i} mm={p.outlook[m.id]} hasLadder={(p.ladders[m.id]?.length ?? 0) > 0} top={m.id === topId && p.list.length > 3} showCity={p.filter === "world"} onPick={p.onPick} />)}
+          {p.markets !== null && p.cat !== "traffic" && shown.length === 0 && <div style="grid-column:1/-1"><Empty icon={CloudRain} title={msg.home.empty.title} body={msg.home.empty.body} cta={p.filter !== "world" ? msg.home.empty.cta : undefined} onCta={() => p.onFilter("world")} /></div>}
+          {shown.slice(0, 40).map((m, i) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} live={p.live[m.id]} index={i} mm={p.outlook[m.id]} hasLadder={(p.ladders[m.id]?.length ?? 0) > 0} top={m.id === topId && shown.length > 3} showCity={p.filter === "world"} onPick={p.onPick} />)}
         </div>
         <footer class="legal">
           <p><strong style="color:var(--text)">{msg.disclaimerShort}</strong> {msg.disclaimerFull}</p>

@@ -1,7 +1,7 @@
 import { Rocket, Trash2, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
-import { fmtOdds, money, question } from "../lib/format.ts";
+import { fmtOdds, isYesNo, money, question } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { SlipLeg } from "../lib/types.ts";
@@ -36,7 +36,7 @@ export function ParlaySheet(p: {
       <div class="shead"><h2>{m.slip.title} <small class="hint">{m.slip.legs(p.legs.length)}</small></h2><button class="iconbtn" onClick={p.onClose} aria-label={m.common.close}><X size={22} /></button></div>
       <ul class="legs">
         {p.legs.map((l) => {
-          const c = cityOf(l.m.city_id), o = Number(l.pick === "yes" ? l.m.odds_yes : l.m.odds_no), rain = l.m.kind === "rain_at";
+          const c = cityOf(l.m.city_id), o = Number(l.pick === "yes" ? l.m.odds_yes : l.m.odds_no), rain = isYesNo(l.m.kind);
           const pickLabel = l.pick === "yes" ? (rain ? m.card.yes : m.card.late) : (rain ? m.card.no : m.card.onTime);
           return (
             <li key={l.m.id} class="leg">

@@ -3,7 +3,8 @@ import type { Messages } from "./types.ts";
 const it: Messages = {
   nav: { home: "Home", bets: "Le mie puntate", ranking: "Classifica", profile: "Profilo" },
   common: { backOnline: "Di nuovo online", close: "Chiudi", cancel: "Annulla", save: "Salva", retry: "Riprova", soon: "Presto", offline: "Sei offline: non vedi dati aggiornati e non puoi puntare.", install: "Installa l'app", language: "Lingua", credits: "crediti", copied: "Copiato", back: "Indietro" },
-  tabs: { bus: "Bus", train: "Treni", weather: "Meteo", traffic: "Traffico" },
+  tabs: { bus: "Bus", train: "Treni", weather: "Meteo", nature: "Natura", traffic: "Traffico" },
+  wx: { all: "Tutto", rain: "Pioggia", names: { temp: "Temperatura", wind: "Vento", snow: "Neve", uv: "UV", aqi: "Aria" }, forecast: (v) => `previsto ${v}`, quakeArt: "Terremoti nel mondo" },
   world: "Tutto il mondo",
   home: { hero: { title: "Il bus è in ritardo? Almeno ci vinci.", body: "Dati veri, crediti finti. Scegli un evento e fai la tua previsione." },
     missions: "Missioni di oggi", missionsLeft: (n) => (n === 1 ? "Ne manca uno" : `Ne mancano ${n}`), missionsDone: "Tutte completate", bonusTease: "Bonus +150 se le chiudi tutte",
@@ -35,6 +36,14 @@ const it: Messages = {
     bus: (q) => `La linea ${q.route} per ${q.headsign} avrà più di ${q.min} min di ritardo a ${q.stop} alle ${q.time}?`,
     train: (q) => `Il treno ${q.route} per ${q.headsign} arriverà con più di ${q.min} min di ritardo a ${q.stop} alle ${q.time}?`,
     rain: (q) => `Pioverà a ${q.city} alle ${q.time}?`,
+    metric: (q) => ({
+      temp: `A ${q.city} alle ${q.time} ci saranno almeno ${q.value}${q.unit}?`,
+      wind: `Raffiche di almeno ${q.value} ${q.unit} a ${q.city} alle ${q.time}?`,
+      snow: `Nevicherà a ${q.city} alle ${q.time}?`,
+      uv: `L'indice UV a ${q.city} alle ${q.time} sarà almeno ${q.value}?`,
+      aqi: `L'aria a ${q.city} alle ${q.time} avrà un indice di inquinamento europeo (EAQI) di almeno ${q.value}?`,
+    })[q.metric],
+    quake: (q) => `Ci sarà un terremoto di magnitudo ${q.mag} o più, in qualunque parte del mondo, tra le ${q.from} e le ${q.to}?`,
   },
   sheet: { title: "Schedina", pick: "La tua scelta", stake: "Puntata", potential: "Vincita possibile", confirm: "Conferma puntata", confirming: "Un attimo…", odds: "Quota", placed: (w) => `Puntata registrata. Vincita possibile: ${w}.` },
   bets: {
@@ -46,7 +55,7 @@ const it: Messages = {
   result: {
     won: "Vinta", lost: "Persa", void: "Rimborsata", amountWon: (n) => `+${n}`, amountLost: (n) => `−${n}`, amountVoid: (n) => `${n}`,
     subWon: "Hai azzeccato la previsione.", subLost: "Stavolta il dato ha detto altro.", subVoid: "I dati non erano affidabili: puntata restituita per intero.",
-    measured: (m, s) => (m > 0 ? `Ritardo misurato: ${m} min ${s} s` : `Ritardo misurato: ${s} s`), threshold: (m) => `Soglia: oltre ${m} min`, rainMeasured: (mm) => `Pioggia misurata: ${mm} mm`,
+    measured: (m, s) => (m > 0 ? `Ritardo misurato: ${m} min ${s} s` : `Ritardo misurato: ${s} s`), threshold: (m) => `Soglia: oltre ${m} min`, metricMeasured: (n, v) => `${n} misurato: ${v}`, quakeMeasured: (c, m) => (c === 0 ? "Nessun terremoto in quell'intervallo" : `${c} ${c === 1 ? "terremoto" : "terremoti"}, il più forte ${m}`), rainMeasured: (mm) => `Pioggia misurata: ${mm} mm`,
     stake: "Puntata", odds: "Quota", share: "Condividi risultato", shareText: "Il mio risultato su LateLotto", close: "Chiudi", more: (n) => `Altri ${n} esiti da vedere`, saved: "Immagine salvata",
   },
   ranking: {
@@ -81,10 +90,12 @@ const it: Messages = {
     google: "Continua con Google", or: "oppure", magic: "Inviami un link di accesso", magicSent: "Controlla la posta: ti abbiamo mandato il link.", confirmSent: "Ti abbiamo mandato un'email di conferma. Apri il link per completare.",
     signinCta: "Accedi", signupCta: "Crea profilo", guestKeep: "I tuoi crediti e i tuoi progressi di ospite restano con il nuovo profilo.", guestLose: "Se accedi a un profilo esistente, i progressi di questo ospite non vengono uniti.", welcome: "Profilo collegato",
   },
+  report: { link: "Segnala un problema", title: "Cosa non torna?", kinds: { wrong_data: "I dati sembrano sbagliati", wrong_result: "L'esito non mi torna", other: "Altro" }, notePh: "Dettagli (facoltativo)", send: "Invia segnalazione", sent: "Grazie, abbiamo ricevuto la segnalazione." },
+  admin: { open: "Amministrazione", title: "Amministrazione", feeds: "Salute dei feed", ok: "ok", late: "in ritardo", down: "fermo", never: "mai letto", markets: "Eventi", opened: "Aperti", resolved24: "Risolti 24h", void24: "Rimborsati 24h", users: "Utenti", registered: "Registrati", guests: "Ospiti", bets24: "Puntate 24h", places: "Città attive", reports: "Segnalazioni", noReports: "Nessuna segnalazione aperta.", resolve: "Chiudi", refresh: "Aggiorna", forbidden: "Non hai accesso a questa pagina." },
   disclaimerShort: "Solo gioco: crediti finti, nessun valore reale.",
   disclaimerFull: "LateLotto è un gioco. I crediti sono fittizi, non hanno alcun valore economico, non si comprano, non si vendono e non si cambiano con premi. Nessun denaro vero, mai. I dati sono reali, i soldi no.",
   attributionTitle: "Fonti dei dati",
-  errors: { no_boost: "Non hai boost da usare.", google_retry: "Google non ha completato l’accesso (il codice era già stato usato). Riprova da capo, una volta sola.", google_exists: "Questo account Google è già registrato. Esci da questo profilo ospite e accedi con Google.", duplicate_leg: "Non puoi mettere due eventi dello stesso treno nella multipla.", bad_legs: "Una multipla ha da 2 a 5 eventi.", 
+  errors: { no_boost: "Non hai boost da usare.", google_retry: "Google non ha completato l’accesso (il codice era già stato usato). Riprova da capo, una volta sola.", google_exists: "Questo account Google è già registrato. Esci da questo profilo ospite e accedi con Google.", duplicate_leg: "Non puoi mettere nella multipla due eventi collegati (stesso mezzo, stessa ora nello stesso posto, stessa finestra di terremoti).", bad_legs: "Una multipla ha da 2 a 5 eventi.", 
     generic: "Qualcosa è andato storto. Riprova.", market_closed: "Troppo tardi: le puntate su questo evento sono chiuse.", insufficient_credits: "Non hai abbastanza crediti.", bad_stake: "La puntata deve essere tra 10 e 500 crediti.",
     bad_pick: "Scelta non valida.", already_bet: "Hai già puntato su questo evento.", not_authenticated: "Sessione non pronta, riprova tra un secondo.", rate_limited: "Troppe puntate in poco tempo. Respira, riprova tra un minuto.",
     registration_required: "Serve un profilo salvato per farlo.", unknown_group: "Codice non valido.", bad_nickname: "Nickname non valido: 2-24 caratteri, lettere, numeri, spazio e - _ .", nickname_not_allowed: "Questo nickname non è consentito.", nickname_taken: "Nickname già in uso.",

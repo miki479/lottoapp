@@ -1,7 +1,7 @@
 // Runs every minute after `ingest`. Settles markets whose time has come, or voids them with a refund.
 import { resolveEvent } from "../_shared/shared/resolve.ts";
 import { historyKey, marketToEvent, type MarketRow } from "../_shared/shared/market.ts";
-import type { DelayObservation, WeatherObservation } from "../_shared/shared/types.ts";
+import type { DelayObservation, MetricObservation, QuakeReading, WeatherObservation } from "../_shared/shared/types.ts";
 import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
 import { lastNotifyError, notifyFlash, notifyResults, notifyStreak } from "../_lib/notify.ts";
 
@@ -36,10 +36,19 @@ Deno.serve(safe(async (req) => {
 
       let delays: DelayObservation[] = [];
       let weather: WeatherObservation[] = [];
-      if (event.kind === "rain_at") {
+      let metrics: MetricObservation[] = [];
+      let quake: QuakeReading | null = null;
+      if (event.kind === "quake_m") {
+        quake = await usgsWindow(event.closesAt, event.targetAt, event.minMag);
+        if (quake) await sb.from("feed_health").upsert({ feed_id: "usgs", last_ok_at: new Date().toISOString(), last_error: null });
+      } else if (event.kind === "metric_gt") {
         const hour = new Date(Math.floor(event.targetAt / 3600) * 3600 * 1000).toISOString();
-        const { data } = await sb.from("weather_observations").select("feed_id,hour_start,precipitation_mm").eq("feed_id", event.feedId).eq("hour_start", hour);
-        weather = (data ?? []).map((w) => ({ feedId: w.feed_id, hourStart: Date.parse(w.hour_start) / 1000, precipitationMm: Number(w.precipitation_mm) }));
+        const { data } = await sb.from("metric_observations").select("feed_id,metric,hour_start,value,fetched_at").eq("feed_id", event.feedId).eq("metric", event.metric).eq("hour_start", hour);
+        metrics = (data ?? []).map((w) => ({ feedId: w.feed_id, metric: w.metric, hourStart: Date.parse(w.hour_start) / 1000, value: Number(w.value), fetchedAt: Date.parse(w.fetched_at) / 1000 }));
+      } else if (event.kind === "rain_at") {
+        const hour = new Date(Math.floor(event.targetAt / 3600) * 3600 * 1000).toISOString();
+        const { data } = await sb.from("weather_observations").select("feed_id,hour_start,precipitation_mm,fetched_at").eq("feed_id", event.feedId).eq("hour_start", hour);
+        weather = (data ?? []).map((w) => ({ feedId: w.feed_id, hourStart: Date.parse(w.hour_start) / 1000, precipitationMm: Number(w.precipitation_mm), fetchedAt: Date.parse(w.fetched_at) / 1000 }));
       } else {
         const { data } = await sb.from("delay_observations").select("feed_id,trip_id,stop_id,stop_sequence,route_id,observed_at,delay_sec,predicted_at")
           .eq("feed_id", event.feedId).eq("trip_id", event.tripId);
@@ -51,8 +60,8 @@ Deno.serve(safe(async (req) => {
       }
 
       const res = resolveEvent({
-        event, now, feed: { feedId: event.feedId, lastOkAt: lastOk.get(event.feedId.startsWith("om-") ? "open-meteo-places" : event.feedId) ?? null },
-        staleAfterSec: feedStale.get(event.feedId) ?? (event.feedId.startsWith("om-") ? 10800 : 300), delays, weather,
+        event, now, feed: { feedId: event.feedId, lastOkAt: lastOk.get(event.kind === "metric_gt" ? "open-meteo-metrics" : event.feedId.startsWith("om-") ? "open-meteo-places" : event.feedId) ?? null },
+        staleAfterSec: feedStale.get(event.feedId) ?? (event.feedId === "usgs" ? 7200 : event.feedId.startsWith("om-") ? 10800 : 300), delays, weather, metrics, quake,
       });
       if (res.status === "pending") { out.pending++; continue; }
 
@@ -78,3 +87,16 @@ Deno.serve(safe(async (req) => {
   const notified = await safeCount(notifyResults(sb)) + await safeCount(notifyFlash(sb)) + await safeCount(notifyStreak(sb));
   return Response.json({ ...out, notified, notifyError: lastNotifyError.msg });
 }));
+
+/** Earthquakes of magnitude >= minMag between two instants, from the USGS FDSN service (null if it cannot be read). */
+async function usgsWindow(from: number, to: number, minMag: number): Promise<QuakeReading | null> {
+  try {
+    const q = new URLSearchParams({ format: "geojson", starttime: new Date(from * 1000).toISOString(), endtime: new Date(to * 1000).toISOString(), minmagnitude: String(minMag), orderby: "magnitude", limit: "20" });
+    const res = await fetch(`https://earthquake.usgs.gov/fdsnws/event/1/query?${q}`, { headers: { "User-Agent": `LateLotto/0.1 (play-money game; contact: ${Deno.env.get("CONTACT_EMAIL") ?? "unset"})` }, signal: AbortSignal.timeout(20_000) });
+    if (!res.ok) return null;
+    const j = await res.json() as { features?: { properties?: { mag?: number } }[] };
+    if (!Array.isArray(j.features)) return null;
+    const mags = j.features.map((f) => Number(f.properties?.mag)).filter((m) => Number.isFinite(m) && m >= minMag);
+    return { count: mags.length, maxMag: mags.length ? Math.max(...mags) : null };
+  } catch { return null; }
+}
