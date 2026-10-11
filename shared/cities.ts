@@ -32,6 +32,8 @@ export interface FeedConfig {
   routeTypes?: number[];
   /** The static calendar does not describe today (Renfe): take the trips that appear in the real-time feed as today's service. */
   useRealtimeTrips?: boolean;
+  /** Local hours [from, to) in which questions are created (a feed that goes quiet at night would void them). */
+  questionsHours?: [number, number];
   /**
    * True only after someone has read the CURRENT licence/terms of the provider.
    * Unverified feeds are skipped in production unless ALLOW_UNVERIFIED_FEEDS=1.

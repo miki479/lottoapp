@@ -132,6 +132,7 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
     if (!stop) continue;
     const draft = buildDelayMarket({ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: trip.trip_id, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold, history: null });
     const targetAt = Date.parse(draft.target_at) / 1000;
+    if (feed.questionsHours) { const h = Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: city.timezone }).format(new Date(targetAt * 1000))); if (h < feed.questionsHours[0] || h >= feed.questionsHours[1]) continue; }
     if (Date.parse(draft.closes_at) / 1000 <= now + 300 || targetAt > now + 30 * 3600) continue; // bettable window
     // Re-price with real history now that the event exists.
     const key = historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone);

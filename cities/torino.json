@@ -53,7 +53,11 @@
         "url": "https://aperto.comune.torino.it/"
       },
       "staticGtfsUrl": "https://www.gtt.to.it/open_data/gtt_gtfs.zip",
-      "note": "Licence confirmed from the dataset page. The feed has predicted times only: delays are computed against the static timetable (kind trip_updates_times). Attribution required; no endorsement implied."
+      "note": "Licence confirmed from the dataset page. The feed has predicted times only: delays are computed against the static timetable (kind trip_updates_times). Attribution required; no endorsement implied.",
+      "questionsHours": [
+        5,
+        23
+      ]
     },
     {
       "id": "open-meteo-torino",
