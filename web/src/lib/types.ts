@@ -2,6 +2,8 @@ import type { MarketRow } from "./format.ts";
 
 export type Pick = "yes" | "no";
 export interface LiveDelay { market_id: string; delay_sec: number; observed_at: string; is_forecast: boolean; prev_delay_sec: number | null }
+export interface SlipLeg { m: import("./format.ts").MarketRow; pick: Pick }
+export interface ParlayRow { id: string; stake: number; odds: number; status: "open" | "won" | "lost" | "void"; payout: number; placed_at: string; settled_at: string | null; parlay_legs: { market_id: string; pick: Pick; odds: number; status: string; markets: { city_id: string; kind: string; params: Record<string, unknown> } }[] }
 export interface ActivityRow { kind: "placed" | "won" | "lost"; who: string | null; amount: number; market_kind: string; label: string; city_id: string; at: string }
 export interface ResultRow { id: string; city_id: string; kind: MarketRow["kind"]; status: string; outcome: string | null; void_reason: string | null; params: Record<string, unknown>; evidence: { delaySec?: number } | null }
 export interface Profile {

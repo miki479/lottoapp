@@ -375,3 +375,34 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .ticker .amt { font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; } .ticker .amt.won { color: var(--won-fg); } .ticker .amt.lost { color: var(--lost-fg); } .ticker .amt.placed { color: var(--c-pop); }
 @keyframes tick { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .meter .cells em, .meter .cells u.sweep { animation: none !important; } .ticker { overflow-x: auto; } .ticker .track { animation: none !important; } .meter .cells i.on { animation: none !important; } }
+
+/* ==========================================================================
+   Stake control (glowing number + slider), parlay, join form, referral, voice
+   ========================================================================== */
+.link { background: none; border: 0; color: var(--brand); font: inherit; font-weight: 600; min-height: 44px; padding: 0 4px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.stakectl { display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: var(--radius-card); background: var(--surface-2); }
+.stakectl .glow { font-size: 64px; font-weight: 800; line-height: 1; letter-spacing: var(--ls-title); font-variant-numeric: tabular-nums; }
+.range { -webkit-appearance: none; appearance: none; width: 100%; height: 44px; background: transparent; margin: 4px 0 0; touch-action: pan-y; }
+.range::-webkit-slider-runnable-track { height: 14px; border-radius: 14px; background: linear-gradient(90deg, var(--hot) var(--fill), var(--border-strong) var(--fill)); }
+.range::-moz-range-track { height: 14px; border-radius: 14px; background: linear-gradient(90deg, var(--hot) var(--fill), var(--border-strong) var(--fill)); }
+.range::-webkit-slider-thumb { -webkit-appearance: none; width: 34px; height: 34px; margin-top: -10px; border-radius: 50%; background: #fff; border: 3px solid var(--hot); box-shadow: 0 0 18px var(--hot); }
+.range::-moz-range-thumb { width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 3px solid var(--hot); box-shadow: 0 0 18px var(--hot); }
+.rangelabels { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stakectl .summary { margin-top: 8px; background: var(--surface); }
+
+.parlaybar { position: fixed; left: var(--gutter); right: var(--gutter); bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 10px); z-index: 30; display: flex; align-items: center; gap: 12px; min-height: var(--touch); padding: 8px 16px; border-radius: var(--radius-card); border: 0; background: var(--grad-hero); color: #fff; font: inherit; box-shadow: 0 8px 28px rgba(107, 91, 255, .45); animation: rise var(--dur) var(--ease); }
+.parlaybar .pl { display: inline-flex; align-items: center; gap: 8px; } .parlaybar .pc { flex: 1; opacity: .9; font-size: 14px; } .parlaybar .po { font-weight: 800; font-size: 20px; animation: popnum 220ms var(--ease); }
+@media (min-width: 1024px) { .parlaybar { left: calc(248px + var(--gutter)); max-width: 520px; bottom: 20px; } }
+.legs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.leg { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 10px 12px; border-radius: var(--radius-control); background: var(--surface-2); }
+.leg .lq { display: flex; flex-direction: column; gap: 2px; font-size: 14px; font-weight: 600; min-width: 0; } .leg b { font-size: 18px; color: var(--c-pop); }
+.parlaycard { border-top: 3px solid var(--c-pop); }
+.legmini { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--text-2); }
+.legmini li { display: flex; justify-content: space-between; gap: 8px; } .legmini li.won b { color: var(--won-fg); } .legmini li.lost b { color: var(--lost-fg); text-decoration: line-through; } .legmini li.void { opacity: .6; }
+
+.joinform { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: var(--radius-card); border: 1px solid var(--brand); background: var(--brand-soft); }
+.joinform h3 { font-size: 18px; } .joinlinks { display: flex; justify-content: space-between; flex-wrap: wrap; }
+.referral { background: linear-gradient(135deg, rgba(47,196,255,.16), rgba(107,91,255,.16)); border-color: rgba(47,196,255,.35); }
+.refico { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--c-train-soft); color: var(--c-train); flex: none; }
+.refcode { display: flex; align-items: baseline; justify-content: space-between; padding: 12px 16px; border-radius: var(--radius-control); background: var(--surface); } .refcode b { font-size: 28px; letter-spacing: .12em; }
+.iconbtn.voiceon { color: var(--star); }

@@ -1,9 +1,9 @@
-import { Clock3, Languages } from "lucide-preact";
+import { Clock3, Languages, Volume2, VolumeX } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { LOCALES, type Locale } from "../i18n/index.ts";
 
 /** Sticky top bar: it gains a light blur and a hairline once the page scrolls under it. */
-export function Header({ locale, onLocale, wallet, coin, languageLabel, creditsLabel, onHome }: { locale: Locale; onLocale: (l: Locale) => void; wallet: string; coin: string; languageLabel: string; creditsLabel: string; onHome: () => void }) {
+export function Header({ voice, locale, onLocale, wallet, coin, languageLabel, creditsLabel, onHome }: { locale: Locale; onLocale: (l: Locale) => void; wallet: string; coin: string; voice: { on: boolean; label: string; toggle: () => void } | null; languageLabel: string; creditsLabel: string; onHome: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -24,6 +24,7 @@ export function Header({ locale, onLocale, wallet, coin, languageLabel, creditsL
       <div class="header-in">
         <button class="brand" onClick={onHome} aria-label="LateLotto"><i><Clock3 size={20} strokeWidth={2.4} /></i><span>Late<b>Lotto</b></span></button>
         <div class="grow" />
+        {voice && <button class={`iconbtn ${voice.on ? "voiceon" : ""}`} onClick={voice.toggle} aria-pressed={voice.on} aria-label={voice.label}>{voice.on ? <Volume2 size={22} /> : <VolumeX size={22} />}</button>}
         <div class="relative" ref={box}>
           <button class="iconbtn" aria-haspopup="menu" aria-expanded={open} aria-label={languageLabel} onClick={() => setOpen(!open)}><Languages size={22} /></button>
           {open && (

@@ -15,6 +15,11 @@ const it: Messages = {
   streak: { title: "Serie", days: (n) => (n === 1 ? "1 giorno" : `${n} giorni`), next: (d, b) => `Prossimo premio a ${d} giorni: ${b}`, max: "Tutti i premi presi. Leggenda.", milestone: (n, b) => `Serie di ${n} giorni! ${b} in regalo`, flash: "Flash" },
   meter: { threshold: (m) => `Oltre ${m} min = in ritardo`, up: (m) => `+${m} min in 10 min`, down: (m) => `−${m} min in 10 min`, steady: "stabile", forecast: "previsto", late: "di ritardo" },
   ticker: { anon: "Un giocatore", won: "ha vinto", lost: "ha perso", placed: "ha puntato", on: "su" },
+  slip: { bar: (n) => (n === 1 ? "1 evento" : `${n} eventi`), title: "Multipla", add: "+ Aggiungi alla multipla", added: "Nella multipla", remove: "Togli", odds: "Quota totale", confirm: "Gioca la multipla", maxWin: "Vincita massima: 100 volte la puntata", need2: "Aggiungi almeno un altro evento", placed: (w) => `Multipla registrata. Se va tutto bene incassi ${w}.`, legs: (n) => `${n} eventi`, clear: "Svuota" },
+  stake: { label: "Quanto punti", min: "min", max: (m) => `max ${m}`, ifRight: "Se va come dici incassi" },
+  join: { step: "Ultimo passo", title: "Scegli un nickname e una password", body: (c) => `La puntata parte subito dopo. Ricevi ${c} finti, e ogni giorno ti riportiamo almeno a 300.`, nickname: "Nickname", password: "Password", hint: "Almeno 8 caratteri. Il nickname sarà pubblico in classifica.", cta: (s) => `Gioca ${s}`, haveProfile: "Ho già un profilo", newProfile: "Crea un profilo", emailInstead: "Preferisco usare l’email", checkMail: "Controlla la tua email per confermare, poi torna qui e gioca." },
+  referral: { title: "Invita un amico", body: (b) => `Quando il tuo amico fa la prima puntata ricevi ${b}.`, code: "Il tuo codice", copy: "Copia link", copied: "Link copiato", share: "Condividi invito", shareText: (c) => `Gioca con me a LateLotto: dati veri, crediti finti. Codice invito ${c}`, counts: (i, p) => `${i} invitati · ${p} hanno giocato`, guest: "Crea un profilo per avere il tuo codice invito.", accepted: "Invito accettato" },
+  voice: { on: "Voce attiva", off: "Voce spenta", placed: (w) => `Puntata registrata. Vincita possibile: ${w}.`, won: (a) => `Hai vinto ${a}. Complimenti.`, lost: "Stavolta è andata male. Il prossimo treno è un’altra storia.", flash: "Attenzione: evento flash, quota maggiorata.", label: "Annunci vocali" },
   top: { late: "Più in ritardo ora", popular: "Più giocato", city: "Città più in ritardo", closing: "Chiude tra poco", avg: (m) => `${m} min di ritardo medio`, players: (n) => (n === 1 ? "1 puntata" : `${n} puntate`), ontime: "In orario", open: "Apri" },
   card: { late: "In ritardo", onTime: "In orario", per10: (w) => `10 → ${w}`, closes: "Chiude", forecast: "previsto", live: "In diretta", yes: "Sì", no: "No", over: (m) => `oltre ${m} min`, topOdds: "Top quota", hot: "Chiude presto" },
   question: {
@@ -70,7 +75,7 @@ const it: Messages = {
   disclaimerShort: "Solo gioco: crediti finti, nessun valore reale.",
   disclaimerFull: "LateLotto è un gioco. I crediti sono fittizi, non hanno alcun valore economico, non si comprano, non si vendono e non si cambiano con premi. Nessun denaro vero, mai. I dati sono reali, i soldi no.",
   attributionTitle: "Fonti dei dati",
-  errors: {
+  errors: { duplicate_leg: "Non puoi mettere due eventi dello stesso treno nella multipla.", bad_legs: "Una multipla ha da 2 a 5 eventi.", 
     generic: "Qualcosa è andato storto. Riprova.", market_closed: "Troppo tardi: le puntate su questo evento sono chiuse.", insufficient_credits: "Non hai abbastanza crediti.", bad_stake: "La puntata deve essere tra 10 e 500 crediti.",
     bad_pick: "Scelta non valida.", already_bet: "Hai già puntato su questo evento.", not_authenticated: "Sessione non pronta, riprova tra un secondo.", rate_limited: "Troppe puntate in poco tempo. Respira, riprova tra un minuto.",
     registration_required: "Serve un profilo salvato per farlo.", unknown_group: "Codice non valido.", bad_nickname: "Nickname non valido: 2-24 caratteri, lettere, numeri, spazio e - _ .", nickname_not_allowed: "Questo nickname non è consentito.", nickname_taken: "Nickname già in uso.",

@@ -15,6 +15,11 @@ const enUS: Messages = {
   streak: { title: "Streak", days: (n) => (n === 1 ? "1 day" : `${n} days`), next: (d, b) => `Next reward at ${d} days: ${b}`, max: "Every reward claimed. Legend.", milestone: (n, b) => `${n}-day streak! ${b} on the house`, flash: "Flash" },
   meter: { threshold: (m) => `Over ${m} min = late`, up: (m) => `+${m} min in 10 min`, down: (m) => `−${m} min in 10 min`, steady: "steady", forecast: "forecast", late: "late" },
   ticker: { anon: "A player", won: "won", lost: "lost", placed: "bet", on: "on" },
+  slip: { bar: (n) => (n === 1 ? "1 pick" : `${n} picks`), title: "Parlay", add: "+ Add to parlay", added: "In the parlay", remove: "Remove", odds: "Total odds", confirm: "Place parlay", maxWin: "Max win: 100x the stake", need2: "Add at least one more pick", placed: (w) => `Parlay placed. If everything lands you win ${w}.`, legs: (n) => `${n} picks`, clear: "Clear" },
+  stake: { label: "Your stake", min: "min", max: (m) => `max ${m}`, ifRight: "If you call it right you get" },
+  join: { step: "Last step", title: "Pick a nickname and a password", body: (c) => `Your bet goes through right after. You get ${c} in play money, and we top you up to 300 every day.`, nickname: "Nickname", password: "Password", hint: "At least 8 characters. Your nickname is public on the leaderboard.", cta: (s) => `Bet ${s}`, haveProfile: "I already have a profile", newProfile: "Create a profile", emailInstead: "Use email instead", checkMail: "Check your email to confirm, then come back and place your bet." },
+  referral: { title: "Invite a friend", body: (b) => `When your friend places their first bet you get ${b}.`, code: "Your code", copy: "Copy link", copied: "Link copied", share: "Share invite", shareText: (c) => `Play LateLotto with me: real data, fake credits. Invite code ${c}`, counts: (i, p) => `${i} invited · ${p} played`, guest: "Create a profile to get your invite code.", accepted: "Invite accepted" },
+  voice: { on: "Voice on", off: "Voice off", placed: (w) => `Bet placed. Possible win: ${w}.`, won: (a) => `You won ${a}. Nice one.`, lost: "Not this time. The next train is another story.", flash: "Heads up: flash event, boosted odds.", label: "Voice announcements" },
   top: { late: "Most delayed now", popular: "Most played", city: "Most delayed city", closing: "Closing soon", avg: (m) => `${m} min average delay`, players: (n) => (n === 1 ? "1 bet" : `${n} bets`), ontime: "On time", open: "Open" },
   card: { late: "Late", onTime: "On time", per10: (w) => `10 → ${w}`, closes: "Closes", forecast: "forecast", live: "Live", yes: "Yes", no: "No", topOdds: "Top odds", hot: "Closing soon", over: (m) => `over ${m} min` },
   question: {
@@ -70,7 +75,7 @@ const enUS: Messages = {
   disclaimerShort: "Just a game: fake credits, zero real value.",
   disclaimerFull: "LateLotto is a game. Credits are fictional, have no cash value, can't be bought, sold, or traded for prizes. No real money, ever. The data is real; the money isn't.",
   attributionTitle: "Data sources",
-  errors: {
+  errors: { duplicate_leg: "Two picks on the same trip can't go in one parlay.", bad_legs: "A parlay has 2 to 5 picks.", 
     generic: "Something broke. Give it another shot.", market_closed: "Too late, betting on this one is closed.", insufficient_credits: "Not enough credits.", bad_stake: "Stakes run from 10 to 500 credits.",
     bad_pick: "Invalid pick.", already_bet: "You already bet on this one.", not_authenticated: "Still getting set up. Try again in a second.", rate_limited: "Too many bets too fast. Take a breath, try again in a minute.",
     registration_required: "You need a saved profile for that.", unknown_group: "That code doesn't exist.", bad_nickname: "Invalid nickname: 2-24 characters, letters, numbers, space and - _ .", nickname_not_allowed: "That nickname isn't allowed.", nickname_taken: "That nickname is taken.",

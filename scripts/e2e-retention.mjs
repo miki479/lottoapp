@@ -49,7 +49,7 @@ try {
   check("daily progress recorded", prog && prog.bus === 1 && prog.train === 1 && prog.weather === 1 && prog.bonus_claimed === true, JSON.stringify(prog));
   await rpc("place_bet", { p_market: bus[1].id, p_pick: "no", p_stake: 50 }, A.token);
   p = await credits();
-  check("bonus is paid once per day", p.credits === 900 && p.streak === 1, `(credits ${p.credits}, streak ${p.streak})`);
+  check("bonus is paid once per day", p.credits === 950 && p.streak === 1, `(credits ${p.credits}, streak ${p.streak})`);
   const tr = (await call(`/rest/v1/trophies?user_id=eq.${A.id}&select=trophy_id`, { token: A.token })).body.map((t) => t.trophy_id);
   check("trophy for closing all rings", tr.includes("all_rings"), JSON.stringify(tr));
 

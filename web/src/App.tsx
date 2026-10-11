@@ -6,6 +6,8 @@ import { BetSheet } from "./components/BetSheet.tsx";
 import type { CatId } from "./components/CatChips.tsx";
 import { DelayMeter } from "./components/DelayMeter.tsx";
 import { Ticker } from "./components/Ticker.tsx";
+import { ParlayBar } from "./components/ParlayBar.tsx";
+import { ParlaySheet, slipOdds } from "./components/ParlaySheet.tsx";
 import { Header } from "./components/Header.tsx";
 import { Sidebar, TabBar, type Screen } from "./components/Nav.tsx";
 import { NicknameSheet } from "./components/NicknameSheet.tsx";
@@ -20,8 +22,9 @@ import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
 import { countdown, currencySymbol, dayIn, money, question, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
+import { announce, setVoice, voiceEnabled, voiceSupported } from "./lib/voice.ts";
 import { makeProfileCard, makeResultCard, shareImage } from "./lib/share.ts";
-import type { ActivityRow, LiveDelay, MyBet, MyStats, Pick, PopularRow, Profile, Progress, ResultRow } from "./lib/types.ts";
+import type { ActivityRow, ParlayRow, SlipLeg, LiveDelay, MyBet, MyStats, Pick, PopularRow, Profile, Progress, ResultRow } from "./lib/types.ts";
 import { Bets } from "./views/Bets.tsx";
 import { Home } from "./views/Home.tsx";
 import { ProfileView } from "./views/Profile.tsx";
@@ -64,6 +67,13 @@ export function App() {
   const [stale, setStale] = useState(false);
   const [offline, setOffline] = useState(!navigator.onLine);
   const [rank, setRank] = useState<{ rank: number | null; scope: string }>({ rank: null, scope: "" });
+  const [slip, setSlip] = useState<SlipLeg[]>([]);
+  const [parlayOpen, setParlayOpen] = useState(false);
+  const [parlays, setParlays] = useState<ParlayRow[]>([]);
+  const [needSignup, setNeedSignup] = useState(false);
+  const [quickJoin, setQuickJoin] = useState(false);
+  const [referral, setReferral] = useState<{ code: string; invited: number; paid: number } | null>(null);
+  const [voiceOn, setVoiceOn] = useState(voiceEnabled());
   const [installEvt, setInstallEvt] = useState<Event | null>(null);
 
   const msg = t(locale);
@@ -89,6 +99,12 @@ export function App() {
   const loadTrophies = useCallback(async () => { const { data } = await sb.from("trophies").select("trophy_id"); const s = new Set((data ?? []).map((r) => r.trophy_id as string)); setTrophies(s); return s; }, []);
   const loadBets = useCallback(async () => { const { data } = await sb.from("bets").select(BET_COLS).order("placed_at", { ascending: false }).limit(60); setBets((data ?? []) as unknown as MyBet[]); }, []);
 
+  const loadParlays = useCallback(async () => { const { data } = await sb.from("parlays").select("id,stake,odds,status,payout,placed_at,settled_at,parlay_legs(market_id,pick,odds,status,markets(city_id,kind,params))").order("placed_at", { ascending: false }).limit(40); setParlays((data ?? []) as unknown as ParlayRow[]); }, []);
+  const loadReferral = useCallback(async () => {
+    const { data } = await sb.rpc("my_referral"); const r = (data as { code: string; invited: number; paid: number }[] | null)?.[0];
+    if (r) setReferral({ code: r.code, invited: +r.invited, paid: +r.paid });
+  }, []);
+
   /** Guest session + wallet. Runs at start and again after signing in or out. */
   const bootstrap = useCallback(async () => {
     const uid = await ensureGuest(); if (!uid) return;
@@ -96,7 +112,16 @@ export function App() {
     await sb.rpc("ensure_profile", { p_city: prefer, p_locale: locale, p_country: region() });
     await sb.rpc("claim_daily_refill");
     const p = await loadProfile(); setSeen(new Set(JSON.parse(store.get(`seen.${uid}`) ?? "[]")));
-    await Promise.all([loadTrophies(), loadBets(), loadProgress(p?.timezone)]);
+    await Promise.all([loadTrophies(), loadBets(), loadParlays(), loadProgress(p?.timezone)]);
+    // Invite link: remember ?ref=CODE and redeem it as soon as the player has a registered account.
+    const ref = new URLSearchParams(location.search).get("ref"); if (ref) { store.set("ref", ref.toUpperCase()); history.replaceState(null, "", location.pathname); }
+    const { data: reg } = await sb.rpc("is_registered");
+    if (reg) {
+      const code = store.get("ref");
+      if (code) { const { data: okRef } = await sb.rpc("redeem_referral", { p_code: code }); store.set("ref", ""); if (okRef) flash(msg.referral.accepted); }
+      loadReferral();
+    }
+    const { data: need } = await sb.rpc("registration_required"); setNeedSignup(!!need);
     setReady(true);
   }, [locale]);
 
@@ -106,7 +131,7 @@ export function App() {
       if (event === "SIGNED_IN" || event === "USER_UPDATED") setTimeout(() => bootstrap(), 0);
     });
     bootstrap().catch(() => {});
-    fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY } }).then((r) => r.json()).then((s) => setGoogleOn(!!s?.external?.google)).catch(() => {});
+    fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY } }).then((r) => r.json()).then((s) => { setGoogleOn(!!s?.external?.google); setQuickJoin(!!s?.mailer_autoconfirm); }).catch(() => {});
     return () => sub.data.subscription.unsubscribe();
   }, []);
   useEffect(() => { if (profile && !profile.country && region()) sb.rpc("set_country", { p_country: region() }).then(loadProfile); }, [profile?.id]);
@@ -157,6 +182,9 @@ export function App() {
     return items;
   }, [inFilter, live, popular, locale, Math.floor(now / 1000)]);
 
+  const flashId = open.find((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now)?.id;
+  useEffect(() => { if (flashId) announce(`flash-${flashId}`, msg.voice.flash, locale); }, [flashId]);
+
   /** Ticker: what other players just did (real bets only), then recent results and tips. */
   const tickerItems = useMemo(() => {
     const out: { id: string; node: preact.ComponentChildren }[] = [];
@@ -182,7 +210,7 @@ export function App() {
 
   // ---------- results (Esito) ----------
   const unseen = bets.filter((b) => b.status !== "open" && !seen.has(b.id));
-  useEffect(() => { if (ready && !resultBet && !sheet && !auth && !nick && unseen.length > 0) setResultBet(unseen[0]!); }, [ready, unseen.map((b) => b.id).join(), !!sheet, auth, nick]);
+  useEffect(() => { if (ready && !resultBet && !sheet && !auth && !nick && unseen.length > 0) { const b = unseen[0]!; setResultBet(b); announce(`res-${b.id}`, b.status === "won" ? msg.voice.won(money(b.payout - b.stake, locale)) : b.status === "lost" ? msg.voice.lost : msg.bets.void, locale); } }, [ready, unseen.map((b) => b.id).join(), !!sheet, auth, nick]);
   const markSeen = (id: string) => { const n = new Set(seen); n.add(id); setSeen(n); store.set(seenKey, JSON.stringify([...n].slice(-300))); };
   const closeResult = () => { if (resultBet) markSeen(resultBet.id); setResultBet(null); };
 
@@ -200,7 +228,25 @@ export function App() {
     else if (reached) { flash(msg.streak.milestone(pf!.streak, `+${money(reached, locale)}`)); haptic.success(); }
     else if (pr?.bonus_claimed && !before.bonus) flash(`${msg.home.missionsDone} · +${money(RING_BONUS, locale)}`);
     else flash(msg.sheet.placed(money(Math.floor(stake * Number(pick === "yes" ? m.odds_yes : m.odds_no)), locale)));
+    announce(`placed-${m.id}`, msg.voice.placed(money(Math.floor(stake * Number(pick === "yes" ? m.odds_yes : m.odds_no)), locale)), locale);
     return null;
+  };
+  const addSlip = (m: MarketRow, pick: Pick) => { setSlip((s) => (s.some((l) => l.m.id === m.id) ? s : [...s, { m, pick }])); setSheet(null); flash(msg.slip.added); };
+  const placeParlay = async (legs: SlipLeg[], stake: number) => {
+    const { error } = await sb.rpc("place_parlay", { p_legs: legs.map((l) => ({ market: l.m.id, pick: l.pick })), p_stake: stake });
+    if (error) return msg.errors[Object.keys(msg.errors).find((k) => error.message.includes(k)) ?? "generic"]!;
+    const win = money(Math.floor(stake * slipOdds(legs)), locale);
+    setSlip([]); setParlayOpen(false);
+    await Promise.all([loadProfile(), loadParlays(), loadProgress(), loadTrophies()]);
+    flash(msg.slip.placed(win)); announce(`parlay-${Date.now()}`, msg.voice.placed(win), locale);
+    return null;
+  };
+  const toggleVoice = () => { const on = !voiceOn; setVoice(on); setVoiceOn(on); flash(on ? msg.voice.on : msg.voice.off); if (on) announce("voice-on", msg.voice.on, locale, true); };
+  const needJoin = needSignup && !registered;
+  const slipIds = new Set(slip.map((l) => l.m.id));
+  const shareReferral = async () => {
+    if (!referral) return; const url = `${location.origin}/?ref=${referral.code}`;
+    try { if (navigator.share) { await navigator.share({ title: "LateLotto", text: msg.referral.shareText(referral.code), url }); return; } await navigator.clipboard.writeText(url); flash(msg.referral.copied); } catch { /* cancelled */ }
   };
   const shareResult = async () => { if (!resultBet) return; const blob = await makeResultCard(resultBet, msg, locale); if ((await shareImage(blob, "LateLotto", msg.result.shareText)) === "saved") flash(msg.result.saved); };
   const shareProfile = async () => {
@@ -223,20 +269,22 @@ export function App() {
     <div class="shell">
       <Sidebar value={screen} onPick={go} msg={msg} openBets={openBets} />
       <div>
-        <Header locale={locale} onLocale={changeLocale} wallet={profile ? new Intl.NumberFormat(INTL_TAG[locale]).format(Math.round(wallet)) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
+        <Header voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} wallet={profile ? new Intl.NumberFormat(INTL_TAG[locale]).format(Math.round(wallet)) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
         <Ticker items={tickerItems} />
         <main class="content">
           {offline && <p class="note" style="margin-bottom:12px">{msg.common.offline}</p>}
           {stale && <p class="note warn" style="margin-bottom:12px">{msg.feedWarning}</p>}
           {screen === "home" && <Home msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} attributions={sources} installEvt={installEvt} />}
-          {screen === "bets" && <Bets bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
+          {screen === "bets" && <Bets parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "ranking" && <Ranking msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
-          {screen === "profile" && <ProfileView progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
+          {screen === "profile" && <ProfileView referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
         </main>
       </div>
       <TabBar value={screen} onPick={go} msg={msg} openBets={openBets} />
 
-      {sheet && <BetSheet m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} onClose={() => setSheet(null)} onPlace={place} />}
+      <ParlayBar count={slip.length} odds={slipOdds(slip)} msg={msg} locale={locale} onOpen={() => setParlayOpen(true)} />
+      {sheet && <BetSheet m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} quickJoin={quickJoin} inSlip={slipIds.has(sheet.m.id)} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
+      {parlayOpen && slip.length > 0 && <ParlaySheet legs={slip} msg={msg} locale={locale} credits={profile?.credits ?? 0} needJoin={needJoin} quickJoin={quickJoin} onClose={() => setParlayOpen(false)} onRemove={(id) => setSlip((s) => s.filter((l) => l.m.id !== id))} onClear={() => { setSlip([]); setParlayOpen(false); }} onJoined={async () => {}} onPlace={placeParlay} />}
       {auth && <AuthSheet msg={msg} guest={!registered} googleOn={googleOn} onClose={() => setAuth(false)} onDone={(text) => { setAuth(false); flash(text); }} />}
       {nick && <NicknameSheet msg={msg} current={profile?.display_name ?? null} onClose={() => setNick(false)} onSaved={(n) => { setNick(false); loadProfile(); flash(n); }} />}
       {resultBet && <ResultScreen bet={resultBet} msg={msg} locale={locale} remaining={Math.max(0, unseen.filter((b) => b.id !== resultBet.id).length)} onClose={closeResult} onShare={shareResult} onNext={() => { markSeen(resultBet.id); const next = unseen.find((b) => b.id !== resultBet.id); setResultBet(next ?? null); }} />}
