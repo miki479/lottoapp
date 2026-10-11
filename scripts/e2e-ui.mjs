@@ -46,7 +46,8 @@ try {
   await page.locator(".tabbar").getByText("Profilo").click(); await page.waitForTimeout(1500);
   check("profile shows streak, missions and invite code", (await page.locator(".streakcard").count()) === 1 && (await page.locator(".refcode b").count()) === 1);
 
-  // delete the account
+  // delete the account (dismiss the one-time notifications question first, it sits above the page)
+  if (await page.getByRole("button", { name: "No, grazie" }).count()) await page.getByRole("button", { name: "No, grazie" }).click();
   await page.getByText("Elimina account e dati").click(); await page.getByRole("button", { name: "Elimina definitivamente" }).click();
   await page.waitForTimeout(4000);
   check("account deleted and the app falls back to a fresh guest", /1\.?000/.test(await page.locator(".wallet").innerText()), await page.locator(".wallet").innerText());
