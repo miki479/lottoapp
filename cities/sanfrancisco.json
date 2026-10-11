@@ -1,0 +1,76 @@
+{
+  "id": "sanfrancisco",
+  "country": "US",
+  "name": {
+    "it": "San Francisco",
+    "en-US": "San Francisco",
+    "en-GB": "San Francisco",
+    "ja": "サンフランシスコ"
+  },
+  "timezone": "America/Los_Angeles",
+  "defaultLocale": "en-US",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 37.7749,
+    "lon": -122.4194
+  },
+  "categories": {
+    "bus": {
+      "enabled": false
+    },
+    "train": {
+      "enabled": false
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "bart-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://api.bart.gov/gtfsrt/tripupdate.aspx",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        1
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "San Francisco Bay Area Rapid Transit District open data",
+        "license": "BART Developer License Agreement: non-exclusive right to use, reproduce and redistribute, as-is; BART trademarks not to be used with the data (read 2026-10-11)",
+        "licenseUrl": "https://www.bart.gov/schedules/developers/developer-license-agreement",
+        "url": "https://www.bart.gov/schedules/developers"
+      },
+      "staticGtfsUrl": "https://www.bart.gov/dev/schedules/google_transit.zip",
+      "note": "DISABLED: api.bart.gov answers HTTP 403 to Supabase Edge Function egress (works from other networks), so the feed cannot be polled from the backend. Needs a different polling host before enabling. No BART logos or branding in the app; the data is credited by its legal name."
+    },
+    {
+      "id": "open-meteo-sanfrancisco",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}
