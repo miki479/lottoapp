@@ -10,7 +10,7 @@ export interface FeedAttribution {
 
 export interface FeedConfig {
   id: string;
-  category: Exclude<Category, "nature">;
+  category: Exclude<Category, "nature" | "strike">;
   /** Selects the adapter, e.g. "gtfs-rt", "open-meteo". */
   type: string;
   /** For gtfs-rt: "vehicle_positions" | "trip_updates" (explicit delays) | "trip_updates_times" (predicted times only; delay computed against the static timetable). */
@@ -50,7 +50,7 @@ export interface CityConfig {
   defaultLocale: string;
   tone: Record<string, string>;
   location: { lat: number; lon: number };
-  categories: Record<Exclude<Category, "nature">, { enabled: boolean }>;
+  categories: Record<Exclude<Category, "nature" | "strike">, { enabled: boolean }>;
   feeds: FeedConfig[];
 }
 

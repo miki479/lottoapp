@@ -18,7 +18,7 @@ export interface Trend { id: string; name: string; country: string; place?: Plac
 export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>;
   cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void;
-  nearNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
+  strikes: MarketRow[]; nearNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
   attributions: { name: string; via?: string; license: string; licenseUrl: string; url: string }[]; installEvt: Event | null;
 }
 
@@ -51,6 +51,13 @@ export function Home(p: HomeProps) {
         {p.nearNode}
       </div>
       <div class="main stack">
+        {p.strikes.length > 0 && (
+          <section class="stack" style="gap:8px">
+            <div class="sectionhead"><h2>{msg.strikes.title}</h2></div>
+            <p class="hint">{msg.strikes.sub}</p>
+            <div class="cardgrid">{p.strikes.map((m, i) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} index={i} hasLadder={false} showCity={false} onPick={p.onPick} />)}</div>
+          </section>
+        )}
         <div class="sectionhead"><h2>{msg.home.events}</h2></div>
         <CatChips tiles={tiles} value={p.cat} onPick={p.onCat} />
         {wxKinds.length > 1 && <div class="wxpills" role="tablist">{["all", ...wxKinds].map((k) => <button key={k} role="tab" aria-selected={wx === k} class={wx === k ? "on" : ""} onClick={() => setWx(k)}>{k === "all" ? msg.wx.all : k === "rain" ? msg.wx.rain : msg.wx.names[k as "temp"]}</button>)}</div>}

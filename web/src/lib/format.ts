@@ -3,8 +3,8 @@ import { INTL_TAG, type Locale, type Messages } from "../i18n/index.ts";
 export interface MarketRow {
   id: string;
   city_id: string;
-  category: "bus" | "train" | "weather" | "traffic" | "nature";
-  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at" | "metric_gt" | "quake_m";
+  category: "bus" | "train" | "weather" | "traffic" | "nature" | "strike";
+  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at" | "metric_gt" | "quake_m" | "strike_on";
   params: Record<string, unknown>;
   closes_at: string;
   target_at: string;
@@ -30,6 +30,7 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
   const time = formatWhen(m.target_at, locale, timeZone, now);
   if (m.kind === "rain_at") return msg.question.rain({ city: cityName, time });
   if (m.kind === "metric_gt") return msg.question.metric({ metric: m.params.metric as "temp", city: cityName, time, value: Number(m.params.threshold), unit: String(m.params.unit ?? "") });
+  if (m.kind === "strike_on") return msg.question.strike({ date: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone }).format(new Date(m.target_at)), who: [m.params.sector, m.params.unions].filter(Boolean).join(" · "), hours: String(m.params.hours ?? "") });
   if (m.kind === "quake_m") {
     // The window is global, so it is shown in the player's own time zone.
     const from = formatWhen(m.closes_at, locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now), to = formatWhen(m.target_at, locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now);

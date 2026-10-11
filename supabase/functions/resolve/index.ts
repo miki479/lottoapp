@@ -1,7 +1,8 @@
 // Runs every minute after `ingest`. Settles markets whose time has come, or voids them with a refund.
 import { resolveEvent } from "../_shared/shared/resolve.ts";
 import { historyKey, marketToEvent, type MarketRow } from "../_shared/shared/market.ts";
-import type { DelayObservation, MetricObservation, QuakeReading, WeatherObservation } from "../_shared/shared/types.ts";
+import { parseStrikeRss } from "../_shared/shared/strikes.ts";
+import type { DelayObservation, MetricObservation, QuakeReading, StrikeReading, WeatherObservation } from "../_shared/shared/types.ts";
 import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
 import { lastNotifyError, notifyFlash, notifyResults, notifyStreak } from "../_lib/notify.ts";
 
@@ -38,7 +39,11 @@ Deno.serve(safe(async (req) => {
       let weather: WeatherObservation[] = [];
       let metrics: MetricObservation[] = [];
       let quake: QuakeReading | null = null;
-      if (event.kind === "quake_m") {
+      let strike: StrikeReading | null = null;
+      if (event.kind === "strike_on") {
+        const list = await strikeList();
+        if (list) { strike = { present: list.some((s) => s.guid === event.guid && s.date === event.date) }; await sb.from("feed_health").upsert({ feed_id: "mit-scioperi", last_ok_at: new Date().toISOString(), last_error: null }); }
+      } else if (event.kind === "quake_m") {
         quake = await usgsWindow(event.closesAt, event.targetAt, event.minMag);
         if (quake) await sb.from("feed_health").upsert({ feed_id: "usgs", last_ok_at: new Date().toISOString(), last_error: null });
       } else if (event.kind === "metric_gt") {
@@ -61,7 +66,7 @@ Deno.serve(safe(async (req) => {
 
       const res = resolveEvent({
         event, now, feed: { feedId: event.feedId, lastOkAt: lastOk.get(event.kind === "metric_gt" ? "open-meteo-metrics" : event.feedId.startsWith("om-") ? "open-meteo-places" : event.feedId) ?? null },
-        staleAfterSec: feedStale.get(event.feedId) ?? (event.feedId === "usgs" ? 7200 : event.feedId.startsWith("om-") ? 10800 : 300), delays, weather, metrics, quake,
+        staleAfterSec: feedStale.get(event.feedId) ?? (event.feedId === "usgs" || event.feedId === "mit-scioperi" ? 7200 : event.feedId.startsWith("om-") ? 10800 : 300), delays, weather, metrics, quake, strike,
       });
       if (res.status === "pending") { out.pending++; continue; }
 
@@ -99,4 +104,17 @@ async function usgsWindow(from: number, to: number, minMag: number): Promise<Qua
     const mags = j.features.map((f) => Number(f.properties?.mag)).filter((m) => Number.isFinite(m) && m >= minMag);
     return { count: mags.length, maxMag: mags.length ? Math.max(...mags) : null };
   } catch { return null; }
+}
+
+let strikeCache: { at: number; list: ReturnType<typeof parseStrikeRss> | null } | null = null;
+/** The ministry's strike list, fetched at most once per run; null if unreadable or empty (an empty list is never read as "all revoked"). */
+async function strikeList() {
+  if (strikeCache && Date.now() - strikeCache.at < 60_000) return strikeCache.list;
+  let list: ReturnType<typeof parseStrikeRss> | null = null;
+  try {
+    const res = await fetch("https://scioperi.mit.gov.it/mit2/public/scioperi/rss", { headers: { "User-Agent": `LateLotto/0.1 (play-money game; contact: ${Deno.env.get("CONTACT_EMAIL") ?? "unset"})` }, signal: AbortSignal.timeout(20_000) });
+    if (res.ok) { const l = parseStrikeRss(await res.text()); list = l.length > 0 ? l : null; }
+  } catch { list = null; }
+  strikeCache = { at: Date.now(), list };
+  return list;
 }

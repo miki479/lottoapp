@@ -6,6 +6,7 @@ const enGB: Messages = {
   tabs: { bus: "Bus", train: "Trains", weather: "Weather", nature: "Nature", traffic: "Traffic" },
   wx: { all: "All", rain: "Rain", names: { temp: "Temperature", wind: "Wind", snow: "Snow", uv: "UV", aqi: "Air" }, forecast: (v) => `forecast ${v}`, quakeArt: "Earthquakes worldwide" },
   world: "Worldwide",
+  strikes: { title: "Strikes", sub: "Italian Ministry of Transport data. Yes = still on that day, No = revoked or moved.", art: "National strike" },
   home: { hero: { title: "Bus late again? Make it count.", body: "Real data, fake credits. Pick an event and have a go." },
     missions: "Today's missions", missionsLeft: (n) => (n === 1 ? "1 to go" : `${n} to go`), missionsDone: "All done", bonusTease: "+150 bonus for closing all three",
     top: "Featured", events: "Events", live: "Live",
@@ -44,6 +45,7 @@ const enGB: Messages = {
       aqi: `Will the European air quality index (EAQI) in ${q.city} at ${q.time} be at least ${q.value}?`,
     })[q.metric],
     quake: (q) => `Will an earthquake of magnitude ${q.mag} or more strike anywhere in the world between ${q.from} and ${q.to}?`,
+    strike: (q) => `Will the national strike on ${q.day} (${q.who.toLowerCase()}) still be on at the start of the day?`,
   },
   sheet: { title: "Bet slip", pick: "Your pick", stake: "Stake", potential: "Possible win", confirm: "Confirm bet", confirming: "One moment…", odds: "Odds", placed: (w) => `Bet placed. Possible win: ${w}.` },
   bets: {
@@ -55,7 +57,7 @@ const enGB: Messages = {
   result: {
     won: "Won", lost: "Lost", void: "Returned", amountWon: (n) => `+${n}`, amountLost: (n) => `−${n}`, amountVoid: (n) => `${n}`,
     subWon: "Called it. Rather well, too.", subLost: "The data had other ideas this time.", subVoid: "The data wasn't reliable, so your stake came back in full.",
-    measured: (m, s) => (m > 0 ? `Measured delay: ${m} min ${s} s` : `Measured delay: ${s} s`), threshold: (m) => `Line: over ${m} min`, metricMeasured: (n, v) => `${n} measured: ${v}`, quakeMeasured: (c, m) => (c === 0 ? "No earthquakes in that window" : `${c} earthquake${c === 1 ? "" : "s"}, strongest ${m}`), rainMeasured: (mm) => `Measured rain: ${mm} mm`,
+    measured: (m, s) => (m > 0 ? `Measured delay: ${m} min ${s} s` : `Measured delay: ${s} s`), threshold: (m) => `Line: over ${m} min`, strikeOn: "Strike still on", strikeOff: "Strike revoked or moved", metricMeasured: (n, v) => `${n} measured: ${v}`, quakeMeasured: (c, m) => (c === 0 ? "No earthquakes in that window" : `${c} earthquake${c === 1 ? "" : "s"}, strongest ${m}`), rainMeasured: (mm) => `Measured rain: ${mm} mm`,
     stake: "Stake", odds: "Odds", share: "Share result", shareText: "My result on LateLotto", close: "Close", more: (n) => `${n} more results to see`, saved: "Image saved",
   },
   ranking: {

@@ -10,6 +10,8 @@ import type {
   QuakeReading,
   RainEvent,
   Resolution,
+  StrikeEvent,
+  StrikeReading,
   WeatherObservation,
 } from "./types.ts";
 
@@ -24,6 +26,8 @@ export interface ResolveInput {
   metrics?: MetricObservation[];
   /** USGS result for the event's window (earthquake events only); null = USGS could not be read. */
   quake?: QuakeReading | null;
+  /** Ministry list result for strike events; null = the list could not be read. */
+  strike?: StrikeReading | null;
 }
 
 /** A bus delay reading counts only if taken within this window around the scheduled time. */
@@ -63,6 +67,7 @@ export function resolveEvent(input: ResolveInput): Resolution {
     event.kind === "rain_at" ? rainReading(event, input) :
     event.kind === "metric_gt" ? metricReading(event, input) :
     event.kind === "quake_m" ? quakeReading(event, input) :
+    event.kind === "strike_on" ? strikeReading(event, input) :
     delayReading(event, input);
 
   if (reading.kind === "none") {
@@ -120,6 +125,11 @@ function metricReading(event: MetricEvent, input: ResolveInput): Reading {
   const def = METRICS[event.metric];
   if (!Number.isFinite(obs.value) || obs.value < def.min || obs.value > def.max) return { kind: "implausible" };
   return { kind: "ok", yes: obs.value >= event.threshold, evidence: { metric: event.metric, value: obs.value, hourStart, threshold: event.threshold } };
+}
+
+function strikeReading(event: StrikeEvent, input: ResolveInput): Reading {
+  if (!input.strike) return { kind: "none" };
+  return { kind: "ok", yes: input.strike.present, evidence: { present: input.strike.present ? 1 : 0, date: event.date } };
 }
 
 function quakeReading(event: QuakeEvent, input: ResolveInput): Reading {

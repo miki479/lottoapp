@@ -41,7 +41,7 @@ export function BetSheet(p: {
     <Sheet onClose={p.onClose} label={p.msg.sheet.title}>
       <div class="shead"><h2>{p.msg.sheet.title}</h2><button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>
       <p class="q" style="font-weight:600">{question(p.m, p.msg, p.locale, cityName(city, p.locale), city.timezone)}</p>
-      {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : <TripScene m={p.m} now={p.now} hint={pick} />}
+      {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" || p.m.kind === "strike_on" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : <TripScene m={p.m} now={p.now} hint={pick} />}
       <div>
         <span class="detail">{p.msg.sheet.pick}</span>
         <div class="actions2" style="margin-top:8px">

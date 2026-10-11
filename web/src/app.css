@@ -626,3 +626,4 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .cbar.ok i { background: #3aa66b; } .cbar.warm i { background: #e0a21a; } .cbar.hot i { background: #e5484d; }
 .crowdscale summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; color: var(--text-2); font-size: 14px; }
 .crowdscale ul { padding-left: 18px; font-size: 13px; color: var(--text-2); display: grid; gap: 4px; }
+.metricart.strike svg { color: #d8423a; }

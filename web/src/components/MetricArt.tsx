@@ -1,4 +1,4 @@
-import { CloudFog, Snowflake, Sun, Thermometer, Wind } from "lucide-preact";
+import { CloudFog, Megaphone, Snowflake, Sun, Thermometer, Wind } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { MarketRow } from "../lib/format.ts";
 import type { Messages } from "../i18n/index.ts";
@@ -47,6 +47,7 @@ const ICON = { temp: Thermometer, wind: Wind, snow: Snowflake, uv: Sun, aqi: Clo
 
 /** Small illustration for non-rain weather questions and earthquakes: an icon, plus what the forecast says. */
 export function MetricArt({ m, msg, hint }: { m: MarketRow; msg: Messages; hint?: "yes" | "no" | null }) {
+  if (m.kind === "strike_on") return <div class={`metricart strike ${hint ?? ""}`} aria-hidden="true"><Megaphone size={30} /><b>{msg.strikes.art}</b>{typeof m.params.hours === "string" && m.params.hours && <span class="num">{String(m.params.hours).slice(0, 40)}</span>}</div>;
   if (m.kind === "quake_m") return <QuakeScene hint={hint} label={msg.wx.quakeArt} mag={Number(m.params.minMag ?? 5)} />;
   const metric = (m.params.metric as keyof typeof ICON) ?? "temp";
   const Icon = ICON[metric] ?? Thermometer;

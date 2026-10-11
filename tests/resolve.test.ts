@@ -171,3 +171,29 @@ describe("metric and quake events", () => {
     expect(out.filter((m) => m.params.metric === "wind")).toHaveLength(2);
   });
 });
+
+import { buildStrikeMarkets, parseStrikeRss } from "../shared/strikes.ts";
+describe("strikes", () => {
+  const xml = `<rss><channel><item><title>Data inizio: 04/12/2026 - Settore: Generale - Rilevanza: Nazionale - Regione:  Italia - Provincia: Tutte</title><description><![CDATA[modalità: 24 ORE<br/>Data fine: 04/12/2026<br/>Settore: Generale<br/>Rilevanza: Nazionale<br/>Regione:  Italia<br/>Sindacati: CUB<br/>Categoria interessata: TUTTI I SETTORI]]></description><guid>http://scioperi.mit.gov.it/8600</guid></item><item><title>Data inizio: 12/10/2026 - Settore: Trasporto pubblico locale - Rilevanza: Locale - Regione: Puglia</title><description><![CDATA[Settore: Trasporto pubblico locale<br/>Rilevanza: Locale]]></description><guid>http://scioperi.mit.gov.it/8568</guid></item></channel></rss>`;
+  it("parses the ministry feed and offers only national train strikes", () => {
+    const s = parseStrikeRss(xml);
+    expect(s).toHaveLength(2);
+    expect(s[0]).toMatchObject({ date: "2026-12-04", sector: "Generale", scope: "Nazionale", unions: "CUB" });
+    const now = Date.UTC(2026, 9, 12) / 1000;
+    const m = buildStrikeMarkets(s, now);
+    expect(m).toHaveLength(1);
+    expect(m[0]).toMatchObject({ kind: "strike_on", dedupe_key: "mit|http://scioperi.mit.gov.it/8600|2026-12-04" });
+    expect(Date.parse(m[0]!.closes_at)).toBeLessThan(Date.parse(m[0]!.target_at));
+  });
+  it("garbage feed yields nothing; strikes too soon or too far are skipped", () => {
+    expect(parseStrikeRss("<html>blocked</html>")).toEqual([]);
+    expect(buildStrikeMarkets(parseStrikeRss(xml), Date.UTC(2026, 11, 3) / 1000)).toEqual([]);
+  });
+  const ev = { id: "s", cityId: "rome", feedId: "mit-scioperi", closesAt: 0, targetAt: 100, deadlineAt: 50000, kind: "strike_on" as const, category: "strike" as const, guid: "g", date: "2026-12-04" };
+  const feed = { feedId: "mit-scioperi", lastOkAt: 100 };
+  it("resolves yes if still listed, no if gone, pending if the list is unreadable", () => {
+    expect(resolveEvent({ event: ev, now: 200, feed, staleAfterSec: 9999, delays: [], weather: [], strike: { present: true } })).toMatchObject({ status: "resolved", outcome: "yes" });
+    expect(resolveEvent({ event: ev, now: 200, feed, staleAfterSec: 9999, delays: [], weather: [], strike: { present: false } })).toMatchObject({ status: "resolved", outcome: "no" });
+    expect(resolveEvent({ event: ev, now: 200, feed, staleAfterSec: 9999, delays: [], weather: [], strike: null }).status).toBe("pending");
+  });
+});

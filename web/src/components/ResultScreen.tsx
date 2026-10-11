@@ -10,6 +10,7 @@ import type { MyBet } from "../lib/types.ts";
 /** What the market measured, in words ("Measured delay: 1 min 44 s"). */
 export function evidenceLines(b: MyBet, msg: Messages): string[] {
   const m = b.markets, ev = m.evidence;
+  if (m.kind === "strike_on") return typeof ev?.present === "number" ? [ev.present ? msg.result.strikeOn : msg.result.strikeOff] : [];
   if (m.kind === "metric_gt") return typeof ev?.value === "number" ? [msg.result.metricMeasured(msg.wx.names[m.params.metric as "temp"], `${ev.value}${String(m.params.unit ?? "")}`)] : [];
   if (m.kind === "quake_m") return typeof ev?.count === "number" ? [msg.result.quakeMeasured(ev.count, `M${Number(ev.maxMag ?? 0).toFixed(1)}`)] : [];
   if (m.kind === "rain_at") return typeof ev?.precipitationMm === "number" ? [msg.result.rainMeasured(Math.round(ev.precipitationMm * 10) / 10)] : [];

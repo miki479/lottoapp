@@ -6,6 +6,7 @@ const it: Messages = {
   tabs: { bus: "Bus", train: "Treni", weather: "Meteo", nature: "Natura", traffic: "Traffico" },
   wx: { all: "Tutto", rain: "Pioggia", names: { temp: "Temperatura", wind: "Vento", snow: "Neve", uv: "UV", aqi: "Aria" }, forecast: (v) => `previsto ${v}`, quakeArt: "Terremoti nel mondo" },
   world: "Tutto il mondo",
+  strikes: { title: "Scioperi", sub: "Dati del Ministero dei Trasporti. Sì = ancora in programma quel giorno, No = revocato o spostato.", art: "Sciopero nazionale" },
   home: { hero: { title: "Il bus è in ritardo? Almeno ci vinci.", body: "Dati veri, crediti finti. Scegli un evento e fai la tua previsione." },
     missions: "Missioni di oggi", missionsLeft: (n) => (n === 1 ? "Ne manca uno" : `Ne mancano ${n}`), missionsDone: "Tutte completate", bonusTease: "Bonus +150 se le chiudi tutte",
     top: "In evidenza", events: "Eventi", live: "Dal vivo",
@@ -44,6 +45,7 @@ const it: Messages = {
       aqi: `L'aria a ${q.city} alle ${q.time} avrà un indice di inquinamento europeo (EAQI) di almeno ${q.value}?`,
     })[q.metric],
     quake: (q) => `Ci sarà un terremoto di magnitudo ${q.mag} o più, in qualunque parte del mondo, tra le ${q.from} e le ${q.to}?`,
+    strike: (q) => `Lo sciopero nazionale del ${q.day} (${q.who.toLowerCase()}) sarà ancora confermato a inizio giornata?`,
   },
   sheet: { title: "Schedina", pick: "La tua scelta", stake: "Puntata", potential: "Vincita possibile", confirm: "Conferma puntata", confirming: "Un attimo…", odds: "Quota", placed: (w) => `Puntata registrata. Vincita possibile: ${w}.` },
   bets: {
@@ -55,7 +57,7 @@ const it: Messages = {
   result: {
     won: "Vinta", lost: "Persa", void: "Rimborsata", amountWon: (n) => `+${n}`, amountLost: (n) => `−${n}`, amountVoid: (n) => `${n}`,
     subWon: "Hai azzeccato la previsione.", subLost: "Stavolta il dato ha detto altro.", subVoid: "I dati non erano affidabili: puntata restituita per intero.",
-    measured: (m, s) => (m > 0 ? `Ritardo misurato: ${m} min ${s} s` : `Ritardo misurato: ${s} s`), threshold: (m) => `Soglia: oltre ${m} min`, metricMeasured: (n, v) => `${n} misurato: ${v}`, quakeMeasured: (c, m) => (c === 0 ? "Nessun terremoto in quell'intervallo" : `${c} ${c === 1 ? "terremoto" : "terremoti"}, il più forte ${m}`), rainMeasured: (mm) => `Pioggia misurata: ${mm} mm`,
+    measured: (m, s) => (m > 0 ? `Ritardo misurato: ${m} min ${s} s` : `Ritardo misurato: ${s} s`), threshold: (m) => `Soglia: oltre ${m} min`, strikeOn: "Sciopero ancora in programma", strikeOff: "Sciopero revocato o spostato", metricMeasured: (n, v) => `${n} misurato: ${v}`, quakeMeasured: (c, m) => (c === 0 ? "Nessun terremoto in quell'intervallo" : `${c} ${c === 1 ? "terremoto" : "terremoti"}, il più forte ${m}`), rainMeasured: (mm) => `Pioggia misurata: ${mm} mm`,
     stake: "Puntata", odds: "Quota", share: "Condividi risultato", shareText: "Il mio risultato su LateLotto", close: "Chiudi", more: (n) => `Altri ${n} esiti da vedere`, saved: "Immagine salvata",
   },
   ranking: {

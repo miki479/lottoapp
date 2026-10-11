@@ -1,4 +1,4 @@
-export type Category = "bus" | "train" | "weather" | "traffic" | "nature";
+export type Category = "bus" | "train" | "weather" | "traffic" | "nature" | "strike";
 export type Outcome = "yes" | "no";
 export type BetStatus = "open" | "won" | "lost" | "void";
 
@@ -7,7 +7,8 @@ export type MarketEvent =
   | DelayEvent
   | RainEvent
   | MetricEvent
-  | QuakeEvent;
+  | QuakeEvent
+  | StrikeEvent;
 
 interface BaseEvent {
   id: string;
@@ -68,6 +69,18 @@ export interface MetricObservation {
   /** When it was fetched (epoch seconds): a reading fetched before its hour ended is still a forecast. */
   fetchedAt?: number;
 }
+
+/** "Is this announced strike still on at the start of its day (not revoked, not moved)?" */
+export interface StrikeEvent extends BaseEvent {
+  kind: "strike_on";
+  category: "strike";
+  guid: string;
+  /** Announced start day, YYYY-MM-DD. */
+  date: string;
+}
+
+/** Whether a strike is still listed, with the same start day, on the ministry's list. */
+export interface StrikeReading { present: boolean }
 
 /** Earthquakes reported by USGS in a window. */
 export interface QuakeReading { count: number; maxMag: number | null }

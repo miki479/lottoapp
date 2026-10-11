@@ -3,6 +3,7 @@
 import GtfsRt from "npm:gtfs-realtime-bindings@2.2.0";
 import { delayAdapterFor, weatherAdapterFor } from "../_shared/shared/adapters/index.ts";
 import type { RtFeed, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
+import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
 
@@ -58,9 +59,32 @@ Deno.serve(safe(async (req) => {
   }
   report["open-meteo-places"] = await ingestPlaces(sb, now, lastAttempt.get("open-meteo-places") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["open-meteo-metrics"] = await ingestMetrics(sb, now, lastAttempt.get("open-meteo-metrics") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
+  report["mit-scioperi"] = await ingestStrikes(sb, now, lastAttempt.get("mit-scioperi") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["usgs"] = await pingUsgs(sb, now, lastAttempt.get("usgs") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   return Response.json(report);
 }));
+
+export const STRIKE_RSS = "https://scioperi.mit.gov.it/mit2/public/scioperi/rss";
+
+/** Hourly: the Italian Ministry of Transport's public strike list. National train strikes become one question each. */
+async function ingestStrikes(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
+  if (now - last < 3600 - 5) return "not due";
+  await sb.from("feed_health").upsert({ feed_id: "mit-scioperi", last_attempt_at: new Date(now * 1000).toISOString() });
+  try {
+    const strikes = parseStrikeRss(new TextDecoder().decode(await fetchBytes(STRIKE_RSS)));
+    if (strikes.length === 0) throw new Error("no strikes parsed (feed empty or changed)");
+    const markets = buildStrikeMarkets(strikes, now);
+    if (markets.length) {
+      const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true });
+      if (error) throw new Error(error.message);
+    }
+    await sb.from("feed_health").upsert({ feed_id: "mit-scioperi", last_ok_at: new Date().toISOString(), last_error: null });
+    return `ok ${strikes.length} strikes, ${markets.length} offered`;
+  } catch (e) {
+    await sb.from("feed_health").upsert({ feed_id: "mit-scioperi", last_error: String((e as Error).message ?? e).slice(0, 300), last_error_at: new Date().toISOString() });
+    throw e;
+  }
+}
 
 /** Hourly health check of the USGS earthquake feed (the actual window counts are read by `resolve`). */
 async function pingUsgs(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {

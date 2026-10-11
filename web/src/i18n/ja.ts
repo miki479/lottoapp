@@ -6,6 +6,7 @@ const ja: Messages = {
   tabs: { bus: "バス", train: "電車", weather: "天気", nature: "自然", traffic: "渋滞" },
   wx: { all: "すべて", rain: "雨", names: { temp: "気温", wind: "風", snow: "雪", uv: "UV", aqi: "空気" }, forecast: (v) => `予報 ${v}`, quakeArt: "世界の地震" },
   world: "世界中",
+  strikes: { title: "ストライキ", sub: "イタリア運輸省のデータ。はい＝その日も予定通り、いいえ＝中止または延期。", art: "全国ストライキ" },
   home: { hero: { title: "バスが遅れる？ならば予想で楽しもう。", body: "データは本物、クレジットは架空。イベントを選んで予想しよう。" },
     missions: "今日のミッション", missionsLeft: (n) => `あと${n}つ`, missionsDone: "すべて達成", bonusTease: "3つ全部達成でボーナス +150",
     top: "注目", events: "イベント", live: "ライブ",
@@ -44,6 +45,7 @@ const ja: Messages = {
       aqi: `${q.city}の${q.time}の欧州大気質指数（EAQI）は${q.value}以上になりますか？`,
     })[q.metric],
     quake: (q) => `${q.from}から${q.to}の間に、世界のどこかでマグニチュード${q.mag}以上の地震が起きますか？`,
+    strike: (q) => `${q.day}の全国ストライキ（${q.who}）は、その日の始まりにも実施予定のままですか？`,
   },
   sheet: { title: "予想シート", pick: "あなたの予想", stake: "賭け額", potential: "見込み配当", confirm: "予想を確定", confirming: "少々お待ちください…", odds: "オッズ", placed: (w) => `予想を登録しました。配当は最大${w}です。` },
   bets: {
@@ -55,7 +57,7 @@ const ja: Messages = {
   result: {
     won: "的中", lost: "外れ", void: "返金", amountWon: (n) => `+${n}`, amountLost: (n) => `−${n}`, amountVoid: (n) => `${n}`,
     subWon: "予想的中です。", subLost: "今回はデータが違いました。", subVoid: "データが信頼できなかったため、賭け額を全額お返ししました。",
-    measured: (m, s) => (m > 0 ? `実測の遅延：${m}分${s}秒` : `実測の遅延：${s}秒`), threshold: (m) => `しきい値：${m}分超`, rainMeasured: (mm) => `実測の降水量：${mm} mm`, metricMeasured: (n, v) => `${n}の実測値：${v}`, quakeMeasured: (c, m) => (c === 0 ? "その時間帯に地震はありませんでした" : `地震${c}回、最大${m}`),
+    measured: (m, s) => (m > 0 ? `実測の遅延：${m}分${s}秒` : `実測の遅延：${s}秒`), threshold: (m) => `しきい値：${m}分超`, rainMeasured: (mm) => `実測の降水量：${mm} mm`, strikeOn: "ストライキは予定通り", strikeOff: "ストライキは中止または延期", metricMeasured: (n, v) => `${n}の実測値：${v}`, quakeMeasured: (c, m) => (c === 0 ? "その時間帯に地震はありませんでした" : `地震${c}回、最大${m}`),
     stake: "賭け額", odds: "オッズ", share: "結果をシェア", shareText: "LateLottoでの私の結果", close: "閉じる", more: (n) => `他に${n}件の結果`, saved: "画像を保存しました",
   },
   ranking: {
