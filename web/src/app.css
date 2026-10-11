@@ -518,12 +518,11 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .scene .streaks i:nth-child(4) { top: 19px; left: 40%; animation-delay: -.45s; } .scene .streaks i:nth-child(5) { top: 6px; left: 20%; animation-delay: -.6s; } .scene .streaks i:nth-child(6) { top: 16px; left: 70%; animation-delay: -.75s; }
 .scene .flame { position: absolute; right: 100%; top: 40%; width: 22px; height: 9px; margin-right: -2px; border-radius: 9px 0 0 9px; background: linear-gradient(270deg, #ffd23f, #ff7a1a 55%, rgba(255, 60, 20, 0)); filter: blur(.4px); transform-origin: 100% 50%; }
 
-.scene[data-hint="no"] .rider { opacity: 1; left: 0; animation: nitro 1.15s cubic-bezier(.5, 0, .7, .4) infinite; transition: none; }
-.scene[data-hint="no"] .rider > svg:last-of-type, .scene[data-hint="no"] .rider > svg { animation: jolt .09s linear infinite; }
+.scene[data-hint="no"] .rider, .scene[data-hint="no"] .rider > svg:last-of-type, .scene[data-hint="no"] .rider > svg { animation: jolt .09s linear infinite; }
 .scene[data-hint="no"] .flame { display: block; animation: flame .12s ease-in-out infinite alternate; }
 .scene[data-hint="no"] .streaks { display: block; } .scene[data-hint="no"] .streaks i { animation: streak .45s linear infinite; }
 .scene[data-hint="no"] .puff { animation-duration: .45s !important; }
-.scene[data-hint="no"] .done { width: calc(100% - 26px); }
+.scene[data-hint="no"] .done { width: calc(100% - 34px); }
 
 .scene[data-hint="yes"] .rider { opacity: 1; left: calc((100% - var(--w)) * .42); animation: crawl 7s ease-in-out infinite alternate; transition: none; filter: saturate(.35) brightness(.88); }
 .scene[data-hint="yes"] .rider > svg { animation: sag 2.4s ease-in-out infinite; transform-origin: 20% 100%; }

@@ -5,6 +5,7 @@ import type { Locale, Messages } from "../i18n/index.ts";
 import type { LiveDelay, Pick } from "../lib/types.ts";
 import { BusSide, CloudRainSide, TrainSide } from "./Vehicles.tsx";
 import { Sky, useHint } from "./Sky.tsx";
+import { useRef, useEffect } from "preact/hooks";
 import { DelayMeter } from "./DelayMeter.tsx";
 import { Flag } from "./Flag.tsx";
 
@@ -21,6 +22,23 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
   const { m, msg, locale, now, live } = p;
   const city = cityOf(m.city_id), Kind = KIND[m.category];
   const { hint, show, clear } = useHint();
+  // Bus/train what-if: the vehicle is moved by CSS transitions starting from wherever it is right now, so switching from
+  // "on time" (nitro, near the end) to "late" makes it brake and roll back, instead of jumping.
+  const rider = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const el = rider.current; if (!el || m.category === "weather") return;
+    if (hint) {
+      // measure first (the idle animation is still driving `left`), then take over from that exact spot
+      const x = el.getBoundingClientRect().left - (el.parentElement as HTMLElement).getBoundingClientRect().left;
+      el.style.animation = "none"; el.style.opacity = "1"; el.style.transition = "none"; el.style.left = `${x}px`; void el.offsetWidth;
+      el.style.transition = hint === "no" ? "left 1.3s cubic-bezier(.55, 0, .85, .35)" : "left 1.5s cubic-bezier(.15, .8, .25, 1)";
+      el.style.left = hint === "no" ? "calc(100% - var(--w) - 18px)" : "calc((100% - var(--w)) * .4)";
+    } else {
+      el.style.transition = "opacity .35s"; el.style.opacity = "0";
+      const t = setTimeout(() => { el.style.cssText = ""; }, 380);
+      return () => clearTimeout(t);
+    }
+  }, [hint]);
   const left = Date.parse(m.closes_at) - now;
   // The vehicle covers its trip in the last 3 hours before the arrival time: it reaches the end exactly at the target time.
   // More wind puffs behind it the closer the arrival is (a faster run); parked and puff-free while it is still far off.
@@ -42,7 +60,7 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
       {m.category === "weather" ? <Sky mm={p.mm} hint={hint} msg={msg} /> : (
       <div class={`scene ${m.category}`} aria-hidden="true" data-hint={hint ?? ""} style={`--p:${progress.toFixed(4)};--w:${w}px;--cyc:${cyc}s;--off:-${off}s`}>
         <span class="road" /><span class="done" /><span class="streaks"><i /><i /><i /><i /><i /><i /></span><span class="dest"><MapPin size={16} /><i class="ping" /></span>
-        <span class="rider">
+        <span class="rider" ref={rider}>
           {Array.from({ length: puffs }, (_, i) => <i key={i} class="puff" style={`--t:${(2.6 - puffs * 0.2).toFixed(2)}s;animation-delay:${-(i * (2.6 - puffs * 0.2)) / puffs}s;top:${3 + (i % 3) * 5}px`} />)}
           <Hourglass size={14} class="wait" /><i class="flame" />
           <Kind size={iconH} />

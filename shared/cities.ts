@@ -21,6 +21,10 @@ export interface FeedConfig {
   headers?: Record<string, string>;
   /** Name of the environment variable holding the key, or null for open feeds. */
   requiresKey: string | null;
+  /** Where the key goes: "query" (ODPT style, default) or "header" (name in keyHeader, optional keyPrefix such as "Bearer "). */
+  keyIn?: "query" | "header";
+  keyHeader?: string;
+  keyPrefix?: string;
   pollSeconds: number;
   staleAfterSeconds: number;
   delaySemantics?: "last_passed_stop";

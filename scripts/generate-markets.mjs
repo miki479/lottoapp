@@ -6,7 +6,11 @@
 // Without --gtfs-dir the feed's staticGtfsUrl is downloaded and unzipped to a temp dir.
 // Without --apply it only prints what it would create. Needs SUPABASE_URL and
 // SUPABASE_SERVICE_ROLE_KEY for --apply and for reading odds history.
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { createWriteStream, existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { createInterface } from "node:readline";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { unzipSync } from "fflate";
@@ -16,7 +20,7 @@ import { localDayStart } from "../shared/time.ts";
 import { historyKey } from "../shared/market.ts";
 import { marketToEvent } from "../shared/market.ts";
 import { supabaseUrl } from "./lib-env.mjs";
-import { readAll, readTable } from "./lib-csv.mjs";
+import { readAll, readTable, splitCsv } from "./lib-csv.mjs";
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((acc, a, i, all) => (a.startsWith("--") ? [...acc, [a.slice(2), all[i + 1]?.startsWith("--") || all[i + 1] === undefined ? true : all[i + 1]]] : acc), []));
 const city = validateCity(JSON.parse(readFileSync(new URL(`../cities/${args.city}.json`, import.meta.url), "utf8")));
@@ -40,13 +44,35 @@ async function historyLookup() {
 async function gtfsDir(feed) {
   if (args["gtfs-dir"]) return args["gtfs-dir"];
   if (!feed.staticGtfsUrl) throw new Error(`feed ${feed.id} has no staticGtfsUrl: pass --gtfs-dir`);
-  const res = await fetch(feed.staticGtfsUrl, { redirect: "follow", signal: AbortSignal.timeout(300000) });
+  const res = await fetch(feed.staticGtfsUrl, { redirect: "follow", signal: AbortSignal.timeout(600000) });
   if (!res.ok) throw new Error(`GTFS download failed: ${res.status}`);
-  const wanted = new Set(["agency.txt", "routes.txt", "trips.txt", "stop_times.txt", "stops.txt", "calendar.txt", "calendar_dates.txt"]);
-  const files = unzipSync(new Uint8Array(await res.arrayBuffer()), { filter: (f) => wanted.has(f.name) });
   const dir = mkdtempSync(join(tmpdir(), "gtfs-"));
-  for (const [name, bytes] of Object.entries(files)) if (name.endsWith(".txt")) writeFileSync(join(dir, name.replaceAll("/", "_")), bytes);
+  // The archive goes to disk and the big table is streamed out of it with `unzip -p`: national feeds (Switzerland: ~300 MB zipped)
+  // do not fit in memory. Small tables are extracted next to it.
+  const zip = join(dir, "feed.zip");
+  await pipeline(Readable.fromWeb(res.body), createWriteStream(zip));
+  const names = ["agency.txt", "routes.txt", "trips.txt", "stops.txt", "calendar.txt", "calendar_dates.txt"];
+  const x = spawnSync("unzip", ["-o", "-qq", zip, ...names, "-d", dir], { stdio: "inherit" });
+  if (x.status !== 0 && x.status !== 11) throw new Error(`unzip failed (${x.status})`); // 11: an optional file (calendar.txt) is absent
   return dir;
+}
+
+/** stop_times rows, streamed from the archive (or from a plain file when --gtfs-dir points at an extracted feed). */
+async function* stopTimes(dir) {
+  const zip = join(dir, "feed.zip");
+  if (!existsSync(zip)) { yield* readTable(join(dir, "stop_times.txt")); return; }
+  const p = spawn("unzip", ["-p", zip, "stop_times.txt"], { stdio: ["ignore", "pipe", "inherit"] });
+  const rl = createInterface({ input: p.stdout, crlfDelay: Infinity });
+  let header = null;
+  for await (const raw of rl) {
+    const line = header === null ? raw.replace(/^\uFEFF/, "") : raw;
+    if (!line) continue;
+    const cells = splitCsv(line);
+    if (header === null) { header = cells; continue; }
+    const row = {};
+    for (let i = 0; i < header.length; i++) row[header[i]] = cells[i] ?? "";
+    yield row;
+  }
 }
 
 async function delayMarkets(feed) {
@@ -78,7 +104,7 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget) {
   const shuffled = trips.map((t) => [rand(), t]).sort((a, b) => a[0] - b[0]).map((x) => x[1]).slice(0, budget * 6);
   const wanted = new Map(shuffled.map((t) => [t.trip_id, t]));
   const byTrip = new Map();
-  for await (const st of readTable(join(dir, "stop_times.txt"))) {
+  for await (const st of stopTimes(dir)) {
     if (!wanted.has(st.trip_id)) continue;
     const arr = byTrip.get(st.trip_id) ?? [];
     arr.push({ seq: Number(st.stop_sequence), stopId: st.stop_id, time: st.arrival_time || st.departure_time, timepoint: st.timepoint === "1" });

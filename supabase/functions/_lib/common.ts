@@ -50,7 +50,7 @@ export function feedUrl(feed: FeedConfig, city: CityConfig): string {
     });
     url = `${feed.url}?${q}`;
   }
-  if (feed.requiresKey) {
+  if (feed.requiresKey && feed.keyIn !== "header") {
     const key = Deno.env.get(feed.requiresKey);
     if (!key) throw new Error(`missing env ${feed.requiresKey}`);
     url += `${url.includes("?") ? "&" : "?"}acl:consumerKey=${encodeURIComponent(key)}`;

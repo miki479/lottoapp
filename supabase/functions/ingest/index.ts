@@ -80,7 +80,13 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
 
   const adapter = delayAdapterFor(feed);
   if (!adapter) throw new Error(`no adapter for ${feed.type}/${feed.kind}`);
-  const bytes = await fetchBytes(url, feed.headers);
+  const headers = { ...(feed.headers ?? {}) };
+  if (feed.requiresKey && feed.keyIn === "header") {
+    const key = Deno.env.get(feed.requiresKey);
+    if (!key) throw new Error(`missing env ${feed.requiresKey}`);
+    headers[feed.keyHeader ?? "Authorization"] = `${feed.keyPrefix ?? ""}${key}`;
+  }
+  const bytes = await fetchBytes(url, headers);
   const msg = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(bytes), { longs: Number }) as RtFeed;
   const trips = new Set(tracked.keys());
   if (trips.size === 0) return 0; // nothing to resolve right now (e.g. no service at night): healthy, nothing stored
