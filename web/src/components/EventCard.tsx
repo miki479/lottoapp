@@ -1,4 +1,4 @@
-import { Bus, CloudRain, Clock, TrainFront } from "lucide-preact";
+import { Bus, CloudRain, Clock, Star, TrainFront, Zap } from "lucide-preact";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { countdown, fmtOdds, per10, question, type MarketRow } from "../lib/format.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -14,7 +14,7 @@ export function liveLabel(msg: Messages, l: LiveDelay) {
 }
 
 /** One event: what it is (detail row), the question (title), then two big, equal choices. */
-export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now: number; live?: LiveDelay; index: number; showCity: boolean; onPick: (m: MarketRow, pick: Pick) => void }) {
+export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now: number; live?: LiveDelay; index: number; top?: boolean; showCity: boolean; onPick: (m: MarketRow, pick: Pick) => void }) {
   const { m, msg, locale, now, live } = p;
   const city = cityOf(m.city_id), Kind = KIND[m.category];
   const left = Date.parse(m.closes_at) - now;
@@ -22,7 +22,8 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
   const who = isRain ? cityName(city, locale) : `${String(m.params.routeName ?? "")} · ${cityName(city, locale)}`;
   const warn = live && live.delay_sec > Number(m.params.thresholdSec ?? 180) / 2;
   return (
-    <article class="card event" style={`--i:${Math.min(p.index, 10)}`}>
+    <article class={`card event ${m.category} ${p.top ? "is-top" : ""}`} style={`--i:${Math.min(p.index, 10)}`}>
+      {(p.top || left < 300_000) && <div class="badges">{p.top && <span class="badge-top"><Star size={13} fill="currentColor" />{msg.card.topOdds}</span>}{left < 300_000 && <span class="badge-hot"><Zap size={13} fill="currentColor" />{msg.card.hot}</span>}</div>}
       <div class="meta">
         <span class="kind"><Kind size={16} /></span>
         <span class="detail">{who}</span>

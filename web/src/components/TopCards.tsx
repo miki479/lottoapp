@@ -10,7 +10,7 @@ export function TopCards({ items }: { items: TopItem[] }) {
       {items.map((it, i) => {
         const Icon = it.icon;
         return (
-          <button key={it.id} class="card pressable topcard" style={`animation: rise var(--dur) var(--ease) ${i * 40}ms both`} onClick={it.onClick}>
+          <button key={it.id} class={`card pressable topcard c${i % 4}`} style={`animation: rise var(--dur) var(--ease) ${i * 40}ms both`} onClick={it.onClick}>
             <span class="head"><Icon size={16} /><span class="detail">{it.label}</span></span>
             <span class="big">{it.big}</span>
             <span class="sub">{it.sub}</span>

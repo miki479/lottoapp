@@ -5,7 +5,7 @@ const it: Messages = {
   common: { close: "Chiudi", cancel: "Annulla", save: "Salva", retry: "Riprova", soon: "Presto", offline: "Sei offline: gli eventi si aggiorneranno al ritorno della rete.", install: "Installa l'app", language: "Lingua", credits: "crediti", copied: "Copiato", back: "Indietro" },
   tabs: { bus: "Bus", train: "Treni", weather: "Meteo", traffic: "Traffico" },
   world: "Tutto il mondo",
-  home: {
+  home: { hero: { title: "Il bus è in ritardo? Almeno ci vinci.", body: "Dati veri, crediti finti. Scegli un evento e fai la tua previsione." },
     missions: "Missioni di oggi", missionsLeft: (n) => (n === 1 ? "Ne manca uno" : `Ne mancano ${n}`), missionsDone: "Tutte completate", bonusTease: "Bonus +100 crediti se le chiudi tutte",
     top: "In evidenza", events: "Eventi", live: "Dal vivo",
     idle: ["Dati veri, crediti finti", "Chiudi le tre missioni del giorno per il bonus", "Un giorno saltato non spezza la serie: c'è il congelamento"],
@@ -13,7 +13,7 @@ const it: Messages = {
     trafficSoon: "Il traffico arriva presto. Per ora basta guardare fuori dalla finestra.",
   },
   top: { late: "Più in ritardo ora", popular: "Più giocato", city: "Città più in ritardo", closing: "Chiude tra poco", avg: (m) => `${m} min di ritardo medio`, players: (n) => (n === 1 ? "1 puntata" : `${n} puntate`), ontime: "In orario", open: "Apri" },
-  card: { late: "Sì, in ritardo", onTime: "No, in orario", per10: (w) => `10 → ${w}`, closes: "Chiude", forecast: "previsto", live: "In diretta", yes: "Sì", no: "No", over: (m) => `oltre ${m} min` },
+  card: { late: "Sì, in ritardo", onTime: "No, in orario", per10: (w) => `10 → ${w}`, closes: "Chiude", forecast: "previsto", live: "In diretta", yes: "Sì", no: "No", over: (m) => `oltre ${m} min`, topOdds: "Top quota", hot: "Chiude presto" },
   question: {
     bus: (q) => `La linea ${q.route} per ${q.headsign} avrà più di ${q.min} min di ritardo a ${q.stop} alle ${q.time}?`,
     train: (q) => `Il treno ${q.route} per ${q.headsign} arriverà con più di ${q.min} min di ritardo a ${q.stop} alle ${q.time}?`,

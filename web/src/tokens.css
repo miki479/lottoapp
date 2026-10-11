@@ -18,6 +18,14 @@
   --lost-bg: rgba(248, 113, 113, .14); --lost-fg: #fca5a5;
   --warn-fg: #f2b655;                  /* delay emphasis (amber, not red/green) */
 
+  /* --- category accents: playful colour per world, never used for won/lost --- */
+  --c-bus: #ffa31a;     --c-bus-soft: rgba(255, 163, 26, .16);
+  --c-train: #2fc4ff;   --c-train-soft: rgba(47, 196, 255, .16);
+  --c-weather: #5b8cff; --c-weather-soft: rgba(91, 140, 255, .18);
+  --c-pop: #ff5fa2;     --c-pop-soft: rgba(255, 95, 162, .16);
+  --star: #ffd23f;
+  --grad-hero: linear-gradient(135deg, #6b5bff 0%, #b04bff 55%, #ff5fa2 100%);
+
   /* --- surfaces (no pure black) --- */
   --bg: #0f1115;
   --surface: #181b21;

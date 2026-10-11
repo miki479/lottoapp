@@ -5,7 +5,7 @@ const enUS: Messages = {
   common: { close: "Close", cancel: "Cancel", save: "Save", retry: "Try again", soon: "Soon", offline: "You're offline. Events will refresh when you're back.", install: "Install the app", language: "Language", credits: "credits", copied: "Copied", back: "Back" },
   tabs: { bus: "Bus", train: "Trains", weather: "Weather", traffic: "Traffic" },
   world: "Worldwide",
-  home: {
+  home: { hero: { title: "Late bus? Might as well cash in.", body: "Real data, fake credits. Pick an event and make your call." },
     missions: "Today's missions", missionsLeft: (n) => (n === 1 ? "1 to go" : `${n} to go`), missionsDone: "All done", bonusTease: "+100 credits bonus for closing all three",
     top: "Featured", events: "Events", live: "Live",
     idle: ["Real data, fake credits", "Close the three daily missions for a bonus", "A missed day won't break your streak: freezes have your back"],
@@ -13,7 +13,7 @@ const enUS: Messages = {
     trafficSoon: "Traffic is coming soon. Honestly, you can probably see it from your window.",
   },
   top: { late: "Most delayed now", popular: "Most played", city: "Most delayed city", closing: "Closing soon", avg: (m) => `${m} min average delay`, players: (n) => (n === 1 ? "1 bet" : `${n} bets`), ontime: "On time", open: "Open" },
-  card: { late: "Yes, it's late", onTime: "No, on time", per10: (w) => `10 → ${w}`, closes: "Closes", forecast: "forecast", live: "Live", yes: "Yes", no: "No", over: (m) => `over ${m} min` },
+  card: { late: "Yes, it's late", onTime: "No, on time", per10: (w) => `10 → ${w}`, closes: "Closes", forecast: "forecast", live: "Live", yes: "Yes", no: "No", topOdds: "Top odds", hot: "Closing soon", over: (m) => `over ${m} min` },
   question: {
     bus: (q) => `Will the ${q.route} to ${q.headsign} run more than ${q.min} min late at ${q.stop} at ${q.time}?`,
     train: (q) => `Will the ${q.route} to ${q.headsign} roll into ${q.stop} more than ${q.min} min late at ${q.time}?`,

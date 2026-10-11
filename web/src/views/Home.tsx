@@ -6,7 +6,7 @@ import { Flag } from "../components/Flag.tsx";
 import { LiveLine } from "../components/LiveLine.tsx";
 import { Missions } from "../components/Missions.tsx";
 import { TopCards, type TopItem } from "../components/TopCards.tsx";
-import { Globe } from "lucide-preact";
+import { Globe, Sparkles } from "lucide-preact";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
 import type { MarketRow } from "../lib/format.ts";
@@ -22,10 +22,17 @@ export interface HomeProps {
 export function Home(p: HomeProps) {
   const { msg } = p;
   const tiles = (["bus", "train", "weather", "traffic"] as CatId[]).map((id) => ({ id, label: msg.tabs[id], count: p.counts[id], disabled: id === "traffic" }));
+  const topId = p.list.reduce<MarketRow | null>((b, m) => (!b || Number(m.odds_yes) > Number(b.odds_yes) ? m : b), null)?.id;
   const cities = CITIES.filter((c) => enabledCategories(c).length > 0);
   return (
     <div class="home screen">
       <LiveLine items={p.liveItems} label={msg.home.live} />
+      <section class="hero" aria-label={msg.home.hero.title}>
+        <i class="star s1" /><i class="star s2" /><i class="star s3" /><i class="star s4" />
+        <span class="hero-ico"><Sparkles size={22} /></span>
+        <h1>{msg.home.hero.title}</h1>
+        <p>{msg.home.hero.body}</p>
+      </section>
       <div class="aside">
         <Missions progress={p.progress} msg={msg} />
         {p.top.length > 0 && (
@@ -46,7 +53,7 @@ export function Home(p: HomeProps) {
           {p.markets === null && [0, 1, 2].map((i) => <div class="sk" key={i} />)}
           {p.markets !== null && p.cat === "traffic" && <div style="grid-column:1/-1"><Empty icon={CloudRain} title={msg.tabs.traffic} body={msg.home.trafficSoon} /></div>}
           {p.markets !== null && p.cat !== "traffic" && p.list.length === 0 && <div style="grid-column:1/-1"><Empty icon={CloudRain} title={msg.home.empty.title} body={msg.home.empty.body} cta={p.filter !== "world" ? msg.home.empty.cta : undefined} onCta={() => p.onFilter("world")} /></div>}
-          {p.list.slice(0, 40).map((m, i) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} live={p.live[m.id]} index={i} showCity={p.filter === "world"} onPick={p.onPick} />)}
+          {p.list.slice(0, 40).map((m, i) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} live={p.live[m.id]} index={i} top={m.id === topId && p.list.length > 3} showCity={p.filter === "world"} onPick={p.onPick} />)}
         </div>
         <footer class="legal">
           <p><strong style="color:var(--text)">{msg.disclaimerShort}</strong> {msg.disclaimerFull}</p>

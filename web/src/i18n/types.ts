@@ -20,9 +20,9 @@ export interface Messages {
   common: { close: string; cancel: string; save: string; retry: string; soon: string; offline: string; install: string; language: string; credits: string; copied: string; back: string };
   tabs: { bus: string; train: string; weather: string; traffic: string };
   world: string;
-  home: { missions: string; missionsLeft: (n: number) => string; missionsDone: string; bonusTease: string; top: string; events: string; live: string; idle: string[]; empty: { title: string; body: string; cta: string }; trafficSoon: string };
+  home: { hero: { title: string; body: string }; missions: string; missionsLeft: (n: number) => string; missionsDone: string; bonusTease: string; top: string; events: string; live: string; idle: string[]; empty: { title: string; body: string; cta: string }; trafficSoon: string };
   top: { late: string; popular: string; city: string; closing: string; avg: (min: number) => string; players: (n: number) => string; ontime: string; open: string };
-  card: { late: string; onTime: string; per10: (win: number) => string; closes: string; forecast: string; live: string; yes: string; no: string; over: (min: number) => string };
+  card: { late: string; onTime: string; per10: (win: number) => string; closes: string; forecast: string; live: string; yes: string; no: string; over: (min: number) => string; topOdds: string; hot: string };
   question: { bus: (q: BusQ) => string; train: (q: BusQ) => string; rain: (q: RainQ) => string };
   sheet: { title: string; pick: string; stake: string; potential: string; confirm: string; confirming: string; odds: string; placed: (win: number) => string };
   bets: { title: string; tabs: { open: string; settled: string }; open: string; won: string; lost: string; void: string; empty: { title: string; body: string; cta: string }; yourPick: (yes: boolean) => string; settles: string; voidReason: Record<string, string>; details: string };
