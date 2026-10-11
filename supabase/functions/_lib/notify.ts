@@ -106,3 +106,19 @@ export async function notifyResults(sb: Db): Promise<number> {
   }
   return n;
 }
+
+/** Tells the admins (push) when a name was blocked or removed by the moderation guard. At most one push per run. */
+export async function notifyModeration(sb: Db): Promise<number> {
+  const { data: rows } = await sb.from("moderation_log").select("id,text,matched,source").eq("notified", false).order("id").limit(10);
+  if (!rows || rows.length === 0) return 0;
+  const { data: admins } = await sb.rpc("admin_user_ids");
+  const ids = ((admins ?? []) as string[]).filter(Boolean);
+  const mark = () => sb.from("moderation_log").update({ notified: true }).in("id", rows.map((r) => r.id));
+  if (ids.length === 0) { await mark(); return 0; }
+  const label: Record<string, string> = { nickname: "Nickname bloccato", group: "Nome gruppo bloccato", existing: "Nome rimosso" };
+  const last = rows[rows.length - 1]!;
+  const body = rows.length === 1 ? `${label[last.source] ?? "Nome bloccato"}: «${last.text}» (${last.matched})` : `${rows.length} nomi bloccati o rimossi · ultimo: «${last.text}» (${last.matched})`;
+  if (!(await send(ids, "LateLotto · moderazione", body))) return 0; // not marked: retried next minute
+  await mark();
+  return 1;
+}

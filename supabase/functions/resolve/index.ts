@@ -4,7 +4,7 @@ import { historyKey, marketToEvent, type MarketRow } from "../_shared/shared/mar
 import { parseStrikeRss } from "../_shared/shared/strikes.ts";
 import type { DelayObservation, MetricObservation, QuakeReading, StrikeReading, WeatherObservation } from "../_shared/shared/types.ts";
 import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
-import { lastNotifyError, notifyFlash, notifyResults, notifyStreak } from "../_lib/notify.ts";
+import { lastNotifyError, notifyFlash, notifyModeration, notifyResults, notifyStreak } from "../_lib/notify.ts";
 
 Deno.serve(safe(async (req) => {
   const denied = requireCron(req);
@@ -89,7 +89,7 @@ Deno.serve(safe(async (req) => {
     }
   }
   const safeCount = (p: Promise<number>) => p.catch((e) => { console.error("notify failed", e); return 0; });
-  const notified = await safeCount(notifyResults(sb)) + await safeCount(notifyFlash(sb)) + await safeCount(notifyStreak(sb));
+  const notified = await safeCount(notifyResults(sb)) + await safeCount(notifyFlash(sb)) + await safeCount(notifyStreak(sb)) + await safeCount(notifyModeration(sb));
   return Response.json({ ...out, notified, notifyError: lastNotifyError.msg });
 }));
 

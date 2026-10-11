@@ -9,6 +9,7 @@ interface Overview {
   markets: { open: number; resolved_24h: number; void_24h: number; void_reasons: Record<string, number> };
   users: { registered: number; guests: number; bets_24h: number };
   places: { active: number; limit: number };
+  moderation?: { blocked_24h: number; recent: { text: string; matched: string; source: string; at: string }[] };
   reports: { id: string; kind: string; note: string; created_at: string; market_id: string | null; market_kind: string | null; city_id: string | null; status: string | null; outcome: string | null; void_reason: string | null; evidence: Record<string, unknown> | null }[];
 }
 
@@ -54,6 +55,10 @@ export function AdminSheet({ msg, onClose }: { msg: Messages; onClose: () => voi
             <span class="hint">{ago(f.last_ok_at, now)}</span>
             <span class={`pill-${s === "ok" ? "ok" : s === "late" ? "late" : "down"}`}>{a[s]}</span>
           </div>); })}</div>
+        <h3>{a.moderation} ({data.moderation?.blocked_24h ?? 0} / 24h)</h3>
+        {!data.moderation || data.moderation.recent.length === 0 ? <p class="hint">{a.noModeration}</p> : data.moderation.recent.map((x, i) => (
+          <div class="adminrow" key={i}><span class="grow"><b>«{x.text}»</b><small class="hint" style="display:block">{x.matched} · {x.source} · {ago(x.at, now)}</small></span></div>
+        ))}
         <h3>{a.reports} ({data.reports.length})</h3>
         {data.reports.length === 0 ? <p class="hint">{a.noReports}</p> : data.reports.map((r) => (
           <div class="adminrow" key={r.id} style="align-items:flex-start">

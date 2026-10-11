@@ -11,7 +11,7 @@ export function NicknameSheet({ msg, current, onClose, onSaved }: { msg: Message
   const save = async () => {
     setBusy(true); setErr(null);
     const { data, error } = await sb.rpc("set_nickname", { p_name: name });
-    if (error) { const k = ["nickname_not_allowed", "nickname_taken", "bad_nickname", "registration_required"].find((x) => error.message.includes(x)); setErr(msg.errors[k ?? "generic"]!); }
+    if (error) { const k = ["nickname_not_allowed", "nickname_taken", "bad_nickname", "registration_required"].find((x) => error.message.includes(x)); setErr(msg.errors[k ?? "generic"]!); if (k === "nickname_not_allowed") void sb.rpc("nickname_check", { p_name: name }); /* logs the attempt for the admin */ }
     else onSaved(String(data));
     setBusy(false);
   };

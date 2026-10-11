@@ -470,8 +470,8 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .gh * { transform-box: fill-box; }
 .gh-bolt { opacity: 0; } .gh-drops path { opacity: 0; }
 .gh-leaves ellipse { opacity: 0; }
-@media (hover: hover) { .cc.bus:not(:disabled):hover .gh-veh, .cc.train:not(:disabled):hover .gh-veh { animation: drive 1.1s ease-in-out 1 both; } }
-.cc.pop.bus .gh-veh, .cc.pop.train .gh-veh { animation: drive 1.1s ease-in-out 1 both; }
+@media (hover: hover) { .cc.bus:not(:disabled):hover .gh-veh, .cc.train:not(:disabled):hover .gh-veh { animation: drive 1.2s ease-in-out 1 both; } }
+.cc.pop.bus .gh-veh, .cc.pop.train .gh-veh { animation: drive 1.2s ease-in-out 1 both; }
 @media (hover: hover) { .cc.weather:not(:disabled):hover .gh-drops path { animation: fall 0.9s linear 2 both; } }
 .cc.pop.weather .gh-drops path { animation: fall 0.9s linear 2 both; }
 .cc.pop.weather .gh-bolt { animation: flash .6s ease-out 1 both; }
@@ -480,7 +480,7 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .cc.pop.nature .gh-sway { animation: sway 1.8s ease-in-out 1 both; } .cc.pop.nature .gh-leaves ellipse { animation: leaf 2s ease-in 1 both; }
 .gh-sway { transform-origin: 30% 100%; } .gh-sway2 { transform-origin: 70% 100%; animation-delay: .2s !important; }
 .gh-leaves .l6 { animation-delay: .75s !important; } .gh-leaves .l7 { animation-delay: .9s !important; } .gh-leaves .l2 { animation-delay: .15s !important; } .gh-leaves .l3 { animation-delay: .3s !important; } .gh-leaves .l4 { animation-delay: .45s !important; } .gh-leaves .l5 { animation-delay: .6s !important; }
-@keyframes drive { 0% { transform: translateX(0); } 42% { transform: translateX(130%); } 43% { transform: translateX(-130%); } 100% { transform: translateX(0); } }
+@keyframes drive { 0% { transform: translateX(0); } 30% { transform: translateX(9%) translateY(-1px); } 50% { transform: translateX(9%) translateY(0); } 75% { transform: translateX(-3%); } 100% { transform: translateX(0); } }
 @keyframes fall { 0% { opacity: 0; transform: translateY(-6px); } 25% { opacity: .95; } 100% { opacity: 0; transform: translateY(12px); } }
 @keyframes flash { 0%, 100% { opacity: 0; } 15% { opacity: .95; } 30% { opacity: .1; } 45% { opacity: .9; } 70% { opacity: 0; } }
 @keyframes sway { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(4deg); } 55% { transform: rotate(-3deg); } 80% { transform: rotate(1.5deg); } }

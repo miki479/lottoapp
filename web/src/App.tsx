@@ -261,9 +261,18 @@ export function App() {
       const txt = r.status === "void" ? msg.bets.void : isYesNo(r.kind) ? (r.outcome === "yes" ? msg.card.yes : msg.card.no) : r.outcome === "yes" ? msg.card.late : msg.card.onTime;
       out.push({ id: `r${r.id}`, node: <>{route || cityName(c, locale)} · {txt}</> });
     }
+    // What is happening on the lines and in the markets right now (not only what players did).
+    const q = (m: MarketRow) => { const c = cityOf(m.city_id); return question(m, msg, locale, cityName(c, locale), c.timezone, new Date(now)); };
+    const lateNow = open.filter((m) => live[m.id] && !live[m.id]!.is_forecast && live[m.id]!.delay_sec >= 120).sort((a, b) => live[b.id]!.delay_sec - live[a.id]!.delay_sec).slice(0, 3);
+    lateNow.forEach((m, i) => out.splice(Math.min(out.length, 1 + i * 3), 0, { id: `l${m.id}`, node: <><i class="amt lost">●</i> {msg.ticker.late(String(m.params.routeName ?? ""), String(m.params.headsign ?? ""), Math.round(live[m.id]!.delay_sec / 60))}</> }));
+    const fl = open.find((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now);
+    if (fl) out.splice(Math.min(out.length, 2), 0, { id: `f${fl.id}`, node: <><b>{msg.ticker.flash(Number(fl.flash_multiplier))}</b> · {q(fl)}</> });
+    for (const p of popular.slice(0, 2)) { const m = open.find((x) => x.id === p.market_id); if (m) out.push({ id: `p${m.id}`, node: <><b>{msg.ticker.crowd(p.bets)}</b> · {q(m)}</> }); }
+    open.filter((m) => !m.params.ladderOf && Date.parse(m.closes_at) - now < 8 * 60_000 && Date.parse(m.closes_at) > now).slice(0, 2).forEach((m) => out.push({ id: `c${m.id}`, node: <><b>{msg.ticker.closing}</b> · {q(m)}</> }));
+    if (isItalian) { const s = open.filter((m) => m.category === "strike").sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at))[0]; if (s) out.push({ id: `s${s.id}`, node: <>{msg.ticker.strike(new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(new Date(s.target_at)))}</> }); }
     msg.home.idle.forEach((s, i) => out.splice(Math.min(out.length, 1 + i * 2), 0, { id: `t${i}`, node: <>{s}</> }));
     return out;
-  }, [activity, results, locale]);
+  }, [activity, results, locale, open, live, popular, isItalian, Math.floor(now / 30000)]);
 
   const sources = useMemo(() => {
     const map = new Map<string, (typeof CITIES)[number]["feeds"][number]["attribution"]>();
