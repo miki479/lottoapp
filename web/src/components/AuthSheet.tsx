@@ -1,7 +1,7 @@
 import { Mail, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
-import { sb } from "../lib/api.ts";
+import { googleSignIn, sb } from "../lib/api.ts";
 import { Sheet } from "./Sheet.tsx";
 
 /** Maps Supabase auth errors to our messages. */
@@ -12,6 +12,8 @@ export function authError(e: { message?: string; code?: string } | null, msg: Me
     : t.includes("at least") || t.includes("weak_password") ? "weak_password"
     : t.includes("rate") ? "email_rate"
     : t.includes("validate email") || t.includes("email_address_invalid") ? "email_invalid"
+    : t.includes("exchange external code") ? "google_retry"
+    : t.includes("already linked") || t.includes("identity_already_exists") ? "google_exists"
     : t.includes("not enabled") || t.includes("unsupported provider") ? "provider_off" : "generic";
   return k === "generic" && e?.message ? `${msg.errors[k]!} (${e.message})` : msg.errors[k]!;
 }
@@ -51,8 +53,7 @@ export function AuthSheet({ msg, guest, googleOn, onClose, onDone }: { msg: Mess
   };
   const google = async () => {
     setErr(null);
-    const opts = { provider: "google" as const, options: { redirectTo: location.origin } };
-    const { error } = guest ? await sb.auth.linkIdentity(opts) : await sb.auth.signInWithOAuth(opts);
+    const { error } = guest ? await googleSignIn() : await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin } });
     if (error) setErr(authError(error, msg));
   };
   return (

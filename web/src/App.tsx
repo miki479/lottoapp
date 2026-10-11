@@ -16,7 +16,7 @@ import { Toast } from "./components/Toast.tsx";
 import type { TopItem } from "./components/TopCards.tsx";
 import { INTL_TAG, t, TROPHY_IDS, type Locale } from "./i18n/index.ts";
 import { useCountUp } from "./lib/anim.ts";
-import { ensureGuest, sb } from "./lib/api.ts";
+import { ensureGuest, guestState, sb } from "./lib/api.ts";
 import { CITIES, cityInfos, cityName, cityOf } from "./lib/cities.ts";
 import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
@@ -120,7 +120,7 @@ export function App() {
     // Sign-in providers report problems back in the URL (query or hash): show them instead of failing silently.
     const back = new URLSearchParams(location.hash.replace(/^#/, "") || location.search);
     const backErr = back.get("error_description") ?? back.get("error");
-    if (backErr) { flash(`${msg.errors.generic} (${backErr.replace(/\+/g, " ")})`, "err"); history.replaceState(null, "", location.pathname); }
+    if (backErr) { const e = backErr.replace(/\+/g, " "); flash(/exchange external code/i.test(e) ? msg.errors.google_retry! : /already linked|identity_already_exists/i.test(e) ? msg.errors.google_exists! : `${msg.errors.generic} (${e})`, "err"); history.replaceState(null, "", location.pathname); }
     const ref = new URLSearchParams(location.search).get("ref"); if (ref) { store.set("ref", ref.toUpperCase()); history.replaceState(null, "", location.pathname); }
     const { data: reg } = await sb.rpc("is_registered");
     if (reg) {
@@ -266,6 +266,7 @@ export function App() {
   useEffect(() => { if (new URLSearchParams(location.search).get("open") === "bets") { setScreen("bets"); history.replaceState(null, "", location.pathname); } }, []);
   const toggleVoice = () => { const on = !voiceOn; setVoice(on); setVoiceOn(on); flash(on ? msg.voice.on : msg.voice.off); if (on) announce("voice-on", msg.voice.on, locale, true); };
   const needJoin = needSignup && !registered;
+  guestState.hasProgress = !registered && bets.length + parlays.length > 0;
   const slipIds = new Set(slip.map((l) => l.m.id));
   const shareReferral = async () => {
     if (!referral) return; const url = `${location.origin}/?ref=${referral.code}`;

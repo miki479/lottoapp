@@ -77,7 +77,7 @@ const it: Messages = {
   disclaimerShort: "Solo gioco: crediti finti, nessun valore reale.",
   disclaimerFull: "LateLotto è un gioco. I crediti sono fittizi, non hanno alcun valore economico, non si comprano, non si vendono e non si cambiano con premi. Nessun denaro vero, mai. I dati sono reali, i soldi no.",
   attributionTitle: "Fonti dei dati",
-  errors: { duplicate_leg: "Non puoi mettere due eventi dello stesso treno nella multipla.", bad_legs: "Una multipla ha da 2 a 5 eventi.", 
+  errors: { google_retry: "Google non ha completato l’accesso (il codice era già stato usato). Riprova da capo, una volta sola.", google_exists: "Questo account Google è già registrato. Esci da questo profilo ospite e accedi con Google.", duplicate_leg: "Non puoi mettere due eventi dello stesso treno nella multipla.", bad_legs: "Una multipla ha da 2 a 5 eventi.", 
     generic: "Qualcosa è andato storto. Riprova.", market_closed: "Troppo tardi: le puntate su questo evento sono chiuse.", insufficient_credits: "Non hai abbastanza crediti.", bad_stake: "La puntata deve essere tra 10 e 500 crediti.",
     bad_pick: "Scelta non valida.", already_bet: "Hai già puntato su questo evento.", not_authenticated: "Sessione non pronta, riprova tra un secondo.", rate_limited: "Troppe puntate in poco tempo. Respira, riprova tra un minuto.",
     registration_required: "Serve un profilo salvato per farlo.", unknown_group: "Codice non valido.", bad_nickname: "Nickname non valido: 2-24 caratteri, lettere, numeri, spazio e - _ .", nickname_not_allowed: "Questo nickname non è consentito.", nickname_taken: "Nickname già in uso.",

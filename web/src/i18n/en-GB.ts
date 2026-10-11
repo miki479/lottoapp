@@ -77,7 +77,7 @@ const enGB: Messages = {
   disclaimerShort: "Only a game: pretend credits, no real value whatsoever.",
   disclaimerFull: "LateLotto is a game. Credits are fictional, worth nothing, and cannot be bought, sold or swapped for prizes. No real money, now or ever. The data is real; the money rather isn't.",
   attributionTitle: "Data sources",
-  errors: { duplicate_leg: "Two selections on the same trip can't go in one accumulator.", bad_legs: "An accumulator has 2 to 5 selections.", 
+  errors: { google_retry: "Google didn’t finish signing you in (the code had already been used). Start over and tap it just once.", google_exists: "This Google account is already registered. Leave this guest profile and sign in with Google.", duplicate_leg: "Two selections on the same trip can't go in one accumulator.", bad_legs: "An accumulator has 2 to 5 selections.", 
     generic: "Something has gone wrong. Please try again.", market_closed: "Too late, I'm afraid. Betting on this one has closed.", insufficient_credits: "You haven't enough credits.", bad_stake: "Stakes run from 10 to 500 credits.",
     bad_pick: "That pick isn't valid.", already_bet: "You've already had a go at this one.", not_authenticated: "Still setting up. Try again in a moment.", rate_limited: "Too many bets, too quickly. Take a breath and try again in a minute.",
     registration_required: "That needs a saved profile.", unknown_group: "That code doesn't exist.", bad_nickname: "Invalid nickname: 2-24 characters, letters, numbers, space and - _ .", nickname_not_allowed: "That nickname isn't allowed.", nickname_taken: "That nickname is taken.",

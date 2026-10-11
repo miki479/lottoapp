@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
-import { sb } from "../lib/api.ts";
+import { googleSignIn, sb } from "../lib/api.ts";
 import { money } from "../lib/format.ts";
 import { authError } from "./AuthSheet.tsx";
 
@@ -34,7 +34,7 @@ export function JoinForm(p: { msg: Messages; locale: Locale; googleOn: boolean; 
   };
   const google = async () => {
     setErr(null);
-    const { error } = await sb.auth.linkIdentity({ provider: "google", options: { redirectTo: location.origin } });
+    const { error } = await googleSignIn();
     if (error) setErr(authError(error, m));
   };
   return (

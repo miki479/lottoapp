@@ -20,3 +20,15 @@ export async function ensureGuest(): Promise<string | null> {
   const res = await sb.auth.signInAnonymously();
   return res.data.user?.id ?? null;
 }
+
+/** Set by the app: true when the current guest already played (bets to keep), so Google must be linked instead of replacing the guest. */
+export const guestState = { hasProgress: false };
+
+/**
+ * Google sign-in. A guest who has not played yet simply signs in (works for new and returning Google users);
+ * a guest with bets links Google to the same account so nothing is lost.
+ */
+export function googleSignIn() {
+  const opts = { provider: "google" as const, options: { redirectTo: location.origin } };
+  return guestState.hasProgress ? sb.auth.linkIdentity(opts) : sb.auth.signInWithOAuth(opts);
+}
