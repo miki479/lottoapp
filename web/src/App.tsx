@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import { AuthSheet } from "./components/AuthSheet.tsx";
 import { BetSheet } from "./components/BetSheet.tsx";
 import type { CatId } from "./components/CatChips.tsx";
+import { DelayMeter } from "./components/DelayMeter.tsx";
+import { Ticker } from "./components/Ticker.tsx";
 import { Header } from "./components/Header.tsx";
 import { Sidebar, TabBar, type Screen } from "./components/Nav.tsx";
 import { NicknameSheet } from "./components/NicknameSheet.tsx";
@@ -19,7 +21,7 @@ import { pickCity, pickLocale } from "./lib/detect.ts";
 import { countdown, currencySymbol, dayIn, money, question, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import { makeProfileCard, makeResultCard, shareImage } from "./lib/share.ts";
-import type { LiveDelay, MyBet, MyStats, Pick, PopularRow, Profile, Progress, ResultRow } from "./lib/types.ts";
+import type { ActivityRow, LiveDelay, MyBet, MyStats, Pick, PopularRow, Profile, Progress, ResultRow } from "./lib/types.ts";
 import { Bets } from "./views/Bets.tsx";
 import { Home } from "./views/Home.tsx";
 import { ProfileView } from "./views/Profile.tsx";
@@ -66,6 +68,7 @@ export function App() {
 
   const msg = t(locale);
   const tz = profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const [activity, setActivity] = useState<ActivityRow[]>([]);
   const wallet = useCountUp(profile?.credits ?? 0, 600);
   const flash = (text: string, kind: "ok" | "err" = "ok") => { setToast({ text, kind }); setTimeout(() => setToast(null), 3600); };
   const seenKey = `seen.${profile?.id ?? "x"}`;
@@ -116,8 +119,9 @@ export function App() {
     setStale((h ?? []).some((r) => { const f = CITIES.flatMap((c) => c.feeds).find((x) => x.id === r.feed_id); return !!f && f.category !== "weather" && f.licenseVerified && !!r.last_ok_at && nowMs - Date.parse(r.last_ok_at) > f.staleAfterSeconds * 1000 && (data ?? []).some((m) => m.category === f.category); }));
     const { data: pop } = await sb.rpc("popular_markets", { p_limit: 5 }); setPopular(((pop ?? []) as PopularRow[]).map((x) => ({ ...x, bets: +x.bets })));
   }, []);
+  const loadActivity = useCallback(async () => { const { data } = await sb.rpc("activity_feed", { p_limit: 12 }); setActivity(((data ?? []) as ActivityRow[]).map((r) => ({ ...r, amount: +r.amount }))); }, []);
   const loadResults = useCallback(async () => { const { data } = await sb.from("markets").select("id,city_id,kind,status,outcome,void_reason,params,evidence").neq("status", "open").order("target_at", { ascending: false }).limit(12); setResults((data ?? []) as ResultRow[]); }, []);
-  useEffect(() => { loadMarkets(); loadResults(); const a = setInterval(loadMarkets, 30000), b = setInterval(loadResults, 60000); return () => { clearInterval(a); clearInterval(b); }; }, [loadMarkets, loadResults]);
+  useEffect(() => { loadMarkets(); loadResults(); loadActivity(); const a = setInterval(loadMarkets, 30000), b = setInterval(() => { loadResults(); loadActivity(); }, 60000); return () => { clearInterval(a); clearInterval(b); }; }, [loadMarkets, loadResults, loadActivity]);
   useEffect(() => { if (!ready) return; const i = setInterval(() => { loadBets(); loadProfile(); }, 30000); return () => clearInterval(i); }, [ready]);
 
   const trackable = useMemo(() => (markets ?? []).filter((m) => m.kind !== "rain_at" && Date.parse(m.target_at) - Date.now() < 3 * 3600_000).slice(0, 80).map((m) => m.id), [markets]);
@@ -141,7 +145,7 @@ export function App() {
     const fl = open.filter((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now && (filter === "world" || m.city_id === filter))[0];
     if (fl) items.push({ id: "flash", icon: Zap, label: msg.streak.flash, big: <>×{fl.flash_multiplier}<small class="num">{countdown(Date.parse(fl.flash_until!) - now)}</small></>, sub: question(fl, msg, locale, cityName(cityOf(fl.city_id), locale), cityOf(fl.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: fl, pick: "yes" }) });
     const facts = inFilter.filter((m) => live[m.id] && !live[m.id]!.is_forecast && live[m.id]!.delay_sec >= 60).sort((a, b) => live[b.id]!.delay_sec - live[a.id]!.delay_sec)[0];
-    if (facts) items.push({ id: "late", icon: TrendingUp, label: msg.top.late, big: <>+{Math.round(live[facts.id]!.delay_sec / 60)}<small>min</small></>, sub: `${facts.params.routeName ?? ""} → ${facts.params.headsign ?? ""}`, onClick: () => setSheet({ m: facts, pick: "yes" }) });
+    if (facts) items.push({ id: "late", icon: TrendingUp, label: msg.top.late, big: null, extra: <DelayMeter sec={live[facts.id]!.delay_sec} prev={live[facts.id]!.prev_delay_sec} limitSec={Number(facts.params.thresholdSec ?? 180)} msg={msg} big />, sub: `${facts.params.routeName ?? ""} → ${facts.params.headsign ?? ""}`, onClick: () => setSheet({ m: facts, pick: "yes" }) });
     const pop = popular.map((p) => ({ p, m: inFilter.find((m) => m.id === p.market_id) })).find((x) => x.m);
     if (pop?.m) items.push({ id: "pop", icon: Users, label: msg.top.popular, big: <>{pop.p.bets}<small>{msg.top.players(pop.p.bets).replace(/^\d+\s*/, "")}</small></>, sub: question(pop.m, msg, locale, cityName(cityOf(pop.m.city_id), locale), cityOf(pop.m.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: pop.m!, pick: "no" }) });
     const byCity = new Map<string, number[]>();
@@ -153,15 +157,22 @@ export function App() {
     return items;
   }, [inFilter, live, popular, locale, Math.floor(now / 1000)]);
 
-  const liveItems = useMemo(() => {
-    const out: string[] = [];
-    for (const r of results) {
-      const c = cityOf(r.city_id), route = String(r.params.routeName ?? ""), stop = String(r.params.stopName ?? "");
-      out.push(r.status === "void" ? `${route || cityName(c, locale)}: ${msg.bets.void}` : r.kind === "rain_at" ? `${cityName(c, locale)}: ${r.outcome === "yes" ? msg.card.yes : msg.card.no}` : `${route}${stop ? ` · ${stop}` : ""}: ${r.outcome === "yes" ? msg.card.late : msg.card.onTime}`);
+  /** Ticker: what other players just did (real bets only), then recent results and tips. */
+  const tickerItems = useMemo(() => {
+    const out: { id: string; node: preact.ComponentChildren }[] = [];
+    for (const a of activity) {
+      const c = cityOf(a.city_id), what = a.market_kind === "rain_at" ? cityName(c, locale) : a.label || cityName(c, locale);
+      const verb = msg.ticker[a.kind];
+      out.push({ id: `a${a.at}${a.who}${a.amount}`, node: <><b>{a.who ?? msg.ticker.anon}</b> {verb} <i class={`amt ${a.kind}`}>{a.kind === "won" ? "+" : a.kind === "lost" ? "−" : ""}{money(a.amount, locale)}</i> {msg.ticker.on} {what}</> });
     }
-    msg.home.idle.forEach((s, i) => out.splice(Math.min(out.length, 1 + i * 2), 0, s));
+    for (const r of results) {
+      const c = cityOf(r.city_id), route = String(r.params.routeName ?? "");
+      const txt = r.status === "void" ? msg.bets.void : r.kind === "rain_at" ? (r.outcome === "yes" ? msg.card.yes : msg.card.no) : r.outcome === "yes" ? msg.card.late : msg.card.onTime;
+      out.push({ id: `r${r.id}`, node: <>{route || cityName(c, locale)} · {txt}</> });
+    }
+    msg.home.idle.forEach((s, i) => out.splice(Math.min(out.length, 1 + i * 2), 0, { id: `t${i}`, node: <>{s}</> }));
     return out;
-  }, [results, locale]);
+  }, [activity, results, locale]);
 
   const sources = useMemo(() => {
     const map = new Map<string, (typeof CITIES)[number]["feeds"][number]["attribution"]>();
@@ -213,10 +224,11 @@ export function App() {
       <Sidebar value={screen} onPick={go} msg={msg} openBets={openBets} />
       <div>
         <Header locale={locale} onLocale={changeLocale} wallet={profile ? new Intl.NumberFormat(INTL_TAG[locale]).format(Math.round(wallet)) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
+        <Ticker items={tickerItems} />
         <main class="content">
           {offline && <p class="note" style="margin-bottom:12px">{msg.common.offline}</p>}
           {stale && <p class="note warn" style="margin-bottom:12px">{msg.feedWarning}</p>}
-          {screen === "home" && <Home msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} liveItems={liveItems} onPick={(m, pick) => setSheet({ m, pick })} attributions={sources} installEvt={installEvt} />}
+          {screen === "home" && <Home msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "ranking" && <Ranking msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
           {screen === "profile" && <ProfileView progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}

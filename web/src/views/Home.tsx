@@ -3,7 +3,6 @@ import { CatChips, type CatId } from "../components/CatChips.tsx";
 import { Empty } from "../components/Empty.tsx";
 import { EventCard } from "../components/EventCard.tsx";
 import { Flag } from "../components/Flag.tsx";
-import { LiveLine } from "../components/LiveLine.tsx";
 import { TopCards, type TopItem } from "../components/TopCards.tsx";
 import { Globe, Sparkles } from "lucide-preact";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -14,7 +13,7 @@ import type { LiveDelay, Pick, Progress } from "../lib/types.ts";
 export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>;
   cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void;
-  top: TopItem[]; liveItems: string[]; onPick: (m: MarketRow, p: Pick) => void;
+  top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
   attributions: { name: string; via?: string; license: string; licenseUrl: string; url: string }[]; installEvt: Event | null;
 }
 
@@ -25,7 +24,6 @@ export function Home(p: HomeProps) {
   const cities = CITIES.filter((c) => enabledCategories(c).length > 0);
   return (
     <div class="home screen">
-      <LiveLine items={p.liveItems} label={msg.home.live} />
       <section class="hero" aria-label={msg.home.hero.title}>
         <i class="star s1" /><i class="star s2" /><i class="star s3" /><i class="star s4" />
         <span class="hero-ico"><Sparkles size={22} /></span>

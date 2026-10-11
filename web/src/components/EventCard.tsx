@@ -3,6 +3,7 @@ import { cityName, cityOf } from "../lib/cities.ts";
 import { countdown, fmtOdds, money, per10, question, type MarketRow } from "../lib/format.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { LiveDelay, Pick } from "../lib/types.ts";
+import { DelayMeter } from "./DelayMeter.tsx";
 import { Flag } from "./Flag.tsx";
 
 const KIND = { bus: Bus, train: TrainFront, weather: CloudRain, traffic: Bus } as const;
@@ -21,7 +22,6 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
   const isRain = m.kind === "rain_at";
   const who = isRain ? cityName(city, locale) : `${String(m.params.routeName ?? "")} · ${cityName(city, locale)}`;
   const flashOn = (m.flash_multiplier ?? 1) > 1 && !!m.flash_until && Date.parse(m.flash_until) > now;
-  const warn = live && live.delay_sec > Number(m.params.thresholdSec ?? 180) / 2;
   return (
     <article class={`card event ${m.category} ${p.top ? "is-top" : ""} ${flashOn ? "is-flash" : ""}`} style={`--i:${Math.min(p.index, 10)}`}>
       {(p.top || flashOn || left < 300_000) && <div class="badges">{flashOn && <span class="badge-flash"><Zap size={13} fill="currentColor" />FLASH ×{m.flash_multiplier} · {countdown(Date.parse(m.flash_until!) - now)}</span>}{p.top && <span class="badge-top"><Star size={13} fill="currentColor" />{msg.card.topOdds}</span>}{left < 300_000 && <span class="badge-hot"><Zap size={13} fill="currentColor" />{msg.card.hot}</span>}</div>}
@@ -35,7 +35,7 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
         <span class={`timer ${left < 300_000 ? "hot" : ""}`}><Clock size={12} style="vertical-align:-1px;margin-right:4px" />{countdown(left)}</span>
       </div>
       <p class="q">{question(m, msg, locale, cityName(city, locale), city.timezone, new Date(now))}</p>
-      {live && <span class={`live ${warn ? "warn" : ""}`}><i class="dot" />{liveLabel(msg, live)}</span>}
+      {live && <DelayMeter sec={live.delay_sec} prev={live.prev_delay_sec} limitSec={Number(m.params.thresholdSec ?? 180)} forecast={live.is_forecast} msg={msg} />}
       <div class="actions2">
         {(["yes", "no"] as const).map((k) => {
           const o = Number(k === "yes" ? m.odds_yes : m.odds_no), boosted = k === "yes" && flashOn;

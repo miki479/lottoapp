@@ -22,6 +22,8 @@ export interface Messages {
   world: string;
   home: { hero: { title: string; body: string }; missions: string; missionsLeft: (n: number) => string; missionsDone: string; bonusTease: string; top: string; events: string; live: string; idle: string[]; empty: { title: string; body: string; cta: string }; trafficSoon: string };
   streak: { title: string; days: (n: number) => string; next: (day: number, bonus: string) => string; max: string; milestone: (n: number, bonus: string) => string; flash: string };
+  meter: { threshold: (min: number) => string; up: (min: number) => string; down: (min: number) => string; steady: string; forecast: string; late: string };
+  ticker: { anon: string; won: string; lost: string; placed: string; on: string };
   top: { late: string; popular: string; city: string; closing: string; avg: (min: number) => string; players: (n: number) => string; ontime: string; open: string };
   card: { late: string; onTime: string; per10: (win: number) => string; closes: string; forecast: string; live: string; yes: string; no: string; over: (min: number) => string; topOdds: string; hot: string };
   question: { bus: (q: BusQ) => string; train: (q: BusQ) => string; rain: (q: RainQ) => string };

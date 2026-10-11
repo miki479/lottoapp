@@ -93,11 +93,12 @@ p { margin: 0; }
 .opt b { font-size: var(--fs-title); font-weight: 800; letter-spacing: var(--ls-title); line-height: 1.1; }
 .opt .s { font-size: var(--fs-detail); color: var(--muted); }
 
-.top-scroll { display: flex; gap: var(--gap); overflow-x: auto; scrollbar-width: none; margin: 0 calc(var(--gutter) * -1); padding: 2px var(--gutter); scroll-snap-type: x mandatory; }
+.top-scroll { display: flex; gap: var(--gap); overflow-x: auto; scrollbar-width: none; margin: 0 calc(var(--gutter) * -1); padding: 2px var(--gutter); scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter); }
 .top-scroll::-webkit-scrollbar { display: none; }
 .topcard { scroll-snap-align: start; flex: 0 0 min(78%, 280px); display: flex; flex-direction: column; gap: 6px; text-align: left; min-height: 132px; }
 .topcard .head { display: flex; align-items: center; gap: 8px; color: var(--muted); }
 .topcard .head svg { color: var(--brand); }
+.topcard .big:empty { display: none; }
 .topcard .big { font-size: 36px; font-weight: 800; letter-spacing: var(--ls-title); line-height: 1.05; margin-top: auto; }
 .topcard .big small { font-size: 18px; font-weight: 700; margin-left: 2px; color: var(--text-2); }
 .topcard .sub { font-size: 14px; color: var(--text-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
@@ -346,3 +347,29 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .streakcard .flame { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); } .streakcard .flame.lit { background: var(--c-bus-soft); color: var(--c-bus); animation: glow 1.8s ease-in-out infinite; }
 .streakcard .freezes { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: var(--c-train); }
 .streakcard .bar { height: 8px; border-radius: 8px; background: var(--surface-2); overflow: hidden; } .streakcard .bar i { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--c-bus), var(--c-pop)); transition: width 400ms var(--ease); }
+
+/* ==========================================================================
+   Delay meter (segmented gauge, no charts) and the live ticker
+   ========================================================================== */
+.meter { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: var(--radius-control); background: var(--surface-2); }
+.meter .mtop { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.meter .mnum { font-size: 30px; font-weight: 800; letter-spacing: var(--ls-title); line-height: 1; transition: color 300ms; } .meter .mnum small { font-size: 18px; margin-left: 1px; }
+.meter.big .mnum { font-size: 56px; } .meter.big .mnum small { font-size: 30px; }
+.meter .mtrend { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--text-2); }
+.meter .cells { position: relative; display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; padding-bottom: 14px; }
+.meter .cells i { height: 12px; border-radius: 4px; background: var(--border-strong); opacity: .6; transition: background 240ms var(--ease) var(--d), opacity 240ms var(--d), transform 240ms var(--ease) var(--d); }
+.meter .cells i.on { background: hsl(var(--h) 95% 62%); opacity: 1; }
+.meter .cells i.on:last-of-type, .meter .cells i.on:has(+ i:not(.on)) { animation: cellpulse 1.4s ease-in-out infinite; }
+@keyframes cellpulse { 50% { transform: scaleY(1.35); } }
+.meter .cells em { position: absolute; top: -3px; bottom: 11px; width: 0; border-left: 2px dashed var(--text-2); font-style: normal; }
+.meter .cells em span { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px; white-space: nowrap; font-size: 10px; font-weight: 700; letter-spacing: var(--ls-detail); text-transform: uppercase; color: var(--muted); }
+.topcard .meter { background: rgba(0,0,0,.18); }
+
+.ticker { overflow: hidden; border-bottom: 1px solid var(--border); background: var(--surface); height: 36px; display: flex; align-items: center; position: relative; z-index: 4; }
+.ticker .track { display: flex; width: max-content; animation: tick linear infinite; }
+.ticker:hover .track, .ticker:active .track { animation-play-state: paused; }
+.ticker .tk { display: inline-flex; align-items: center; gap: 4px; padding: 0 22px; font-size: 13px; color: var(--text-2); white-space: nowrap; }
+.ticker .tk b { color: var(--text); } .ticker .tk::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--star); margin-left: 22px; opacity: .8; }
+.ticker .amt { font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; } .ticker .amt.won { color: var(--won-fg); } .ticker .amt.lost { color: var(--lost-fg); } .ticker .amt.placed { color: var(--c-pop); }
+@keyframes tick { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .ticker { overflow-x: auto; } .ticker .track { animation: none !important; } .meter .cells i.on { animation: none !important; } }
