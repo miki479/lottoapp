@@ -17,6 +17,8 @@ export interface FeedConfig {
   kind?: string;
   url: string;
   staticGtfsUrl?: string;
+  /** Extra request headers (e.g. a client name required by the provider). Never secrets: those go through requiresKey. */
+  headers?: Record<string, string>;
   /** Name of the environment variable holding the key, or null for open feeds. */
   requiresKey: string | null;
   pollSeconds: number;

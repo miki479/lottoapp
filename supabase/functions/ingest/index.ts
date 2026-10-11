@@ -58,8 +58,8 @@ Deno.serve(safe(async (req) => {
   return Response.json(report);
 }));
 
-async function fetchBytes(url: string): Promise<Uint8Array> {
-  const res = await fetch(url, { headers: { "User-Agent": `LateLotto/0.1 (play-money game; contact: ${Deno.env.get("CONTACT_EMAIL") ?? "unset"})`, "Accept-Encoding": "gzip" }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+async function fetchBytes(url: string, extra: Record<string, string> = {}): Promise<Uint8Array> {
+  const res = await fetch(url, { headers: { ...extra, "User-Agent": `LateLotto/0.1 (play-money game; contact: ${Deno.env.get("CONTACT_EMAIL") ?? "unset"})`, "Accept-Encoding": "gzip" }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const buf = new Uint8Array(await res.arrayBuffer());
   if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) throw new Error(`unexpected size ${buf.byteLength}`);
@@ -80,7 +80,7 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
 
   const adapter = delayAdapterFor(feed);
   if (!adapter) throw new Error(`no adapter for ${feed.type}/${feed.kind}`);
-  const bytes = await fetchBytes(url);
+  const bytes = await fetchBytes(url, feed.headers);
   const msg = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(bytes), { longs: Number }) as RtFeed;
   const trips = new Set(tracked.keys());
   if (trips.size === 0) return 0; // nothing to resolve right now (e.g. no service at night): healthy, nothing stored
