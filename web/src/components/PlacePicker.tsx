@@ -2,11 +2,12 @@ import { MapPin, Search, X } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { FAMOUS_PLACES, FEATURED_PLACES, ITALY_CAPITALS, searchPlaces, type Place } from "../lib/places.ts";
+import { CITIES, cityName, enabledCategories } from "../lib/cities.ts";
 import { Flag } from "./Flag.tsx";
 import { Sheet } from "./Sheet.tsx";
 
 /** Weather for any town: search it (or tap a regional capital) and its rain questions open right away. */
-export function PlacePicker(p: { msg: Messages; locale: Locale; recent: Place[]; onPick: (place: Place) => Promise<void> | void; onClose: () => void }) {
+export function PlacePicker(p: { msg: Messages; locale: Locale; recent: Place[]; onCity: (id: string) => void; onPick: (place: Place) => Promise<void> | void; onClose: () => void }) {
   const m = p.msg.places;
   const [q, setQ] = useState("");
   const [found, setFound] = useState<Place[] | null>(null);
@@ -35,6 +36,7 @@ export function PlacePicker(p: { msg: Messages; locale: Locale; recent: Place[];
       {err && <p class="formerr" role="alert">{err}</p>}
       {found !== null && (found.length === 0 ? <p class="hint">{m.none}</p> : <div class="placelist">{found.map((f) => row(f, f.id))}</div>)}
       {found === null && p.recent.length > 0 && <><h3>{m.recent}</h3><div class="placelist">{p.recent.map((r) => row(r, r.id))}</div></>}
+      {found === null && <><h3>{m.withData}</h3><div class="capgrid">{CITIES.filter((c) => enabledCategories(c).some((k) => k !== "weather")).map((c) => <button key={c.id} class="chip" onClick={() => p.onCity(c.id)}><Flag cc={c.country} size={13} />{cityName(c, p.locale)}</button>)}</div></>}
       {found === null && <><h3>{m.capitals}</h3><div class="capgrid">{ITALY_CAPITALS.map((c) => <button key={c.name} class="chip" disabled={busy !== null} onClick={() => choose(c)}>{c.name}</button>)}</div></>}
       {found === null && <><h3>{m.famous}</h3><div class="capgrid">{[...FEATURED_PLACES, ...FAMOUS_PLACES].map((c) => <button key={c.id} class="chip" disabled={busy !== null} onClick={() => choose(c)}>{c.name}</button>)}</div></>}
       <p class="hint">{m.credit}</p>

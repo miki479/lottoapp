@@ -8,11 +8,13 @@ import type { Pick } from "../lib/types.ts";
 import { JoinStep } from "./JoinStep.tsx";
 import { boostedPayout } from "../../../shared/wallet.ts";
 import { Sheet } from "./Sheet.tsx";
+import { Sky } from "./Sky.tsx";
+import { TripScene } from "./TripScene.tsx";
 import { StakeControl } from "./StakeControl.tsx";
 
 /** Bet slip for one event: pick, stake, then place it (guests do the "last step" sign-up right here when it is required). */
 export function BetSheet(p: {
-  m: MarketRow; initial: Pick; msg: Messages; locale: Locale; credits: number; ready: boolean; needJoin: boolean; googleOn: boolean; inSlip: boolean; boosts: number; ladder: MarketRow[]; onSwitch: (m: MarketRow) => void;
+  m: MarketRow; initial: Pick; msg: Messages; locale: Locale; credits: number; ready: boolean; needJoin: boolean; googleOn: boolean; inSlip: boolean; boosts: number; now: number; mm?: number; ladder: MarketRow[]; onSwitch: (m: MarketRow) => void;
   onClose: () => void; onAddSlip: (m: MarketRow, pick: Pick) => void; onJoined: () => Promise<void>; onPlace: (m: MarketRow, pick: Pick, stake: number, boost: boolean) => Promise<string | null>;
 }) {
   const [pick, setPick] = useState<Pick>(p.initial);
@@ -37,6 +39,7 @@ export function BetSheet(p: {
     <Sheet onClose={p.onClose} label={p.msg.sheet.title}>
       <div class="shead"><h2>{p.msg.sheet.title}</h2><button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>
       <p class="q" style="font-weight:600">{question(p.m, p.msg, p.locale, cityName(city, p.locale), city.timezone)}</p>
+      {p.m.category === "weather" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.category === "traffic" ? null : <TripScene m={p.m} now={p.now} hint={pick} />}
       <div>
         <span class="detail">{p.msg.sheet.pick}</span>
         <div class="actions2" style="margin-top:8px">

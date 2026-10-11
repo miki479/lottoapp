@@ -7,15 +7,16 @@ import { TopCards, type TopItem } from "../components/TopCards.tsx";
 import { Globe, Sparkles } from "lucide-preact";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
-import { Plus } from "lucide-preact";
-import { FEATURED_PLACES, type Place } from "../lib/places.ts";
+import { Flame, Plus } from "lucide-preact";
+import { FEATURED_CITY_IDS, FEATURED_PLACES, type Place } from "../lib/places.ts";
 import type { MarketRow } from "../lib/format.ts";
 import type { LiveDelay, Pick, Progress } from "../lib/types.ts";
 
+export interface Trend { id: string; name: string; country: string; place?: Place }
 export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>;
   cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void;
-  places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
+  nearNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
   attributions: { name: string; via?: string; license: string; licenseUrl: string; url: string }[]; installEvt: Event | null;
 }
 
@@ -39,15 +40,17 @@ export function Home(p: HomeProps) {
             <TopCards items={p.top} />
           </section>
         )}
+        {p.nearNode}
       </div>
       <div class="main stack">
         <div class="sectionhead"><h2>{msg.home.events}</h2></div>
         <CatChips tiles={tiles} value={p.cat} onPick={p.onCat} />
         <div class="chiprow" role="tablist">
           <button class={`chip ${p.filter === "world" ? "on" : ""}`} role="tab" aria-selected={p.filter === "world"} onClick={() => p.onFilter("world")}><Globe size={16} />{msg.world}</button>
-          {cities.map((c) => <button key={c.id} class={`chip ${p.filter === c.id ? "on" : ""}`} role="tab" aria-selected={p.filter === c.id} onClick={() => p.onFilter(c.id)}><Flag cc={c.country} size={13} />{cityName(c, p.locale)}</button>)}
+          {cities.filter((c) => FEATURED_CITY_IDS.includes(c.id)).map((c) => <button key={c.id} class={`chip ${p.filter === c.id ? "on" : ""}`} role="tab" aria-selected={p.filter === c.id} onClick={() => p.onFilter(c.id)}><Flag cc={c.country} size={13} />{cityName(c, p.locale)}</button>)}
           {FEATURED_PLACES.map((pl) => <button key={pl.id} class={`chip ${p.filter === pl.id ? "on" : ""}`} role="tab" aria-selected={p.filter === pl.id} onClick={() => p.onPlace(pl)}><Flag cc={pl.country} size={13} />{pl.name}</button>)}
-          {p.places.filter((pl) => !FEATURED_PLACES.some((f) => f.id === pl.id)).map((pl) => <button key={pl.id} class="chip on" role="tab" aria-selected><Flag cc={pl.country} size={13} />{pl.name}</button>)}
+          {p.trending.map((t) => <button key={t.id} class={`chip trend ${p.filter === t.id ? "on" : ""}`} role="tab" aria-selected={p.filter === t.id} onClick={() => (t.place ? p.onPlace(t.place) : p.onFilter(t.id))}><Flag cc={t.country} size={13} />{t.name}<Flame size={13} /></button>)}
+          {p.places.filter((pl) => !FEATURED_PLACES.some((f) => f.id === pl.id) && !p.trending.some((t) => t.id === pl.id)).map((pl) => <button key={pl.id} class="chip on" role="tab" aria-selected><Flag cc={pl.country} size={13} />{pl.name}</button>)}
           <button class="chip more" onClick={p.onMorePlaces}><Plus size={16} />{msg.places.more}</button>
         </div>
         <div class="cardgrid">

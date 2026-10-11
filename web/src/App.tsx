@@ -23,8 +23,9 @@ import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
 import { countdown, currencySymbol, dayIn, money, question, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
+import { NearYou, type NearState } from "./components/NearYou.tsx";
 import { PlacePicker } from "./components/PlacePicker.tsx";
-import { ensurePlace, placeById, recentPlaces, rememberPlace, type Place } from "./lib/places.ts";
+import { FAMOUS_PLACES, FEATURED_CITY_IDS, FEATURED_PLACES, ITALY_CAPITALS, ensurePlace, km, placeById, placeIdOf, recentPlaces, rememberPlace, type Place } from "./lib/places.ts";
 import { RewardsSheet } from "./components/RewardsSheet.tsx";
 import { PushAsk } from "./components/PushAsk.tsx";
 import { disablePush, enablePush, pushAsked, pushAvailable, pushDenied, pushEnabled, rememberPush } from "./lib/push.ts";
@@ -32,7 +33,7 @@ import { announce, setVoice, voiceEnabled, voiceSupported } from "./lib/voice.ts
 import { makeProfileCard, makeResultCard, shareImage } from "./lib/share.ts";
 import type { QuestRow, ActivityRow, ParlayRow, SlipLeg, LiveDelay, MyBet, MyStats, Pick, PopularRow, Profile, Progress, ResultRow } from "./lib/types.ts";
 import { Bets } from "./views/Bets.tsx";
-import { Home } from "./views/Home.tsx";
+import { Home, type Trend } from "./views/Home.tsx";
 import { ProfileView } from "./views/Profile.tsx";
 import { Ranking } from "./views/Ranking.tsx";
 
@@ -77,6 +78,10 @@ export function App() {
   const [, setPlacePending] = useState<Place | null>(null);
   const [placePicker, setPlacePicker] = useState(false);
   const placeIds = useRef<string[]>(myPlaces.map((p) => p.id));
+  const [near, setNear] = useState<NearState | null>(() => { try { return JSON.parse(store.get("near") ?? "null"); } catch { return null; } });
+  const [nearRows, setNearRows] = useState<{ market_id: string; bets: number }[]>([]);
+  const [locating, setLocating] = useState(false);
+  const [trending, setTrending] = useState<Trend[]>([]);
   const [outlook, setOutlook] = useState<Record<string, number>>({});
   const [giftDot, setGiftDot] = useState(() => store.get("giftdot") === "1");
   const [giftCard, setGiftCard] = useState(() => store.get("giftcard") === "1");
@@ -163,7 +168,7 @@ export function App() {
   const loadMarkets = useCallback(async () => {
     const { data, error } = await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").not("city_id", "like", "p-%").gt("closes_at", new Date().toISOString()).order("closes_at").limit(300);
     // Markets of the towns this player picked are loaded separately so a long list of places never crowds out the real cities.
-    const mine = placeIds.current.length ? (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("city_id", placeIds.current).gt("closes_at", new Date().toISOString()).order("closes_at").limit(120)).data ?? [] : [];
+    const mine = placeIds.current.length ? (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("city_id", placeIds.current).gt("closes_at", new Date().toISOString()).order("closes_at").limit(160)).data ?? [] : [];
     if (!error) { setMarkets([...(data ?? []), ...mine] as MarketRow[]); if (navigator.onLine) setOffline(false); }
     else if (/fetch|network|load failed/i.test(error.message)) setOffline(true);
     const { data: h } = await sb.from("feed_health").select("feed_id,last_ok_at");
@@ -172,8 +177,21 @@ export function App() {
     const { data: pop } = await sb.rpc("popular_markets", { p_limit: 5 }); setPopular(((pop ?? []) as PopularRow[]).map((x) => ({ ...x, bets: +x.bets })));
   }, []);
   const loadActivity = useCallback(async () => { const { data } = await sb.rpc("activity_feed", { p_limit: 12 }); setActivity(((data ?? []) as ActivityRow[]).map((r) => ({ ...r, amount: +r.amount }))); }, []);
+  /** The four towns people bet on most (public aggregate), skipping the ones that already have a permanent chip. */
+  const loadTrending = useCallback(async () => {
+    const { data } = await sb.rpc("trending_places", { p_limit: 12 });
+    const out: Trend[] = [];
+    for (const r of (data ?? []) as { city_id: string; name: string | null; country: string | null; lat: number | null; lon: number | null; timezone: string | null }[]) {
+      if (FEATURED_CITY_IDS.includes(r.city_id) || FEATURED_PLACES.some((f) => f.id === r.city_id)) continue;
+      const c = CITIES.find((x) => x.id === r.city_id);
+      if (c) out.push({ id: c.id, name: cityName(c, locale), country: c.country });
+      else if (r.name && r.country && r.lat !== null && r.lon !== null && r.timezone) out.push({ id: r.city_id, name: r.name, country: r.country, place: { id: r.city_id, name: r.name, admin: null, country: r.country, lat: +r.lat, lon: +r.lon, timezone: r.timezone } });
+      if (out.length === 4) break;
+    }
+    setTrending(out);
+  }, [locale]);
   const loadResults = useCallback(async () => { const { data } = await sb.from("markets").select("id,city_id,kind,status,outcome,void_reason,params,evidence").neq("status", "open").order("target_at", { ascending: false }).limit(12); setResults((data ?? []) as ResultRow[]); }, []);
-  useEffect(() => { loadMarkets(); loadResults(); loadActivity(); const a = setInterval(loadMarkets, 30000), b = setInterval(() => { loadResults(); loadActivity(); }, 60000); return () => { clearInterval(a); clearInterval(b); }; }, [loadMarkets, loadResults, loadActivity]);
+  useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = setInterval(loadMarkets, 30000), b = setInterval(() => { loadResults(); loadActivity(); loadTrending(); }, 60000); return () => { clearInterval(a); clearInterval(b); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
   useEffect(() => { if (!ready) return; const i = setInterval(() => { loadBets(); loadProfile(); loadQuests(); }, 30000); return () => clearInterval(i); }, [ready]);
 
   const rainIds = useMemo(() => (markets ?? []).filter((m) => m.kind === "rain_at").map((m) => m.id), [markets]);
@@ -290,6 +308,36 @@ export function App() {
     setMyPlaces(rememberPlace(pl)); placeIds.current = [pl.id, ...placeIds.current.filter((x) => x !== pl.id)].slice(0, 6);
     setPlacePicker(false); store.set("filter", pl.id); setFilter(pl.id); setCatChosen(true); setCat("weather"); await loadMarkets();
   };
+  /** Reads the device position once, picks the nearest known city and keeps ONLY that city's id (the coordinates are never stored or sent). */
+  const locate = () => {
+    if (!navigator.geolocation) { flash(msg.near.denied, "err"); return; }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const { latitude: la, longitude: lo } = pos.coords;
+      const known = [
+        ...CITIES.map((c) => ({ id: c.id, name: cityName(c, locale), country: c.country, lat: c.location.lat, lon: c.location.lon, place: undefined as Place | undefined })),
+        ...[...FEATURED_PLACES, ...FAMOUS_PLACES, ...ITALY_CAPITALS.map((c) => ({ ...c, id: placeIdOf(c.lat, c.lon) }))].map((pl) => ({ id: pl.id, name: pl.name, country: pl.country, lat: pl.lat, lon: pl.lon, place: pl as Place | undefined })),
+      ];
+      const best = known.reduce((a, b) => (km(la, lo, a.lat, a.lon) <= km(la, lo, b.lat, b.lon) ? a : b));
+      try {
+        if (best.place) { const sid = await ensurePlace(best.place); best.id = sid; placeIds.current = [sid, ...placeIds.current.filter((x) => x !== sid)].slice(0, 7); }
+        const n = { id: best.id, name: best.name, country: best.country }; setNear(n); store.set("near", JSON.stringify(n)); await loadMarkets();
+      } catch { flash(msg.errors.generic!, "err"); }
+      setLocating(false);
+    }, () => { setLocating(false); flash(msg.near.denied, "err"); }, { timeout: 10000, maximumAge: 600000 });
+  };
+  useEffect(() => {
+    if (!near) return;
+    if (!placeIds.current.includes(near.id) && near.id.startsWith("p-")) { placeIds.current = [near.id, ...placeIds.current].slice(0, 7); }
+    const go = () => sb.rpc("popular_in_city", { p_city: near.id, p_limit: 5 }).then(({ data }) => setNearRows(((data ?? []) as { market_id: string; bets: number }[]).map((r) => ({ market_id: r.market_id, bets: +r.bets }))));
+    go(); const i = setInterval(go, 60000); return () => clearInterval(i);
+  }, [near?.id]);
+  const nearItems = useMemo(() => {
+    if (!near) return { items: [] as { m: MarketRow; bets: number }[], fallback: false };
+    const items = nearRows.map((r) => ({ m: open.find((x) => x.id === r.market_id)!, bets: r.bets })).filter((x) => x.m);
+    if (items.length > 0) return { items, fallback: false };
+    return { items: open.filter((x) => x.city_id === near.id).slice(0, 3).map((m) => ({ m, bets: 0 })), fallback: true };
+  }, [near?.id, nearRows, open]);
   const claimQuest = async (id: string) => {
     const { data, error } = await sb.rpc("claim_quest", { p_id: id });
     if (error) { flash(msg.errors.generic!, "err"); return; }
@@ -340,7 +388,7 @@ export function App() {
         <Ticker items={tickerItems} />
         <main class="content">
           {stale && <p class="note warn" style="margin-bottom:12px">{msg.feedWarning}</p>}
-          {screen === "home" && <Home msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
+          {screen === "home" && <Home msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} nearNode={<NearYou msg={msg} locale={locale} now={now} near={near} items={nearItems.items} fallback={nearItems.fallback} busy={locating} onLocate={locate} onOpen={(m) => setSheet({ m, pick: "yes" })} />} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "ranking" && <Ranking msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
           {screen === "profile" && <ProfileView giftCard={giftCard} onGiftSeen={() => { store.set("giftcard", "0"); setGiftCard(false); }} push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, setPrefs: async (f: boolean, s: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
@@ -348,11 +396,11 @@ export function App() {
       </div>
       <TabBar value={screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} />
 
-      {placePicker && <PlacePicker msg={msg} locale={locale} recent={myPlaces} onPick={pickPlace} onClose={() => setPlacePicker(false)} />}
+      {placePicker && <PlacePicker msg={msg} locale={locale} recent={myPlaces} onPick={pickPlace} onCity={(id) => { store.set("filter", id); setFilter(id); setPlacePicker(false); }} onClose={() => setPlacePicker(false)} />}
       {rewardsOpen && <RewardsSheet msg={msg} locale={locale} now={now} profile={profile} quests={quests} referral={referral} registered={registered} onClaim={claimQuest} onGo={goQuest} onShare={shareReferral} onClose={() => setRewardsOpen(false)} />}
       {askPush && <PushAsk lifted={slip.length > 0} msg={msg} onYes={() => turnPush(true)} onNo={() => { rememberPush(false); setAskPush(false); }} />}
       <ParlayBar count={slip.length} odds={slipOdds(slip)} msg={msg} locale={locale} onOpen={() => setParlayOpen(true)} />
-      {sheet && <BetSheet boosts={profile?.boosts ?? 0} key={sheet.m.id} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
+      {sheet && <BetSheet now={now} mm={outlook[sheet.m.id]} boosts={profile?.boosts ?? 0} key={sheet.m.id} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
       {parlayOpen && slip.length > 0 && <ParlaySheet boosts={profile?.boosts ?? 0} legs={slip} msg={msg} locale={locale} credits={profile?.credits ?? 0} needJoin={needJoin} googleOn={googleOn} onClose={() => setParlayOpen(false)} onRemove={(id) => setSlip((s) => s.filter((l) => l.m.id !== id))} onClear={() => { setSlip([]); setParlayOpen(false); }} onJoined={async () => {}} onPlace={placeParlay} />}
       {auth && <AuthSheet msg={msg} guest={!registered} googleOn={googleOn} onClose={() => setAuth(false)} onDone={(text) => { setAuth(false); flash(text); }} />}
       {nick && <NicknameSheet msg={msg} current={profile?.display_name ?? null} onClose={() => setNick(false)} onSaved={(n) => { setNick(false); loadProfile(); loadQuests(); flash(n); }} />}
