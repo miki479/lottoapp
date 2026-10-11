@@ -55,8 +55,43 @@ Deno.serve(safe(async (req) => {
       }
     }
   }
+  report["open-meteo-places"] = await ingestPlaces(sb, now, lastAttempt.get("open-meteo-places") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   return Response.json(report);
 }));
+
+/** Weather of every active place (used in the last 3 days), hourly, in batched Open-Meteo requests (up to 40 places per call). */
+async function ingestPlaces(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
+  if (now - last < 3600 - 5) return "not due";
+  await sb.from("feed_health").upsert({ feed_id: "open-meteo-places", last_attempt_at: new Date(now * 1000).toISOString() });
+  const { data: places } = await sb.from("places").select("id,lat,lon").gt("last_used_at", new Date((now - 3 * 86400) * 1000).toISOString()).limit(300);
+  if (!places || places.length === 0) { await sb.from("feed_health").upsert({ feed_id: "open-meteo-places", last_ok_at: new Date().toISOString(), last_error: null }); return "ok 0"; }
+  let rows = 0;
+  try {
+    for (let i = 0; i < places.length; i += 40) {
+      const chunk = places.slice(i, i + 40);
+      const q = new URLSearchParams({ latitude: chunk.map((p) => p.lat).join(","), longitude: chunk.map((p) => p.lon).join(","), hourly: "precipitation", timezone: "auto", forecast_days: "2", past_days: "1" });
+      const json = JSON.parse(new TextDecoder().decode(await fetchBytes(`https://api.open-meteo.com/v1/forecast?${q}`)));
+      const list = Array.isArray(json) ? json : [json];
+      const out: Record<string, unknown>[] = [];
+      list.forEach((one, k) => {
+        const place = chunk[k]; if (!place) return;
+        const obs = weatherAdapterFor({ type: "open-meteo" } as FeedConfig)!(one, `om-${place.id}`);
+        for (const o of obs) out.push({ city_id: place.id, feed_id: `om-${place.id}`, hour_start: new Date(o.hourStart * 1000).toISOString(), precipitation_mm: Math.max(0, o.precipitationMm) });
+      });
+      for (let j = 0; j < out.length; j += 500) {
+        const { error } = await sb.from("weather_observations").upsert(out.slice(j, j + 500), { onConflict: "feed_id,hour_start" });
+        if (error) throw new Error(error.message);
+      }
+      rows += out.length;
+    }
+  } catch (e) {
+    const msg = String((e as Error).message ?? e).slice(0, 300);
+    await sb.from("feed_health").upsert({ feed_id: "open-meteo-places", last_error: msg, last_error_at: new Date().toISOString() });
+    throw e;
+  }
+  await sb.from("feed_health").upsert({ feed_id: "open-meteo-places", last_ok_at: new Date().toISOString(), last_error: null });
+  return `ok ${rows}`;
+}
 
 async function fetchBytes(url: string, extra: Record<string, string> = {}): Promise<Uint8Array> {
   const res = await fetch(url, { headers: { ...extra, "User-Agent": `LateLotto/0.1 (play-money game; contact: ${Deno.env.get("CONTACT_EMAIL") ?? "unset"})`, "Accept-Encoding": "gzip" }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });

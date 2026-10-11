@@ -19,6 +19,11 @@ Deno.serve(safe(async (req) => {
   const { data: due, error } = await sb.from("markets").select("*").eq("status", "open").lte("target_at", nowIso).limit(500);
   if (error) return new Response(error.message, { status: 500 });
 
+  // Places (any town a player searched for): their weather feed is shared, so health and staleness are tracked once.
+  const placeIds = [...new Set((due ?? []).map((m) => m.city_id as string).filter((id) => id.startsWith("p-")))];
+  const placeTz = new Map<string, string>();
+  if (placeIds.length) for (const p of (await sb.from("places").select("id,timezone").in("id", placeIds)).data ?? []) placeTz.set(p.id as string, p.timezone as string);
+
   const { data: health } = await sb.from("feed_health").select("feed_id,last_ok_at");
   const lastOk = new Map((health ?? []).map((h) => [h.feed_id, h.last_ok_at ? Date.parse(h.last_ok_at) / 1000 : null]));
 
@@ -26,7 +31,7 @@ Deno.serve(safe(async (req) => {
   for (const row of (due ?? []) as (MarketRow & { id: string })[]) {
     try {
       const event = marketToEvent(row);
-      const city = cities.get(row.city_id);
+      const city = cities.get(row.city_id) ?? (placeTz.has(row.city_id) ? ({ id: row.city_id, timezone: placeTz.get(row.city_id)! } as unknown as ReturnType<typeof cities.get> & object) : undefined);
       if (!city) throw new Error(`unknown city ${row.city_id}`);
 
       let delays: DelayObservation[] = [];
@@ -46,8 +51,8 @@ Deno.serve(safe(async (req) => {
       }
 
       const res = resolveEvent({
-        event, now, feed: { feedId: event.feedId, lastOkAt: lastOk.get(event.feedId) ?? null },
-        staleAfterSec: feedStale.get(event.feedId) ?? 300, delays, weather,
+        event, now, feed: { feedId: event.feedId, lastOkAt: lastOk.get(event.feedId.startsWith("om-") ? "open-meteo-places" : event.feedId) ?? null },
+        staleAfterSec: feedStale.get(event.feedId) ?? (event.feedId.startsWith("om-") ? 10800 : 300), delays, weather,
       });
       if (res.status === "pending") { out.pending++; continue; }
 
