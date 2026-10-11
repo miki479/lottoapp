@@ -2,9 +2,10 @@
 # Needs repository secrets: FIREBASE_SERVICE_ACCOUNT (JSON key of a service account with the
 # "Firebase Hosting Admin" role), VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY.
 name: Deploy PWA
+# Manual until the FIREBASE_SERVICE_ACCOUNT secret exists. To deploy on every merge, add back:
+#   push:
+#     branches: [main]
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 jobs:
   deploy:

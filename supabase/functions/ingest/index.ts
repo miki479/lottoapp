@@ -18,14 +18,18 @@ Deno.serve(safe(async (req) => {
   const { data: healthRows } = await sb.from("feed_health").select("feed_id,last_attempt_at");
   const lastAttempt = new Map((healthRows ?? []).map((h) => [h.feed_id, h.last_attempt_at ? Date.parse(h.last_attempt_at) / 1000 : 0]));
 
-  // Trips that have an open (or just closed) market: only those are worth storing.
+  // Only markets inside their active window (15 min before the target until the deadline) need readings.
+  // Markets for tomorrow must not make an idle feed look broken at night.
   const since = new Date((now - 3600) * 1000).toISOString();
-  const { data: live } = await sb.from("markets").select("feed_id,params").gte("deadline_at", since).in("status", ["open"]);
+  const { data: live } = await sb.from("markets").select("feed_id,params,target_at,deadline_at").gte("deadline_at", since).eq("status", "open");
   // feed -> trip -> stops the markets ask about
   const tracked = new Map<string, Map<string, Set<string>>>();
   for (const m of live ?? []) {
     const p = m.params as { tripId?: string; stopId?: string };
     if (!p.tripId) continue;
+    const from = Date.parse(m.target_at) / 1000 - 15 * 60;
+    const to = Date.parse(m.deadline_at) / 1000;
+    if (now < from || now > to) continue;
     if (!tracked.has(m.feed_id)) tracked.set(m.feed_id, new Map());
     const trips = tracked.get(m.feed_id)!;
     if (!trips.has(p.tripId)) trips.set(p.tripId, new Set());
