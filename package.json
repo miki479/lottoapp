@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "web:dev": "vite web --host",
     "web:build": "vite build web",
-    "web:preview": "vite preview web --host"
+    "web:preview": "vite preview web --host",
+    "deploy:web": "npm run web:build && firebase deploy --only hosting"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.6",

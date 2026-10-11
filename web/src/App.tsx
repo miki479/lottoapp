@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import { payout } from "../../shared/wallet.ts";
 import { INTL_TAG, LOCALES, t, type Locale } from "./i18n/index.ts";
-import { ensureGuest, fetchCountry, sb, type Profile } from "./lib/api.ts";
+import { ensureGuest, sb, type Profile } from "./lib/api.ts";
 import { CITIES, cityInfos, cityName, cityOf, enabledCategories } from "./lib/cities.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
 import { formatWhen, minutesUntil, question, type MarketRow } from "./lib/format.ts";
@@ -56,11 +56,9 @@ export function App() {
   // Start-up: show events immediately (public data), sign in as a guest in the background.
   useEffect(() => {
     (async () => {
-      const country = await fetchCountry();
-      if (!store.get("city") && country) setCityId(pickCity(cityInfos(), { country, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, locale }));
       const uid = await ensureGuest();
       if (!uid) return;
-      await sb.rpc("ensure_profile", { p_city: store.get("city") || cityId, p_locale: locale, p_country: country });
+      await sb.rpc("ensure_profile", { p_city: store.get("city") || cityId, p_locale: locale, p_country: null });
       await sb.rpc("claim_daily_refill");
       await loadProfile();
       setReady(true);

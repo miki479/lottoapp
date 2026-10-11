@@ -10,7 +10,7 @@ Real data, fake credits. Starts in Tokyo; every city is just a config file.
 ## Status
 
 Done: game logic with tests, three cities, feed adapters, Supabase schema, market generator, `ingest`/`resolve`
-Edge Functions running every minute, guest-first PWA in it / en-US / en-GB (see `docs/deploy.md`).
+Edge Functions running every minute, guest-first PWA in it / en-US / en-GB hosted on Firebase Hosting (see `docs/deploy.md`).
 Next: retention features (rings, streaks, seasons, trophies, leaderboards, share card, push) and calibrating Toei delays.
 
 ## Coverage

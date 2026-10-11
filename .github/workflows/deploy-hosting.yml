@@ -1,0 +1,26 @@
+# Publishes the PWA to Firebase Hosting on every push to main.
+# Needs repository secrets: FIREBASE_SERVICE_ACCOUNT (JSON key of a service account with the
+# "Firebase Hosting Admin" role), VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY.
+name: Deploy PWA
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm test
+      - run: npm run web:build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: worldbett-159a9
+          channelId: live
