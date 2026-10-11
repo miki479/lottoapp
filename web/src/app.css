@@ -506,20 +506,39 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 @media (prefers-reduced-motion: reduce) { .sky .rain i, .sky .sun i { animation: none !important; } .sky .rain i { opacity: .8; } }
 .sky .skycap { white-space: nowrap; }
 
-/* what-if on bus/train cards: "late" (YES) holds the vehicle back with a delay tag, "on time" (NO) sends it to the destination */
-.scene .delaybadge { position: absolute; left: 50%; top: -14px; transform: translateX(-50%) scale(.6); padding: 1px 6px; border-radius: 8px; background: var(--c-pop); color: #fff; font-size: 11px; font-weight: 800; opacity: 0; transition: opacity 250ms, transform 300ms var(--ease); white-space: nowrap; }
-.scene .dest { transform-origin: 50% 100%; }
-.scene .dest .ping { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; border: 2px solid currentColor; opacity: 0; }
-.scene[data-hint="yes"] .rider { animation: none; opacity: 1; left: calc((100% - var(--w)) * .55); transition: left 700ms var(--ease); }
-.scene[data-hint="yes"] .delaybadge { opacity: 1; transform: translateX(-50%) scale(1); }
-.scene[data-hint="yes"] .done { width: calc((100% - 18px) * .55); }
-.scene[data-hint="yes"] .dest { animation: wobble 900ms ease-in-out infinite; }
-.scene[data-hint="no"] .rider { animation: none; opacity: 1; left: calc(100% - var(--w) - 18px); transition: left 900ms var(--ease); }
-.scene[data-hint="no"] .done { width: calc(100% - 18px); }
-.scene[data-hint="no"] .dest .ping { animation: arrive 900ms ease-out 700ms infinite; }
-@keyframes wobble { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-12deg); } 75% { transform: rotate(10deg); } }
-@keyframes arrive { 0% { opacity: .9; transform: scale(.6); } 100% { opacity: 0; transform: scale(3.2); } }
-@media (prefers-reduced-motion: reduce) { .scene .dest, .scene .dest .ping { animation: none !important; } }
+/* what-if on bus/train cards.
+   "On time" (NO): nitro - the vehicle jolts, a flame lights up behind it, air streaks rush past and it races along the track.
+   "Late" (YES): it crawls, tilted and washed out, with a turning hourglass over it and nothing moving around it. */
+.scene .road, .scene .done { left: 8px; }
+.scene .done::after { right: -4px; }
+.scene .wait, .scene .flame, .scene .streaks { display: none; }
+.scene .streaks { position: absolute; inset: 0; pointer-events: none; }
+.scene .streaks i { position: absolute; height: 2px; width: 26px; border-radius: 2px; background: linear-gradient(90deg, transparent, #fff); opacity: 0; }
+.scene .streaks i:nth-child(1) { top: 4px; left: 80%; animation-delay: 0s; } .scene .streaks i:nth-child(2) { top: 9px; left: 55%; animation-delay: -.15s; } .scene .streaks i:nth-child(3) { top: 14px; left: 90%; animation-delay: -.3s; }
+.scene .streaks i:nth-child(4) { top: 19px; left: 40%; animation-delay: -.45s; } .scene .streaks i:nth-child(5) { top: 6px; left: 20%; animation-delay: -.6s; } .scene .streaks i:nth-child(6) { top: 16px; left: 70%; animation-delay: -.75s; }
+.scene .flame { position: absolute; right: 100%; top: 40%; width: 22px; height: 9px; margin-right: -2px; border-radius: 9px 0 0 9px; background: linear-gradient(270deg, #ffd23f, #ff7a1a 55%, rgba(255, 60, 20, 0)); filter: blur(.4px); transform-origin: 100% 50%; }
+
+.scene[data-hint="no"] .rider { opacity: 1; left: 0; animation: nitro 1.15s cubic-bezier(.5, 0, .7, .4) infinite; transition: none; }
+.scene[data-hint="no"] .rider > svg:last-of-type, .scene[data-hint="no"] .rider > svg { animation: jolt .09s linear infinite; }
+.scene[data-hint="no"] .flame { display: block; animation: flame .12s ease-in-out infinite alternate; }
+.scene[data-hint="no"] .streaks { display: block; } .scene[data-hint="no"] .streaks i { animation: streak .45s linear infinite; }
+.scene[data-hint="no"] .puff { animation-duration: .45s !important; }
+.scene[data-hint="no"] .done { width: calc(100% - 26px); }
+
+.scene[data-hint="yes"] .rider { opacity: 1; left: calc((100% - var(--w)) * .42); animation: crawl 7s ease-in-out infinite alternate; transition: none; filter: saturate(.35) brightness(.88); }
+.scene[data-hint="yes"] .rider > svg { animation: sag 2.4s ease-in-out infinite; transform-origin: 20% 100%; }
+.scene[data-hint="yes"] .wait { display: block; position: absolute; right: 100%; top: 3px; margin-right: 6px; color: var(--text-2); animation: flip 2.6s ease-in-out infinite; }
+.scene[data-hint="yes"] .puff { animation-play-state: paused; opacity: 0 !important; }
+.scene[data-hint="yes"] .road { animation: none; opacity: .35; }
+.scene[data-hint="yes"] .done { width: calc((100% - 18px) * .42); }
+@keyframes nitro { 0% { left: 0; } 100% { left: calc(100% - var(--w) - 14px); } }
+@keyframes jolt { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(-1.5px) rotate(-.8deg); } 75% { transform: translateY(1px) rotate(.6deg); } }
+@keyframes flame { from { transform: scaleX(.7) scaleY(.9); opacity: .85; } to { transform: scaleX(1.2) scaleY(1.15); opacity: 1; } }
+@keyframes streak { 0% { transform: translateX(0); opacity: 0; } 20% { opacity: .85; } 100% { transform: translateX(-90px); opacity: 0; } }
+@keyframes crawl { from { left: calc((100% - var(--w)) * .40); } to { left: calc((100% - var(--w)) * .44); } }
+@keyframes sag { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-2.2deg) translateY(1px); } }
+@keyframes flip { 0%, 40% { transform: rotate(0); } 60%, 100% { transform: rotate(180deg); } }
+@media (prefers-reduced-motion: reduce) { .scene .rider, .scene .rider > svg, .scene .flame, .scene .streaks i, .scene .wait { animation: none !important; } }
 
 .tabbar .badge.dot, .side .badge.dot { min-width: 10px; width: 10px; height: 10px; padding: 0; background: var(--c-pop); box-shadow: 0 0 0 2px var(--bg); animation: glow 1.8s ease-in-out infinite; }
 .giftcard { display: flex; align-items: center; gap: 12px; margin-bottom: var(--gap); background: linear-gradient(135deg, rgba(255,95,162,.2), rgba(107,91,255,.18)); border-color: var(--c-pop); }
