@@ -1,8 +1,7 @@
-import { RefreshCw, X } from "lucide-preact";
+import { ArrowLeft, RefreshCw } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
-import { Sheet } from "./Sheet.tsx";
 
 interface Overview {
   feeds: { id: string; last_ok_at: string | null; last_attempt_at: string | null; last_error: string | null; last_error_at: string | null }[];
@@ -25,8 +24,8 @@ function feedState(f: Overview["feeds"][number], now: number): "ok" | "late" | "
 }
 const ago = (iso: string | null, now: number) => { if (!iso) return "—"; const s = Math.max(0, Math.round((now - Date.parse(iso)) / 1000)); return s < 90 ? `${s}s` : s < 5400 ? `${Math.round(s / 60)}m` : s < 172800 ? `${Math.round(s / 3600)}h` : `${Math.round(s / 86400)}d`; };
 
-/** Owner-only overview: feed health, market outcomes, usage and open reports. The server refuses anyone else. */
-export function AdminSheet({ msg, onClose }: { msg: Messages; onClose: () => void }) {
+/** Owner-only page (a screen of its own, not a popup):  feed health, market outcomes, usage and open reports. The server refuses anyone else. */
+export function AdminPage({ msg, onBack }: { msg: Messages; onBack: () => void }) {
   const [data, setData] = useState<Overview | null>(null);
   const [err, setErr] = useState(false);
   const load = async () => { const { data: d, error } = await sb.rpc("admin_overview"); if (error) setErr(true); else { setErr(false); setData(d as Overview); } };
@@ -34,8 +33,8 @@ export function AdminSheet({ msg, onClose }: { msg: Messages; onClose: () => voi
   const resolve = async (id: string) => { await sb.rpc("admin_resolve_report", { p_id: id }); load(); };
   const now = Date.now(), a = msg.admin;
   return (
-    <Sheet onClose={onClose} label={a.title}>
-      <div class="shead"><h2>{a.title}</h2><span style="display:flex;gap:4px"><button class="iconbtn" onClick={load} aria-label={a.refresh}><RefreshCw size={20} /></button><button class="iconbtn" onClick={onClose} aria-label={msg.common.close}><X size={22} /></button></span></div>
+    <div class="screen stack adminpage">
+      <div class="adminbar"><button class="iconbtn" onClick={onBack} aria-label={msg.common.back}><ArrowLeft size={22} /></button><h1>{a.title}</h1><button class="iconbtn" onClick={load} aria-label={a.refresh}><RefreshCw size={20} /></button></div>
       {err && <p class="formerr" role="alert">{a.forbidden}</p>}
       {data && (<>
         <div class="admingrid">
@@ -69,6 +68,6 @@ export function AdminSheet({ msg, onClose }: { msg: Messages; onClose: () => voi
             <button class="btn secondary" onClick={() => resolve(r.id)}>{a.resolve}</button>
           </div>))}
       </>)}
-    </Sheet>
+    </div>
   );
 }

@@ -12,6 +12,7 @@ import { ParlaySheet, slipOdds } from "./components/ParlaySheet.tsx";
 import { Header } from "./components/Header.tsx";
 import { CROWD_SOURCE } from "./lib/crowding.ts";
 import { QuakeMaker } from "./components/QuakeMaker.tsx";
+import { AdminPage } from "./components/AdminPage.tsx";
 import { Sidebar, TabBar, type Screen } from "./components/Nav.tsx";
 import { NicknameSheet } from "./components/NicknameSheet.tsx";
 import { ResultScreen } from "./components/ResultScreen.tsx";
@@ -402,7 +403,7 @@ export function App() {
 
   return (
     <div class="shell">
-      <Sidebar value={screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} />
+      <Sidebar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} />
       <div>
         <Header claimable={claimable} onWallet={() => setRewardsOpen(true)} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} wallet={profile ? new Intl.NumberFormat(INTL_TAG[locale]).format(Math.round(wallet)) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
         <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
@@ -412,10 +413,11 @@ export function App() {
           {screen === "home" && <Home onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} nearNode={<NearYou msg={msg} locale={locale} now={now} near={near} items={nearItems.items} fallback={nearItems.fallback} busy={locating} onLocate={locate} onOpen={(m) => setSheet({ m, pick: "yes" })} />} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "ranking" && <Ranking msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
-          {screen === "profile" && <ProfileView giftCard={giftCard} onGiftSeen={() => { store.set("giftcard", "0"); setGiftCard(false); }} push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, setPrefs: async (f: boolean, s: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
+          {screen === "admin" && <AdminPage msg={msg} onBack={() => go("profile")} />}
+          {screen === "profile" && <ProfileView onAdmin={() => go("admin")} giftCard={giftCard} onGiftSeen={() => { store.set("giftcard", "0"); setGiftCard(false); }} push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, setPrefs: async (f: boolean, s: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
         </main>
       </div>
-      <TabBar value={screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} />
+      <TabBar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} />
 
       {quakeMaker && <QuakeMaker msg={msg} locale={locale} onClose={() => setQuakeMaker(false)} onCreated={(m) => { setQuakeMaker(false); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
       {placePicker && <PlacePicker msg={msg} locale={locale} recent={myPlaces} onPick={pickPlace} onCity={(id) => { store.set("filter", id); setFilter(id); setPlacePicker(false); }} onClose={() => setPlacePicker(false)} />}

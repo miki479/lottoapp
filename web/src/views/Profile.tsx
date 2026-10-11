@@ -2,7 +2,6 @@ import { Bell, Gift, Rocket, Calendar, CalendarCheck, ChevronRight, Flame, Gem, 
 import type { LucideIcon } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Missions } from "../components/Missions.tsx";
-import { AdminSheet } from "../components/AdminSheet.tsx";
 import { Sheet } from "../components/Sheet.tsx";
 import { StreakCard } from "../components/StreakCard.tsx";
 import { money } from "../lib/format.ts";
@@ -14,6 +13,7 @@ import { INTL_TAG } from "../i18n/index.ts";
 const TROPHY_ICON: Record<TrophyId, LucideIcon> = { first_win: Sparkles, all_rings: Target, long_shot: Telescope, rain_man: Umbrella, streak_7: CalendarCheck, train_whisperer: TrainFront, high_roller: Gem, streak_30: Medal, ghost_feed: Ghost };
 
 export function ProfileView(p: {
+  onAdmin: () => void;
   giftCard: boolean; onGiftSeen: () => void; push: { on: boolean; denied: boolean; toggle: () => void; flash: boolean; streak: boolean; setPrefs: (f: boolean, s: boolean) => void } | null; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
   onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => void; onDelete: () => Promise<void>; sources: { name: string; via?: string; license: string; licenseUrl: string; url: string }[];
 }) {
@@ -22,7 +22,6 @@ export function ProfileView(p: {
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [admin, setAdmin] = useState(false);
-  const [adminOpen, setAdminOpen] = useState(false);
   useEffect(() => { if (!p.registered) { setAdmin(false); return; } sb.rpc("is_admin").then(({ data }) => setAdmin(data === true)); }, [p.registered, p.email]);
   useEffect(() => { sb.rpc("my_stats").then(({ data }) => { const r = (data as MyStats[] | null)?.[0]; if (r) setStats({ total: +r.total, won: +r.won, lost: +r.lost, voided: +r.voided, best_win: +r.best_win, net: +r.net, staked: +r.staked }); }); }, [p.profile?.credits]);
   const settled = (stats?.won ?? 0) + (stats?.lost ?? 0);
@@ -116,8 +115,7 @@ export function ProfileView(p: {
             <div class="row" style="flex-wrap:wrap"><span class="grow">{p.msg.common.language}</span>
               <div class="seg" style="width:100%">{LOCALES.map((l) => <button key={l.id} class={l.id === p.locale ? "on" : ""} aria-pressed={l.id === p.locale} onClick={() => p.onLocale(l.id)}>{l.short}</button>)}</div>
             </div>
-            {admin && <button class="row" onClick={() => setAdminOpen(true)}><span class="grow">{p.msg.admin.open}</span><ChevronRight size={18} /></button>}
-            {adminOpen && <AdminSheet msg={p.msg} onClose={() => setAdminOpen(false)} />}
+            {admin && <button class="row" onClick={p.onAdmin}><span class="grow">{p.msg.admin.open}</span><ChevronRight size={18} /></button>}
             <p class="hint" style="display:flex;gap:14px;flex-wrap:wrap;padding:6px 4px"><a href="/how-it-works.html" style="color:var(--brand)">{m.howItWorks}</a><a href="/terms.html" style="color:var(--text-2)">{m.terms}</a><a href="/privacy.html" style="color:var(--text-2)">{m.privacy}</a></p>
             <details class="row" style="display:block"><summary style="min-height:32px;display:flex;align-items:center;cursor:pointer">{m.sources}</summary>
               <ul class="hint" style="padding-left:18px">{p.sources.map((a) => <li key={a.name}><a href={a.url} target="_blank" rel="noopener noreferrer" style="color:inherit">{a.name}</a>{a.via ? ` · ${a.via}` : ""} · <a href={a.licenseUrl} target="_blank" rel="noopener noreferrer" style="color:inherit">{a.license}</a></li>)}</ul>

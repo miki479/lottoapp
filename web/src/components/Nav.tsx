@@ -1,7 +1,7 @@
 import { Clock3, House, Ticket, Trophy, User } from "lucide-preact";
 import type { Messages } from "../i18n/index.ts";
 
-export type Screen = "home" | "bets" | "ranking" | "profile";
+export type Screen = "home" | "bets" | "ranking" | "profile" | "admin";
 const ITEMS = [["home", House], ["bets", Ticket], ["ranking", Trophy], ["profile", User]] as const;
 
 /** Bottom tab bar on phones. */
