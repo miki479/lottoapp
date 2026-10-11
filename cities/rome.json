@@ -1,16 +1,36 @@
 {
   "id": "rome",
   "country": "IT",
-  "name": { "it": "Roma", "en-US": "Rome", "en-GB": "Rome", "ja": "ローマ" },
+  "name": {
+    "it": "Roma",
+    "en-US": "Rome",
+    "en-GB": "Rome",
+    "ja": "ローマ"
+  },
   "timezone": "Europe/Rome",
   "defaultLocale": "it",
-  "tone": { "it": "ironico", "en-US": "cheeky", "en-GB": "dry" },
-  "location": { "lat": 41.9028, "lon": 12.4964 },
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 41.9028,
+    "lon": 12.4964
+  },
   "categories": {
-    "bus": { "enabled": true },
-    "train": { "enabled": false },
-    "weather": { "enabled": true },
-    "traffic": { "enabled": false }
+    "bus": {
+      "enabled": false
+    },
+    "train": {
+      "enabled": false
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
   },
   "feeds": [
     {
@@ -22,14 +42,19 @@
       "requiresKey": null,
       "pollSeconds": 60,
       "staleAfterSeconds": 240,
-      "routeTypes": [0, 3],
+      "routeTypes": [
+        0,
+        3
+      ],
       "licenseVerified": false,
       "attribution": {
         "name": "Roma Servizi per la Mobilità (dati ATAC e Roma TPL)",
-        "license": "CC BY 3.0 Italia (da verificare, fonte del 2018)",
-        "licenseUrl": "https://creativecommons.org/licenses/by/3.0/it/",
+        "license": "Nessuna licenza aperta: la pagina open data limita l'uso a supporto del viaggio",
+        "licenseUrl": "https://romamobilita.it/sistemi-e-tecnologie/open-data/",
         "url": "https://romamobilita.it/"
-      }
+      },
+      "staticGtfsUrl": "https://romamobilita.it/sites/default/files/rome_static_gtfs.zip",
+      "note": "Read 2026-10-11: the page states the data may be used 'esclusivamente a titolo di supporto al viaggio' and reserves action against improper use. Not usable for a game without written permission from Roma Servizi per la Mobilità."
     },
     {
       "id": "open-meteo-rome",

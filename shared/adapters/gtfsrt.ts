@@ -24,7 +24,7 @@ export const vehiclePositionsAdapter: DelayAdapter = (feed, ctx) => {
     if (v?.stopId && v.stopId !== sched.stopId) continue;
     const delaySec = delayFromPosition(observedAt, sched.time, ctx.timezone);
     if (delaySec === null) continue;
-    out.push({ feedId: ctx.feedId, tripId, stopId: sched.stopId, routeId: v?.trip?.routeId ?? "", observedAt, delaySec });
+    out.push({ feedId: ctx.feedId, tripId, stopId: sched.stopId, stopSequence: seq, routeId: v?.trip?.routeId ?? "", observedAt, delaySec });
   }
   return out;
 };

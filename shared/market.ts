@@ -34,6 +34,7 @@ export function marketToEvent(row: MarketRow): MarketEvent {
       routeId: String(p.routeId ?? ""),
       tripId: String(p.tripId),
       stopId: String(p.stopId),
+      stopSequence: p.stopSequence === undefined ? undefined : Number(p.stopSequence),
       thresholdSec: Number(p.thresholdSec),
     };
     return ev;

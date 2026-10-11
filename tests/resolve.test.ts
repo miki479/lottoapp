@@ -16,7 +16,7 @@ const base = (over: Partial<ResolveInput>): ResolveInput => ({
   event: bus, now: T + 600, feed: { feedId: "toei", lastOkAt: T + 590 }, staleAfterSec: 180,
   delays: [], weather: [], ...over,
 });
-const obs = (o: Partial<{ observedAt: number; delaySec: number; tripId: string; stopId: string; feedId: string; predictedAt: number }> = {}) => ({
+const obs = (o: Partial<{ observedAt: number; delaySec: number; tripId: string; stopId: string; feedId: string; predictedAt: number; stopSequence: number }> = {}) => ({
   feedId: "toei", tripId: "t1", stopId: "s1", routeId: "r", observedAt: T + 30, delaySec: 200, ...o,
 });
 
@@ -105,5 +105,24 @@ describe("forecasts are not facts", () => {
   it("voids at the deadline if only early forecasts exist", () => {
     const r = resolveEvent(base({ now: T + 2000, delays: [forecast(T - 200, 900)], feed: { feedId: "toei", lastOkAt: T + 1990 } }));
     expect(r).toEqual({ status: "void", reason: "no_observation" });
+  });
+});
+
+describe("position feeds that skip a stop between samples", () => {
+  const ev = { ...bus, stopSequence: 5 };
+  const pos = (seq: number, observedAt: number, delaySec: number) => obs({ stopId: `s${seq}`, stopSequence: seq, observedAt, delaySec });
+  const run = (delays: ReturnType<typeof pos>[]) => resolveEvent(base({ event: ev, delays }));
+  it("accepts a reading one or two stops after the event's stop", () => {
+    expect(run([pos(6, T + 40, 250)])).toMatchObject({ status: "resolved", outcome: "yes" });
+    expect(run([pos(7, T + 90, 100)])).toMatchObject({ status: "resolved", outcome: "no" });
+  });
+  it("prefers the stop closest to the question", () => {
+    expect(run([pos(7, T + 30, 900), pos(6, T + 60, 20)])).toMatchObject({ outcome: "no", evidence: { delaySec: 20 } });
+  });
+  it("does not use readings from before the stop or too many stops after", () => {
+    expect(run([pos(4, T + 10, 900), pos(8, T + 100, 900)])).toEqual({ status: "pending" });
+  });
+  it("still matches by stop id when there is no sequence (trip updates)", () => {
+    expect(resolveEvent(base({ event: ev, delays: [obs({ delaySec: 200 })] }))).toMatchObject({ outcome: "yes" });
   });
 });

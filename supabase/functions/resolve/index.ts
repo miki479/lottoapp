@@ -35,10 +35,10 @@ Deno.serve(safe(async (req) => {
         const { data } = await sb.from("weather_observations").select("feed_id,hour_start,precipitation_mm").eq("feed_id", event.feedId).eq("hour_start", hour);
         weather = (data ?? []).map((w) => ({ feedId: w.feed_id, hourStart: Date.parse(w.hour_start) / 1000, precipitationMm: Number(w.precipitation_mm) }));
       } else {
-        const { data } = await sb.from("delay_observations").select("feed_id,trip_id,stop_id,route_id,observed_at,delay_sec,predicted_at")
-          .eq("feed_id", event.feedId).eq("trip_id", event.tripId).eq("stop_id", event.stopId);
+        const { data } = await sb.from("delay_observations").select("feed_id,trip_id,stop_id,stop_sequence,route_id,observed_at,delay_sec,predicted_at")
+          .eq("feed_id", event.feedId).eq("trip_id", event.tripId);
         delays = (data ?? []).map((d) => ({
-          feedId: d.feed_id, tripId: d.trip_id, stopId: d.stop_id, routeId: d.route_id,
+          feedId: d.feed_id, tripId: d.trip_id, stopId: d.stop_id, stopSequence: d.stop_sequence ?? undefined, routeId: d.route_id,
           observedAt: Date.parse(d.observed_at) / 1000, delaySec: d.delay_sec,
           predictedAt: d.predicted_at ? Date.parse(d.predicted_at) / 1000 : undefined,
         }));

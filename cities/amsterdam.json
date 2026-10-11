@@ -1,16 +1,36 @@
 {
   "id": "amsterdam",
   "country": "NL",
-  "name": { "it": "Amsterdam", "en-US": "Amsterdam", "en-GB": "Amsterdam", "ja": "アムステルダム" },
+  "name": {
+    "it": "Amsterdam",
+    "en-US": "Amsterdam",
+    "en-GB": "Amsterdam",
+    "ja": "アムステルダム"
+  },
   "timezone": "Europe/Amsterdam",
   "defaultLocale": "en-GB",
-  "tone": { "it": "ironico", "en-US": "cheeky", "en-GB": "dry" },
-  "location": { "lat": 52.3676, "lon": 4.9041 },
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 52.3676,
+    "lon": 4.9041
+  },
   "categories": {
-    "bus": { "enabled": false },
-    "train": { "enabled": true },
-    "weather": { "enabled": true },
-    "traffic": { "enabled": false }
+    "bus": {
+      "enabled": false
+    },
+    "train": {
+      "enabled": true
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
   },
   "feeds": [
     {
@@ -22,14 +42,18 @@
       "requiresKey": null,
       "pollSeconds": 120,
       "staleAfterSeconds": 360,
-      "routeTypes": [2],
-      "licenseVerified": false,
+      "routeTypes": [
+        2
+      ],
+      "licenseVerified": true,
       "attribution": {
-        "name": "NDOV / OVapi (Dutch railway operators)",
-        "license": "Open data, terms to verify (OVapi README: no SLA, do not impersonate operators)",
-        "licenseUrl": "https://gtfs.ovapi.nl/",
+        "name": "OVapi / NDOV (Dutch railway operators' open data)",
+        "license": "Free to use, no SLA (OVapi README, read 2026-10-11)",
+        "licenseUrl": "https://gtfs.ovapi.nl/README",
         "url": "https://gtfs.ovapi.nl/"
-      }
+      },
+      "staticGtfsUrl": "https://gtfs.ovapi.nl/nl/gtfs-nl.zip",
+      "note": "README policy: identify yourself in the User-Agent with a contact; gzip; do not impersonate the operators."
     },
     {
       "id": "open-meteo-amsterdam",

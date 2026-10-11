@@ -21,12 +21,15 @@ Deno.serve(safe(async (req) => {
   // Trips that have an open (or just closed) market: only those are worth storing.
   const since = new Date((now - 3600) * 1000).toISOString();
   const { data: live } = await sb.from("markets").select("feed_id,params").gte("deadline_at", since).in("status", ["open"]);
-  const tracked = new Map<string, Set<string>>();
+  // feed -> trip -> stops the markets ask about
+  const tracked = new Map<string, Map<string, Set<string>>>();
   for (const m of live ?? []) {
-    const trip = (m.params as { tripId?: string }).tripId;
-    if (!trip) continue;
-    if (!tracked.has(m.feed_id)) tracked.set(m.feed_id, new Set());
-    tracked.get(m.feed_id)!.add(trip);
+    const p = m.params as { tripId?: string; stopId?: string };
+    if (!p.tripId) continue;
+    if (!tracked.has(m.feed_id)) tracked.set(m.feed_id, new Map());
+    const trips = tracked.get(m.feed_id)!;
+    if (!trips.has(p.tripId)) trips.set(p.tripId, new Set());
+    if (p.stopId) trips.get(p.tripId)!.add(p.stopId);
   }
 
   const seen = new Set<string>();
@@ -38,7 +41,7 @@ Deno.serve(safe(async (req) => {
       if (now - (lastAttempt.get(feed.id) ?? 0) < feed.pollSeconds - 5) { report[feed.id] = "not due"; continue; }
       await sb.from("feed_health").upsert({ feed_id: feed.id, last_attempt_at: new Date(now * 1000).toISOString() });
       try {
-        const n = await ingestFeed(sb, city, feed, now, tracked.get(feed.id) ?? new Set());
+        const n = await ingestFeed(sb, city, feed, now, tracked.get(feed.id) ?? new Map());
         await sb.from("feed_health").upsert({ feed_id: feed.id, last_ok_at: new Date().toISOString(), last_error: null });
         report[feed.id] = `ok ${n}`;
       } catch (e) {
@@ -52,14 +55,14 @@ Deno.serve(safe(async (req) => {
 }));
 
 async function fetchBytes(url: string): Promise<Uint8Array> {
-  const res = await fetch(url, { headers: { "User-Agent": "lottoapp/0.1 (play-money game)" }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+  const res = await fetch(url, { headers: { "User-Agent": `LateLotto/0.1 (play-money game; contact: ${Deno.env.get("CONTACT_EMAIL") ?? "unset"})`, "Accept-Encoding": "gzip" }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const buf = new Uint8Array(await res.arrayBuffer());
   if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) throw new Error(`unexpected size ${buf.byteLength}`);
   return buf;
 }
 
-async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: FeedConfig, now: number, trips: Set<string>): Promise<number> {
+async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: FeedConfig, now: number, tracked: Map<string, Set<string>>): Promise<number> {
   const url = feedUrl(feed, city);
   if (feed.type === "open-meteo") {
     const adapter = weatherAdapterFor(feed)!;
@@ -76,6 +79,7 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
   const bytes = await fetchBytes(url);
   const msg = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(bytes), { longs: Number }) as RtFeed;
   if (!msg.entity?.length) throw new Error("empty feed"); // an empty feed is treated as an outage, not as "no delays"
+  const trips = new Set(tracked.keys());
   if (trips.size === 0) return 0; // nothing to resolve right now: healthy, nothing stored
 
   let schedule: ScheduleLookup | undefined;
@@ -85,10 +89,14 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
     schedule = (trip, seq) => map.get(`${trip}|${seq}`) ?? null;
   }
   const all = adapter(msg, { feedId: feed.id, timezone: city.timezone, fetchedAt: now, schedule });
-  const mine = all.filter((o) => trips.has(o.tripId));
+  // Trip updates list every stop of the trip: keep only the stops a market asks about.
+  // Position feeds are kept for the whole trip: a bus can skip a sample at the exact stop.
+  const mine = feed.kind === "vehicle_positions"
+    ? all.filter((o) => trips.has(o.tripId))
+    : all.filter((o) => tracked.get(o.tripId)?.has(o.stopId));
   if (mine.length === 0) return 0;
   const rows = mine.map((o) => ({
-    city_id: city.id, feed_id: feed.id, route_id: o.routeId, trip_id: o.tripId, stop_id: o.stopId,
+    city_id: city.id, feed_id: feed.id, route_id: o.routeId, trip_id: o.tripId, stop_id: o.stopId, stop_sequence: o.stopSequence ?? null,
     observed_at: new Date(o.observedAt * 1000).toISOString(), delay_sec: Math.round(o.delaySec),
     predicted_at: o.predictedAt ? new Date(o.predictedAt * 1000).toISOString() : null,
   }));

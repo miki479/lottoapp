@@ -32,11 +32,19 @@ describe("feed licence gate", () => {
   const load = (n: string) => validateCity(JSON.parse(readFileSync(new URL(`../cities/${n}.json`, import.meta.url), "utf8")));
   it("skips feeds whose licence is unverified unless opted in", () => {
     const rome = load("rome");
-    expect(usableFeeds(rome, false).map((f) => f.id)).toEqual(["open-meteo-rome"]);
-    expect(usableFeeds(rome, true).map((f) => f.id)).toContain("rome-trip-update");
+    // Rome's bus category is switched off on purpose (its terms limit use to travel support)...
+    expect(usableFeeds(rome, true).map((f) => f.id)).toEqual(["open-meteo-rome"]);
+    // ...and even if someone switched it on, the unverified feed stays blocked by default.
+    const enabled = { ...rome, categories: { ...rome.categories, bus: { enabled: true } } };
+    expect(usableFeeds(enabled, false).map((f) => f.id)).toEqual(["open-meteo-rome"]);
+    expect(usableFeeds(enabled, true).map((f) => f.id)).toContain("rome-trip-update");
   });
   it("does not use feeds of disabled categories", () => {
     expect(usableFeeds(load("tokyo"), true).every((f) => f.category !== "traffic" && f.category !== "train")).toBe(true);
+  });
+  it("only uses feeds whose licence has been read", () => {
+    for (const n of ["tokyo", "amsterdam"]) expect(usableFeeds(load(n), false).length).toBeGreaterThan(0);
+    expect(usableFeeds(load("amsterdam"), false).map((f) => f.id)).toContain("nl-train-update");
   });
   it("covers Italy and a train city", () => {
     expect(load("rome").country).toBe("IT");

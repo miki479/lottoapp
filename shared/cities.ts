@@ -29,6 +29,8 @@ export interface FeedConfig {
    * Unverified feeds are skipped in production unless ALLOW_UNVERIFIED_FEEDS=1.
    */
   licenseVerified: boolean;
+  /** Where the licence was read and any usage policy to respect. */
+  note?: string;
   attribution: FeedAttribution;
 }
 

@@ -9,7 +9,23 @@
     "noEmit": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": [
+      "node",
+      "vite/client"
+    ],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact"
   },
-  "include": ["shared", "tests", "cities"]
+  "include": [
+    "shared",
+    "tests",
+    "cities",
+    "web/src",
+    "web/vite.config.ts"
+  ]
 }

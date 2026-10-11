@@ -22,6 +22,12 @@ export interface ResolveInput {
 const BUS_WINDOW_BEFORE_SEC = 5 * 60;
 const BUS_WINDOW_AFTER_SEC = 15 * 60;
 /**
+ * Position feeds are sampled every ~30 s and a bus can pass a stop between two samples.
+ * A reading taken at the event's stop, or at most this many stops later, still counts.
+ */
+export const MAX_STOP_SKIP = 2;
+
+/**
  * A forecast (TripUpdate) only counts if it was refreshed this close to the predicted passage,
  * or later. Earlier forecasts are guesses, not observations.
  */
@@ -61,19 +67,26 @@ type Reading =
 function delayReading(event: DelayEvent, input: ResolveInput): Reading {
   const lo = event.targetAt - BUS_WINDOW_BEFORE_SEC;
   const hi = event.targetAt + BUS_WINDOW_AFTER_SEC;
+  const matchesStop = (o: DelayObservation): boolean => {
+    if (o.stopSequence !== undefined && event.stopSequence !== undefined) {
+      return o.stopSequence >= event.stopSequence && o.stopSequence <= event.stopSequence + MAX_STOP_SKIP;
+    }
+    return o.stopId === event.stopId;
+  };
   const candidates = input.delays
     .filter(
       (o) =>
         o.feedId === event.feedId &&
         o.tripId === event.tripId &&
-        o.stopId === event.stopId &&
+        matchesStop(o) &&
         o.observedAt >= lo &&
         o.observedAt <= hi &&
         o.observedAt <= input.now &&
         (o.predictedAt === undefined || o.observedAt >= o.predictedAt - FORECAST_FRESHNESS_SEC),
     )
-    .sort((a, b) => a.observedAt - b.observedAt);
-  // The first reading at the stop is the one that counts: later ones include later travel.
+    // earliest stop first (closest to the question), then earliest time
+    .sort((a, b) => (a.stopSequence ?? 0) - (b.stopSequence ?? 0) || a.observedAt - b.observedAt);
+  // The reading closest to the event's stop counts: later ones include later travel.
   const first = candidates[0];
   if (!first) return { kind: "none" };
   if (!Number.isFinite(first.delaySec)) return { kind: "implausible" };

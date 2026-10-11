@@ -28,6 +28,8 @@ export interface DelayEvent extends BaseEvent {
   /** Scheduled trip the question is about. */
   tripId: string;
   stopId: string;
+  /** Position in the trip. Lets position-based feeds match a reading taken a stop or two later. */
+  stopSequence?: number;
   /** "more than N seconds late" (strict). */
   thresholdSec: number;
 }
@@ -46,6 +48,8 @@ export interface DelayObservation {
   tripId: string;
   stopId: string;
   routeId: string;
+  /** Set by position-based feeds (the bus's last passed stop). */
+  stopSequence?: number;
   /** When the delay was observed (epoch seconds). */
   observedAt: number;
   /** Seconds late; negative = early. */

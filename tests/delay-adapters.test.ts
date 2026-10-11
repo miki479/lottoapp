@@ -49,7 +49,7 @@ describe("gtfs-rt adapters", () => {
       { entity: [{ vehicle: { trip: { tripId: "T1", routeId: "R" }, currentStopSequence: 5, stopId: "S5", timestamp: jst(8, 33) } }] },
       ctx,
     );
-    expect(obs).toEqual([{ feedId: "toei", tripId: "T1", stopId: "S5", routeId: "R", observedAt: jst(8, 33), delaySec: 180 }]);
+    expect(obs).toEqual([{ feedId: "toei", tripId: "T1", stopId: "S5", stopSequence: 5, routeId: "R", observedAt: jst(8, 33), delaySec: 180 }]);
   });
   it("skips trips unknown to the timetable or with a mismatching stop", () => {
     const feed = {
