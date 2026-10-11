@@ -1,0 +1,105 @@
+{
+  "id": "helsinki",
+  "country": "FI",
+  "name": {
+    "it": "Helsinki",
+    "en-US": "Helsinki",
+    "en-GB": "Helsinki",
+    "ja": "ヘルシンキ"
+  },
+  "timezone": "Europe/Helsinki",
+  "defaultLocale": "en-GB",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 60.1699,
+    "lon": 24.9384
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": true
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "hsl-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_times",
+      "url": "https://realtime.hsl.fi/realtime/trip-updates/v2/hsl",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        0,
+        701,
+        702,
+        704,
+        900
+      ],
+      "tripKey": "route_dir_start",
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Helsingin seudun liikenne HSL (Helsinki Region Transport)",
+        "license": "Creative Commons Attribution 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://hri.fi/data/en_GB/dataset/hsl-reittiopas-api"
+      },
+      "staticGtfsUrl": "https://dev.hsl.fi/gtfs/hsl.zip",
+      "note": "Buses and trams of the Helsinki region. The real-time feed has neither tripId nor stop sequence: trips are matched by route, direction, service day and start time (tripKey), stops by stop id. Predicted times only."
+    },
+    {
+      "id": "hsl-train-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_times",
+      "url": "https://realtime.hsl.fi/realtime/trip-updates/v2/hsl",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        1,
+        109
+      ],
+      "tripKey": "route_dir_start",
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Helsingin seudun liikenne HSL (Helsinki Region Transport)",
+        "license": "Creative Commons Attribution 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://hri.fi/data/en_GB/dataset/hsl-reittiopas-api"
+      },
+      "staticGtfsUrl": "https://dev.hsl.fi/gtfs/hsl.zip",
+      "note": "Commuter trains and metro of the Helsinki region, same real-time file as the bus feed (decoded once per run)."
+    },
+    {
+      "id": "open-meteo-helsinki",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

@@ -107,3 +107,27 @@ describe("open-meteo adapter", () => {
     expect(openMeteoAdapter({}, "om")).toEqual([]);
   });
 });
+
+describe("feeds without tripId (Helsinki)", () => {
+  const sched = { "1007|1|20261012|09:53:00|1113435": { seq: 12, stopId: "1113435", time: "10:05:00" } };
+  const ctx = {
+    feedId: "hsl", timezone: "Europe/Helsinki", fetchedAt: 0, tripKey: "route_dir_start" as const,
+    schedule: () => null,
+    scheduleByStop: (trip: string, stop: string) => (sched as Record<string, { seq: number; stopId: string; time: string }>)[`${trip}|${stop}`] ?? null,
+  };
+  const at = (h: number, m: number) => Date.UTC(2026, 9, 12, h - 3, m) / 1000; // Helsinki is UTC+3 in October
+  const feed = (stopId: string, time: number) => ({
+    header: { timestamp: at(10, 0) },
+    entity: [{ tripUpdate: { trip: { routeId: "1007", directionId: 1, startDate: "20261012", startTime: "09:53:00" }, stopTimeUpdate: [{ stopId, arrival: { time } }] } }],
+  });
+  it("names the trip by route, direction, day and start time and finds the stop by its id", () => {
+    const obs = tripUpdatesTimesAdapter(feed("1113435", at(10, 8)), ctx);
+    expect(obs).toHaveLength(1);
+    expect(obs[0]).toMatchObject({ tripId: "1007|1|20261012|09:53:00", stopId: "1113435", stopSequence: 12, delaySec: 180 });
+  });
+  it("ignores stops it cannot place and trips without a start time", () => {
+    expect(tripUpdatesTimesAdapter(feed("999", at(10, 8)), ctx)).toEqual([]);
+    const noStart = { entity: [{ tripUpdate: { trip: { routeId: "1007", directionId: 1, startDate: "20261012" }, stopTimeUpdate: [{ stopId: "1113435", arrival: { time: at(10, 8) } }] } }] };
+    expect(tripUpdatesTimesAdapter(noStart, ctx)).toEqual([]);
+  });
+});

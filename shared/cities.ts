@@ -34,6 +34,10 @@ export interface FeedConfig {
   useRealtimeTrips?: boolean;
   /** Local hours [from, to) in which questions are created (a feed that goes quiet at night would void them). */
   questionsHours?: [number, number];
+  /** The real-time feed has no tripId: trips are matched by route, direction, service day and start time. */
+  tripKey?: "route_dir_start";
+  /** A big feed (Berlin, ~6 MB): polled in its own scheduled call so it cannot slow the others down. */
+  heavy?: boolean;
   /**
    * True only after someone has read the CURRENT licence/terms of the provider.
    * Unverified feeds are skipped in production unless ALLOW_UNVERIFIED_FEEDS=1.

@@ -2,7 +2,7 @@
 // record feed health. A failing feed is recorded as failing; its markets get voided by `resolve`.
 import GtfsRt from "npm:gtfs-realtime-bindings@2.2.0";
 import { delayAdapterFor, weatherAdapterFor } from "../_shared/shared/adapters/index.ts";
-import type { RtFeed, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
+import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
@@ -16,6 +16,9 @@ Deno.serve(safe(async (req) => {
   const sb = db();
   const now = Math.floor(Date.now() / 1000);
   const report: Record<string, string> = {};
+  // "?group=heavy" runs only the big feeds (own scheduled call); the normal call skips them.
+  const heavyRun = new URL(req.url).searchParams.get("group") === "heavy";
+  const rtCache = new Map<string, RtFeed>();
 
   const { data: healthRows } = await sb.from("feed_health").select("feed_id,last_attempt_at");
   const lastAttempt = new Map((healthRows ?? []).map((h) => [h.feed_id, h.last_attempt_at ? Date.parse(h.last_attempt_at) / 1000 : 0]));
@@ -42,12 +45,13 @@ Deno.serve(safe(async (req) => {
   for (const city of await loadCities()) {
     for (const feed of usableFeeds(city, allowUnverified())) {
       // Feed ids are globally unique (weather feeds are per city); a national feed listed by two cities is fetched once.
+      if (!!feed.heavy !== heavyRun) continue;
       if (seen.has(feed.id)) continue;
       seen.add(feed.id);
       if (now - (lastAttempt.get(feed.id) ?? 0) < feed.pollSeconds - 5) { report[feed.id] = "not due"; continue; }
       await sb.from("feed_health").upsert({ feed_id: feed.id, last_attempt_at: new Date(now * 1000).toISOString() });
       try {
-        const n = await ingestFeed(sb, city, feed, now, tracked.get(feed.id) ?? new Map());
+        const n = await ingestFeed(sb, city, feed, now, tracked.get(feed.id) ?? new Map(), rtCache);
         await sb.from("feed_health").upsert({ feed_id: feed.id, last_ok_at: new Date().toISOString(), last_error: null });
         report[feed.id] = `ok ${n}`;
       } catch (e) {
@@ -57,6 +61,7 @@ Deno.serve(safe(async (req) => {
       }
     }
   }
+  if (heavyRun) return Response.json(report);
   report["open-meteo-places"] = await ingestPlaces(sb, now, lastAttempt.get("open-meteo-places") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["open-meteo-metrics"] = await ingestMetrics(sb, now, lastAttempt.get("open-meteo-metrics") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["mit-scioperi"] = await ingestStrikes(sb, now, lastAttempt.get("mit-scioperi") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
@@ -201,7 +206,7 @@ async function fetchBytes(url: string, extra: Record<string, string> = {}): Prom
   return buf;
 }
 
-async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: FeedConfig, now: number, tracked: Map<string, Set<string>>): Promise<number> {
+async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: FeedConfig, now: number, tracked: Map<string, Set<string>>, rtCache: Map<string, RtFeed>): Promise<number> {
   const url = feedUrl(feed, city);
   if (feed.type === "open-meteo") {
     const adapter = weatherAdapterFor(feed)!;
@@ -221,20 +226,31 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
     if (!key) throw new Error(`missing env ${feed.requiresKey}`);
     headers[feed.keyHeader ?? "Authorization"] = `${feed.keyPrefix ?? ""}${key}`;
   }
-  const bytes = await fetchBytes(url, headers);
-  const msg = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(bytes), { longs: Number }) as RtFeed;
+  // Two feeds (e.g. Berlin buses and trains) can read the same file: fetch and decode it once per run.
+  let msg = rtCache.get(url);
+  if (!msg) {
+    const bytes = await fetchBytes(url, headers);
+    msg = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(bytes), { longs: Number }) as RtFeed;
+    rtCache.set(url, msg);
+  }
   const trips = new Set(tracked.keys());
   if (trips.size === 0) return 0; // nothing to resolve right now (e.g. no service at night): healthy, nothing stored
   // With markets waiting for data, an empty feed is an outage, not "no delays".
   if (!msg.entity?.length) throw new Error("empty feed");
 
   let schedule: ScheduleLookup | undefined;
+  let scheduleByStop: ScheduleByStop | undefined;
   if (feed.kind === "vehicle_positions" || feed.kind === "trip_updates_times") {
     const { data } = await sb.from("trip_schedule").select("trip_id,stop_sequence,stop_id,scheduled_time").eq("feed_id", feed.id).in("trip_id", [...trips]);
     const map = new Map((data ?? []).map((r) => [`${r.trip_id}|${r.stop_sequence}`, { stopId: r.stop_id as string, time: r.scheduled_time as string }]));
     schedule = (trip, seq) => map.get(`${trip}|${seq}`) ?? null;
+    if (feed.tripKey) {
+      const byStop = new Map<string, { seq: number; stopId: string; time: string }>();
+      for (const r of data ?? []) { const k = `${r.trip_id}|${r.stop_id}`; if (!byStop.has(k)) byStop.set(k, { seq: r.stop_sequence as number, stopId: r.stop_id as string, time: r.scheduled_time as string }); }
+      scheduleByStop = (trip, stop) => byStop.get(`${trip}|${stop}`) ?? null;
+    }
   }
-  const all = adapter(msg, { feedId: feed.id, timezone: city.timezone, fetchedAt: now, schedule });
+  const all = adapter(msg, { feedId: feed.id, timezone: city.timezone, fetchedAt: now, schedule, scheduleByStop, tripKey: feed.tripKey });
   // Trip updates list every stop of the trip: keep only the stops a market asks about.
   // Position feeds are kept for the whole trip: a bus can skip a sample at the exact stop.
   const mine = feed.kind === "vehicle_positions"
