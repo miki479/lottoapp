@@ -10,3 +10,4 @@ supabase/.temp/
 supabase/functions/_shared/
 firebase-debug.log
 *-debug.log
+.firebase/
