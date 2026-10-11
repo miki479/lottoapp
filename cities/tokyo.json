@@ -1,0 +1,80 @@
+{
+  "id": "tokyo",
+  "country": "JP",
+  "name": { "it": "Tokyo", "en-US": "Tokyo", "en-GB": "Tokyo", "ja": "東京" },
+  "timezone": "Asia/Tokyo",
+  "defaultLocale": "en-US",
+  "tone": { "it": "ironico", "en-US": "cheeky", "en-GB": "dry" },
+  "location": { "lat": 35.6812, "lon": 139.7671 },
+  "categories": {
+    "bus": { "enabled": true },
+    "weather": { "enabled": true },
+    "traffic": { "enabled": false }
+  },
+  "feeds": [
+    {
+      "id": "toei-bus-vehicle",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "vehicle_positions",
+      "url": "https://api-public.odpt.org/api/v4/gtfs/realtime/ToeiBus",
+      "staticGtfsUrl": "https://api-public.odpt.org/api/v4/files/Toei/data/ToeiBus-GTFS.zip",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 180,
+      "delaySemantics": "last_passed_stop",
+      "attribution": {
+        "name": "東京都交通局 (Bureau of Transportation, Tokyo Metropolitan Government)",
+        "via": "公共交通オープンデータ協議会 (ODPT)",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://ckan.odpt.org/en/dataset/b_bus_gtfs_rt-toei"
+      }
+    },
+    {
+      "id": "keisei-bus-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://api-public.odpt.org/api/v4/gtfs/realtime/odpt_KeiseiTransitBus_AllLines_trip_update",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 180,
+      "attribution": {
+        "name": "京成トランジットバス / KEISEI BUS CHIBA WEST",
+        "via": "公共交通オープンデータ協議会 (ODPT)",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://ckan.odpt.org/en/dataset/odpt_keisei_transit_bus_all_lines"
+      }
+    },
+    {
+      "id": "open-meteo",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": [
+    {
+      "id": "yokohama-bus-trip-update",
+      "note": "Needs ODPT_TOKEN (api.odpt.org). Licensed under the ODPT Basic License, not CC BY: read the terms before enabling.",
+      "url": "https://api.odpt.org/api/v4/gtfs/realtime/YokohamaMunicipalBus_trip_update",
+      "requiresKey": "ODPT_TOKEN"
+    },
+    {
+      "id": "tomtom-flow",
+      "note": "Free tier: 20k Flow Segment requests/month. Check data storage terms before enabling.",
+      "requiresKey": "TOMTOM_API_KEY"
+    }
+  ]
+}
