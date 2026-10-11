@@ -78,9 +78,10 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
   if (!adapter) throw new Error(`no adapter for ${feed.type}/${feed.kind}`);
   const bytes = await fetchBytes(url);
   const msg = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(bytes), { longs: Number }) as RtFeed;
-  if (!msg.entity?.length) throw new Error("empty feed"); // an empty feed is treated as an outage, not as "no delays"
   const trips = new Set(tracked.keys());
-  if (trips.size === 0) return 0; // nothing to resolve right now: healthy, nothing stored
+  if (trips.size === 0) return 0; // nothing to resolve right now (e.g. no service at night): healthy, nothing stored
+  // With markets waiting for data, an empty feed is an outage, not "no delays".
+  if (!msg.entity?.length) throw new Error("empty feed");
 
   let schedule: ScheduleLookup | undefined;
   if (feed.kind === "vehicle_positions") {

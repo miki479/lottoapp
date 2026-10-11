@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { unzipSync } from "fflate";
 import { validateCity } from "../shared/cities.ts";
 import { activeServiceIds, buildDelayMarket, buildWeatherMarkets, localYmd, pickTargetStop, seededRandom } from "../shared/generator.ts";
+import { localDayStart } from "../shared/time.ts";
 import { historyKey } from "../shared/market.ts";
 import { marketToEvent } from "../shared/market.ts";
 import { supabaseUrl } from "./lib-env.mjs";
@@ -41,7 +42,8 @@ async function gtfsDir(feed) {
   if (!feed.staticGtfsUrl) throw new Error(`feed ${feed.id} has no staticGtfsUrl: pass --gtfs-dir`);
   const res = await fetch(feed.staticGtfsUrl, { redirect: "follow", signal: AbortSignal.timeout(300000) });
   if (!res.ok) throw new Error(`GTFS download failed: ${res.status}`);
-  const files = unzipSync(new Uint8Array(await res.arrayBuffer()));
+  const wanted = new Set(["agency.txt", "routes.txt", "trips.txt", "stop_times.txt", "stops.txt", "calendar.txt", "calendar_dates.txt"]);
+  const files = unzipSync(new Uint8Array(await res.arrayBuffer()), { filter: (f) => wanted.has(f.name) });
   const dir = mkdtempSync(join(tmpdir(), "gtfs-"));
   for (const [name, bytes] of Object.entries(files)) if (name.endsWith(".txt")) writeFileSync(join(dir, name.replaceAll("/", "_")), bytes);
   return dir;
@@ -49,8 +51,18 @@ async function gtfsDir(feed) {
 
 async function delayMarkets(feed) {
   const dir = await gtfsDir(feed);
-  const { ymd } = localYmd(now, city.timezone);
-  const { weekday } = localYmd(now, city.timezone);
+  const out = { markets: [], schedule: [] };
+  // Today and tomorrow (city-local): markets are bettable up to ~30 h ahead.
+  for (const offset of [0, 1]) {
+    if (out.markets.length >= max) break;
+    const r = await delayMarketsForDay(feed, dir, now + offset * 86400, max - out.markets.length);
+    out.markets.push(...r.markets); out.schedule.push(...r.schedule);
+  }
+  return out;
+}
+
+async function delayMarketsForDay(feed, dir, dayEpoch, budget) {
+  const { ymd, weekday } = localYmd(dayEpoch, city.timezone);
   const services = activeServiceIds(ymd, weekday, await readAll(join(dir, "calendar.txt")).catch(() => []), await readAll(join(dir, "calendar_dates.txt")).catch(() => []));
   const routes = new Map();
   for (const r of await readAll(join(dir, "routes.txt"))) {
@@ -63,7 +75,7 @@ async function delayMarkets(feed) {
 
   // Sample candidates deterministically, then read stop_times only for them.
   const rand = seededRandom(`${city.id}-${feed.id}-${ymd}`);
-  const shuffled = trips.map((t) => [rand(), t]).sort((a, b) => a[0] - b[0]).map((x) => x[1]).slice(0, max * 6);
+  const shuffled = trips.map((t) => [rand(), t]).sort((a, b) => a[0] - b[0]).map((x) => x[1]).slice(0, budget * 6);
   const wanted = new Map(shuffled.map((t) => [t.trip_id, t]));
   const byTrip = new Map();
   for await (const st of readTable(join(dir, "stop_times.txt"))) {
@@ -78,16 +90,16 @@ async function delayMarkets(feed) {
   const markets = [], schedule = [];
   const threshold = feed.category === "train" ? 300 : 180;
   for (const trip of shuffled) {
-    if (markets.length >= max) break;
+    if (markets.length >= budget) break;
     const stops = (byTrip.get(trip.trip_id) ?? []).filter((s) => s.time).sort((a, b) => a.seq - b.seq);
     const stop = pickTargetStop(stops, rand);
     if (!stop) continue;
-    const draft = buildDelayMarket({ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: trip.trip_id, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: now, thresholdSec: threshold, history: null });
+    const draft = buildDelayMarket({ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: trip.trip_id, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold, history: null });
     const targetAt = Date.parse(draft.target_at) / 1000;
-    if (Date.parse(draft.closes_at) / 1000 <= now + 300 || targetAt > now + 20 * 3600) continue; // bettable window
+    if (Date.parse(draft.closes_at) / 1000 <= now + 300 || targetAt > now + 30 * 3600) continue; // bettable window
     // Re-price with real history now that the event exists.
     const key = historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone);
-    const priced = buildDelayMarket({ ...{ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: trip.trip_id, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: now, thresholdSec: threshold }, history: hist(key) });
+    const priced = buildDelayMarket({ ...{ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: trip.trip_id, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold }, history: hist(key) });
     markets.push(priced);
     if (feed.kind === "vehicle_positions") {
       const sd = `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
@@ -101,7 +113,12 @@ let markets = [], schedule = [];
 if (args.weather) {
   const feed = city.feeds.find((f) => f.category === "weather");
   if (!feed) throw new Error(`${city.id} has no weather feed`);
-  markets = buildWeatherMarkets({ cityId: city.id, tz: city.timezone, feedId: feed.id, nowEpoch: now, localHours: [8, 12, 15, 18, 21] });
+  const args = { cityId: city.id, tz: city.timezone, feedId: feed.id, localHours: [8, 12, 15, 18, 21] };
+  markets = [
+    ...buildWeatherMarkets({ ...args, nowEpoch: now }),
+    // tomorrow: just after local midnight, so every hour of that day is still open
+    ...buildWeatherMarkets({ ...args, nowEpoch: localDayStart(now + 86400, city.timezone) + 1 }),
+  ];
 } else {
   const feed = city.feeds.find((f) => f.id === args.feed);
   if (!feed) throw new Error(`--feed must be one of: ${city.feeds.map((f) => f.id).join(", ")}`);
@@ -112,6 +129,8 @@ console.log(JSON.stringify({ markets: markets.slice(0, args.apply ? 0 : 5), sche
 if (args.apply) {
   if (!SB || !KEY) throw new Error("--apply needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
   for (let i = 0; i < schedule.length; i += 500) await sb("trip_schedule", { method: "POST", body: JSON.stringify(schedule.slice(i, i + 500)) });
-  if (markets.length) await sb("markets", { method: "POST", body: JSON.stringify(markets) });
+  // Same key = same question: re-runs skip what already exists instead of duplicating it.
+  const keyed = markets.map((m) => ({ ...m, dedupe_key: [m.city_id, m.kind, m.feed_id, m.params.tripId ?? "", m.params.stopId ?? "", Math.floor(Date.parse(m.target_at) / 1000)].join("|") }));
+  if (keyed.length) await sb("markets?on_conflict=dedupe_key", { method: "POST", body: JSON.stringify(keyed), headers: { Prefer: "resolution=ignore-duplicates,return=minimal" } });
   console.error("applied");
 }
