@@ -3,12 +3,12 @@
 import GtfsRt from "npm:gtfs-realtime-bindings@2.2.0";
 import { delayAdapterFor, weatherAdapterFor } from "../_shared/shared/adapters/index.ts";
 import type { RtFeed, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
-import { allowUnverified, db, feedUrl, loadCities, requireCron, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
+import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
 
 const FETCH_TIMEOUT_MS = 25_000;
 const MAX_BYTES = 12 * 1024 * 1024;
 
-Deno.serve(async (req) => {
+Deno.serve(safe(async (req) => {
   const denied = requireCron(req);
   if (denied) return denied;
   const sb = db();
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     }
   }
   return Response.json(report);
-});
+}));
 
 async function fetchBytes(url: string): Promise<Uint8Array> {
   const res = await fetch(url, { headers: { "User-Agent": "lottoapp/0.1 (play-money game)" }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });

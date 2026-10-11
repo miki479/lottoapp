@@ -2,9 +2,9 @@
 import { resolveEvent } from "../_shared/shared/resolve.ts";
 import { historyKey, marketToEvent, type MarketRow } from "../_shared/shared/market.ts";
 import type { DelayObservation, WeatherObservation } from "../_shared/shared/types.ts";
-import { db, loadCities, requireCron } from "../_lib/common.ts";
+import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
 
-Deno.serve(async (req) => {
+Deno.serve(safe(async (req) => {
   const denied = requireCron(req);
   if (denied) return denied;
   const sb = db();
@@ -69,4 +69,4 @@ Deno.serve(async (req) => {
     }
   }
   return Response.json(out);
-});
+}));

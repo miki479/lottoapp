@@ -2,6 +2,7 @@
 // scripts/build-functions.mjs before deploy, because Supabase bundles only supabase/functions.
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import { validateCity, usableFeeds, type CityConfig, type FeedConfig } from "../_shared/shared/cities.ts";
+import citiesIndex from "../_shared/cities.index.json" with { type: "json" };
 
 export const db = () =>
   createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
@@ -17,8 +18,19 @@ export function requireCron(req: Request): Response | null {
 export const allowUnverified = () => Deno.env.get("ALLOW_UNVERIFIED_FEEDS") === "1";
 
 export async function loadCities(): Promise<CityConfig[]> {
-  const index = (await import("../_shared/cities.index.json", { with: { type: "json" } })).default as unknown[];
-  return index.map(validateCity);
+  return (citiesIndex as unknown[]).map(validateCity);
+}
+
+/** Wrap a handler so a crash returns its message (the hosted runtime otherwise only says 500). */
+export function safe(handler: (req: Request) => Promise<Response>): (req: Request) => Promise<Response> {
+  return async (req) => {
+    try {
+      return await handler(req);
+    } catch (e) {
+      console.error(e);
+      return Response.json({ error: String((e as Error)?.message ?? e) }, { status: 500 });
+    }
+  };
 }
 
 export { usableFeeds };

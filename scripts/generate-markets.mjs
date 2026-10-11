@@ -14,13 +14,14 @@ import { validateCity } from "../shared/cities.ts";
 import { activeServiceIds, buildDelayMarket, buildWeatherMarkets, localYmd, pickTargetStop, seededRandom } from "../shared/generator.ts";
 import { historyKey } from "../shared/market.ts";
 import { marketToEvent } from "../shared/market.ts";
+import { supabaseUrl } from "./lib-env.mjs";
 import { readAll, readTable } from "./lib-csv.mjs";
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((acc, a, i, all) => (a.startsWith("--") ? [...acc, [a.slice(2), all[i + 1]?.startsWith("--") || all[i + 1] === undefined ? true : all[i + 1]]] : acc), []));
 const city = validateCity(JSON.parse(readFileSync(new URL(`../cities/${args.city}.json`, import.meta.url), "utf8")));
 const now = Number(args.now ?? Math.floor(Date.now() / 1000));
 const max = Number(args.max ?? 30);
-const SB = process.env.SUPABASE_URL, KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SB = supabaseUrl(), KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 async function sb(path, init = {}) {
   const r = await fetch(`${SB}/rest/v1/${path}`, { ...init, headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal", ...(init.headers ?? {}) } });
