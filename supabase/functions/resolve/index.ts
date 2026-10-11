@@ -3,6 +3,7 @@ import { resolveEvent } from "../_shared/shared/resolve.ts";
 import { historyKey, marketToEvent, type MarketRow } from "../_shared/shared/market.ts";
 import type { DelayObservation, WeatherObservation } from "../_shared/shared/types.ts";
 import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
+import { notifyResults } from "../_lib/notify.ts";
 
 Deno.serve(safe(async (req) => {
   const denied = requireCron(req);
@@ -68,5 +69,6 @@ Deno.serve(safe(async (req) => {
       out.errors++; // left open: it will be retried next minute, never settled on a guess
     }
   }
-  return Response.json(out);
+  const notified = await notifyResults(sb).catch((e) => { console.error("notify failed", e); return 0; });
+  return Response.json({ ...out, notified });
 }));

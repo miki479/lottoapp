@@ -1,4 +1,4 @@
-import { Gift, Calendar, CalendarCheck, ChevronRight, Flame, Gem, Ghost, LogOut, Medal, Pencil, Percent, Share2, Snowflake, Sparkles, Target, Telescope, Trash2, TrainFront, TrendingUp, Trophy, Umbrella, User } from "lucide-preact";
+import { Bell, Gift, Calendar, CalendarCheck, ChevronRight, Flame, Gem, Ghost, LogOut, Medal, Pencil, Percent, Share2, Snowflake, Sparkles, Target, Telescope, Trash2, TrainFront, TrendingUp, Trophy, Umbrella, User } from "lucide-preact";
 import type { LucideIcon } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Missions } from "../components/Missions.tsx";
@@ -13,7 +13,7 @@ import { INTL_TAG } from "../i18n/index.ts";
 const TROPHY_ICON: Record<TrophyId, LucideIcon> = { first_win: Sparkles, all_rings: Target, long_shot: Telescope, rain_man: Umbrella, streak_7: CalendarCheck, train_whisperer: TrainFront, high_roller: Gem, streak_30: Medal, ghost_feed: Ghost };
 
 export function ProfileView(p: {
-  referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
+  push: { on: boolean; denied: boolean; toggle: () => void } | null; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
   onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => void; onDelete: () => Promise<void>; sources: { name: string; via?: string; license: string; licenseUrl: string; url: string }[];
 }) {
   const m = p.msg.profile;
@@ -45,6 +45,13 @@ export function ProfileView(p: {
 
           <StreakCard streak={p.profile?.streak ?? 0} freezes={p.profile?.freezes ?? 0} msg={p.msg} locale={p.locale} />
           <Missions progress={p.progress} msg={p.msg} />
+          {p.push && (
+            <section class="card" style="display:flex;gap:12px;align-items:center">
+              <Bell size={22} style="color:var(--brand);flex:none" />
+              <div style="flex:1"><b>{p.msg.push.title}</b><p class="hint">{p.push.denied ? p.msg.push.denied : p.msg.push.body}</p></div>
+              <button class={`btn ${p.push.on ? "secondary" : "primary"}`} onClick={p.push.toggle} disabled={p.push.denied}>{p.push.on ? p.msg.push.disable : p.msg.push.enable}</button>
+            </section>
+          )}
           <section class="card stack referral">
             <div style="display:flex;gap:12px;align-items:center"><span class="refico"><Gift size={22} /></span><div><b>{p.msg.referral.title}</b><p class="hint">{p.msg.referral.body(money(1000, p.locale))}</p></div></div>
             {p.referral

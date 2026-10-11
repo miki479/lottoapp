@@ -22,6 +22,8 @@ import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
 import { countdown, currencySymbol, dayIn, money, question, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
+import { PushAsk } from "./components/PushAsk.tsx";
+import { disablePush, enablePush, pushAsked, pushAvailable, pushDenied, pushEnabled, rememberPush } from "./lib/push.ts";
 import { announce, setVoice, voiceEnabled, voiceSupported } from "./lib/voice.ts";
 import { makeProfileCard, makeResultCard, shareImage } from "./lib/share.ts";
 import type { ActivityRow, ParlayRow, SlipLeg, LiveDelay, MyBet, MyStats, Pick, PopularRow, Profile, Progress, ResultRow } from "./lib/types.ts";
@@ -67,6 +69,8 @@ export function App() {
   const [stale, setStale] = useState(false);
   const [offline, setOffline] = useState(!navigator.onLine);
   const [rank, setRank] = useState<{ rank: number | null; scope: string }>({ rank: null, scope: "" });
+  const [pushOn, setPushOn] = useState(false);
+  const [askPush, setAskPush] = useState(false);
   const [slip, setSlip] = useState<SlipLeg[]>([]);
   const [parlayOpen, setParlayOpen] = useState(false);
   const [parlays, setParlays] = useState<ParlayRow[]>([]);
@@ -238,6 +242,7 @@ export function App() {
     else if (reached) { flash(msg.streak.milestone(pf!.streak, `+${money(reached, locale)}`)); haptic.success(); }
     else if (pr?.bonus_claimed && !before.bonus) flash(`${msg.home.missionsDone} · +${money(RING_BONUS, locale)}`);
     else flash(msg.sheet.placed(money(Math.floor(stake * Number(pick === "yes" ? m.odds_yes : m.odds_no)), locale)));
+    if (pushAvailable() && !pushAsked() && !pushDenied()) setTimeout(() => setAskPush(true), 1500);
     announce(`placed-${m.id}`, msg.voice.placed(money(Math.floor(stake * Number(pick === "yes" ? m.odds_yes : m.odds_no)), locale)), locale);
     return null;
   };
@@ -251,6 +256,14 @@ export function App() {
     flash(msg.slip.placed(win)); announce(`parlay-${Date.now()}`, msg.voice.placed(win), locale);
     return null;
   };
+  const turnPush = async (on: boolean) => {
+    setAskPush(false);
+    if (!on) { await disablePush().catch(() => {}); rememberPush(false); setPushOn(false); flash(msg.push.off); return; }
+    const uid = profile?.id; if (!uid) return;
+    try { const ok = await enablePush(uid); rememberPush(ok); setPushOn(ok); flash(ok ? msg.push.on : msg.push.denied, ok ? "ok" : "err"); } catch { flash(msg.errors.generic!, "err"); }
+  };
+  useEffect(() => { if (ready) pushEnabled().then(setPushOn).catch(() => {}); }, [ready]);
+  useEffect(() => { if (new URLSearchParams(location.search).get("open") === "bets") { setScreen("bets"); history.replaceState(null, "", location.pathname); } }, []);
   const toggleVoice = () => { const on = !voiceOn; setVoice(on); setVoiceOn(on); flash(on ? msg.voice.on : msg.voice.off); if (on) announce("voice-on", msg.voice.on, locale, true); };
   const needJoin = needSignup && !registered;
   const slipIds = new Set(slip.map((l) => l.m.id));
@@ -287,11 +300,12 @@ export function App() {
           {screen === "home" && <Home msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} ladders={ladders} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "ranking" && <Ranking msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
-          {screen === "profile" && <ProfileView referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
+          {screen === "profile" && <ProfileView push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn) } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
         </main>
       </div>
       <TabBar value={screen} onPick={go} msg={msg} openBets={openBets} />
 
+      {askPush && <PushAsk msg={msg} onYes={() => turnPush(true)} onNo={() => { rememberPush(false); setAskPush(false); }} />}
       <ParlayBar count={slip.length} odds={slipOdds(slip)} msg={msg} locale={locale} onOpen={() => setParlayOpen(true)} />
       {sheet && <BetSheet key={sheet.m.id} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
       {parlayOpen && slip.length > 0 && <ParlaySheet legs={slip} msg={msg} locale={locale} credits={profile?.credits ?? 0} needJoin={needJoin} googleOn={googleOn} onClose={() => setParlayOpen(false)} onRemove={(id) => setSlip((s) => s.filter((l) => l.m.id !== id))} onClear={() => { setSlip([]); setParlayOpen(false); }} onJoined={async () => {}} onPlace={placeParlay} />}
