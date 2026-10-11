@@ -48,7 +48,7 @@ export function marketToEvent(row: MarketRow): MarketEvent {
     return ev;
   }
   if (row.kind === "quake_m") {
-    const ev: QuakeEvent = { ...base, kind: "quake_m", category: "nature", minMag: Number(p.minMag), bbox: Array.isArray(p.bbox) && p.bbox.length === 4 ? (p.bbox.map(Number) as [number, number, number, number]) : undefined };
+    const ev: QuakeEvent = { ...base, kind: "quake_m", category: "nature", minMag: Number(p.minMag), circle: Array.isArray(p.circle) && p.circle.length === 3 ? (p.circle.map(Number) as [number, number, number]) : undefined, bbox: Array.isArray(p.bbox) && p.bbox.length === 4 ? (p.bbox.map(Number) as [number, number, number, number]) : undefined };
     return ev;
   }
   if (row.kind === "strike_on") {
@@ -65,6 +65,6 @@ export function historyKey(ev: MarketEvent, tz: string): { kind: string; routeId
   if (ev.kind === "rain_at") return { kind: ev.kind, routeId: "", hourOfDay, threshold: 0 };
   if (ev.kind === "metric_gt") return { kind: ev.kind, routeId: ev.metric, hourOfDay, threshold: Math.round(ev.threshold * 10) };
   if (ev.kind === "strike_on") return { kind: ev.kind, routeId: "", hourOfDay, threshold: 0 };
-  if (ev.kind === "quake_m") return { kind: ev.kind, routeId: "", hourOfDay, threshold: Math.round(ev.minMag * 10) + (ev.bbox ? 1000 : 0) };
+  if (ev.kind === "quake_m") return { kind: ev.kind, routeId: "", hourOfDay, threshold: Math.round(ev.minMag * 10) + (ev.bbox || ev.circle ? 1000 : 0) };
   return { kind: ev.kind, routeId: ev.routeId, hourOfDay, threshold: ev.thresholdSec };
 }

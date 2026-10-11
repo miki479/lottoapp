@@ -44,7 +44,7 @@ p { margin: 0; }
 .side { display: none; }
 
 /* ---------- chips ---------- */
-.catchips { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-2); }
+.catchips { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: var(--space-2); }
 .cc { position: relative; overflow: visible; perspective: 520px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 76px; padding: 10px 4px; border-radius: var(--radius-card); border: 1px solid var(--border); background: var(--surface); color: var(--text-2); font-size: 13px; font-weight: 600; transition: border-color var(--dur), background var(--dur), color var(--dur), transform var(--dur-fast); }
 .cc:not(:disabled):active { transform: scale(.98); }
 .cc.on { border-color: var(--brand); background: var(--brand-soft); color: var(--text); }
@@ -641,3 +641,62 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 
 .neartoggle { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; text-align: left; cursor: pointer; }
 .neartoggle svg:last-child { transition: transform .25s; color: var(--muted); } .neartoggle svg.flip { transform: rotate(180deg); }
+
+/* custom earthquake builder */
+.qmgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.qmfield { display: grid; gap: 4px; } .qmfield select.field { padding-right: 8px; }
+.quakecta { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+
+/* weather "what if" scenes (temperature, wind, snow, UV, air quality): YES pushes to the extreme, NO calms it */
+.mscene { position: relative; height: 84px; border-radius: 12px; overflow: hidden; background: #cfe6fa; }
+.mscene svg { display: block; width: 100%; height: 100%; }
+.mscene b { position: absolute; left: 10px; bottom: 6px; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: rgba(20, 30, 50, .78); background: rgba(255,255,255,.7); padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+.mscene svg * { transform-box: fill-box; }
+.mscene :is(.m-hot, .m-cold, .m-haze, .m-uvhaze, .m-ucloud, .m-merc, .m-sun, .m-sunw, .m-glow, .m-leafc, .m-snowf) { transition: opacity .7s ease, transform .8s cubic-bezier(.2,.8,.2,1); }
+/* temperature */
+.mscene.temp .m-hot, .mscene.temp .m-cold { opacity: 0; } .mscene.temp.s-yes .m-hot { opacity: .85; } .mscene.temp.s-no .m-cold { opacity: .75; }
+.mscene.temp .m-merc { transform-origin: 50% 100%; transform: scaleY(.55); } .mscene.temp.s-yes .m-merc { transform: scaleY(1); } .mscene.temp.s-no .m-merc { transform: scaleY(.15); }
+.mscene.temp .m-sun { transform-origin: 50% 50%; opacity: .7; } .mscene.temp.s-yes .m-sun { transform: scale(1.35); opacity: 1; } .mscene.temp.s-no .m-sun { opacity: .15; transform: scale(.8); }
+.mscene.temp .m-waves, .mscene.temp .m-snowf { opacity: 0; } .mscene.temp.s-yes .m-waves { opacity: .8; animation: heatwave 1.1s ease-in-out infinite alternate; } .mscene.temp.s-no .m-snowf { opacity: .9; }
+@keyframes heatwave { from { transform: translateY(2px); } to { transform: translateY(-3px); } }
+/* wind */
+.mscene.wind .m-clouds .c1 { animation: cloudrun 14s linear infinite; } .mscene.wind .m-clouds .c2 { animation: cloudrun 20s linear -6s infinite; }
+.mscene.wind.s-yes .m-clouds .c1 { animation-duration: 3.5s; } .mscene.wind.s-yes .m-clouds .c2 { animation-duration: 5s; } .mscene.wind.s-no .m-clouds .c1, .mscene.wind.s-no .m-clouds .c2 { animation-duration: 40s; }
+.mscene.wind .m-gust { opacity: .25; stroke-dasharray: 60 40; animation: gust 2.6s linear infinite; } .mscene.wind.s-yes .m-gust { opacity: .95; animation-duration: .7s; } .mscene.wind.s-no .m-gust { opacity: 0; }
+.mscene.wind .m-tree { transform-origin: 50% 100%; animation: treebend 2.2s ease-in-out infinite alternate; } .mscene.wind.s-yes .m-tree { animation: treebend .45s ease-in-out infinite alternate; --bend: 9deg; } .mscene.wind.s-no .m-tree { animation: none; }
+.mscene.wind .m-flag .fl { transform-origin: 0 50%; animation: flagwave 1s ease-in-out infinite alternate; } .mscene.wind.s-yes .m-flag .fl { animation-duration: .2s; } .mscene.wind.s-no .m-flag .fl { animation: none; transform: scaleX(.6) rotate(18deg); }
+.mscene.wind .m-leaves { opacity: 0; } .mscene.wind.s-yes .m-leaves { opacity: 1; animation: leafblow 1.2s linear infinite; }
+@keyframes cloudrun { from { transform: translateX(-120px); } to { transform: translateX(380px); } }
+@keyframes gust { to { stroke-dashoffset: -200; } }
+@keyframes treebend { from { transform: rotate(0); } to { transform: rotate(var(--bend, 3deg)); } }
+@keyframes flagwave { from { transform: scaleX(1) skewY(-4deg); } to { transform: scaleX(.8) skewY(5deg); } }
+@keyframes leafblow { from { transform: translate(-30px, 0) rotate(0); } to { transform: translate(90px, 12px) rotate(300deg); } }
+/* snow */
+.mscene.snow .fk { opacity: 0; animation: snowfall 3.4s linear infinite; }
+.mscene.snow .fk.f0, .mscene.snow .fk.f3, .mscene.snow .fk.f6 { opacity: .9; } .mscene.snow.s-yes .fk { opacity: .95; animation-duration: 1.7s; } .mscene.snow.s-no .fk { opacity: 0; }
+.mscene.snow .f1 { animation-delay: -.4s; } .mscene.snow .f2 { animation-delay: -.8s; } .mscene.snow .f3 { animation-delay: -1.2s; } .mscene.snow .f4 { animation-delay: -1.6s; } .mscene.snow .f5 { animation-delay: -2s; } .mscene.snow .f6 { animation-delay: -2.4s; } .mscene.snow .f7 { animation-delay: -2.8s; }
+@keyframes snowfall { from { transform: translate(0, 0); } 50% { transform: translate(6px, 40px); } to { transform: translate(-4px, 86px); } }
+/* UV */
+.mscene.uv .m-rays { transform-origin: 50% 50%; animation: spin 24s linear infinite; } .mscene.uv.s-yes .m-rays { animation-duration: 5s; }
+.mscene.uv .m-sunw { transform-origin: 50% 50%; } .mscene.uv.s-yes .m-sunw { transform: scale(1.22); } .mscene.uv.s-no .m-sunw { transform: scale(.82); opacity: .8; }
+.mscene.uv .m-uvhaze { opacity: 0; } .mscene.uv.s-yes .m-uvhaze { opacity: .25; } .mscene.uv .m-ucloud { opacity: 0; transform: translateX(40px); } .mscene.uv.s-no .m-ucloud { opacity: .95; transform: none; }
+.mscene.uv .m-glow { opacity: .6; } .mscene.uv.s-yes .m-glow { opacity: 1; transform: scale(1.3); }
+@keyframes spin { to { transform: rotate(360deg); } }
+/* air */
+.mscene.aqi .m-haze { opacity: .25; } .mscene.aqi.s-yes .m-haze { opacity: .78; } .mscene.aqi.s-no .m-haze { opacity: 0; }
+.mscene.aqi .m-parts { opacity: .3; } .mscene.aqi.s-yes .m-parts { opacity: .9; } .mscene.aqi .pt { animation: drift 5s ease-in-out infinite alternate; } .mscene.aqi.s-yes .pt { animation-duration: 2s; }
+.mscene.aqi .pt.p1 { animation-delay: -1s; } .mscene.aqi .pt.p2 { animation-delay: -2s; } .mscene.aqi .pt.p3 { animation-delay: -3s; } .mscene.aqi .pt.p4 { animation-delay: -4s; } .mscene.aqi .pt.p5 { animation-delay: -1.5s; } .mscene.aqi .pt.p6 { animation-delay: -2.5s; }
+.mscene.aqi .m-leafc { opacity: 0; } .mscene.aqi.s-no .m-leafc { opacity: .9; animation: drift 3s ease-in-out infinite alternate; }
+@keyframes drift { from { transform: translate(-6px, 3px); } to { transform: translate(8px, -4px); } }
+@media (prefers-reduced-motion: reduce) { .mscene svg * { animation: none !important; } }
+
+.gh-flag { transform-origin: 0 50%; } .gh-flag2 { transform-origin: 100% 50%; } .gh-sign { transform-origin: 50% 100%; }
+@media (hover: hover) { .cc.strike:not(:disabled):hover .gh-flag { animation: flagwave2 .5s ease-in-out 4 alternate both; } .cc.strike:not(:disabled):hover .gh-sign { animation: signbob .7s ease-in-out 3 alternate both; } .cc.strike:not(:disabled):hover .gh-p1, .cc.strike:not(:disabled):hover .gh-p3 { animation: cheer .7s ease-in-out 3 alternate both; } }
+.cc.pop.strike .gh-flag { animation: flagwave2 .5s ease-in-out 4 alternate both; } .cc.pop.strike .gh-sign { animation: signbob .7s ease-in-out 3 alternate both; } .cc.pop.strike .gh-p1, .cc.pop.strike .gh-p3 { animation: cheer .7s ease-in-out 3 alternate both; }
+.gh-p3 { animation-delay: .15s !important; }
+@keyframes flagwave2 { from { transform: scaleX(1) skewY(-5deg); } to { transform: scaleX(.78) skewY(6deg); } }
+@keyframes signbob { from { transform: translateY(0) rotate(-3deg); } to { transform: translateY(-4px) rotate(4deg); } }
+@keyframes cheer { from { transform: translateY(0); } to { transform: translateY(-2.5px); } }
+.cc.strike { --cat: #d8322b; --cat-soft: color-mix(in srgb, #d8322b 11%, var(--surface)); }
+@media (max-width: 440px) { .catchips { gap: 6px; } .cc { font-size: 12px; } .cc em { right: 5px; } }
+.catchips.many .cc { padding-left: 2px; padding-right: 2px; } .catchips.many .cc .lbl { font-size: 11.5px; letter-spacing: -.2px; max-width: 100%; overflow: visible; text-overflow: clip; }

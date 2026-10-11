@@ -23,9 +23,10 @@ export const TROPHY_RARITY: Record<TrophyId, "common" | "rare" | "epic"> = {
 export interface Messages {
   nav: { home: string; bets: string; ranking: string; profile: string };
   common: { backOnline: string; close: string; cancel: string; save: string; retry: string; soon: string; offline: string; install: string; language: string; credits: string; copied: string; back: string };
-  tabs: { bus: string; train: string; weather: string; nature: string; traffic: string };
+  tabs: { bus: string; train: string; weather: string; nature: string; strike: string; traffic: string };
   wx: { all: string; rain: string; world: string; regions: Record<string, string>; localTime: string; names: Record<MetricKey, string>; forecast: (v: string) => string; quakeArt: string };
   world: string;
+  quakeMaker: { cta: string; title: string; body: string; place: string; search: string; radius: string; mag: string; day: string; today: string; tomorrow: string; hour: string; length: string; hours: (n: number) => string; km: (n: number) => string; create: string; creating: string; pickPlace: string; local: (tz: string) => string; limit: string; full: string; usgs: string; time: string; credit: string };
   strikes: { title: string; sub: string; art: string };
   home: { hero: { title: string; body: string }; missions: string; missionsLeft: (n: number) => string; missionsDone: string; bonusTease: string; top: string; events: string; live: string; idle: string[]; empty: { title: string; body: string; cta: string }; trafficSoon: string };
   streak: { title: string; days: (n: number) => string; next: (day: number, bonus: string) => string; max: string; milestone: (n: number, bonus: string) => string; flash: string };

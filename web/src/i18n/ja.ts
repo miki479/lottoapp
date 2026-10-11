@@ -3,9 +3,10 @@ import type { Messages } from "./types.ts";
 const ja: Messages = {
   nav: { home: "ホーム", bets: "マイ予想", ranking: "ランキング", profile: "プロフィール" },
   common: { backOnline: "オンラインに戻りました", close: "閉じる", cancel: "キャンセル", save: "保存", retry: "やり直す", soon: "近日公開", offline: "オフラインです。最新のデータは表示されず、予想もできません。", install: "アプリをインストール", language: "言語", credits: "クレジット", copied: "コピーしました", back: "戻る" },
-  tabs: { bus: "バス", train: "電車", weather: "天気", nature: "自然", traffic: "渋滞" },
+  tabs: { bus: "バス", train: "電車", weather: "天気", strike: "スト", nature: "自然", traffic: "渋滞" },
   wx: { world: "世界", regions: { jp: "日本", it: "イタリア", ca: "カリフォルニア", tr: "トルコ" }, localTime: "現地時間", all: "すべて", rain: "雨", names: { temp: "気温", wind: "風", snow: "雪", uv: "UV", aqi: "空気" }, forecast: (v) => `予報 ${v}`, quakeArt: "世界の地震" },
   world: "世界中",
+  quakeMaker: { cta: "場所と時間を選ぶ", title: "オリジナル地震予想", body: "場所・半径・マグニチュード・時間を選ぶと、その地域の過去1年の実際の地震からオッズを計算します。", place: "場所", search: "都市を検索…", radius: "半径", mag: "最小マグニチュード", day: "日", today: "今日", tomorrow: "明日", hour: "開始", length: "長さ", hours: (n) => `${n}時間`, km: (n) => `${n} km`, create: "オッズを計算して開く", creating: "計算中…", pickPlace: "先に場所を選んでください", local: (tz) => `その場所の現地時間（${tz}）`, limit: "今日はすでに5件作成しました。明日またお試しください。", full: "オリジナル予想が多すぎます。後でお試しください。", usgs: "地震カタログが応答しません。しばらくしてからお試しください。", time: "未来の時間（今から30分以上先）を選んでください。", credit: "データ：USGS Earthquake Hazards Program。" },
   strikes: { title: "ストライキ", sub: "イタリア運輸省のデータ。はい＝その日も予定通り、いいえ＝中止または延期。", art: "全国ストライキ" },
   home: { hero: { title: "バスが遅れる？ならば予想で楽しもう。", body: "データは本物、クレジットは架空。イベントを選んで予想しよう。" },
     missions: "今日のミッション", missionsLeft: (n) => `あと${n}つ`, missionsDone: "すべて達成", bonusTease: "3つ全部達成でボーナス +150",

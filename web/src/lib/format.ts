@@ -36,7 +36,8 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     // A regional question is told in that region's local time; a worldwide one in the player's own.
     const regionKey = m.params.region as string | undefined;
     const tz = regionKey ? String(m.params.tz ?? timeZone) : Intl.DateTimeFormat().resolvedOptions().timeZone;
-    return msg.question.quake({ mag: Number(m.params.minMag).toFixed(1), from: formatWhen(m.closes_at, locale, tz, now), to: formatWhen(m.target_at, locale, tz, now), region: regionKey ? msg.wx.regions[regionKey] ?? regionKey : undefined });
+    const circle = m.params.circle as number[] | undefined;
+    return msg.question.quake({ mag: Number(m.params.minMag).toFixed(1), from: formatWhen(m.closes_at, locale, tz, now), to: formatWhen(m.target_at, locale, tz, now), region: regionKey === "custom" ? `${String(m.params.place)} (${circle?.[2] ?? ""} km)` : regionKey ? msg.wx.regions[regionKey] ?? regionKey : undefined });
   }
   const p = m.params;
   const q = {

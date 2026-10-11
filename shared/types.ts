@@ -61,6 +61,8 @@ export interface QuakeEvent extends BaseEvent {
   minMag: number;
   /** Optional box [minLat, maxLat, minLon, maxLon]; without it the question is about the whole world. */
   bbox?: [number, number, number, number];
+  /** Optional circle [lat, lon, radiusKm] (player-made questions). */
+  circle?: [number, number, number];
 }
 
 export interface MetricObservation {

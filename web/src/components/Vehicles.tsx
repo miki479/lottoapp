@@ -116,3 +116,29 @@ export function TreeGhost() {
     </svg>
   );
 }
+
+/** A small crowd on strike: flags and a placard. The flags wave and the placard bobs on hover or tap. */
+export function StrikeGhost() {
+  return (
+    <svg viewBox="0 0 80 70" class="gh gh-strike" aria-hidden="true">
+      <path d="M0 62Q22 54 44 60T80 57V70H0Z" fill="#6fae5b" opacity=".75" /><path d="M0 67Q30 61 80 66V70H0Z" fill="#8a5a36" opacity=".55" />
+      <g class="gh-p1">
+        <rect x="17.500" y="8" width="2" height="38" rx="1" fill="#8a5a36" />
+        <path class="gh-flag" d="M19.500 9h22q-5 6 0 12h-22z" fill="#e5484d" />
+        <path d="M14 36l5 -4l4 -10" stroke="#f1c9a5" stroke-width="3.200" stroke-linecap="round" fill="none" />
+        <rect x="11" y="38" width="16" height="22" rx="7" fill="#3b6fd4" /><circle cx="19" cy="31" r="6.500" fill="#f1c9a5" /><path d="M13 29q6-8 12 0" fill="#5a3b24" />
+      </g>
+      <g class="gh-p2">
+        <g class="gh-sign"><rect x="31" y="6" width="22" height="16" rx="2" fill="#fff" stroke="#8a96ad" stroke-width="1.200" /><path d="M35 12h14M35 17h9" stroke="#d8322b" stroke-width="2.400" stroke-linecap="round" /><rect x="41.200" y="22" width="1.800" height="14" fill="#8a5a36" /></g>
+        <path d="M36 42l5 -6l2 -3" stroke="#e8b48c" stroke-width="3.200" stroke-linecap="round" fill="none" />
+        <rect x="32" y="40" width="17" height="21" rx="7" fill="#f59a00" /><circle cx="40.500" cy="34" r="6.500" fill="#e8b48c" /><path d="M34 32q6.500-8 13 0" fill="#2a2f3a" />
+      </g>
+      <g class="gh-p3">
+        <rect x="62.500" y="10" width="2" height="36" rx="1" fill="#8a5a36" />
+        <path class="gh-flag gh-flag2" d="M64.500 11h-17q4 6 0 12h17z" fill="#d8322b" />
+        <path d="M68 38l-4 -4l-1 -12" stroke="#f1c9a5" stroke-width="3.200" stroke-linecap="round" fill="none" />
+        <rect x="56" y="40" width="16" height="20" rx="7" fill="#3f9a4f" /><circle cx="64" cy="33" r="6.500" fill="#f1c9a5" /><path d="M58 31q6-8 12 0" fill="#c98a3a" />
+      </g>
+    </svg>
+  );
+}

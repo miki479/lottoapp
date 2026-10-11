@@ -1,8 +1,8 @@
 import { Car } from "lucide-preact";
-import { BusGhost, CloudRainGhost, TrainGhost, TreeGhost } from "./Vehicles.tsx";
+import { BusGhost, CloudRainGhost, StrikeGhost, TrainGhost, TreeGhost } from "./Vehicles.tsx";
 import { useState } from "preact/hooks";
 
-export type CatId = "bus" | "train" | "weather" | "nature" | "traffic";
+export type CatId = "bus" | "train" | "weather" | "nature" | "strike" | "traffic";
 export interface CatTile { id: CatId; label: string; count: number; disabled?: boolean }
 
 /** The chip's picture: big, see-through, filling most of the chip. */
@@ -11,6 +11,7 @@ function Art({ id }: { id: CatId }) {
   if (id === "train") return <TrainGhost />;
   if (id === "weather") return <CloudRainGhost />;
   if (id === "nature") return <TreeGhost />;
+  if (id === "strike") return <StrikeGhost />;
   return <Car size={44} strokeWidth={1.6} class="gh" />;
 }
 
@@ -18,7 +19,7 @@ function Art({ id }: { id: CatId }) {
 export function CatChips({ tiles, value, onPick }: { tiles: CatTile[]; value: CatId; onPick: (id: CatId) => void }) {
   const [popId, setPopId] = useState<CatId | null>(null);
   return (
-    <div class="catchips" role="tablist">
+    <div class={`catchips ${tiles.length > 5 ? "many" : ""}`} role="tablist" style={`--n:${tiles.length}`}>
       {tiles.map((t) => {
         const on = value === t.id;
         return (
