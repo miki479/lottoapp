@@ -22,6 +22,13 @@ export interface FeedConfig {
   pollSeconds: number;
   staleAfterSeconds: number;
   delaySemantics?: "last_passed_stop";
+  /** Only route types to build markets from (GTFS route_type, e.g. 2 = rail, 3 = bus). */
+  routeTypes?: number[];
+  /**
+   * True only after someone has read the CURRENT licence/terms of the provider.
+   * Unverified feeds are skipped in production unless ALLOW_UNVERIFIED_FEEDS=1.
+   */
+  licenseVerified: boolean;
   attribution: FeedAttribution;
 }
 
@@ -61,12 +68,18 @@ export function validateCity(raw: unknown): CityConfig {
     ids.add(f.id);
     if (!f.url?.startsWith("https://")) fail(`feed ${f.id}: url must be https`);
     if (!(f.pollSeconds > 0) || !(f.staleAfterSeconds >= f.pollSeconds)) fail(`feed ${f.id}: bad poll/stale seconds`);
+    if (typeof f.licenseVerified !== "boolean") fail(`feed ${f.id}: licenseVerified must be true or false`);
     if (!f.attribution?.license || !f.attribution.url) fail(`feed ${f.id}: attribution is mandatory`);
   }
-  for (const cat of ["bus", "weather", "traffic"] as const) {
+  for (const cat of ["bus", "train", "weather", "traffic"] as const) {
     if (c.categories?.[cat]?.enabled && !feeds.some((f) => f.category === cat)) {
       fail(`category ${cat} is enabled but has no feed`);
     }
   }
   return c as CityConfig;
+}
+
+/** Feeds that may be used: unverified ones need an explicit opt-in (development only). */
+export function usableFeeds(city: CityConfig, allowUnverified: boolean): FeedConfig[] {
+  return city.feeds.filter((f) => city.categories[f.category]?.enabled && (f.licenseVerified || allowUnverified));
 }

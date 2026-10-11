@@ -26,3 +26,20 @@ describe("city configs", () => {
     expect(() => validateCity({ ...ok, feeds: [{ ...ok.feeds[0], url: "http://x" }] })).toThrow(/https/);
   });
 });
+
+import { usableFeeds } from "../shared/cities.ts";
+describe("feed licence gate", () => {
+  const load = (n: string) => validateCity(JSON.parse(readFileSync(new URL(`../cities/${n}.json`, import.meta.url), "utf8")));
+  it("skips feeds whose licence is unverified unless opted in", () => {
+    const rome = load("rome");
+    expect(usableFeeds(rome, false).map((f) => f.id)).toEqual(["open-meteo-rome"]);
+    expect(usableFeeds(rome, true).map((f) => f.id)).toContain("rome-trip-update");
+  });
+  it("does not use feeds of disabled categories", () => {
+    expect(usableFeeds(load("tokyo"), true).every((f) => f.category !== "traffic" && f.category !== "train")).toBe(true);
+  });
+  it("covers Italy and a train city", () => {
+    expect(load("rome").country).toBe("IT");
+    expect(load("amsterdam").categories.train.enabled).toBe(true);
+  });
+});

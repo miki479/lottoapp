@@ -1,10 +1,10 @@
-export type Category = "bus" | "weather" | "traffic";
+export type Category = "bus" | "train" | "weather" | "traffic";
 export type Outcome = "yes" | "no";
 export type BetStatus = "open" | "won" | "lost" | "void";
 
 /** What the house offers. One row per bettable question. */
 export type MarketEvent =
-  | BusDelayEvent
+  | DelayEvent
   | RainEvent;
 
 interface BaseEvent {
@@ -20,9 +20,10 @@ interface BaseEvent {
   deadlineAt: number;
 }
 
-export interface BusDelayEvent extends BaseEvent {
-  kind: "bus_delay_gt";
-  category: "bus";
+/** "Will this scheduled bus/tram/train be more than N seconds late at this stop?" */
+export interface DelayEvent extends BaseEvent {
+  kind: "bus_delay_gt" | "train_delay_gt";
+  category: "bus" | "train";
   routeId: string;
   /** Scheduled trip the question is about. */
   tripId: string;
@@ -30,6 +31,8 @@ export interface BusDelayEvent extends BaseEvent {
   /** "more than N seconds late" (strict). */
   thresholdSec: number;
 }
+
+export type BusDelayEvent = DelayEvent;
 
 export interface RainEvent extends BaseEvent {
   kind: "rain_at";
@@ -47,6 +50,11 @@ export interface DelayObservation {
   observedAt: number;
   /** Seconds late; negative = early. */
   delaySec: number;
+  /**
+   * Only for TripUpdates, which are forecasts: the epoch at which the vehicle is predicted
+   * to be at the stop. A reading counts as a fact only if it was taken near or after this time.
+   */
+  predictedAt?: number;
 }
 
 export interface WeatherObservation {

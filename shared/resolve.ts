@@ -1,5 +1,5 @@
 import type {
-  BusDelayEvent,
+  DelayEvent,
   DelayObservation,
   FeedHealth,
   MarketEvent,
@@ -21,6 +21,11 @@ export interface ResolveInput {
 /** A bus delay reading counts only if taken within this window around the scheduled time. */
 const BUS_WINDOW_BEFORE_SEC = 5 * 60;
 const BUS_WINDOW_AFTER_SEC = 15 * 60;
+/**
+ * A forecast (TripUpdate) only counts if it was refreshed this close to the predicted passage,
+ * or later. Earlier forecasts are guesses, not observations.
+ */
+export const FORECAST_FRESHNESS_SEC = 120;
 /** Weather reading must come from the hour that contains the target instant. */
 const HOUR = 3600;
 
@@ -37,7 +42,7 @@ export function resolveEvent(input: ResolveInput): Resolution {
   const readyAt = event.kind === "rain_at" ? Math.floor(event.targetAt / HOUR) * HOUR + HOUR : event.targetAt;
   if (now < readyAt) return { status: "pending" };
 
-  const reading = event.kind === "bus_delay_gt" ? busReading(event, input) : rainReading(event, input);
+  const reading = event.kind !== "rain_at" ? delayReading(event, input) : rainReading(event, input);
 
   if (reading.kind === "none") {
     if (now < event.deadlineAt) return { status: "pending" };
@@ -53,7 +58,7 @@ type Reading =
   | { kind: "implausible" }
   | { kind: "ok"; yes: boolean; evidence: Record<string, number | string> };
 
-function busReading(event: BusDelayEvent, input: ResolveInput): Reading {
+function delayReading(event: DelayEvent, input: ResolveInput): Reading {
   const lo = event.targetAt - BUS_WINDOW_BEFORE_SEC;
   const hi = event.targetAt + BUS_WINDOW_AFTER_SEC;
   const candidates = input.delays
@@ -64,7 +69,8 @@ function busReading(event: BusDelayEvent, input: ResolveInput): Reading {
         o.stopId === event.stopId &&
         o.observedAt >= lo &&
         o.observedAt <= hi &&
-        o.observedAt <= input.now,
+        o.observedAt <= input.now &&
+        (o.predictedAt === undefined || o.observedAt >= o.predictedAt - FORECAST_FRESHNESS_SEC),
     )
     .sort((a, b) => a.observedAt - b.observedAt);
   // The first reading at the stop is the one that counts: later ones include later travel.

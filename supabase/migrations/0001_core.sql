@@ -16,7 +16,7 @@ create table public.profiles (
 create table public.markets (
   id uuid primary key default gen_random_uuid(),
   city_id text not null,
-  category text not null check (category in ('bus','weather','traffic')),
+  category text not null check (category in ('bus','train','weather','traffic')),
   kind text not null,
   feed_id text not null,
   params jsonb not null,                 -- routeId, tripId, stopId, thresholdSec / minMm ...
@@ -61,6 +61,7 @@ create table public.delay_observations (
   stop_id text not null,
   observed_at timestamptz not null,
   delay_sec integer not null,
+  predicted_at timestamptz,               -- set for TripUpdate forecasts only
   unique (feed_id, trip_id, stop_id, observed_at)
 );
 create index delay_obs_lookup on public.delay_observations (feed_id, trip_id, stop_id, observed_at);
@@ -76,6 +77,7 @@ create table public.weather_observations (
 
 create table public.feed_health (
   feed_id text primary key,
+  last_attempt_at timestamptz,
   last_ok_at timestamptz,
   last_error text,
   last_error_at timestamptz
@@ -192,3 +194,30 @@ begin
   return 250;
 end $$;
 grant execute on function public.claim_daily_refill() to authenticated;
+
+-- Timetable rows for the trips that have markets: lets the ingest job turn vehicle positions
+-- into delays without loading a whole national timetable into the database. Pruned daily.
+create table public.trip_schedule (
+  feed_id text not null,
+  trip_id text not null,
+  stop_sequence integer not null,
+  stop_id text not null,
+  scheduled_time text not null,           -- GTFS "HH:MM:SS", may exceed 24h
+  service_date date not null,
+  primary key (feed_id, trip_id, stop_sequence)
+);
+alter table public.trip_schedule enable row level security;  -- server only, no policies
+
+-- Outcome accounting for future odds. Only genuinely resolved markets count; voids never do.
+create or replace function public.bump_odds_history(p_city text, p_kind text, p_route text, p_hour smallint, p_threshold integer, p_yes boolean)
+returns void language sql security definer set search_path = public as $$
+  insert into public.odds_history (city_id, kind, route_id, hour_of_day, threshold, n, yes)
+  values (p_city, p_kind, p_route, p_hour, p_threshold, 1, case when p_yes then 1 else 0 end)
+  on conflict (city_id, kind, route_id, hour_of_day, threshold)
+  do update set n = odds_history.n + 1, yes = odds_history.yes + case when p_yes then 1 else 0 end;
+$$;
+revoke execute on function public.bump_odds_history(text, text, text, smallint, integer, boolean) from public, anon, authenticated;
+
+-- One call per minute for both jobs (needs pg_cron + pg_net, set the project URL and secret in Vault).
+-- select cron.schedule('ingest',  '* * * * *', $$ select net.http_post(url := '<project>/functions/v1/ingest',  headers := jsonb_build_object('x-cron-secret', '<CRON_SECRET>')) $$);
+-- select cron.schedule('resolve', '* * * * *', $$ select net.http_post(url := '<project>/functions/v1/resolve', headers := jsonb_build_object('x-cron-secret', '<CRON_SECRET>')) $$);

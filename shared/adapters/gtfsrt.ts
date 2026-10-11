@@ -41,7 +41,10 @@ export const tripUpdatesAdapter: DelayAdapter = (feed, ctx) => {
       if (!stu.stopId) continue;
       const delaySec = delayFromTripUpdate(stu);
       if (delaySec === null) continue;
-      out.push({ feedId: ctx.feedId, tripId, stopId: stu.stopId, routeId: tu?.trip?.routeId ?? "", observedAt: headerTs, delaySec });
+      // TripUpdates are forecasts. Without a predicted time we cannot tell fact from forecast: skip.
+      const predictedAt = num(stu.arrival?.time) ?? num(stu.departure?.time);
+      if (predictedAt === null) continue;
+      out.push({ feedId: ctx.feedId, tripId, stopId: stu.stopId, routeId: tu?.trip?.routeId ?? "", observedAt: headerTs, delaySec, predictedAt });
     }
   }
   return out;

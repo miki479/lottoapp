@@ -16,7 +16,7 @@ const base = (over: Partial<ResolveInput>): ResolveInput => ({
   event: bus, now: T + 600, feed: { feedId: "toei", lastOkAt: T + 590 }, staleAfterSec: 180,
   delays: [], weather: [], ...over,
 });
-const obs = (o: Partial<{ observedAt: number; delaySec: number; tripId: string; stopId: string; feedId: string }> = {}) => ({
+const obs = (o: Partial<{ observedAt: number; delaySec: number; tripId: string; stopId: string; feedId: string; predictedAt: number }> = {}) => ({
   feedId: "toei", tripId: "t1", stopId: "s1", routeId: "r", observedAt: T + 30, delaySec: 200, ...o,
 });
 
@@ -82,5 +82,28 @@ describe("rain resolution", () => {
   });
   it("voids on negative precipitation", () => {
     expect(resolveEvent(input({ weather: [w(-1)] }))).toEqual({ status: "void", reason: "implausible_data" });
+  });
+});
+
+describe("train delays use the same rules", () => {
+  it("resolves a train_delay_gt event", () => {
+    const train = { ...bus, kind: "train_delay_gt" as const, category: "train" as const, thresholdSec: 300 };
+    const r = resolveEvent(base({ event: train, delays: [obs({ delaySec: 301 })] }));
+    expect(r).toMatchObject({ status: "resolved", outcome: "yes" });
+  });
+});
+
+describe("forecasts are not facts", () => {
+  const forecast = (observedAt: number, delaySec: number) => obs({ observedAt, delaySec, predictedAt: T + 100 });
+  it("ignores a forecast made long before the predicted passage", () => {
+    expect(resolveEvent(base({ delays: [forecast(T - 200, 900)] }))).toEqual({ status: "pending" });
+  });
+  it("accepts the forecast refreshed close to the predicted passage", () => {
+    const r = resolveEvent(base({ delays: [forecast(T - 200, 900), forecast(T + 20, 250)] }));
+    expect(r).toMatchObject({ status: "resolved", outcome: "yes", evidence: { delaySec: 250 } });
+  });
+  it("voids at the deadline if only early forecasts exist", () => {
+    const r = resolveEvent(base({ now: T + 2000, delays: [forecast(T - 200, 900)], feed: { feedId: "toei", lastOkAt: T + 1990 } }));
+    expect(r).toEqual({ status: "void", reason: "no_observation" });
   });
 });

@@ -1,15 +1,36 @@
 {
   "id": "tokyo",
   "country": "JP",
-  "name": { "it": "Tokyo", "en-US": "Tokyo", "en-GB": "Tokyo", "ja": "東京" },
+  "name": {
+    "it": "Tokyo",
+    "en-US": "Tokyo",
+    "en-GB": "Tokyo",
+    "ja": "東京"
+  },
   "timezone": "Asia/Tokyo",
   "defaultLocale": "en-US",
-  "tone": { "it": "ironico", "en-US": "cheeky", "en-GB": "dry" },
-  "location": { "lat": 35.6812, "lon": 139.7671 },
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 35.6812,
+    "lon": 139.7671
+  },
   "categories": {
-    "bus": { "enabled": true },
-    "weather": { "enabled": true },
-    "traffic": { "enabled": false }
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": false
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
   },
   "feeds": [
     {
@@ -29,7 +50,11 @@
         "license": "CC BY 4.0",
         "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
         "url": "https://ckan.odpt.org/en/dataset/b_bus_gtfs_rt-toei"
-      }
+      },
+      "licenseVerified": true,
+      "routeTypes": [
+        3
+      ]
     },
     {
       "id": "keisei-bus-trip-update",
@@ -46,10 +71,14 @@
         "license": "CC BY 4.0",
         "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
         "url": "https://ckan.odpt.org/en/dataset/odpt_keisei_transit_bus_all_lines"
-      }
+      },
+      "licenseVerified": true,
+      "routeTypes": [
+        3
+      ]
     },
     {
-      "id": "open-meteo",
+      "id": "open-meteo-tokyo",
       "category": "weather",
       "type": "open-meteo",
       "url": "https://api.open-meteo.com/v1/forecast",
@@ -61,7 +90,8 @@
         "license": "CC BY 4.0",
         "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
         "url": "https://open-meteo.com/"
-      }
+      },
+      "licenseVerified": true
     }
   ],
   "futureFeeds": [

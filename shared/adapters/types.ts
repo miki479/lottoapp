@@ -18,8 +18,8 @@ export interface RtEntity {
     stopTimeUpdate?: Array<{
       stopSequence?: number | null;
       stopId?: string | null;
-      arrival?: { delay?: number | null } | null;
-      departure?: { delay?: number | null } | null;
+      arrival?: { delay?: number | null; time?: number | string | null } | null;
+      departure?: { delay?: number | null; time?: number | string | null } | null;
     }> | null;
   } | null;
 }

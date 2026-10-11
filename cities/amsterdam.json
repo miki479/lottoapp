@@ -1,0 +1,57 @@
+{
+  "id": "amsterdam",
+  "country": "NL",
+  "name": { "it": "Amsterdam", "en-US": "Amsterdam", "en-GB": "Amsterdam", "ja": "アムステルダム" },
+  "timezone": "Europe/Amsterdam",
+  "defaultLocale": "en-GB",
+  "tone": { "it": "ironico", "en-US": "cheeky", "en-GB": "dry" },
+  "location": { "lat": 52.3676, "lon": 4.9041 },
+  "categories": {
+    "bus": { "enabled": false },
+    "train": { "enabled": true },
+    "weather": { "enabled": true },
+    "traffic": { "enabled": false }
+  },
+  "feeds": [
+    {
+      "id": "nl-train-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://gtfs.ovapi.nl/nl/trainUpdates.pb",
+      "requiresKey": null,
+      "pollSeconds": 120,
+      "staleAfterSeconds": 360,
+      "routeTypes": [2],
+      "licenseVerified": false,
+      "attribution": {
+        "name": "NDOV / OVapi (Dutch railway operators)",
+        "license": "Open data, terms to verify (OVapi README: no SLA, do not impersonate operators)",
+        "licenseUrl": "https://gtfs.ovapi.nl/",
+        "url": "https://gtfs.ovapi.nl/"
+      }
+    },
+    {
+      "id": "open-meteo-amsterdam",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": [
+    {
+      "id": "irail-belgium",
+      "note": "Belgian trains via iRail (custom JSON API, ~3 req/s limit, terms to verify). Needs its own adapter."
+    }
+  ]
+}
