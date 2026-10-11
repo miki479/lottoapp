@@ -1,12 +1,13 @@
-import { Megaphone, Bus, Cloud, CloudRain, Clock, Star, TrainFront, Zap } from "lucide-preact";
+import { Megaphone, Cloud, CloudRain, Clock, Star, Zap } from "lucide-preact";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { countdown, fmtOdds, money, per10, question, type MarketRow } from "../lib/format.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { LiveDelay, Pick } from "../lib/types.ts";
+import { BusSide, TrainSide } from "./Vehicles.tsx";
 import { DelayMeter } from "./DelayMeter.tsx";
 import { Flag } from "./Flag.tsx";
 
-const KIND = { bus: Bus, train: TrainFront, weather: CloudRain, traffic: Bus } as const;
+const KIND = { bus: BusSide, train: TrainSide, weather: CloudRain, traffic: BusSide } as const;
 
 export function liveLabel(msg: Messages, l: LiveDelay) {
   const sec = Math.abs(l.delay_sec), min = Math.round(l.delay_sec / 60);
@@ -26,7 +27,7 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
     <article class={`card event ${m.category} ${p.top ? "is-top" : ""} ${flashOn ? "is-flash" : ""}`} style={`--i:${Math.min(p.index, 10)}`}>
       {(p.top || flashOn || p.hasLadder || left < 300_000) && <div class="badges">{p.hasLadder && <span class="badge-sorry"><Megaphone size={13} />{msg.ladder.chip}</span>}{flashOn && <span class="badge-flash"><Zap size={13} fill="currentColor" />FLASH ×{m.flash_multiplier} · {countdown(Date.parse(m.flash_until!) - now)}</span>}{p.top && <span class="badge-top"><Star size={13} fill="currentColor" />{msg.card.topOdds}</span>}{left < 300_000 && <span class="badge-hot"><Zap size={13} fill="currentColor" />{msg.card.hot}</span>}</div>}
       <div class={`scene ${m.category}`} aria-hidden="true">
-        {m.category === "weather" ? <><Cloud size={20} class="cloud" />{[0, 1, 2, 3, 4, 5].map((i) => <i key={i} class="drop" style={`left:${14 + i * 15}%;animation-delay:${-i * 170}ms`} />)}</> : <><span class="road" /><span class="rider"><Kind size={16} /></span></>}
+        {m.category === "weather" ? <><Cloud size={20} class="cloud" />{[0, 1, 2, 3, 4, 5].map((i) => <i key={i} class="drop" style={`left:${14 + i * 15}%;animation-delay:${-i * 170}ms`} />)}</> : <><span class="road" /><span class="rider"><Kind size={20} /></span></>}
       </div>
       <div class="meta">
         <span class="kind"><Kind size={16} /></span>

@@ -14,15 +14,17 @@ const TEXT = {
   "en-GB": { won: (a: string, w: string) => `You won ${a} · ${w}`, lost: (w: string) => `Not this time · ${w}`, void: (w: string) => `Bet refunded · ${w}`, parlay: "Accumulator" },
 } as const;
 
-async function send(userIds: string[], heading: string, body: string) {
-  const key = Deno.env.get("ONESIGNAL_REST_API_KEY"), app = Deno.env.get("ONESIGNAL_APP_ID");
-  if (!key || !app || userIds.length === 0) return;
+export const lastNotifyError: { msg: string | null } = { msg: null };
+async function send(userIds: string[], heading: string, body: string): Promise<boolean> {
+  const key = Deno.env.get("ONESIGNAL_REST_API_KEY")?.trim().replace(/^(Key|Basic)\s+/i, ""), app = Deno.env.get("ONESIGNAL_APP_ID");
+  if (!key || !app || userIds.length === 0) return false;
   const r = await fetch("https://api.onesignal.com/notifications", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Key ${key}` },
+    headers: { "Content-Type": "application/json", Authorization: `${key.startsWith("os_v2") ? "Key" : "Basic"} ${key}` },
     body: JSON.stringify({ app_id: app, target_channel: "push", include_aliases: { external_id: userIds }, headings: { en: heading }, contents: { en: body }, url: "https://latelotto.web.app/?open=bets", ttl: 3600 }),
   });
-  if (!r.ok) console.error("onesignal", r.status, (await r.text()).slice(0, 200));
+  if (!r.ok) { lastNotifyError.msg = `onesignal ${r.status} ${(await r.text()).slice(0, 160)}`; console.error(lastNotifyError.msg); return false; }
+  return true;
 }
 
 /** Announce results settled in the last 30 minutes, once each. Returns how many were handled. */
@@ -44,7 +46,8 @@ export async function notifyResults(sb: Db): Promise<number> {
     const t = TEXT[loc];
     const what = r.kind === "parlay" ? t.parlay : String(r.markets?.params.routeName ?? r.markets?.params.headsign ?? "LateLotto");
     const body = r.status === "won" ? t.won(money(r.payout - r.stake, loc), what) : r.status === "lost" ? t.lost(what) : t.void(what);
-    await send([r.user_id], "LateLotto", body);
+    // Only mark as announced when OneSignal accepted it, so a wrong key or an outage retries within the 30-minute window.
+    if (!(await send([r.user_id], "LateLotto", body))) continue;
     await sb.from(r.kind === "bet" ? "bets" : "parlays").update({ notified: true }).eq("id", r.id);
     n++;
   }

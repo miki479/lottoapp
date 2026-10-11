@@ -1,9 +1,10 @@
-import { Bus, CloudRain, Car, TrainFront } from "lucide-preact";
+import { CloudRain, Car } from "lucide-preact";
+import { BusSide, TrainSide } from "./Vehicles.tsx";
 import { useState } from "preact/hooks";
 
 export type CatId = "bus" | "train" | "weather" | "traffic";
 export interface CatTile { id: CatId; label: string; count: number; disabled?: boolean }
-const ICON = { bus: Bus, train: TrainFront, weather: CloudRain, traffic: Car } as const;
+const ICON = { bus: BusSide, train: TrainSide, weather: CloudRain, traffic: Car } as const;
 
 /** Category chips. The picked one plays a short scene: the bus pulls in, the train passes, rain falls. */
 export function CatChips({ tiles, value, onPick }: { tiles: CatTile[]; value: CatId; onPick: (id: CatId) => void }) {
