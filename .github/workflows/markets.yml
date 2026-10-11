@@ -23,10 +23,13 @@ jobs:
       - name: Weather (all cities)
         if: github.event.schedule != '41 2 * * *'
         run: |
-          for c in tokyo rome amsterdam sanfrancisco oslo torino zurich; do node scripts/generate-markets.mjs --city $c --weather --apply; done
+          for c in tokyo rome amsterdam sanfrancisco oslo torino zurich paris madrid; do node scripts/generate-markets.mjs --city $c --weather --apply; done
       - name: Tokyo buses
         if: github.event.schedule != '41 2 * * *'
         run: node scripts/generate-markets.mjs --city tokyo --feed toei-bus-vehicle --max 30 --apply
+      - name: Spanish commuter trains (trips seen live)
+        if: github.event.schedule != '41 2 * * *'
+        run: node scripts/generate-markets.mjs --city madrid --feed renfe-trip-update --max 30 --apply
       - name: Oslo buses
         if: github.event.schedule != '41 2 * * *'
         run: node scripts/generate-markets.mjs --city oslo --feed entur-ruter-trip-update --max 30 --apply
@@ -38,3 +41,4 @@ jobs:
         run: |
           node scripts/generate-markets.mjs --city amsterdam --feed nl-train-update --max 30 --apply
           node scripts/generate-markets.mjs --city zurich --feed ch-gtfsrt --max 30 --apply
+          node scripts/generate-markets.mjs --city paris --feed sncf-trip-update --max 30 --apply

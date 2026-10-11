@@ -1,0 +1,77 @@
+{
+  "id": "madrid",
+  "country": "ES",
+  "name": {
+    "it": "Madrid",
+    "en-US": "Madrid",
+    "en-GB": "Madrid",
+    "ja": "マドリード"
+  },
+  "timezone": "Europe/Madrid",
+  "defaultLocale": "en-GB",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 40.4168,
+    "lon": -3.7038
+  },
+  "categories": {
+    "bus": {
+      "enabled": false
+    },
+    "train": {
+      "enabled": true
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "renfe-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://gtfsrt.renfe.com/trip_updates.pb",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        2
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Renfe Operadora (Cercanías / Rodalies, data.renfe.com)",
+        "license": "Creative Commons Attribution 4.0 (shown on the dataset page 'Horarios de viaje', read 2026-10-11)",
+        "licenseUrl": "https://data.renfe.com/dataset/horarios-viaje-cercanias",
+        "url": "https://data.renfe.com/"
+      },
+      "staticGtfsUrl": "https://ssl.renfe.com/ftransit/Fichero_CER_FOMENTO/fomento_transit.zip",
+      "note": "Cercanias/Rodalies commuter trains across Spain, shown under Madrid. Explicit delays; refreshed every 20 s. The static file's calendar starts in late October, so today's trips are taken from the real-time feed (useRealtimeTrips).",
+      "useRealtimeTrips": true
+    },
+    {
+      "id": "open-meteo-madrid",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

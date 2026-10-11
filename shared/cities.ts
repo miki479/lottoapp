@@ -30,6 +30,8 @@ export interface FeedConfig {
   delaySemantics?: "last_passed_stop";
   /** Only route types to build markets from (GTFS route_type, e.g. 2 = rail, 3 = bus). */
   routeTypes?: number[];
+  /** The static calendar does not describe today (Renfe): take the trips that appear in the real-time feed as today's service. */
+  useRealtimeTrips?: boolean;
   /**
    * True only after someone has read the CURRENT licence/terms of the provider.
    * Unverified feeds are skipped in production unless ALLOW_UNVERIFIED_FEEDS=1.

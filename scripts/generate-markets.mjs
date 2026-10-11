@@ -70,7 +70,7 @@ async function* stopTimes(dir) {
     const cells = splitCsv(line);
     if (header === null) { header = cells; continue; }
     const row = {};
-    for (let i = 0; i < header.length; i++) row[header[i]] = cells[i] ?? "";
+    for (let i = 0; i < header.length; i++) row[header[i]] = (cells[i] ?? "").trim();
     yield row;
   }
 }
@@ -79,15 +79,25 @@ async function delayMarkets(feed) {
   const dir = await gtfsDir(feed);
   const out = { markets: [], schedule: [] };
   // Today and tomorrow (city-local): markets are bettable up to ~30 h ahead.
-  for (const offset of [0, 1]) {
+  const rtTrips = feed.useRealtimeTrips ? await realtimeTripIds(feed) : null;
+  for (const offset of rtTrips ? [0] : [0, 1]) {
     if (out.markets.length >= max) break;
-    const r = await delayMarketsForDay(feed, dir, now + offset * 86400, max - out.markets.length);
+    const r = await delayMarketsForDay(feed, dir, now + offset * 86400, max - out.markets.length, rtTrips);
     out.markets.push(...r.markets); out.schedule.push(...r.schedule);
   }
   return out;
 }
 
-async function delayMarketsForDay(feed, dir, dayEpoch, budget) {
+/** Trip ids currently present in the real-time feed (used when the static calendar is not reliable for today). */
+async function realtimeTripIds(feed) {
+  const GtfsRt = (await import("gtfs-realtime-bindings")).default;
+  const res = await fetch(feed.url, { headers: { "User-Agent": "LateLotto/0.1 (play-money game)", ...(feed.headers ?? {}) } });
+  if (!res.ok) throw new Error(`real-time feed ${res.status}`);
+  const m = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(new Uint8Array(await res.arrayBuffer())));
+  return new Set(m.entity.filter((e) => e.tripUpdate?.trip?.tripId).map((e) => e.tripUpdate.trip.tripId));
+}
+
+async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
   const { ymd, weekday } = localYmd(dayEpoch, city.timezone);
   const services = activeServiceIds(ymd, weekday, await readAll(join(dir, "calendar.txt")).catch(() => []), await readAll(join(dir, "calendar_dates.txt")).catch(() => []));
   const routes = new Map();
@@ -95,7 +105,7 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget) {
     if (feed.routeTypes && !feed.routeTypes.includes(Number(r.route_type || 3))) continue;
     routes.set(r.route_id, r.route_short_name || r.route_long_name || r.route_id);
   }
-  const trips = (await readAll(join(dir, "trips.txt"))).filter((t) => services.has(t.service_id) && routes.has(t.route_id));
+  const trips = (await readAll(join(dir, "trips.txt"))).filter((t) => (rtTrips ? rtTrips.has(t.trip_id) : services.has(t.service_id)) && routes.has(t.route_id));
   console.error(`[${feed.id}] ${ymd}: ${services.size} services, ${routes.size} routes, ${trips.length} trips today`);
   if (trips.length === 0) return { markets: [], schedule: [] };
 
