@@ -1,0 +1,16 @@
+import type { MarketRow } from "./format.ts";
+
+export type Pick = "yes" | "no";
+export interface LiveDelay { market_id: string; delay_sec: number; observed_at: string; is_forecast: boolean }
+export interface ResultRow { id: string; city_id: string; kind: MarketRow["kind"]; status: string; outcome: string | null; void_reason: string | null; params: Record<string, unknown>; evidence: { delaySec?: number } | null }
+export interface Profile {
+  id: string; credits: number; city_id: string; locale: string; timezone: string; country: string | null;
+  streak: number; best_streak: number; freezes: number; display_name: string | null; last_play_date: string | null;
+}
+export interface Progress { day: string; bus: number; train: number; weather: number; traffic: number; bonus_claimed: boolean }
+export interface MyBet {
+  id: string; pick: Pick; stake: number; odds: number; status: "open" | "won" | "lost" | "void"; payout: number;
+  markets: MarketRow & { void_reason: string | null; outcome: string | null };
+}
+export interface LbRow { rank: number; user_id: string; display_name: string; score: number; bets: number; streak: number; is_me: boolean }
+export interface GroupRow { code: string; name: string }

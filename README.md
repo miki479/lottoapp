@@ -11,7 +11,9 @@ Real data, fake credits. Starts in Tokyo; every city is just a config file.
 
 Done: game logic with tests, three cities, feed adapters, Supabase schema, market generator, `ingest`/`resolve`
 Edge Functions running every minute, guest-first PWA in it / en-US / en-GB hosted on Firebase Hosting (see `docs/deploy.md`).
-Next: retention features (rings, streaks, seasons, trophies, leaderboards, share card, push) and calibrating Toei delays.
+Retention: three daily rings (bus, trains, weather) with a +100 bonus, streak with freezes, 9 trophies, monthly
+season ranking (world, country, city, friend groups), shareable profile card, world lobby across all cities,
+live delay board. Next: flash events, push notifications, more cities, calibrating Toei delays.
 
 ## Coverage
 
@@ -58,6 +60,7 @@ npm test
 npm run typecheck
 npm run web:dev                    # needs SUPABASE_URL + SUPABASE_ANON_KEY
 node scripts/e2e-guest.mjs         # guest flow + security checks against your project
+node scripts/e2e-retention.mjs     # rings, bonus, streak, trophies, ranking, groups
 node scripts/build-functions.mjs   # before `supabase functions deploy`
 ```
 

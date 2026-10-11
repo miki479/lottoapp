@@ -11,7 +11,7 @@ export const FLASH_MAX_MULTIPLIER = 3;
 /** Fixed starting probabilities of the "yes" outcome, used until history exists. */
 export const DEFAULT_YES_PROBABILITY = {
   bus_delay_gt: 0.3,
-  train_delay_gt: 0.12,
+  train_delay_gt: 0.05,
   rain_at: 0.25,
 } as const;
 

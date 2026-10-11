@@ -1,0 +1,5 @@
+/* Self-hosted (latin subsets, variable weights): fast, and no visitor data leaves for a font CDN. */
+@font-face { font-family: "Schibsted Grotesk"; font-style: normal; font-weight: 400 900; font-display: swap; src: url(/fonts/SchibstedGrotesk.woff2) format("woff2"); }
+@font-face { font-family: "Big Shoulders Display"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(/fonts/BigShouldersDisplay.woff2) format("woff2"); }
+@font-face { font-family: "Martian Mono"; font-style: normal; font-weight: 100 800; font-display: swap; src: url(/fonts/MartianMono.woff2) format("woff2"); }
+@font-face { font-family: "Doto"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(/fonts/Doto-800.woff2) format("woff2"); }
