@@ -58,7 +58,7 @@ describe("i18n", () => {
   });
   it("copy is written per audience, not just translated", () => {
     expect(MESSAGES["en-US"].tabs.bus).not.toBe(MESSAGES["en-GB"].tabs.bus);
-    expect(MESSAGES["en-US"].empty.mine).not.toBe(MESSAGES["en-GB"].empty.mine);
+    expect(MESSAGES["en-US"].bets.empty.body).not.toBe(MESSAGES["en-GB"].bets.empty.body);
   });
 });
 

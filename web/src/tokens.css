@@ -1,0 +1,70 @@
+/* ==========================================================================
+   Design tokens: the ONLY place where colours, radii, spacing, type and motion are defined.
+   Dark is the default; the light theme follows the system setting automatically.
+   ========================================================================== */
+@font-face { font-family: "Manrope"; font-style: normal; font-weight: 400 800; font-display: swap; src: url(/fonts/Manrope.woff2) format("woff2"); }
+
+:root {
+  color-scheme: dark light;
+
+  /* --- brand: one vivid colour, used only for actions and selection --- */
+  --brand: #6b5bff;
+  --brand-strong: #5b49f2;
+  --brand-soft: rgba(107, 91, 255, .16);
+  --on-brand: #ffffff;
+
+  /* --- outcome colours: ONLY for won / lost, soft pastel + same-hue text, always paired with an icon --- */
+  --won-bg: rgba(52, 211, 153, .14);   --won-fg: #7ee8bc;
+  --lost-bg: rgba(248, 113, 113, .14); --lost-fg: #fca5a5;
+  --warn-fg: #f2b655;                  /* delay emphasis (amber, not red/green) */
+
+  /* --- surfaces (no pure black) --- */
+  --bg: #0f1115;
+  --surface: #181b21;
+  --surface-2: #1f232b;
+  --border: #272c35;
+  --border-strong: #343b47;
+  --scrim: rgba(7, 8, 11, .62);
+
+  /* --- text --- */
+  --text: #f3f5f8;
+  --text-2: #b6bdca;
+  --muted: #8a92a1;
+
+  /* --- shape & spacing --- */
+  --radius-card: 16px;
+  --radius-control: 12px;
+  --radius-pill: 999px;
+  --gutter: 20px;       /* side margin */
+  --gap: 12px;          /* between cards */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px;
+  --touch: 48px;        /* minimum touch target */
+  --max-w: 1120px;
+
+  /* --- type: one family, three levels --- */
+  --font: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fs-title: 24px;     /* titles 22-28 bold */
+  --fs-title-lg: 28px;
+  --fs-body: 16px;
+  --fs-detail: 12px;    /* details: uppercase, grey */
+  --ls-title: -0.02em;
+  --ls-detail: .06em;
+
+  /* --- motion: short and calm --- */
+  --dur-fast: 150ms;
+  --dur: 220ms;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+
+  --tabbar-h: 64px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --brand: #5b49f2; --brand-strong: #4a38dc; --brand-soft: rgba(91, 73, 242, .10);
+    --won-bg: #e5f6ee;  --won-fg: #0f7a47;
+    --lost-bg: #fdeaea; --lost-fg: #b42318;
+    --warn-fg: #a15c07;
+    --bg: #f5f6f8; --surface: #ffffff; --surface-2: #f0f2f5; --border: #e3e6eb; --border-strong: #cfd4dc; --scrim: rgba(16, 24, 40, .45);
+    --text: #101828; --text-2: #475467; --muted: #667085;
+  }
+}

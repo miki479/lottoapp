@@ -1,8 +1,8 @@
 export type Locale = "it" | "en-US" | "en-GB";
-export const LOCALES: { id: Locale; label: string }[] = [
-  { id: "it", label: "Italiano" },
-  { id: "en-US", label: "English (US)" },
-  { id: "en-GB", label: "English (UK)" },
+export const LOCALES: { id: Locale; label: string; short: string }[] = [
+  { id: "it", label: "Italiano", short: "IT" },
+  { id: "en-US", label: "English (US)", short: "EN-US" },
+  { id: "en-GB", label: "English (UK)", short: "EN-UK" },
 ];
 
 export interface BusQ { route: string; headsign: string; stop: string; time: string; min: number }
@@ -16,46 +16,42 @@ export const TROPHY_RARITY: Record<TrophyId, "common" | "rare" | "epic"> = {
 
 /** Every locale implements this: add `ja` by creating ja.ts and registering it in index.ts. */
 export interface Messages {
-  tagline: string;
-  nav: { events: string; missions: string; ranking: string; mine: string };
+  nav: { home: string; bets: string; ranking: string; profile: string };
+  common: { close: string; cancel: string; save: string; retry: string; soon: string; offline: string; install: string; language: string; credits: string; copied: string; back: string };
   tabs: { bus: string; train: string; weather: string; traffic: string };
   world: string;
-  credits: string;
-  city: string;
-  language: string;
-  disclaimerShort: string;
-  disclaimerFull: string;
-  attributionTitle: string;
-  loading: string;
-  retry: string;
-  empty: { markets: string; mine: string; trafficSoon: string };
-  closesIn: (min: number) => string;
-  closedSoon: string;
-  card: { late: string; onTime: string; per10: (win: number) => string; closes: string; live: string; forecast: string; bomb: string; sooner: string };
-  hero: { kicker: string; lateNow: string; closingSoon: string; cta: string; threshold: string };
-  board: { title: string; sub: string; none: string };
-  ticker: { late: (r: string, s: string, min: number) => string; onTime: (r: string, s: string) => string; void: (r: string, s: string) => string; rain: (c: string) => string; dry: (c: string) => string; idle: string[] };
+  home: { missions: string; missionsLeft: (n: number) => string; missionsDone: string; bonusTease: string; top: string; events: string; live: string; idle: string[]; empty: { title: string; body: string; cta: string }; trafficSoon: string };
+  top: { late: string; popular: string; city: string; closing: string; avg: (min: number) => string; players: (n: number) => string; ontime: string; open: string };
+  card: { late: string; onTime: string; per10: (win: number) => string; closes: string; forecast: string; live: string; yes: string; no: string; over: (min: number) => string };
   question: { bus: (q: BusQ) => string; train: (q: BusQ) => string; rain: (q: RainQ) => string };
-  pick: { yes: string; no: string };
-  sheet: { stake: string; potential: string; place: string; placing: string; cancel: string; odds: string; done: (win: number) => string; flashOdds: string };
-  mine: { open: string; won: (n: number) => string; lost: string; void: string; voidReason: Record<string, string>; yourPick: (yes: boolean) => string; stamp: { won: string; lost: string; void: string }; settles: string };
-  missions: {
-    title: string; rings: { bus: string; train: string; weather: string; traffic: string }; ringsHint: (left: number) => string; bonusDone: string; bonusTease: string;
-    streak: (n: number) => string; streakHint: string; freezes: (n: number) => string; freezeHint: string;
-    trophies: string; locked: string; rarity: { common: string; rare: string; epic: string };
-    trophy: Record<TrophyId, { name: string; desc: string }>;
-    share: { button: string; title: string; text: string; saved: string };
-    newTrophy: string;
+  sheet: { title: string; pick: string; stake: string; potential: string; confirm: string; confirming: string; odds: string; placed: (win: number) => string };
+  bets: { title: string; tabs: { open: string; settled: string }; open: string; won: string; lost: string; void: string; empty: { title: string; body: string; cta: string }; yourPick: (yes: boolean) => string; settles: string; voidReason: Record<string, string>; details: string };
+  result: {
+    won: string; lost: string; void: string; amountWon: (n: number) => string; amountLost: (n: number) => string; amountVoid: (n: number) => string;
+    subWon: string; subLost: string; subVoid: string;
+    measured: (min: number, sec: number) => string; threshold: (min: number) => string; rainMeasured: (mm: number) => string;
+    stake: string; odds: string; share: string; shareText: string; close: string; more: (n: number) => string; saved: string;
   };
   ranking: {
-    title: string; season: (days: number) => string; scopes: { global: string; country: string; city: string; friends: string }; you: string;
-    empty: string; pts: string; needAccount: { title: string; body: string };
-    name: { label: string; save: string; placeholder: string };
-    groups: { create: string; join: string; namePh: string; codePh: string; yourCode: (c: string) => string; copied: string; none: string; pick: string };
+    title: string; season: (d: number) => string; scopes: { global: string; country: string; city: string; friends: string }; you: string; credits: string;
+    empty: { title: string; body: string }; gate: { title: string; body: string; cta: string };
+    groups: { create: string; join: string; namePh: string; codePh: string; yourCode: (c: string) => string; none: string };
   };
+  profile: {
+    title: string; guest: string; guestHint: string; signIn: string; account: string;
+    stats: { title: string; winRate: string; streak: string; best: string; bets: string; net: string; trophies: string; days: (n: number) => string };
+    streakHint: string; freezes: (n: number) => string; freezeHint: string;
+    trophies: string; locked: string; rarity: { common: string; rare: string; epic: string };
+    trophy: Record<TrophyId, { name: string; desc: string }>;
+    shareCard: string; shareText: string; settings: string; signOut: string; sources: string;
+    delete: { action: string; title: string; body: string; confirm: string; done: string };
+    nickname: { title: string; label: string; placeholder: string; rules: string; save: string; needAccount: string };
+  };
+  auth: {
+    title: string; subtitle: string; tabSignin: string; tabSignup: string; email: string; password: string; passwordHint: string; google: string; or: string;
+    magic: string; magicSent: string; confirmSent: string; signinCta: string; signupCta: string; guestKeep: string; guestLose: string; welcome: string;
+  };
+  disclaimerShort: string; disclaimerFull: string; attributionTitle: string;
   errors: Record<string, string>;
   feedWarning: string;
-  save: { title: string; body: string; email: string; send: string; sent: string; later: string };
-  offline: string;
-  install: string;
 }

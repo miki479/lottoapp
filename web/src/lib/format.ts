@@ -47,9 +47,6 @@ export function countdown(ms: number): string {
   return h > 0 ? `${h}h ${p(m)}m` : `${p(m)}:${p(sec)}`;
 }
 
-/** Country code to flag emoji ("IT" -> 🇮🇹). */
-export const flag = (cc: string) => cc.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
-
 /** Credits returned by a winning 10-credit bet. */
 export const per10 = (odds: number) => Math.floor(10 * odds);
 

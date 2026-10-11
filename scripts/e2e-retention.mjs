@@ -65,8 +65,8 @@ try {
   const B = await registered("b"), C = await registered("c");
   for (const [u, name] of [[B, "E2E Bruno"], [C, "E2E Clara"]]) {
     await rpc("ensure_profile", { p_city: "rome", p_locale: "it", p_country: "IT" }, u.token);
-    const r = await call(`/rest/v1/profiles?id=eq.${u.id}`, { method: "PATCH", token: u.token, body: { display_name: name } });
-    check(`display name set for ${name}`, r.status < 300, `(status ${r.status})`);
+    const r = await rpc("set_nickname", { p_name: name }, u.token);
+    check(`nickname set for ${name}`, r.status < 300, `(status ${r.status})`);
   }
   check("is_registered is true once an email is confirmed", (await rpc("is_registered", {}, B.token)).body === true);
 
@@ -93,6 +93,25 @@ try {
   const lbCity = (await rpc("leaderboard", { p_scope: "city", p_key: "rome" }, B.token)).body;
   check("city and country scopes work", lbCity.some((r) => r.user_id === B.id) && (await rpc("leaderboard", { p_scope: "country", p_key: "IT" }, B.token)).body.some((r) => r.user_id === C.id));
 
+  // ---------- stats, nickname filter, rate limit, account deletion ----------
+  const st = (await rpc("my_stats", {}, B.token)).body[0];
+  check("my_stats: 1 settled bet, 1 win, best win +500, net +500", Number(st.total) === 1 && Number(st.won) === 1 && Number(st.best_win) === 500 && Number(st.net) === 500, JSON.stringify(st));
+  check("popular_markets is callable by anyone", (await rpc("popular_markets", { p_limit: 3 })).status < 300);
+  const nick = async (u, n) => rpc("set_nickname", { p_name: n }, u.token);
+  check("offensive nickname rejected", (await nick(C, "Sh1t head")).status >= 400 && (await nick(C, "f u c k")).status >= 400 && (await nick(C, "Stronzo99")).status >= 400);
+  check("reserved nickname rejected", (await nick(C, "Admin")).status >= 400);
+  check("weird characters rejected", (await nick(C, "<script>")).status >= 400);
+  check("valid nickname accepted", (await nick(C, "E2E Clara Due")).status < 300);
+  check("nickname is unique, ignoring case", (await nick(B, "e2e clara due")).status >= 400);
+  check("guest cannot set a nickname", (await nick(A, "Guest Hero")).status >= 400);
+  const direct = await call(`/rest/v1/profiles?id=eq.${B.id}`, { method: "PATCH", token: B.token, body: { display_name: "Hacker" } });
+  check("nickname cannot be changed around the filter", direct.status >= 400, `(status ${direct.status})`);
+
+  const many = (await call(`/rest/v1/markets?status=eq.open&closes_at=gt.${new Date().toISOString()}&order=target_at.asc&limit=12&select=id`, { token: C.token })).body;
+  let limited = 0, placed = 0;
+  for (const mk2 of many.slice(0, 10)) { const r = await rpc("place_bet", { p_market: mk2.id, p_pick: "no", p_stake: 10 }, C.token); if (r.status < 300) placed++; else if (JSON.stringify(r.body).includes("rate_limited")) limited++; }
+  check("at most 8 bets per minute (one was already placed)", placed === 7 && limited === 3, `(placed ${placed}, limited ${limited})`);
+
   const code = (await rpc("create_group", { p_name: "Amici E2E" }, B.token)).body;
   check("friend group created with a 6-character code", typeof code === "string" && code.length === 6, `(${code})`);
   const outsider = (await rpc("leaderboard", { p_scope: "group", p_key: code }, C.token)).body;
@@ -101,6 +120,13 @@ try {
   const g = (await rpc("leaderboard", { p_scope: "group", p_key: code }, C.token)).body;
   check("members see the group ranking", g.length === 2 && g[0].display_name === "E2E Bruno", JSON.stringify(g.map((r) => r.display_name)));
   check("unknown invite code is rejected", (await rpc("join_group", { p_code: "ZZZZZZ" }, C.token)).status >= 400);
+  // account deletion removes the player and everything attached to it
+  const cId = C.id;
+  const del = await rpc("delete_my_account", {}, C.token);
+  const gone = (await call(`/rest/v1/profiles?id=eq.${cId}&select=id`, { key: SRV })).body;
+  const bets = (await call(`/rest/v1/bets?user_id=eq.${cId}&select=id`, { key: SRV })).body;
+  check("delete_my_account removes profile and bets", del.status < 300 && gone.length === 0 && bets.length === 0, `(status ${del.status})`);
+  check("deleted user can no longer sign in with its token", (await rpc("is_registered", {}, C.token)).status >= 400 || (await rpc("is_registered", {}, C.token)).body === false);
 } finally {
   if (cleanup.market) await call(`/rest/v1/markets?id=eq.${cleanup.market}`, { method: "DELETE", key: SRV });
   for (const id of cleanup.users) await call(`/auth/v1/admin/users/${id}`, { method: "DELETE", key: SRV });

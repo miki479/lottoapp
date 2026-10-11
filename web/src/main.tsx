@@ -1,7 +1,7 @@
 import { render } from "preact";
 import { App } from "./App.tsx";
-import "./fonts.css";
-import "./styles.css";
+import "./tokens.css";
+import "./app.css";
 
 render(<App />, document.getElementById("app")!);
 

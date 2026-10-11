@@ -1,59 +1,90 @@
-import { TROPHY_IDS, type Messages, type TrophyId } from "../i18n/index.ts";
+import { TROPHY_IDS, type Locale, type Messages, type TrophyId } from "../i18n/index.ts";
+import { fmtOdds, question } from "./format.ts";
+import { cityName, cityOf } from "./cities.ts";
+import type { MyBet, MyStats } from "./types.ts";
+import { evidenceLines } from "../components/ResultScreen.tsx";
 
-export const TROPHY_EMOJI: Record<TrophyId, string> = {
-  first_win: "🏁", all_rings: "🎯", long_shot: "🔮", rain_man: "☔", streak_7: "🧘", train_whisperer: "🚆", high_roller: "💎", streak_30: "🏅", ghost_feed: "👻",
-};
+// Colours mirror tokens.css (dark theme) so shared images match the app.
+const C = { bg: "#0f1115", surface: "#181b21", border: "#272c35", text: "#f3f5f8", text2: "#b6bdca", muted: "#8a92a1", brand: "#6b5bff", wonBg: "#173a33", wonFg: "#7ee8bc", lostBg: "#40262a", lostFg: "#fca5a5" };
+const F = (w: number, px: number) => `${w} ${px}px Manrope, system-ui, sans-serif`;
 
-export interface CardData { name: string | null; streak: number; credits: number; rank: number | null; scope: string; trophies: TrophyId[]; season: string }
-
-/** Draws the shareable profile card (1080x1350, made for Reddit and stories) and returns a PNG. */
-export async function makeCard(d: CardData, msg: Messages): Promise<Blob> {
-  await Promise.all(['800 160px "Big Shoulders Display"', '700 40px "Martian Mono"', '400 40px "Schibsted Grotesk"'].map((f) => document.fonts.load(f).catch(() => [])));
-  const W = 1080, H = 1350, c = document.createElement("canvas");
-  c.width = W; c.height = H;
-  const g = c.getContext("2d")!;
-  const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, "#07080d"); bg.addColorStop(1, "#1a0f2e");
-  g.fillStyle = bg; g.fillRect(0, 0, W, H);
-  // glow blobs
-  for (const [x, y, r, col] of [[200, 260, 360, "rgba(240,255,58,.16)"], [900, 980, 420, "rgba(255,45,149,.18)"]] as const) {
-    const rg = g.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, col); rg.addColorStop(1, "transparent"); g.fillStyle = rg; g.fillRect(0, 0, W, H);
+async function fonts() { await Promise.all([F(800, 100), F(600, 40), F(700, 30)].map((f) => document.fonts.load(f).catch(() => []))); }
+function canvas(w: number, h: number) { const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d")!; g.fillStyle = C.bg; g.fillRect(0, 0, w, h); return { c, g }; }
+function wrap(g: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, lh: number, maxLines = 4) {
+  const words = text.split(" "); let line = ""; let n = 0;
+  for (const w of words) {
+    const t = line ? `${line} ${w}` : w;
+    if (g.measureText(t).width > maxW && line) { g.fillText(line, x, y); y += lh; line = w; if (++n >= maxLines - 1) break; } else line = t;
   }
-  g.textBaseline = "alphabetic";
-  g.fillStyle = "#f0ff3a"; g.font = '800 92px "Big Shoulders Display", sans-serif'; g.fillText("LATELOTTO", 72, 140);
-  g.fillStyle = "#8d93a8"; g.font = '400 34px "Martian Mono", monospace'; g.fillText(d.season, 72, 190);
-  if (d.name) { g.fillStyle = "#f2ede0"; g.font = '800 64px "Big Shoulders Display", sans-serif'; g.fillText(d.name.toUpperCase(), 72, 280); }
-  // streak
-  g.font = '800 420px "Big Shoulders Display", sans-serif'; g.fillStyle = "#ff4d62"; g.fillText(String(d.streak), 72, 640);
-  const sw = g.measureText(String(d.streak)).width;
-  g.font = "180px sans-serif"; g.fillText("🔥", 72 + sw + 24, 560);
-  g.fillStyle = "#f2ede0"; g.font = '800 70px "Big Shoulders Display", sans-serif'; g.fillText(msg.missions.streak(d.streak).toUpperCase(), 80, 720);
-  // credits and rank
-  g.fillStyle = "#2ef5b4"; g.font = '800 120px "Big Shoulders Display", sans-serif'; g.fillText(d.credits.toLocaleString(), 72, 880);
-  g.fillStyle = "#8d93a8"; g.font = '400 34px "Martian Mono", monospace'; g.fillText(msg.credits, 72, 925);
-  if (d.rank) {
-    g.fillStyle = "#f0ff3a"; g.font = '800 120px "Big Shoulders Display", sans-serif'; g.fillText(`#${d.rank}`, 620, 880);
-    g.fillStyle = "#8d93a8"; g.font = '400 34px "Martian Mono", monospace'; g.fillText(d.scope, 620, 925);
-  }
-  // trophies
-  g.fillStyle = "#f2ede0"; g.font = '700 36px "Martian Mono", monospace'; g.fillText(msg.missions.trophies.toUpperCase(), 72, 1010);
-  const shown = TROPHY_IDS.filter((id) => d.trophies.includes(id)).slice(0, 4);
-  shown.forEach((id, i) => {
-    const x = 72 + (i % 2) * 480, y = 1050 + Math.floor(i / 2) * 110;
-    g.fillStyle = "rgba(255,255,255,.07)"; g.beginPath(); g.roundRect(x, y, 450, 92, 22); g.fill();
-    g.font = "52px sans-serif"; g.fillStyle = "#fff"; g.fillText(TROPHY_EMOJI[id], x + 18, y + 64);
-    g.fillStyle = "#f2ede0"; g.font = '600 32px "Schibsted Grotesk", sans-serif'; g.fillText(msg.missions.trophy[id].name.slice(0, 22), x + 92, y + 58);
-  });
-  g.fillStyle = "#8d93a8"; g.font = '400 30px "Martian Mono", monospace'; g.fillText(`${msg.disclaimerShort}`, 72, 1300);
-  return new Promise((res) => c.toBlob((b) => res(b!), "image/png"));
+  g.fillText(line, x, y); return y + lh;
+}
+const toBlob = (c: HTMLCanvasElement) => new Promise<Blob>((res) => c.toBlob((b) => res(b!), "image/png"));
+function wordmark(g: CanvasRenderingContext2D) {
+  g.fillStyle = C.brand; g.beginPath(); g.roundRect(72, 72, 64, 64, 18); g.fill();
+  g.strokeStyle = "#fff"; g.lineWidth = 6; g.lineCap = "round"; g.beginPath(); g.arc(104, 104, 18, 0, Math.PI * 2); g.moveTo(104, 94); g.lineTo(104, 104); g.lineTo(112, 110); g.stroke();
+  g.fillStyle = C.text; g.font = F(800, 44); g.textAlign = "left"; g.fillText("Late", 156, 118); const w = g.measureText("Late").width; g.fillStyle = C.brand; g.fillText("Lotto", 156 + w, 118);
 }
 
-export async function shareCard(blob: Blob, msg: Messages): Promise<"shared" | "saved"> {
-  const file = new File([blob], "latelotto-card.png", { type: "image/png" });
+/** 1080x1350 image of one result: soft colour, an icon, the amount, and what was measured. */
+export async function makeResultCard(bet: MyBet, msg: Messages, locale: Locale): Promise<Blob> {
+  await fonts();
+  const { c, g } = canvas(1080, 1350);
+  wordmark(g);
+  const st = bet.status as "won" | "lost" | "void";
+  const [bg, fg] = st === "won" ? [C.wonBg, C.wonFg] : st === "lost" ? [C.lostBg, C.lostFg] : [C.surface, C.text2];
+  g.fillStyle = bg; g.beginPath(); g.arc(540, 360, 120, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = fg; g.lineWidth = 16; g.lineCap = "round"; g.lineJoin = "round"; g.beginPath();
+  if (st === "won") { g.moveTo(490, 365); g.lineTo(528, 402); g.lineTo(595, 322); }
+  else if (st === "lost") { g.moveTo(495, 315); g.lineTo(585, 405); g.moveTo(585, 315); g.lineTo(495, 405); }
+  else { g.arc(540, 360, 44, Math.PI * 0.2, Math.PI * 1.7); g.moveTo(556, 296); g.lineTo(580, 322); g.lineTo(548, 330); }
+  g.stroke();
+  g.textAlign = "center"; g.fillStyle = C.muted; g.font = F(700, 30); g.fillText(msg.result[st].toUpperCase(), 540, 548);
+  g.fillStyle = fg; g.font = F(800, 200);
+  const amount = st === "won" ? msg.result.amountWon(bet.payout - bet.stake) : st === "lost" ? msg.result.amountLost(bet.stake) : msg.result.amountVoid(bet.stake);
+  g.fillText(amount, 540, 730);
+  const m = bet.markets, city = cityOf(m.city_id);
+  g.fillStyle = C.text; g.font = F(600, 42); wrap(g, question(m, msg, locale, cityName(city, locale), city.timezone), 540, 840, 880, 56, 4);
+  g.fillStyle = C.text2; g.font = F(600, 34);
+  evidenceLines(bet, msg).forEach((l, i) => g.fillText(l, 540, 1080 + i * 46));
+  g.fillStyle = C.surface; g.beginPath(); g.roundRect(72, 1170, 936, 96, 24); g.fill();
+  g.fillStyle = C.text2; g.font = F(600, 30); g.textAlign = "left"; g.fillText(`${msg.result.stake}  ${bet.stake}`, 112, 1232); g.textAlign = "right"; g.fillText(`${msg.result.odds}  ${fmtOdds(Number(bet.odds), locale)}`, 968, 1232);
+  g.textAlign = "center"; g.fillStyle = C.muted; g.font = F(600, 26); g.fillText(`${msg.disclaimerShort}`, 540, 1312);
+  return toBlob(c);
+}
+
+/** 1080x1350 profile card: streak, win rate, best win, trophies. */
+export async function makeProfileCard(d: { name: string | null; streak: number; stats: MyStats | null; trophies: TrophyId[] }, msg: Messages): Promise<Blob> {
+  await fonts();
+  const { c, g } = canvas(1080, 1350);
+  wordmark(g);
+  g.textAlign = "left"; g.fillStyle = C.text; g.font = F(800, 64); g.fillText(d.name ?? msg.profile.guest, 72, 260);
+  const settled = (d.stats?.won ?? 0) + (d.stats?.lost ?? 0);
+  const rate = settled ? Math.round(((d.stats?.won ?? 0) / settled) * 100) : null;
+  const tiles: [string, string][] = [[msg.profile.stats.streak, String(d.streak)], [msg.profile.stats.winRate, rate === null ? "—" : `${rate}%`], [msg.profile.stats.best, `+${d.stats?.best_win ?? 0}`], [msg.profile.stats.bets, String(d.stats?.total ?? 0)]];
+  tiles.forEach(([label, val], i) => {
+    const x = 72 + (i % 2) * 480, y = 330 + Math.floor(i / 2) * 270;
+    g.fillStyle = C.surface; g.beginPath(); g.roundRect(x, y, 456, 246, 32); g.fill(); g.strokeStyle = C.border; g.lineWidth = 2; g.stroke();
+    g.fillStyle = C.muted; g.font = F(700, 28); g.textAlign = "left"; g.fillText(label.toUpperCase(), x + 36, y + 64);
+    g.fillStyle = i === 0 ? C.brand : C.text; g.font = F(800, 120); g.fillText(val, x + 36, y + 190);
+  });
+  g.fillStyle = C.muted; g.font = F(700, 28); g.fillText(msg.profile.trophies.toUpperCase(), 72, 940);
+  TROPHY_IDS.filter((t) => d.trophies.includes(t)).slice(0, 4).forEach((id, i) => {
+    const x = 72 + (i % 2) * 480, y = 970 + Math.floor(i / 2) * 100;
+    g.fillStyle = C.surface; g.beginPath(); g.roundRect(x, y, 456, 80, 22); g.fill();
+    g.fillStyle = C.brand; g.beginPath(); g.arc(x + 40, y + 40, 12, 0, Math.PI * 2); g.fill();
+    g.fillStyle = C.text; g.font = F(700, 30); g.fillText(msg.profile.trophy[id].name.slice(0, 24), x + 72, y + 51);
+  });
+  g.textAlign = "center"; g.fillStyle = C.muted; g.font = F(600, 26); g.fillText(msg.disclaimerShort, 540, 1312);
+  return toBlob(c);
+}
+
+export async function shareImage(blob: Blob, title: string, text: string): Promise<"shared" | "saved"> {
+  const file = new File([blob], "latelotto.png", { type: "image/png" });
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
   if (nav.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: msg.missions.share.title, text: msg.missions.share.text }); return "shared"; } catch { /* cancelled: fall through to download */ }
+    try { await navigator.share({ files: [file], title, text }); return "shared"; } catch { /* cancelled: fall through to download */ }
   }
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "latelotto-card.png"; a.click();
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "latelotto.png"; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   return "saved";
 }

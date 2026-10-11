@@ -20,19 +20,3 @@ export function useCountUp(target: number, ms = 700): number {
   }, [target]);
   return shown;
 }
-
-const COLORS = ["#f0ff3a", "#2ef5b4", "#ff4d62", "#ff2d95", "#35d0ff", "#ffb020"];
-/** Fire-and-forget confetti burst from a point (defaults to the middle of the screen). */
-export function confetti(x = innerWidth / 2, y = innerHeight / 2, n = 36) {
-  if (reducedMotion()) return;
-  const host = document.createElement("div");
-  host.className = "confetti";
-  for (let i = 0; i < n; i++) {
-    const s = document.createElement("i");
-    const ang = Math.random() * Math.PI * 2, dist = 80 + Math.random() * 180;
-    s.style.cssText = `left:${x}px;top:${y}px;background:${COLORS[i % COLORS.length]};--dx:${Math.cos(ang) * dist}px;--dy:${Math.sin(ang) * dist - 120}px;--r:${Math.random() * 720 - 360}deg;animation-delay:${Math.random() * 80}ms`;
-    host.appendChild(s);
-  }
-  document.body.appendChild(host);
-  setTimeout(() => host.remove(), 1700);
-}
