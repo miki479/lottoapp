@@ -6,6 +6,7 @@ import { haptic } from "../lib/haptics.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { Pick } from "../lib/types.ts";
 import { JoinStep } from "./JoinStep.tsx";
+import { boostedPayout } from "../../../shared/wallet.ts";
 import { Sheet } from "./Sheet.tsx";
 import { StakeControl } from "./StakeControl.tsx";
 
@@ -61,7 +62,7 @@ export function BetSheet(p: {
         </div>
       )}
       <StakeControl value={amount} onChange={setStake} cap={cap} odds={odds} boost={boost && p.boosts > 0} locale={p.locale} msg={p.msg} />
-      {p.boosts > 0 && <label class={`boosttoggle ${boost ? "on" : ""}`}><input type="checkbox" checked={boost} onChange={(e) => setBoost((e.target as HTMLInputElement).checked)} /><Rocket size={20} /><span><b>{p.msg.boost.toggle}</b> · {p.msg.boost.have(p.boosts)}<small>{p.msg.boost.hint}</small></span></label>}
+      {p.boosts > 0 && <label class={`boosttoggle ${boost ? "on" : ""}`}><input type="checkbox" checked={boost} onChange={(e) => setBoost((e.target as HTMLInputElement).checked)} /><Rocket size={20} /><span><b>{p.msg.boost.toggle}</b> · {p.msg.boost.have(p.boosts)}<small>{p.msg.boost.gain("+" + money(Math.floor(amount * odds) - amount, p.locale), "+" + money(boostedPayout(amount, odds) - amount, p.locale))} · {p.msg.boost.hint}</small></span></label>}
       {err && <p class="formerr" role="alert">{err}</p>}
       <button class="btn primary wide" disabled={busy || !p.ready} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? p.msg.sheet.confirming : `${p.msg.sheet.confirm} · ${money(amount, p.locale)}`}</button>
       <button class="btn secondary wide" onClick={() => { p.onAddSlip(p.m, pick); haptic.tap(); }} disabled={p.inSlip}><Layers size={18} />{p.inSlip ? p.msg.slip.added : p.msg.slip.add}</button>

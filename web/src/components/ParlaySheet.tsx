@@ -6,6 +6,7 @@ import { haptic } from "../lib/haptics.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { SlipLeg } from "../lib/types.ts";
 import { JoinStep } from "./JoinStep.tsx";
+import { boostedPayout } from "../../../shared/wallet.ts";
 import { Sheet } from "./Sheet.tsx";
 import { StakeControl } from "./StakeControl.tsx";
 
@@ -49,7 +50,7 @@ export function ParlaySheet(p: {
       <div class="summary"><span>{m.slip.odds}</span><b class="num pop" key={odds.toFixed(2)} style="color:var(--c-pop)">{fmtOdds(odds, p.locale)}×</b></div>
       {p.legs.length < 2 && <p class="note">{m.slip.need2}</p>}
       <StakeControl value={amount} onChange={setStake} cap={cap} odds={odds} boost={boost && p.boosts > 0} locale={p.locale} msg={m} />
-      {p.boosts > 0 && <label class={`boosttoggle ${boost ? "on" : ""}`}><input type="checkbox" checked={boost} onChange={(e) => setBoost((e.target as HTMLInputElement).checked)} /><Rocket size={20} /><span><b>{m.boost.toggle}</b> · {m.boost.have(p.boosts)}<small>{m.boost.hint}</small></span></label>}
+      {p.boosts > 0 && <label class={`boosttoggle ${boost ? "on" : ""}`}><input type="checkbox" checked={boost} onChange={(e) => setBoost((e.target as HTMLInputElement).checked)} /><Rocket size={20} /><span><b>{m.boost.toggle}</b> · {m.boost.have(p.boosts)}<small>{m.boost.gain("+" + money(Math.floor(amount * odds) - amount, p.locale), "+" + money(boostedPayout(amount, odds) - amount, p.locale))} · {m.boost.hint}</small></span></label>}
       <p class="hint">{m.slip.maxWin}</p>
       {err && <p class="formerr" role="alert">{err}</p>}
       <button class="btn primary wide" disabled={busy || p.legs.length < 2} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? m.sheet.confirming : `${m.slip.confirm} · ${money(amount, p.locale)}`}</button>

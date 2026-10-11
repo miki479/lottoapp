@@ -505,3 +505,21 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 @keyframes sunpulse { 50% { transform: scale(1.08); } }
 @media (prefers-reduced-motion: reduce) { .sky .rain i, .sky .sun i { animation: none !important; } .sky .rain i { opacity: .8; } }
 .sky .skycap { white-space: nowrap; }
+
+/* what-if on bus/train cards: "late" (YES) holds the vehicle back with a delay tag, "on time" (NO) sends it to the destination */
+.scene .delaybadge { position: absolute; left: 50%; top: -14px; transform: translateX(-50%) scale(.6); padding: 1px 6px; border-radius: 8px; background: var(--c-pop); color: #fff; font-size: 11px; font-weight: 800; opacity: 0; transition: opacity 250ms, transform 300ms var(--ease); white-space: nowrap; }
+.scene .dest { transform-origin: 50% 100%; }
+.scene .dest .ping { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; border: 2px solid currentColor; opacity: 0; }
+.scene[data-hint="yes"] .rider { animation: none; opacity: 1; left: calc((100% - var(--w)) * .55); transition: left 700ms var(--ease); }
+.scene[data-hint="yes"] .delaybadge { opacity: 1; transform: translateX(-50%) scale(1); }
+.scene[data-hint="yes"] .done { width: calc((100% - 18px) * .55); }
+.scene[data-hint="yes"] .dest { animation: wobble 900ms ease-in-out infinite; }
+.scene[data-hint="no"] .rider { animation: none; opacity: 1; left: calc(100% - var(--w) - 18px); transition: left 900ms var(--ease); }
+.scene[data-hint="no"] .done { width: calc(100% - 18px); }
+.scene[data-hint="no"] .dest .ping { animation: arrive 900ms ease-out 700ms infinite; }
+@keyframes wobble { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-12deg); } 75% { transform: rotate(10deg); } }
+@keyframes arrive { 0% { opacity: .9; transform: scale(.6); } 100% { opacity: 0; transform: scale(3.2); } }
+@media (prefers-reduced-motion: reduce) { .scene .dest, .scene .dest .ping { animation: none !important; } }
+
+.tabbar .badge.dot, .side .badge.dot { min-width: 10px; width: 10px; height: 10px; padding: 0; background: var(--c-pop); box-shadow: 0 0 0 2px var(--bg); animation: glow 1.8s ease-in-out infinite; }
+.giftcard { display: flex; align-items: center; gap: 12px; margin-bottom: var(--gap); background: linear-gradient(135deg, rgba(255,95,162,.2), rgba(107,91,255,.18)); border-color: var(--c-pop); }

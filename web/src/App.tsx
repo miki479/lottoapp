@@ -71,6 +71,8 @@ export function App() {
   const [offline, setOffline] = useState(!navigator.onLine);
   const [rank, setRank] = useState<{ rank: number | null; scope: string }>({ rank: null, scope: "" });
   const [outlook, setOutlook] = useState<Record<string, number>>({});
+  const [giftDot, setGiftDot] = useState(() => store.get("giftdot") === "1");
+  const [giftCard, setGiftCard] = useState(() => store.get("giftcard") === "1");
   const [quests, setQuests] = useState<QuestRow[]>([]);
   const [rewardsOpen, setRewardsOpen] = useState(false);
   const [pushOn, setPushOn] = useState(false);
@@ -132,7 +134,7 @@ export function App() {
       const code = store.get("ref");
       if (code) { const { data: okRef } = await sb.rpc("redeem_referral", { p_code: code }); store.set("ref", ""); if (okRef) flash(msg.referral.accepted); }
       loadReferral();
-      const { data: gift } = await sb.rpc("claim_welcome_gift"); if (gift) { flash(msg.boost.gift); loadProfile(); haptic.success(); }
+      const { data: gift } = await sb.rpc("claim_welcome_gift"); if (gift) { flash(msg.boost.gift); loadProfile(); haptic.success(); store.set("giftdot", "1"); store.set("giftcard", "1"); setGiftDot(true); setGiftCard(true); }
     }
     const { data: need } = await sb.rpc("registration_required"); setNeedSignup(!!need);
     setReady(true);
@@ -306,12 +308,12 @@ export function App() {
     await bootstrap(); flash(msg.profile.delete.done);
   };
   const changeLocale = (l: Locale) => { store.set("locale", l); setLocale(l); };
-  const go = (s: Screen) => { setScreen(s); scrollTo({ top: 0 }); haptic.tap(); };
+  const go = (s: Screen) => { if (s === "profile" && giftDot) { store.set("giftdot", "0"); setGiftDot(false); } setScreen(s); scrollTo({ top: 0 }); haptic.tap(); };
   const openBets = bets.filter((b) => b.status === "open").length;
 
   return (
     <div class="shell">
-      <Sidebar value={screen} onPick={go} msg={msg} openBets={openBets} />
+      <Sidebar value={screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} />
       <div>
         <Header claimable={claimable} onWallet={() => setRewardsOpen(true)} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} wallet={profile ? new Intl.NumberFormat(INTL_TAG[locale]).format(Math.round(wallet)) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
         <Ticker items={tickerItems} />
@@ -321,10 +323,10 @@ export function App() {
           {screen === "home" && <Home msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "ranking" && <Ranking msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
-          {screen === "profile" && <ProfileView push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, setPrefs: async (f: boolean, s: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
+          {screen === "profile" && <ProfileView giftCard={giftCard} onGiftSeen={() => { store.set("giftcard", "0"); setGiftCard(false); }} push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, setPrefs: async (f: boolean, s: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
         </main>
       </div>
-      <TabBar value={screen} onPick={go} msg={msg} openBets={openBets} />
+      <TabBar value={screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} />
 
       {rewardsOpen && <RewardsSheet msg={msg} locale={locale} now={now} profile={profile} quests={quests} referral={referral} registered={registered} onClaim={claimQuest} onGo={goQuest} onShare={shareReferral} onClose={() => setRewardsOpen(false)} />}
       {askPush && <PushAsk lifted={slip.length > 0} msg={msg} onYes={() => turnPush(true)} onNo={() => { rememberPush(false); setAskPush(false); }} />}

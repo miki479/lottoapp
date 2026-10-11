@@ -31,7 +31,7 @@ export interface Messages {
   voice: { on: string; off: string; placed: (win: string) => string; won: (amount: string) => string; lost: string; flash: string; label: string };
   ladder: { title: string; sub: (min: number) => string; estimate: string; chip: string };
   push: { flashPref: string; streakPref: string; prefsHint: string; title: string; body: string; enable: string; disable: string; on: string; off: string; denied: string; later: string; askTitle: string; askBody: string; yes: string };
-  boost: { title: string; toggle: string; hint: string; have: (n: number) => string; none: string; gift: string; explain: string };
+  boost: { gain: (from: string, to: string) => string; title: string; toggle: string; hint: string; have: (n: number) => string; none: string; gift: string; explain: string };
   rewards: { title: string; subtitle: string; daily: string; dailyReset: (t: string) => string; once: string; claim: (amount: string) => string; claimed: string; go: string; invite: string; inviteBody: (amount: string, max: number) => string; invited: (n: number, max: number) => string; allDone: string; streakRisk: (n: number) => string; open: string; quest: Record<string, { t: string; d: string }> };
   weather: { clear: string; light: string; heavy: string };
   top: { late: string; popular: string; city: string; closing: string; avg: (min: number) => string; players: (n: number) => string; ontime: string; open: string };

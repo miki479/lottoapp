@@ -13,7 +13,7 @@ import { INTL_TAG } from "../i18n/index.ts";
 const TROPHY_ICON: Record<TrophyId, LucideIcon> = { first_win: Sparkles, all_rings: Target, long_shot: Telescope, rain_man: Umbrella, streak_7: CalendarCheck, train_whisperer: TrainFront, high_roller: Gem, streak_30: Medal, ghost_feed: Ghost };
 
 export function ProfileView(p: {
-  push: { on: boolean; denied: boolean; toggle: () => void; flash: boolean; streak: boolean; setPrefs: (f: boolean, s: boolean) => void } | null; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
+  giftCard: boolean; onGiftSeen: () => void; push: { on: boolean; denied: boolean; toggle: () => void; flash: boolean; streak: boolean; setPrefs: (f: boolean, s: boolean) => void } | null; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
   onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => void; onDelete: () => Promise<void>; sources: { name: string; via?: string; license: string; licenseUrl: string; url: string }[];
 }) {
   const m = p.msg.profile;
@@ -31,6 +31,13 @@ export function ProfileView(p: {
   return (
     <div class="screen stack">
       <h1>{m.title}</h1>
+      {p.giftCard && (
+        <section class="card giftcard">
+          <span class="refico"><Gift size={22} /></span>
+          <div style="flex:1"><b>{p.msg.boost.gift}</b><p class="hint">{p.msg.boost.explain}</p></div>
+          <button class="btn primary" onClick={p.onGiftSeen}>OK</button>
+        </section>
+      )}
       <div class="profile-grid">
         <div class="stack">
           <section class="card stack">

@@ -40,10 +40,11 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
     <article class={`card event ${m.category} ${p.top ? "is-top" : ""} ${flashOn ? "is-flash" : ""}`} style={`--i:${Math.min(p.index, 10)}`}>
       {(p.top || flashOn || p.hasLadder || left < 300_000) && <div class="badges">{p.hasLadder && <span class="badge-sorry"><Megaphone size={13} />{msg.ladder.chip}</span>}{flashOn && <span class="badge-flash"><Zap size={13} fill="currentColor" />FLASH ×{m.flash_multiplier} · {countdown(Date.parse(m.flash_until!) - now)}</span>}{p.top && <span class="badge-top"><Star size={13} fill="currentColor" />{msg.card.topOdds}</span>}{left < 300_000 && <span class="badge-hot"><Zap size={13} fill="currentColor" />{msg.card.hot}</span>}</div>}
       {m.category === "weather" ? <Sky mm={p.mm} hint={hint} msg={msg} /> : (
-      <div class={`scene ${m.category}`} aria-hidden="true" style={`--p:${progress.toFixed(4)};--w:${w}px;--cyc:${cyc}s;--off:-${off}s`}>
-        <span class="road" /><span class="done" /><span class="dest"><MapPin size={16} /></span>
+      <div class={`scene ${m.category}`} aria-hidden="true" data-hint={hint ?? ""} style={`--p:${progress.toFixed(4)};--w:${w}px;--cyc:${cyc}s;--off:-${off}s`}>
+        <span class="road" /><span class="done" /><span class="dest"><MapPin size={16} /><i class="ping" /></span>
         <span class="rider">
           {Array.from({ length: puffs }, (_, i) => <i key={i} class="puff" style={`--t:${(2.6 - puffs * 0.2).toFixed(2)}s;animation-delay:${-(i * (2.6 - puffs * 0.2)) / puffs}s;top:${3 + (i % 3) * 5}px`} />)}
+          <b class="delaybadge">+{Math.round(Number(m.params.thresholdSec ?? 180) / 60)}′</b>
           <Kind size={iconH} />
           
         </span>

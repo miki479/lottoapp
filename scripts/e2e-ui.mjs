@@ -28,6 +28,8 @@ try {
   await page.locator(".joinform .btn.primary").click();
   await page.waitForSelector(".toast", { timeout: 15000 });
   check("bet placed right after signing up", /Puntata registrata/.test((await toast()).join(" ")), JSON.stringify(await toast()));
+  await page.waitForTimeout(3000);
+  check("a dot on the Profile tab points at the welcome gift", (await page.locator(".tabbar .badge.dot").count()) === 1);
   check("balance debited", /9\d\d|950/.test(await page.locator(".wallet").innerText()), await page.locator(".wallet").innerText());
 
   // parlay
@@ -44,6 +46,7 @@ try {
   await page.locator(".tabbar").getByText("Le mie puntate").click(); await page.waitForTimeout(1200);
   check("my bets lists the bet and the parlay", (await page.locator(".card.bet").count()) >= 2);
   await page.locator(".tabbar").getByText("Profilo").click(); await page.waitForTimeout(1500);
+  check("profile shows the gift card and the dot is gone", (await page.locator(".giftcard").count()) === 1 && (await page.locator(".tabbar .badge.dot").count()) === 0);
   check("profile shows streak, missions and invite code", (await page.locator(".streakcard").count()) === 1 && (await page.locator(".refcode b").count()) === 1);
 
   // delete the account (dismiss the one-time notifications question first, it sits above the page)
