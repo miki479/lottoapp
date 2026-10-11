@@ -13,6 +13,9 @@ const rpc = (fn, args, token) => call(`/rest/v1/rpc/${fn}`, { method: "POST", bo
 let failed = 0;
 const check = (name, ok, extra = "") => { console.log(`${ok ? "OK  " : "FAIL"} ${name} ${extra}`); if (!ok) failed++; };
 const cleanup = { users: [], market: null };
+// Registration is required to bet in production: switch the rule off for this run (guests play here) and put it back at the end.
+const ruleBefore = ((await call("/rest/v1/app_settings?key=eq.registration_required&select=value", { key: SRV })).body[0] ?? {}).value ?? "false";
+await call("/rest/v1/app_settings?key=eq.registration_required", { method: "PATCH", key: SRV, body: { value: "false" } });
 
 async function guest() {
   const r = await call("/auth/v1/signup", { method: "POST", body: {} });
@@ -130,6 +133,7 @@ try {
 } finally {
   if (cleanup.market) await call(`/rest/v1/markets?id=eq.${cleanup.market}`, { method: "DELETE", key: SRV });
   for (const id of cleanup.users) await call(`/auth/v1/admin/users/${id}`, { method: "DELETE", key: SRV });
+  await call("/rest/v1/app_settings?key=eq.registration_required", { method: "PATCH", key: SRV, body: { value: ruleBefore } });
   console.log(`cleanup: ${cleanup.users.length} users, ${cleanup.market ? 1 : 0} test market`);
 }
 process.exit(failed ? 1 : 0);

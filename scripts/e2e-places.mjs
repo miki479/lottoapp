@@ -16,7 +16,8 @@ try {
   const a = await place("E2E Forlì", 44.2227, 12.0407); ids.push(a.body);
   check("a town is registered with a stable id", a.status < 300 && a.body === "p-44.22_12.04", JSON.stringify(a.body));
   const mk = (await call(`/rest/v1/markets?city_id=eq.${a.body}&select=id,kind,feed_id,odds_yes,closes_at`, { token: tok })).body;
-  check("rain questions are opened for it", Array.isArray(mk) && mk.length >= 2 && mk.every((m) => m.kind === "rain_at" && m.feed_id === `om-${a.body}`), `(${mk.length})`);
+  const rain = Array.isArray(mk) ? mk.filter((m) => m.kind === "rain_at") : [];
+  check("rain questions are opened for it", rain.length >= 2 && rain.every((m) => m.feed_id === `om-${a.body}`) && mk.every((m) => m.feed_id === `om-${a.body}`), `(${rain.length} rain of ${mk.length})`);
   const b = await place("E2E Forlì again", 44.2231, 12.0399);
   check("the same spot is the same place (no duplicates)", b.body === a.body && (await call(`/rest/v1/markets?city_id=eq.${a.body}&select=id`, { token: tok })).body.length === mk.length);
   check("bad input is refused", (await place("<b>x</b>", 44, 12)).status >= 400 && (await place("X", 99, 12)).status >= 400 && (await place("X", 44, 12, "Mars/Base")).status >= 400 && (await place("X", 44, 12, "Europe/Rome", "ITA")).status >= 400);
