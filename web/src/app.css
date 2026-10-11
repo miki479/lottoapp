@@ -598,14 +598,18 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .cc { font-size: 13px; } .cc span:last-of-type { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (prefers-reduced-motion: no-preference) { .cc.nature:not(:disabled):hover .ico svg, .cc.pop.nature .ico svg { animation: quakeshake 600ms ease-in-out 1; } }
 
-/* earthquake scene: the land splits along a black crack and closes again */
-.quakescene { position: relative; border-radius: var(--radius-md, 14px); overflow: hidden; background: var(--surface-2); }
+/* earthquake scene: skyscrapers sway while "yes" is held and settle slowly afterwards */
+.quakescene { position: relative; border-radius: var(--radius-md, 14px); overflow: hidden; background: #2a1a3a; }
 .quakescene svg { display: block; width: 100%; height: 110px; }
 .quakescene b { position: absolute; left: 10px; top: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.85); color: #222; font-size: 12px; }
-.quakescene .qh { transition: transform .45s cubic-bezier(.2,.8,.2,1); }
-.quakescene.split .ql { transform: translate(-12px, -2px) rotate(-1deg); }
-.quakescene.split .qr { transform: translate(12px, 5px) rotate(1.2deg); }
-.quakescene .qh { transform-origin: 160px 100px; }
-.quakescene.split svg { animation: quakejolt .4s ease-out 1; }
-@keyframes quakejolt { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-2px,1px); } 40% { transform: translate(2px,-1px); } 60% { transform: translate(-1px,0); } 80% { transform: translate(1px,1px); } }
-@media (prefers-reduced-motion: reduce) { .quakescene .qh { transition: none; } .quakescene.split svg { animation: none; } }
+@property --amp { syntax: "<number>"; inherits: true; initial-value: 0; }
+.quakescene { --amp: 0; transition: --amp 2.6s ease-in; }
+.quakescene.shake { --amp: 1; }
+.quakescene.settle { --amp: 0; transition: --amp 3.4s ease-out; }
+.quakescene .tw { transform-box: fill-box; transform-origin: 50% 100%; }
+/* a rolling wave runs through the skyline (each tower is a little behind the one before), with a fast tremor on top */
+.quakescene.shake .tw, .quakescene.settle .tw { animation: towersway .95s ease-in-out var(--o) infinite alternate; }
+.quakescene.shake svg, .quakescene.settle svg { animation: quaketremor .11s linear infinite alternate; }
+@keyframes towersway { from { transform: rotate(calc(var(--a) * var(--amp) * -1.6deg)); } to { transform: rotate(calc(var(--a) * var(--amp) * 1.6deg)); } }
+@keyframes quaketremor { from { transform: translate(calc(var(--amp) * -1.6px), calc(var(--amp) * .6px)); } to { transform: translate(calc(var(--amp) * 1.6px), calc(var(--amp) * -.6px)); } }
+@media (prefers-reduced-motion: reduce) { .quakescene .tw, .quakescene svg { animation: none !important; } }

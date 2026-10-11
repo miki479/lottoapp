@@ -1,43 +1,42 @@
 import { CloudFog, Snowflake, Sun, Thermometer, Wind } from "lucide-preact";
-import { useRef } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import type { MarketRow } from "../lib/format.ts";
 import type { Messages } from "../i18n/index.ts";
 
-let uid = 0;
-/** Crack line shared by both halves, running across the road and down the soil. */
-const CRACK = "160,34 168,46 154,58 166,70 152,82 164,94 158,104";
-/** Outline of the whole slab: it is the black "hole" that shows when the halves move apart. */
-const SLAB = "22,36 298,36 316,66 316,102 4,102 4,66";
+/** Skyline: [x, width, height] of each tower. */
+const TOWERS: [number, number, number][] = [[6, 26, 50], [30, 22, 70], [52, 30, 42], [80, 20, 80], [98, 34, 58], [130, 24, 94], [152, 28, 54], [178, 22, 76], [198, 34, 46], [230, 24, 86], [252, 28, 60], [278, 22, 72], [298, 24, 48]];
 
 /**
- * A slab of land with a road across it. While "yes" is hovered or pressed it tears along a black crack
- * (the right half sinks a little); when the pointer leaves, the two halves slide back together.
+ * Black skyscrapers against a sunset. Hovering or pressing "yes" makes the quake build up and the towers sway;
+ * the tremor builds up gradually as a rolling wave; moving to "no" (or away) lets it die down slowly.
  */
 function QuakeScene({ hint, label }: { hint?: "yes" | "no" | null; label: string }) {
-  const id = useRef(`q${++uid}`).current;
-  const scene = (
-    <>
-      <polygon points="22,36 298,36 316,66 4,66" fill="#7bb661" />
-      <polygon points="38,44 282,44 298,58 22,58" fill="#4b4e57" />
-      <path d="M44 51 H66 M84 51 H106 M124 51 H146 M174 51 H196 M214 51 H236 M254 51 H276" stroke="#ffd45e" stroke-width="2.200" stroke-linecap="round" />
-      <path d="M38 44 L282 44 M22 58 L298 58" stroke="#e9eef5" stroke-width="1.200" opacity=".7" />
-      <rect x="4" y="66" width="312" height="36" fill="#9a6a42" />
-      <rect x="4" y="66" width="312" height="5" fill="#5f9c4b" />
-      <path d="M4 82 H316" stroke="#845630" stroke-width="2" /><path d="M4 92 H316" stroke="#6b4425" stroke-width="2" />
-      <g fill="#b9a58c"><circle cx="40" cy="78" r="3" /><circle cx="92" cy="88" r="3.500" /><circle cx="224" cy="80" r="3" /><circle cx="272" cy="90" r="3.500" /><circle cx="130" cy="97" r="2.500" /></g>
-    </>
-  );
+  const [phase, setPhase] = useState<"idle" | "shake" | "settle">("idle");
+  useEffect(() => {
+    if (hint === "yes") { setPhase("shake"); return; }
+    setPhase((p) => (p === "shake" ? "settle" : p));
+  }, [hint]);
+  useEffect(() => {
+    if (phase !== "settle") return;
+    const t = setTimeout(() => setPhase("idle"), 3600);
+    return () => clearTimeout(t);
+  }, [phase]);
   return (
-    <div class={`quakescene ${hint === "yes" ? "split" : ""}`} aria-hidden="true">
-      <svg viewBox="0 0 320 110">
-        <defs>
-          <clipPath id={`${id}l`}><polygon points={`0,0 ${CRACK} 0,110`} /></clipPath>
-          <clipPath id={`${id}r`}><polygon points={`${CRACK} 320,110 320,0`} /></clipPath>
-        </defs>
-        <ellipse cx="160" cy="104" rx="150" ry="4" fill="rgba(0,0,0,.18)" />
-        <polygon points={SLAB} fill="#0a0a0c" />
-        <g class="qh ql" clip-path={`url(#${id}l)`}>{scene}</g>
-        <g class="qh qr" clip-path={`url(#${id}r)`}>{scene}</g>
+    <div class={`quakescene ${phase}`} aria-hidden="true">
+      <svg viewBox="0 0 320 110" preserveAspectRatio="xMidYMax slice">
+        <defs><linearGradient id="qsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a3a8a" /><stop offset=".45" stop-color="#e2557c" /><stop offset=".8" stop-color="#ffae57" /><stop offset="1" stop-color="#ffe29a" /></linearGradient></defs>
+        <rect width="320" height="110" fill="url(#qsky)" />
+        <circle cx="206" cy="92" r="28" fill="#fff1b8" opacity=".95" />
+        <g class="towers">
+          {TOWERS.map(([x, w, h], k) => (
+            <g key={x} class="tw" style={`--a:${(0.8 + (k % 4) * 0.35).toFixed(2)};--o:${(-k * 0.11).toFixed(2)}s`}>
+              <rect x={x} y={104 - h} width={w} height={h + 6} fill="#0c0b12" />
+              {h > 85 && <rect x={x + w / 2 - 1} y={104 - h - 12} width="2" height="12" fill="#0c0b12" />}
+              {Array.from({ length: Math.floor(h / 14) }, (_, r) => ((k * 7 + r * 5) % 4 === 0 ? <rect key={r} x={x + 4 + ((k + r) % 2) * (w / 2)} y={104 - h + 6 + r * 14} width="3" height="4" fill="#ffd27a" opacity=".85" /> : null))}
+            </g>
+          ))}
+        </g>
+        <rect y="104" width="320" height="6" fill="#0c0b12" />
       </svg>
       <b>{label}</b>
     </div>
