@@ -1,0 +1,84 @@
+{
+  "id": "zurich",
+  "country": "CH",
+  "name": {
+    "it": "Zurigo",
+    "en-US": "Zurich",
+    "en-GB": "Zurich",
+    "ja": "チューリッヒ"
+  },
+  "timezone": "Europe/Zurich",
+  "defaultLocale": "en-GB",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 47.3769,
+    "lon": 8.5417
+  },
+  "categories": {
+    "bus": {
+      "enabled": false
+    },
+    "train": {
+      "enabled": true
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "ch-gtfsrt",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://api.opentransportdata.swiss/la/gtfs-rt",
+      "requiresKey": "SWISS_GTFSRT_KEY",
+      "keyIn": "header",
+      "keyHeader": "Authorization",
+      "keyPrefix": "Bearer ",
+      "pollSeconds": 120,
+      "staleAfterSeconds": 480,
+      "routeTypes": [
+        100,
+        101,
+        102,
+        103,
+        106,
+        109
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "opentransportdata.swiss (SBB, Open data platform mobility Switzerland)",
+        "license": "Conditions of Use (read 2026-10-11): free; cite opentransportdata.swiss as the source; respect the request limit; processed data published under the user's name",
+        "licenseUrl": "https://opentransportdata.swiss/en/terms-of-use/",
+        "url": "https://opentransportdata.swiss/"
+      },
+      "staticGtfsUrl": "https://data.opentransportdata.swiss/en/dataset/timetable-2026-gtfs2020/permalink",
+      "note": "API key via the SWISS_GTFSRT_KEY secret (sent as Authorization: Bearer). Plan limit 5 calls/minute: we poll every 120 s. The static timetable is ~290 MB; the generator streams it."
+    },
+    {
+      "id": "open-meteo-zurich",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}
