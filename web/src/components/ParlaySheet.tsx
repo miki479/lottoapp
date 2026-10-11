@@ -5,7 +5,7 @@ import { fmtOdds, money, question } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { SlipLeg } from "../lib/types.ts";
-import { JoinForm } from "./JoinForm.tsx";
+import { JoinStep } from "./JoinStep.tsx";
 import { Sheet } from "./Sheet.tsx";
 import { StakeControl } from "./StakeControl.tsx";
 
@@ -18,6 +18,7 @@ export function ParlaySheet(p: {
   const [stake, setStake] = useState(50);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [joining, setJoining] = useState(false);
   const odds = slipOdds(p.legs);
   const cap = p.credits >= 10 ? Math.min(500, Math.floor(p.credits)) : 500;
   const amount = Math.min(stake, cap);
@@ -27,6 +28,7 @@ export function ParlaySheet(p: {
     const out = await p.onPlace(p.legs, amount);
     if (out) { setErr(out); setBusy(false); haptic.error(); } else haptic.success();
   };
+  if (joining) return <JoinStep msg={m} locale={p.locale} googleOn={p.googleOn} stakeLabel={money(amount, p.locale)} onBack={() => setJoining(false)} onClose={p.onClose} onJoined={place} />;
   return (
     <Sheet onClose={p.onClose} label={m.slip.title}>
       <div class="shead"><h2>{m.slip.title} <small class="hint">{m.slip.legs(p.legs.length)}</small></h2><button class="iconbtn" onClick={p.onClose} aria-label={m.common.close}><X size={22} /></button></div>
@@ -48,9 +50,7 @@ export function ParlaySheet(p: {
       <StakeControl value={amount} onChange={setStake} cap={cap} odds={odds} locale={p.locale} msg={m} />
       <p class="hint">{m.slip.maxWin}</p>
       {err && <p class="formerr" role="alert">{err}</p>}
-      {p.needJoin
-        ? <JoinForm msg={m} locale={p.locale} googleOn={p.googleOn} stakeLabel={money(amount, p.locale)} onJoined={place} />
-        : <button class="btn primary wide" disabled={busy || p.legs.length < 2} onClick={place}>{busy ? m.sheet.confirming : `${m.slip.confirm} · ${money(amount, p.locale)}`}</button>}
+      <button class="btn primary wide" disabled={busy || p.legs.length < 2} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? m.sheet.confirming : `${m.slip.confirm} · ${money(amount, p.locale)}`}</button>
       <button class="btn secondary wide" onClick={p.onClear}>{m.slip.clear}</button>
     </Sheet>
   );
