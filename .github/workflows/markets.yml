@@ -1,0 +1,32 @@
+# Creates the bettable events for today and tomorrow. Safe to re-run: duplicates are skipped.
+# Needs repository secrets SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.
+name: Generate markets
+on:
+  schedule:
+    - cron: "17 */6 * * *"     # Tokyo buses + weather for every city
+    - cron: "41 2 * * *"       # Dutch trains: once a day (the timetable is 259 MB, be gentle with OVapi)
+  workflow_dispatch:
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: node scripts/sync-cities.mjs
+      - name: Weather (all cities)
+        if: github.event.schedule != '41 2 * * *'
+        run: |
+          for c in tokyo rome amsterdam; do node scripts/generate-markets.mjs --city $c --weather --apply; done
+      - name: Tokyo buses
+        if: github.event.schedule != '41 2 * * *'
+        run: node scripts/generate-markets.mjs --city tokyo --feed toei-bus-vehicle --max 30 --apply
+      - name: Dutch trains
+        if: github.event.schedule == '41 2 * * *' || github.event_name == 'workflow_dispatch'
+        run: node scripts/generate-markets.mjs --city amsterdam --feed nl-train-update --max 30 --apply

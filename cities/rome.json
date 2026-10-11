@@ -1,0 +1,82 @@
+{
+  "id": "rome",
+  "country": "IT",
+  "name": {
+    "it": "Roma",
+    "en-US": "Rome",
+    "en-GB": "Rome",
+    "ja": "ローマ"
+  },
+  "timezone": "Europe/Rome",
+  "defaultLocale": "it",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 41.9028,
+    "lon": 12.4964
+  },
+  "categories": {
+    "bus": {
+      "enabled": false
+    },
+    "train": {
+      "enabled": false
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "rome-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://romamobilita.it/sites/default/files/rome_rtgtfs_trip_updates_feed.pb",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        0,
+        3
+      ],
+      "licenseVerified": false,
+      "attribution": {
+        "name": "Roma Servizi per la Mobilità (dati ATAC e Roma TPL)",
+        "license": "Nessuna licenza aperta: la pagina open data limita l'uso a supporto del viaggio",
+        "licenseUrl": "https://romamobilita.it/sistemi-e-tecnologie/open-data/",
+        "url": "https://romamobilita.it/"
+      },
+      "staticGtfsUrl": "https://romamobilita.it/sites/default/files/rome_static_gtfs.zip",
+      "note": "Read 2026-10-11: the page states the data may be used 'esclusivamente a titolo di supporto al viaggio' and reserves action against improper use. Not usable for a game without written permission from Roma Servizi per la Mobilità."
+    },
+    {
+      "id": "open-meteo-rome",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": [
+    {
+      "id": "viaggiatreno",
+      "note": "Italian trains (Trenitalia/RFI). Only an UNOFFICIAL API exists (ViaggiaTreno): no licence, no documented terms, and it answered 'Access Denied' to datacenter requests in Phase 0 tests. Do not enable without written permission or an official feed."
+    }
+  ]
+}
