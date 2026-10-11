@@ -22,6 +22,8 @@ export interface FeedConfig {
   pollSeconds: number;
   staleAfterSeconds: number;
   delaySemantics?: "last_passed_stop";
+  /** For per-train APIs without a static timetable (ViaggiaTreno): station codes whose departures seed the markets. */
+  stations?: string[];
   /** Only route types to build markets from (GTFS route_type, e.g. 2 = rail, 3 = bus). */
   routeTypes?: number[];
   /**

@@ -23,7 +23,7 @@
       "enabled": false
     },
     "train": {
-      "enabled": false
+      "enabled": true
     },
     "weather": {
       "enabled": true
@@ -57,6 +57,33 @@
       "note": "Read 2026-10-11: the page states the data may be used 'esclusivamente a titolo di supporto al viaggio' and reserves action against improper use. Not usable for a game without written permission from Roma Servizi per la Mobilità."
     },
     {
+      "id": "it-train-viaggiatreno",
+      "category": "train",
+      "type": "viaggiatreno",
+      "url": "https://www.viaggiatreno.it/infomobilitamobile/resteasy/viaggiatreno",
+      "requiresKey": null,
+      "pollSeconds": 120,
+      "staleAfterSeconds": 600,
+      "licenseVerified": false,
+      "attribution": {
+        "name": "ViaggiaTreno (Trenitalia / RFI)",
+        "license": "Nessuna licenza: API non ufficiale e non documentata",
+        "licenseUrl": "http://www.viaggiatreno.it/",
+        "url": "http://www.viaggiatreno.it/"
+      },
+      "note": "Unofficial API, no licence. Answers 'Access Denied' to datacenter IPs (re-tested 2026-10-12). Do not enable (licenseVerified, categories.train) without written permission from Trenitalia/RFI. Markets for it also need a train-list source (see docs).",
+      "stations": [
+        "S08409",
+        "S08217",
+        "S01700",
+        "S09218",
+        "S06421",
+        "S05043",
+        "S00219",
+        "S02593"
+      ]
+    },
+    {
       "id": "open-meteo-rome",
       "category": "weather",
       "type": "open-meteo",
@@ -71,12 +98,6 @@
         "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
         "url": "https://open-meteo.com/"
       }
-    }
-  ],
-  "futureFeeds": [
-    {
-      "id": "viaggiatreno",
-      "note": "Italian trains (Trenitalia/RFI). Only an UNOFFICIAL API exists (ViaggiaTreno): no licence, no documented terms, and it answered 'Access Denied' to datacenter requests in Phase 0 tests. Do not enable without written permission or an official feed."
     }
   ]
 }

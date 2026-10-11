@@ -30,3 +30,10 @@ jobs:
       - name: Dutch trains
         if: github.event.schedule == '41 2 * * *' || github.event_name == 'workflow_dispatch'
         run: node scripts/generate-markets.mjs --city amsterdam --feed nl-train-update --max 30 --apply
+      - name: Italian trains (unlicensed feed, needs ALLOW_UNVERIFIED_FEEDS and a reachable IP)
+        if: vars.ENABLE_VIAGGIATRENO == '1' && (github.event.schedule != '41 2 * * *')
+        continue-on-error: true
+        env:
+          VIAGGIATRENO_BASE_URL: ${{ secrets.VIAGGIATRENO_BASE_URL }}
+          RELAY_SECRET: ${{ secrets.RELAY_SECRET }}
+        run: node scripts/generate-markets.mjs --city rome --feed it-train-viaggiatreno --max 30 --apply
