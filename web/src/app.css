@@ -487,12 +487,12 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .switchrow input { width: 22px; height: 22px; accent-color: var(--brand); }
 
 /* ---------- the sky on rain cards ---------- */
-.sky { position: relative; height: 62px; margin: -2px 0 -2px; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #5fb4ff 0%, #bfe3ff 100%); transition: background 600ms var(--ease); }
+.sky { position: relative; height: 62px; margin: -2px 0 -2px; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #3a9bf0 0%, #8cc8fb 100%); transition: background 600ms var(--ease); }
 .sky.light { background: linear-gradient(180deg, #7f93b8 0%, #b4c3dc 100%); } .sky.heavy { background: linear-gradient(180deg, #38405a 0%, #6a7694 100%); }
 .sky .sun { position: absolute; right: 18px; top: 8px; width: 30px; height: 30px; transition: opacity 500ms, transform 700ms var(--ease); }
 .sky .sun i { position: absolute; inset: 0; border-radius: 50%; background: #ffd23f; box-shadow: 0 0 0 6px rgba(255, 210, 63, .3), 0 0 22px 8px rgba(255, 210, 63, .55); animation: sunpulse 3s ease-in-out infinite; }
 .sky:not(.clear) .sun { opacity: 0; transform: translateY(-18px) scale(.7); }
-.sky .cl { position: absolute; height: 22px; width: 56px; border-radius: 22px; background: #eef4ff; box-shadow: 18px -8px 0 -2px #eef4ff, -14px 2px 0 -6px #eef4ff; opacity: 0; transform: translateX(-30px); transition: opacity 600ms, transform 800ms var(--ease), background 600ms; }
+.sky .cl { position: absolute; height: 22px; width: 56px; border-radius: 22px; background: #fff; box-shadow: 18px -8px 0 -2px #fff, -14px 2px 0 -6px #fff; filter: drop-shadow(0 2px 2px rgba(30, 70, 140, .35)); opacity: 0; transform: translateX(-30px); transition: opacity 600ms, transform 800ms var(--ease), background 600ms; }
 .sky .c1 { left: 24%; top: 12px; } .sky .c2 { left: 58%; top: 20px; transform: translateX(30px); width: 44px; }
 .sky.light .cl, .sky.heavy .cl { opacity: 1; transform: none; } .sky.light .cl { background: #dbe4f3; box-shadow: 18px -8px 0 -2px #dbe4f3, -14px 2px 0 -6px #dbe4f3; }
 .sky.heavy .cl { background: #596480; box-shadow: 18px -8px 0 -2px #596480, -14px 2px 0 -6px #596480; }
@@ -597,3 +597,14 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .cc.nature { --cat: #b0562e; --cat-soft: color-mix(in srgb, #b0562e 12%, var(--surface)); }
 .cc { font-size: 13px; } .cc span:last-of-type { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (prefers-reduced-motion: no-preference) { .cc.nature:not(:disabled):hover .ico svg, .cc.pop.nature .ico svg { animation: quakeshake 600ms ease-in-out 1; } }
+
+/* earthquake scene: the land splits along a black crack and closes again */
+.quakescene { position: relative; border-radius: var(--radius-md, 14px); overflow: hidden; background: #0a0a0c; }
+.quakescene svg { display: block; width: 100%; height: 110px; }
+.quakescene b { position: absolute; left: 10px; bottom: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.85); color: #222; font-size: 12px; }
+.quakescene .qh { transition: transform .45s cubic-bezier(.2,.8,.2,1); }
+.quakescene.split .ql { transform: translate(-7px, -1px); }
+.quakescene.split .qr { transform: translate(7px, 3px); }
+.quakescene.split svg { animation: quakejolt .4s ease-out 1; }
+@keyframes quakejolt { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-2px,1px); } 40% { transform: translate(2px,-1px); } 60% { transform: translate(-1px,0); } 80% { transform: translate(1px,1px); } }
+@media (prefers-reduced-motion: reduce) { .quakescene .qh { transition: none; } .quakescene.split svg { animation: none; } }

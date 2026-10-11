@@ -37,11 +37,11 @@ export function CloudRainSide(p: P) {
   const h = p.size ?? 24;
   return (
     <svg width={h * 1.7} height={h} viewBox="0 0 34 20" overflow="visible" class={p.class} style={p.style} aria-hidden="true">
-      <g fill="#cfe0ff">
+      <g fill="#ffffff" style="filter:drop-shadow(0 0 .9px #3f66c0) drop-shadow(0 1px 1.2px rgba(63,102,192,.45))">
         <circle cx="10" cy="11.500" r="5" /><circle cx="17" cy="8" r="6.500" /><circle cx="24.500" cy="11" r="5" />
         <rect x="10" y="11" width="14.500" height="5.500" rx="2.700" />
       </g>
-      <path d="M10 17.800l-1 2M16 17.800l-1 2M22 17.800l-1 2" stroke="#5b8cff" stroke-width="1.700" stroke-linecap="round" />
+      <path d="M10 17.800l-1 2M16 17.800l-1 2M22 17.800l-1 2" stroke="#3f66c0" stroke-width="1.800" stroke-linecap="round" />
     </svg>
   );
 }
