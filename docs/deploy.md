@@ -14,7 +14,7 @@
 ## 2. GitHub
 - Repository secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (used by `.github/workflows/markets.yml`).
 
-## 3. PWA on Firebase Hosting (project `worldbett-159a9`)
+## 3. PWA on Firebase Hosting (project `latelotto`)
 Hosting only serves static files, so the free Spark plan is enough (10 GB storage, 360 MB/day transfer).
 The backend stays on Supabase; the Firebase web config (apiKey, appId, analytics) is not used and not needed.
 
@@ -33,8 +33,8 @@ npm run deploy:web                            # builds web/ and runs `firebase d
 Automatic deploys: `.github/workflows/deploy-hosting.yml` (push to `main`) needs the secrets
 `FIREBASE_SERVICE_ACCOUNT`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
 
-In Supabase → Authentication → URL Configuration set **Site URL** to `https://worldbett-159a9.web.app`
-and add `https://worldbett-159a9.firebaseapp.com` to the redirect URLs.
+In Supabase → Authentication → URL Configuration set **Site URL** to `https://latelotto.web.app`
+and add `https://latelotto.firebaseapp.com` to the redirect URLs.
 
 ## 4. Before the first real users
 - Rotate the service role key and the access token if they were ever shared with a tool or a chat.

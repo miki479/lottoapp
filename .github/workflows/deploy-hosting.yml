@@ -35,5 +35,5 @@ jobs:
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: worldbett-159a9
+          projectId: latelotto
           channelId: live
