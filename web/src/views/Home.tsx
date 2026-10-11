@@ -1,6 +1,7 @@
 import { CloudRain } from "lucide-preact";
 import { CatChips, type CatId } from "../components/CatChips.tsx";
 import { Empty } from "../components/Empty.tsx";
+import { CrowdCard } from "../components/CrowdCard.tsx";
 import { EventCard } from "../components/EventCard.tsx";
 import { Flag } from "../components/Flag.tsx";
 import { TopCards, type TopItem } from "../components/TopCards.tsx";
@@ -64,7 +65,8 @@ export function Home(p: HomeProps) {
         <div class="cardgrid">
           {p.markets === null && [0, 1, 2].map((i) => <div class="sk" key={i} />)}
           {p.markets !== null && p.cat === "traffic" && <div style="grid-column:1/-1"><Empty icon={CloudRain} title={msg.tabs.traffic} body={msg.home.trafficSoon} /></div>}
-          {p.markets !== null && p.cat !== "traffic" && shown.length === 0 && <div style="grid-column:1/-1"><Empty icon={CloudRain} title={msg.home.empty.title} body={msg.home.empty.body} cta={p.filter !== "world" ? msg.home.empty.cta : undefined} onCta={() => p.onFilter("world")} /></div>}
+          {p.markets !== null && p.cat === "train" && (p.filter === "tokyo" || (p.filter === "world" && p.locale === "ja")) && <div style="grid-column:1/-1"><CrowdCard msg={msg} locale={p.locale} /></div>}
+          {p.markets !== null && p.cat !== "traffic" && shown.length === 0 && !(p.cat === "train" && p.filter === "tokyo") && <div style="grid-column:1/-1"><Empty icon={CloudRain} title={msg.home.empty.title} body={msg.home.empty.body} cta={p.filter !== "world" ? msg.home.empty.cta : undefined} onCta={() => p.onFilter("world")} /></div>}
           {shown.slice(0, 40).map((m, i) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} live={p.live[m.id]} index={i} mm={p.outlook[m.id]} hasLadder={(p.ladders[m.id]?.length ?? 0) > 0} top={m.id === topId && shown.length > 3} showCity={p.filter === "world"} onPick={p.onPick} />)}
         </div>
         <footer class="legal">

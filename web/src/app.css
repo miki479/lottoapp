@@ -613,3 +613,16 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 @keyframes towersway { from { transform: rotate(calc(var(--a) * var(--amp) * var(--mag, 1) * -1.6deg)); } to { transform: rotate(calc(var(--a) * var(--amp) * var(--mag, 1) * 1.6deg)); } }
 @keyframes quaketremor { from { transform: translate(calc(var(--amp) * var(--mag, 1) * -1.6px), calc(var(--amp) * var(--mag, 1) * .6px)); } to { transform: translate(calc(var(--amp) * var(--mag, 1) * 1.6px), calc(var(--amp) * var(--mag, 1) * -.6px)); } }
 @media (prefers-reduced-motion: reduce) { .quakescene .tw, .quakescene svg { animation: none !important; } }
+
+/* Tokyo crowding card */
+.crowdcard { display: grid; gap: 10px; }
+.crowdhead { display: flex; gap: 10px; align-items: flex-start; }
+.crowdlist { display: grid; gap: 8px; list-style: none; padding: 0; margin: 0; }
+.crowdlist li { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 46px; gap: 10px; align-items: center; font-size: 14px; }
+.crowdlist .cname small { display: block; color: var(--muted); font-size: 12px; }
+.crowdlist b { text-align: right; }
+.cbar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.cbar i { display: block; height: 100%; border-radius: 999px; }
+.cbar.ok i { background: #3aa66b; } .cbar.warm i { background: #e0a21a; } .cbar.hot i { background: #e5484d; }
+.crowdscale summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; color: var(--text-2); font-size: 14px; }
+.crowdscale ul { padding-left: 18px; font-size: 13px; color: var(--text-2); display: grid; gap: 4px; }

@@ -10,6 +10,7 @@ import { Ticker } from "./components/Ticker.tsx";
 import { ParlayBar } from "./components/ParlayBar.tsx";
 import { ParlaySheet, slipOdds } from "./components/ParlaySheet.tsx";
 import { Header } from "./components/Header.tsx";
+import { CROWD_SOURCE } from "./lib/crowding.ts";
 import { Sidebar, TabBar, type Screen } from "./components/Nav.tsx";
 import { NicknameSheet } from "./components/NicknameSheet.tsx";
 import { ResultScreen } from "./components/ResultScreen.tsx";
@@ -265,6 +266,7 @@ export function App() {
     for (const c of CITIES) for (const f of c.feeds) if (f.licenseVerified && c.categories[f.category]?.enabled) map.set(f.attribution.name, f.attribution);
     // Added by the metric and earthquake questions (not tied to a city feed).
     const extra = [
+      { name: CROWD_SOURCE.name, via: CROWD_SOURCE.via, license: CROWD_SOURCE.license, licenseUrl: CROWD_SOURCE.licenseUrl, url: CROWD_SOURCE.url },
       { name: "USGS Earthquake Hazards Program", license: "Public domain", licenseUrl: "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits", url: "https://earthquake.usgs.gov" },
       { name: "Copernicus Atmosphere Monitoring Service", via: "Open-Meteo", license: "Copernicus licence", licenseUrl: "https://atmosphere.copernicus.eu/terms-of-use", url: "https://open-meteo.com/en/docs/air-quality-api" },
     ];

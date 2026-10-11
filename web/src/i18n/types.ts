@@ -71,6 +71,7 @@ export interface Messages {
     title: string; subtitle: string; tabSignin: string; tabSignup: string; email: string; password: string; passwordHint: string; google: string; or: string;
     magic: string; magicSent: string; confirmSent: string; signinCta: string; signupCta: string; guestKeep: string; guestLose: string; welcome: string;
   };
+  crowd: { title: string; note: (year: string, avg: number) => string; all: (n: number) => string; less: string; scaleTitle: string; scale: Record<100 | 150 | 180 | 200 | 250, string>; source: string };
   report: { link: string; title: string; kinds: { wrong_data: string; wrong_result: string; other: string }; notePh: string; send: string; sent: string };
   admin: { open: string; title: string; feeds: string; ok: string; late: string; down: string; never: string; markets: string; opened: string; resolved24: string; void24: string; users: string; registered: string; guests: string; bets24: string; places: string; reports: string; noReports: string; resolve: string; refresh: string; forbidden: string };
   disclaimerShort: string; disclaimerFull: string; attributionTitle: string;
