@@ -458,34 +458,29 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .walletbtn { position: relative; cursor: pointer; font: inherit; color: inherit; }
 .walletbtn .dotbadge { position: absolute; top: -4px; right: -2px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--c-pop); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; animation: popnum 220ms var(--ease); }
 
-/* ---------- chips: the vehicle / the rain comes out of the chip in 3D on hover or tap, then settles back ---------- */
-.cc { z-index: 0; } .cc:hover, .cc.pop { z-index: 4; }
-.cc .ico { transform-style: preserve-3d; overflow: visible; }
-.cc .ico svg { transform-origin: 50% 70%; transition: filter var(--dur); will-change: transform; }
-.cc .ico .trail { position: absolute; left: -4px; top: 12px; width: 22px; height: 2px; border-radius: 2px; background: var(--cat); box-shadow: 0 5px 0 0 var(--cat); opacity: 0; }
-.cc .ico .drops { position: absolute; left: 0; right: 0; top: 18px; height: 0; pointer-events: none; }
-.cc .ico .drops i { position: absolute; width: 2px; height: 8px; border-radius: 2px; background: var(--cat); opacity: 0; }
-.cc .ico .drops i:nth-child(1) { left: 12px; } .cc .ico .drops i:nth-child(2) { left: 19px; } .cc .ico .drops i:nth-child(3) { left: 26px; }
+/* ---------- chips: a short, clean 2D motion on hover or tap (no 3D, nothing leaves the chip) ---------- */
+.cc { overflow: hidden; perspective: none; z-index: auto; }
+.cc .ico { overflow: visible; }
+.cc .ico svg { transform-origin: 50% 60%; }
+.cc .ico .trail { display: none; }
+.cc .ico .drops { position: absolute; left: 0; right: 0; top: 4px; height: 0; pointer-events: none; }
+.cc .ico .drops i { position: absolute; width: 2px; height: 7px; border-radius: 2px; background: var(--cat); opacity: 0; }
+.cc .ico .drops i:nth-child(1) { left: 13px; } .cc .ico .drops i:nth-child(2) { left: 20px; } .cc .ico .drops i:nth-child(3) { left: 27px; }
 @media (hover: hover) {
-  .cc.bus:not(:disabled):hover .ico svg { animation: pop-bus 900ms var(--ease) both; }
-  .cc.train:not(:disabled):hover .ico svg { animation: pop-train 1000ms var(--ease) both; }
-  .cc.train:not(:disabled):hover .ico .trail { animation: trail3d 1000ms ease-out both; }
-  .cc.weather:not(:disabled):hover .ico svg { animation: pop-cloud 1100ms var(--ease) both; }
-  .cc.weather:not(:disabled):hover .ico .drops i { animation: rain3d 900ms ease-in 150ms 1 both; }
-  .cc.weather:not(:disabled):hover .ico .drops i:nth-child(2) { animation-delay: 300ms; } .cc.weather:not(:disabled):hover .ico .drops i:nth-child(3) { animation-delay: 450ms; }
+  .cc.bus:not(:disabled):hover .ico svg, .cc.pop.bus .ico svg { animation: hop 650ms var(--ease); }
+  .cc.train:not(:disabled):hover .ico svg, .cc.pop.train .ico svg { animation: dash 800ms var(--ease); }
+  .cc.weather:not(:disabled):hover .ico svg, .cc.pop.weather .ico svg { animation: hop 650ms var(--ease); }
+  .cc.weather:not(:disabled):hover .ico .drops i, .cc.pop.weather .ico .drops i { animation: drizzle 800ms ease-in 1 both; }
 }
-.cc.pop.bus .ico svg { animation: pop-bus 900ms var(--ease) both; }
-.cc.pop.train .ico svg { animation: pop-train 1000ms var(--ease) both; }
-.cc.pop.train .ico .trail { animation: trail3d 1000ms ease-out both; }
-.cc.pop.weather .ico svg { animation: pop-cloud 1100ms var(--ease) both; }
-.cc.pop.weather .ico .drops i { animation: rain3d 900ms ease-in 150ms 1 both; }
-.cc.pop.weather .ico .drops i:nth-child(2) { animation-delay: 300ms; } .cc.pop.weather .ico .drops i:nth-child(3) { animation-delay: 450ms; }
-@keyframes pop-bus { 0%, 100% { transform: none; filter: none; } 30% { transform: translate3d(0, -14px, 70px) rotateX(-14deg) rotateY(-16deg) scale(1.7); filter: drop-shadow(0 14px 8px rgba(0,0,0,.55)); } 60% { transform: translate3d(8px, -12px, 60px) rotateX(-10deg) rotateY(-8deg) scale(1.6); filter: drop-shadow(0 12px 8px rgba(0,0,0,.5)); } }
-@keyframes pop-train { 0%, 100% { transform: none; filter: none; } 25% { transform: translate3d(-4px, -12px, 60px) rotateX(-12deg) rotateY(-18deg) scale(1.6); filter: drop-shadow(0 14px 8px rgba(0,0,0,.55)); } 70% { transform: translate3d(16px, -12px, 70px) rotateX(-10deg) rotateY(-8deg) scale(1.7); filter: drop-shadow(0 14px 8px rgba(0,0,0,.5)); } }
-@keyframes pop-cloud { 0%, 100% { transform: none; filter: none; } 30%, 70% { transform: translate3d(0, -14px, 70px) rotateX(-12deg) scale(1.7); filter: drop-shadow(0 12px 8px rgba(0,0,0,.5)); } }
-@keyframes trail3d { 0% { opacity: 0; transform: scaleX(.3); } 30% { opacity: .8; } 100% { opacity: 0; transform: scaleX(1.4) translateX(-10px); } }
-@keyframes rain3d { 0% { opacity: 0; transform: translate3d(0, -6px, 40px); } 25% { opacity: .95; } 100% { opacity: 0; transform: translate3d(0, 46px, 40px); } }
-@media (prefers-reduced-motion: reduce) { .cc .ico svg, .cc .ico .trail, .cc .ico .drops i { animation: none !important; } }
+.cc.pop.bus .ico svg { animation: hop 650ms var(--ease); }
+.cc.pop.train .ico svg { animation: dash 800ms var(--ease); }
+.cc.pop.weather .ico svg { animation: hop 650ms var(--ease); }
+.cc.pop.weather .ico .drops i { animation: drizzle 800ms ease-in 1 both; }
+.cc .ico .drops i:nth-child(2) { animation-delay: 120ms !important; } .cc .ico .drops i:nth-child(3) { animation-delay: 240ms !important; }
+@keyframes hop { 0%, 100% { transform: translateY(0) scale(1); } 35% { transform: translateY(-5px) scale(1.12); } 65% { transform: translateY(0) scale(1.04); } }
+@keyframes dash { 0%, 100% { transform: translateX(0); } 35% { transform: translateX(7px); } 70% { transform: translateX(-3px); } }
+@keyframes drizzle { 0% { opacity: 0; transform: translateY(14px); } 30% { opacity: .9; } 100% { opacity: 0; transform: translateY(32px); } }
+@media (prefers-reduced-motion: reduce) { .cc .ico svg, .cc .ico .drops i { animation: none !important; } }
 
 .switchrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--touch); font-weight: 600; cursor: pointer; }
 .switchrow input { width: 22px; height: 22px; accent-color: var(--brand); }
