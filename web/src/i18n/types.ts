@@ -52,7 +52,7 @@ export interface Messages {
     empty: { title: string; body: string }; gate: { title: string; body: string; cta: string };
     groups: { create: string; join: string; namePh: string; codePh: string; yourCode: (c: string) => string; none: string };
   };
-  profile: {
+  profile: { howItWorks: string; terms: string; privacy: string;
     title: string; guest: string; guestHint: string; signIn: string; account: string;
     stats: { title: string; winRate: string; streak: string; best: string; bets: string; net: string; trophies: string; days: (n: number) => string };
     streakHint: string; freezes: (n: number) => string; freezeHint: string;

@@ -112,6 +112,7 @@ export function ProfileView(p: {
             <div class="row" style="flex-wrap:wrap"><span class="grow">{p.msg.common.language}</span>
               <div class="seg" style="width:100%">{LOCALES.map((l) => <button key={l.id} class={l.id === p.locale ? "on" : ""} aria-pressed={l.id === p.locale} onClick={() => p.onLocale(l.id)}>{l.short}</button>)}</div>
             </div>
+            <p class="hint" style="display:flex;gap:14px;flex-wrap:wrap;padding:6px 4px"><a href="/how-it-works.html" style="color:var(--brand)">{m.howItWorks}</a><a href="/terms.html" style="color:var(--text-2)">{m.terms}</a><a href="/privacy.html" style="color:var(--text-2)">{m.privacy}</a></p>
             <details class="row" style="display:block"><summary style="min-height:32px;display:flex;align-items:center;cursor:pointer">{m.sources}</summary>
               <ul class="hint" style="padding-left:18px">{p.sources.map((a) => <li key={a.name}><a href={a.url} target="_blank" rel="noopener noreferrer" style="color:inherit">{a.name}</a>{a.via ? ` · ${a.via}` : ""} · <a href={a.licenseUrl} target="_blank" rel="noopener noreferrer" style="color:inherit">{a.license}</a></li>)}</ul>
             </details>
