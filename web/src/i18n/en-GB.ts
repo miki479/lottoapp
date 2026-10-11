@@ -2,7 +2,7 @@ import type { Messages } from "./types.ts";
 
 const enGB: Messages = {
   nav: { home: "Home", bets: "My bets", ranking: "League", profile: "Profile" },
-  common: { close: "Close", cancel: "Cancel", save: "Save", retry: "Try again", soon: "Soon", offline: "You're offline. Events will refresh once you're back.", install: "Install the app", language: "Language", credits: "credits", copied: "Copied", back: "Back" },
+  common: { backOnline: "Back online", close: "Close", cancel: "Cancel", save: "Save", retry: "Try again", soon: "Soon", offline: "You're offline: data may be out of date and bets can't be placed.", install: "Install the app", language: "Language", credits: "credits", copied: "Copied", back: "Back" },
   tabs: { bus: "Buses", train: "Trains", weather: "Weather", traffic: "Traffic" },
   world: "Worldwide",
   home: { hero: { title: "Bus late again? Make it count.", body: "Real data, fake credits. Pick an event and have a go." },
@@ -27,7 +27,7 @@ const enGB: Messages = {
     d_bet: { t: "Place a bet", d: "Any bet, today." }, d_parlay: { t: "Play an accumulator", d: "At least two selections together." }, d_win: { t: "Win a bet", d: "One win today is enough." },
     o_nick: { t: "Choose your profile name", d: "The nickname others see on the leaderboard." }, o_push: { t: "Turn on notifications", d: "One alert when a bet has a result." }, o_parlay: { t: "Your first accumulator", d: "Combine at least two selections." }, o_win: { t: "Your first win", d: "Win a bet." }, o_streak7: { t: "A 7-day streak", d: "A bet a day for a week." } } },
   weather: { clear: "Clear", light: "Light rain", heavy: "Heavy rain" },
-  places: { more: "More cities", title: "Weather for a town", hint: "Search any city or town: its rain questions open straight away.", search: "Search a city…", recent: "Your latest", capitals: "Italian regional capitals", none: "No results. Try the full name.", searchError: "Can't search at the moment. Try again.", limit: "You've already added 5 new places today. Try again tomorrow or pick an existing one.", full: "Too many active places at the moment. Pick an existing one.", credit: "City search: Open-Meteo.com (CC BY 4.0). Weather only, for now." },
+  places: { more: "More cities", title: "Weather for a town", hint: "Search any city or town: its rain questions open straight away.", search: "Search a city…", recent: "Your latest", capitals: "Italian regional capitals", famous: "Famous cities worldwide", none: "No results. Try the full name.", searchError: "Can't search at the moment. Try again.", limit: "You've already added 5 new places today. Try again tomorrow or pick an existing one.", full: "Too many active places at the moment. Pick an existing one.", credit: "City search: Open-Meteo.com (CC BY 4.0). Weather only, for now." },
   top: { late: "Most delayed now", popular: "Most played", city: "Most delayed city", closing: "Closing shortly", avg: (m) => `${m} min average delay`, players: (n) => (n === 1 ? "1 bet" : `${n} bets`), ontime: "On time", open: "Open" },
   card: { late: "Late", onTime: "On time", per10: (w) => `10 → ${w}`, closes: "Closes", forecast: "forecast", live: "Live", yes: "Yes", no: "No", topOdds: "Top odds", hot: "Closing soon", over: (m) => `over ${m} min` },
   question: {

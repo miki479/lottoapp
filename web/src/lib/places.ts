@@ -50,3 +50,21 @@ export async function ensurePlace(p: Omit<Place, "id">): Promise<string> {
   if (error) throw new Error(error.message);
   return data as string;
 }
+
+const mk = (name: string, country: string, lat: number, lon: number, timezone: string, admin: string | null = null): Place => ({ id: placeIdOf(lat, lon), name, admin, country, lat, lon, timezone });
+const it = (name: string) => { const c = ITALY_CAPITALS.find((x) => x.name === name)!; return { ...c, id: placeIdOf(c.lat, c.lon) } as Place; };
+
+/** The famous towns that get a chip on the home screen (small towns never do: they live in the picker and show up only while selected). */
+export const FEATURED_PLACES: Place[] = [
+  it("Milano"), it("Napoli"), it("Firenze"),
+  mk("London", "GB", 51.5074, -0.1278, "Europe/London"), mk("Paris", "FR", 48.8566, 2.3522, "Europe/Paris"), mk("New York", "US", 40.7128, -74.006, "America/New_York"),
+  mk("Dubai", "AE", 25.2048, 55.2708, "Asia/Dubai"), mk("Sydney", "AU", -33.8688, 151.2093, "Australia/Sydney"),
+];
+/** More famous towns, shown in the picker. */
+export const FAMOUS_PLACES: Place[] = [
+  mk("Madrid", "ES", 40.4168, -3.7038, "Europe/Madrid"), mk("Barcelona", "ES", 41.3874, 2.1686, "Europe/Madrid"), mk("Berlin", "DE", 52.52, 13.405, "Europe/Berlin"),
+  mk("Los Angeles", "US", 34.0522, -118.2437, "America/Los_Angeles"), mk("Istanbul", "TR", 41.0082, 28.9784, "Europe/Istanbul"), mk("Singapore", "SG", 1.3521, 103.8198, "Asia/Singapore"),
+  mk("Rio de Janeiro", "BR", -22.9068, -43.1729, "America/Sao_Paulo"), mk("Bangkok", "TH", 13.7563, 100.5018, "Asia/Bangkok"), mk("Cairo", "EG", 30.0444, 31.2357, "Africa/Cairo"),
+  mk("Mexico City", "MX", 19.4326, -99.1332, "America/Mexico_City"), mk("Toronto", "CA", 43.6532, -79.3832, "America/Toronto"), mk("Cape Town", "ZA", -33.9249, 18.4241, "Africa/Johannesburg"),
+];
+[...FEATURED_PLACES, ...FAMOUS_PLACES].forEach(registerPlace);

@@ -5,6 +5,7 @@ import { AuthSheet } from "./components/AuthSheet.tsx";
 import { BetSheet } from "./components/BetSheet.tsx";
 import type { CatId } from "./components/CatChips.tsx";
 import { DelayMeter } from "./components/DelayMeter.tsx";
+import { OfflineBar } from "./components/OfflineBar.tsx";
 import { Ticker } from "./components/Ticker.tsx";
 import { ParlayBar } from "./components/ParlayBar.tsx";
 import { ParlaySheet, slipOdds } from "./components/ParlaySheet.tsx";
@@ -73,6 +74,7 @@ export function App() {
   const [offline, setOffline] = useState(!navigator.onLine);
   const [rank, setRank] = useState<{ rank: number | null; scope: string }>({ rank: null, scope: "" });
   const [myPlaces, setMyPlaces] = useState<Place[]>(() => recentPlaces());
+  const [, setPlacePending] = useState<Place | null>(null);
   const [placePicker, setPlacePicker] = useState(false);
   const placeIds = useRef<string[]>(myPlaces.map((p) => p.id));
   const [outlook, setOutlook] = useState<Record<string, number>>({});
@@ -162,7 +164,8 @@ export function App() {
     const { data, error } = await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").not("city_id", "like", "p-%").gt("closes_at", new Date().toISOString()).order("closes_at").limit(300);
     // Markets of the towns this player picked are loaded separately so a long list of places never crowds out the real cities.
     const mine = placeIds.current.length ? (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("city_id", placeIds.current).gt("closes_at", new Date().toISOString()).order("closes_at").limit(120)).data ?? [] : [];
-    if (!error) setMarkets([...(data ?? []), ...mine] as MarketRow[]);
+    if (!error) { setMarkets([...(data ?? []), ...mine] as MarketRow[]); if (navigator.onLine) setOffline(false); }
+    else if (/fetch|network|load failed/i.test(error.message)) setOffline(true);
     const { data: h } = await sb.from("feed_health").select("feed_id,last_ok_at");
     const nowMs = Date.now();
     setStale((h ?? []).some((r) => { const f = CITIES.flatMap((c) => c.feeds).find((x) => x.id === r.feed_id); return !!f && f.category !== "weather" && f.licenseVerified && !!r.last_ok_at && nowMs - Date.parse(r.last_ok_at) > f.staleAfterSeconds * 1000 && (data ?? []).some((m) => m.category === f.category); }));
@@ -253,6 +256,7 @@ export function App() {
 
   // ---------- actions ----------
   const place = async (m: MarketRow, pick: Pick, stake: number, boost = false) => {
+    if (offline) return msg.common.offline;
     const before = { bonus: progress?.bonus_claimed ?? false, trophies: new Set(trophies), streak: profile?.streak ?? 0 };
     const { error } = await sb.rpc("place_bet", { p_market: m.id, p_pick: pick, p_stake: stake, p_boost: boost });
     if (error) return msg.errors[Object.keys(msg.errors).find((k) => error.message.includes(k)) ?? "generic"]!;
@@ -271,6 +275,7 @@ export function App() {
   };
   const addSlip = (m: MarketRow, pick: Pick) => { setSlip((s) => (s.some((l) => l.m.id === m.id) ? s : [...s, { m, pick }])); setSheet(null); flash(msg.slip.added); };
   const placeParlay = async (legs: SlipLeg[], stake: number, boost = false) => {
+    if (offline) return msg.common.offline;
     const { error } = await sb.rpc("place_parlay", { p_legs: legs.map((l) => ({ market: l.m.id, pick: l.pick })), p_stake: stake, p_boost: boost });
     if (error) return msg.errors[Object.keys(msg.errors).find((k) => error.message.includes(k)) ?? "generic"]!;
     const win = money(Math.floor(stake * slipOdds(legs)), locale);
@@ -280,6 +285,8 @@ export function App() {
     return null;
   };
   const pickPlace = async (pl: Place) => {
+    // register the place on the server first: the id it returns is the one the markets carry
+    try { const sid = await ensurePlace(pl); pl = { ...pl, id: sid }; } catch (e) { flash(String((e as Error).message).includes("places_limit") ? msg.places.limit : msg.errors.generic!, "err"); return; }
     setMyPlaces(rememberPlace(pl)); placeIds.current = [pl.id, ...placeIds.current.filter((x) => x !== pl.id)].slice(0, 6);
     setPlacePicker(false); store.set("filter", pl.id); setFilter(pl.id); setCatChosen(true); setCat("weather"); await loadMarkets();
   };
@@ -329,11 +336,11 @@ export function App() {
       <Sidebar value={screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} />
       <div>
         <Header claimable={claimable} onWallet={() => setRewardsOpen(true)} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} wallet={profile ? new Intl.NumberFormat(INTL_TAG[locale]).format(Math.round(wallet)) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
+        <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
         <Ticker items={tickerItems} />
         <main class="content">
-          {offline && <p class="note" style="margin-bottom:12px">{msg.common.offline}</p>}
           {stale && <p class="note warn" style="margin-bottom:12px">{msg.feedWarning}</p>}
-          {screen === "home" && <Home msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} places={myPlaces} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
+          {screen === "home" && <Home msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "ranking" && <Ranking msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
           {screen === "profile" && <ProfileView giftCard={giftCard} onGiftSeen={() => { store.set("giftcard", "0"); setGiftCard(false); }} push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, setPrefs: async (f: boolean, s: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}

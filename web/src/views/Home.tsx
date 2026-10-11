@@ -8,14 +8,14 @@ import { Globe, Sparkles } from "lucide-preact";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
 import { Plus } from "lucide-preact";
-import type { Place } from "../lib/places.ts";
+import { FEATURED_PLACES, type Place } from "../lib/places.ts";
 import type { MarketRow } from "../lib/format.ts";
 import type { LiveDelay, Pick, Progress } from "../lib/types.ts";
 
 export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>;
   cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void;
-  places: Place[]; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
+  places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
   attributions: { name: string; via?: string; license: string; licenseUrl: string; url: string }[]; installEvt: Event | null;
 }
 
@@ -46,7 +46,8 @@ export function Home(p: HomeProps) {
         <div class="chiprow" role="tablist">
           <button class={`chip ${p.filter === "world" ? "on" : ""}`} role="tab" aria-selected={p.filter === "world"} onClick={() => p.onFilter("world")}><Globe size={16} />{msg.world}</button>
           {cities.map((c) => <button key={c.id} class={`chip ${p.filter === c.id ? "on" : ""}`} role="tab" aria-selected={p.filter === c.id} onClick={() => p.onFilter(c.id)}><Flag cc={c.country} size={13} />{cityName(c, p.locale)}</button>)}
-          {p.places.map((pl) => <button key={pl.id} class={`chip ${p.filter === pl.id ? "on" : ""}`} role="tab" aria-selected={p.filter === pl.id} onClick={() => p.onFilter(pl.id)}><Flag cc={pl.country} size={13} />{pl.name}</button>)}
+          {FEATURED_PLACES.map((pl) => <button key={pl.id} class={`chip ${p.filter === pl.id ? "on" : ""}`} role="tab" aria-selected={p.filter === pl.id} onClick={() => p.onPlace(pl)}><Flag cc={pl.country} size={13} />{pl.name}</button>)}
+          {p.places.filter((pl) => !FEATURED_PLACES.some((f) => f.id === pl.id)).map((pl) => <button key={pl.id} class="chip on" role="tab" aria-selected><Flag cc={pl.country} size={13} />{pl.name}</button>)}
           <button class="chip more" onClick={p.onMorePlaces}><Plus size={16} />{msg.places.more}</button>
         </div>
         <div class="cardgrid">

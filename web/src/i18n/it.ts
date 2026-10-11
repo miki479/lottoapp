@@ -2,7 +2,7 @@ import type { Messages } from "./types.ts";
 
 const it: Messages = {
   nav: { home: "Home", bets: "Le mie puntate", ranking: "Classifica", profile: "Profilo" },
-  common: { close: "Chiudi", cancel: "Annulla", save: "Salva", retry: "Riprova", soon: "Presto", offline: "Sei offline: gli eventi si aggiorneranno al ritorno della rete.", install: "Installa l'app", language: "Lingua", credits: "crediti", copied: "Copiato", back: "Indietro" },
+  common: { backOnline: "Di nuovo online", close: "Chiudi", cancel: "Annulla", save: "Salva", retry: "Riprova", soon: "Presto", offline: "Sei offline: non vedi dati aggiornati e non puoi puntare.", install: "Installa l'app", language: "Lingua", credits: "crediti", copied: "Copiato", back: "Indietro" },
   tabs: { bus: "Bus", train: "Treni", weather: "Meteo", traffic: "Traffico" },
   world: "Tutto il mondo",
   home: { hero: { title: "Il bus è in ritardo? Almeno ci vinci.", body: "Dati veri, crediti finti. Scegli un evento e fai la tua previsione." },
@@ -27,7 +27,7 @@ const it: Messages = {
     d_bet: { t: "Fai una puntata", d: "Una qualsiasi, oggi." }, d_parlay: { t: "Gioca una multipla", d: "Almeno due eventi insieme." }, d_win: { t: "Vinci una puntata", d: "Basta una vittoria oggi." },
     o_nick: { t: "Scegli il nome del profilo", d: "Il nickname che vedono gli altri in classifica." }, o_push: { t: "Attiva le notifiche", d: "Un avviso quando una puntata ha il suo esito." }, o_parlay: { t: "La tua prima multipla", d: "Metti insieme almeno due eventi." }, o_win: { t: "La tua prima vittoria", d: "Vinci una puntata." }, o_streak7: { t: "7 giorni di serie", d: "Una puntata al giorno per una settimana." } } },
   weather: { clear: "Sereno", light: "Pioggia leggera", heavy: "Pioggia forte" },
-  places: { more: "Altre città", title: "Meteo di una città", hint: "Cerca qualsiasi città o paese: aprono subito le domande sulla pioggia.", search: "Cerca una città…", recent: "Le tue ultime", capitals: "Capoluoghi di regione", none: "Nessun risultato. Prova a scrivere il nome per intero.", searchError: "Non riesco a cercare adesso. Riprova.", limit: "Hai già aggiunto 5 nuove città oggi. Riprova domani o scegline una già presente.", full: "Troppe città attive in questo momento. Scegline una già presente.", credit: "Ricerca città: Open-Meteo.com (CC BY 4.0). Solo meteo, per ora." },
+  places: { more: "Altre città", title: "Meteo di una città", hint: "Cerca qualsiasi città o paese: aprono subito le domande sulla pioggia.", search: "Cerca una città…", recent: "Le tue ultime", capitals: "Capoluoghi di regione", famous: "Città famose nel mondo", none: "Nessun risultato. Prova a scrivere il nome per intero.", searchError: "Non riesco a cercare adesso. Riprova.", limit: "Hai già aggiunto 5 nuove città oggi. Riprova domani o scegline una già presente.", full: "Troppe città attive in questo momento. Scegline una già presente.", credit: "Ricerca città: Open-Meteo.com (CC BY 4.0). Solo meteo, per ora." },
   top: { late: "Più in ritardo ora", popular: "Più giocato", city: "Città più in ritardo", closing: "Chiude tra poco", avg: (m) => `${m} min di ritardo medio`, players: (n) => (n === 1 ? "1 puntata" : `${n} puntate`), ontime: "In orario", open: "Apri" },
   card: { late: "In ritardo", onTime: "In orario", per10: (w) => `10 → ${w}`, closes: "Chiude", forecast: "previsto", live: "In diretta", yes: "Sì", no: "No", over: (m) => `oltre ${m} min`, topOdds: "Top quota", hot: "Chiude presto" },
   question: {

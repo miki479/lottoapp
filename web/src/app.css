@@ -550,3 +550,8 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .placerow { display: flex; align-items: center; gap: 12px; min-height: var(--touch); padding: 8px 14px; border-radius: var(--radius-control); border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .placerow .pn { flex: 1; display: flex; flex-direction: column; min-width: 0; } .placerow small { color: var(--muted); font-size: 12px; } .placerow svg { color: var(--brand); }
 .capgrid { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.offlinebar { position: sticky; top: 0; z-index: 70; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px var(--gutter); font-size: 14px; font-weight: 600; animation: rise var(--dur) var(--ease); }
+.offlinebar.down { background: var(--surface-2); color: var(--warn-fg); border-bottom: 1px solid var(--warn-fg); }
+.offlinebar.up { background: var(--brand-soft); color: var(--text); border-bottom: 1px solid var(--brand); }
+.offlinebar .link { min-height: 32px; }
