@@ -484,3 +484,24 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 
 .switchrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--touch); font-weight: 600; cursor: pointer; }
 .switchrow input { width: 22px; height: 22px; accent-color: var(--brand); }
+
+/* ---------- the sky on rain cards ---------- */
+.sky { position: relative; height: 62px; margin: -2px 0 -2px; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #5fb4ff 0%, #bfe3ff 100%); transition: background 600ms var(--ease); }
+.sky.light { background: linear-gradient(180deg, #7f93b8 0%, #b4c3dc 100%); } .sky.heavy { background: linear-gradient(180deg, #38405a 0%, #6a7694 100%); }
+.sky .sun { position: absolute; right: 18px; top: 8px; width: 30px; height: 30px; transition: opacity 500ms, transform 700ms var(--ease); }
+.sky .sun i { position: absolute; inset: 0; border-radius: 50%; background: #ffd23f; box-shadow: 0 0 0 6px rgba(255, 210, 63, .3), 0 0 22px 8px rgba(255, 210, 63, .55); animation: sunpulse 3s ease-in-out infinite; }
+.sky:not(.clear) .sun { opacity: 0; transform: translateY(-18px) scale(.7); }
+.sky .cl { position: absolute; height: 22px; width: 56px; border-radius: 22px; background: #eef4ff; box-shadow: 18px -8px 0 -2px #eef4ff, -14px 2px 0 -6px #eef4ff; opacity: 0; transform: translateX(-30px); transition: opacity 600ms, transform 800ms var(--ease), background 600ms; }
+.sky .c1 { left: 24%; top: 12px; } .sky .c2 { left: 58%; top: 20px; transform: translateX(30px); width: 44px; }
+.sky.light .cl, .sky.heavy .cl { opacity: 1; transform: none; } .sky.light .cl { background: #dbe4f3; box-shadow: 18px -8px 0 -2px #dbe4f3, -14px 2px 0 -6px #dbe4f3; }
+.sky.heavy .cl { background: #596480; box-shadow: 18px -8px 0 -2px #596480, -14px 2px 0 -6px #596480; }
+.sky.clear .c1 { opacity: .85; transform: none; left: 8%; } /* a lone little cloud in clear weather */
+.sky .rain { position: absolute; inset: 0; pointer-events: none; }
+.sky .rain i { position: absolute; top: -10px; width: 2px; height: 11px; border-radius: 2px; background: #cfe3ff; opacity: 0; animation: raindrop 800ms linear infinite; }
+.sky.heavy .rain i { height: 15px; }
+.sky .skycap { position: absolute; left: 10px; bottom: 6px; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: rgba(20, 30, 50, .75); }
+.sky.heavy .skycap, .sky.light .skycap { color: rgba(255, 255, 255, .9); }
+@keyframes raindrop { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: .9; } 100% { transform: translateY(70px); opacity: 0; } }
+@keyframes sunpulse { 50% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .sky .rain i, .sky .sun i { animation: none !important; } .sky .rain i { opacity: .8; } }
+.sky .skycap { white-space: nowrap; }
