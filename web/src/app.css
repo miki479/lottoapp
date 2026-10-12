@@ -1107,3 +1107,6 @@ textarea.field { resize: vertical; min-height: 84px; }
 @media (min-width: 1024px) { .home .aside { max-height: calc(100vh - 92px); overflow-y: auto; scrollbar-width: thin; padding-right: 2px; } }
 
 .actions2 .opt .mopt { display: block; margin-top: 2px; font-size: 11px; font-weight: 600; line-height: 1.25; color: var(--muted); text-align: left; }
+
+/* Desktop: the extra categories open as new rows under the first one, in the same columns and at the same size */
+@media (min-width: 561px) { .catchips, .catchips.many { grid-template-columns: repeat(var(--dn, var(--n)), minmax(0, 1fr)); } }

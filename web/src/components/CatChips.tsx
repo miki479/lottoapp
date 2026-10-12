@@ -19,10 +19,10 @@ function Art({ id }: { id: CatId }) {
 }
 
 /** Category chips. Each picture plays one short scene when hovered or tapped (the vehicle drives through, rain falls, leaves blow) and then rests. */
-export function CatChips({ tiles, value, onPick }: { tiles: CatTile[]; value: CatId; onPick: (id: CatId) => void }) {
+export function CatChips({ tiles, value, onPick, baseCols }: { tiles: CatTile[]; value: CatId; onPick: (id: CatId) => void; baseCols?: number }) {
   const [popId, setPopId] = useState<CatId | null>(null);
   return (
-    <div class={`catchips ${tiles.length > 5 ? "many" : ""}`} role="tablist" style={`--n:${tiles.length}`}>
+    <div class={`catchips ${(baseCols ?? tiles.length) > 5 ? "many" : ""}`} role="tablist" style={`--n:${tiles.length};--dn:${baseCols ?? tiles.length}`}>
       {tiles.map((t) => {
         const on = value === t.id;
         return (

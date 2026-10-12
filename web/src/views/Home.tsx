@@ -97,7 +97,7 @@ export function Home(p: HomeProps) {
       </div>
       <div class="main stack">
         <h2 class="steplabel">{msg.home.whatLabel}</h2>
-        <CatChips tiles={tiles.filter((t) => phone || !EXTRA_CATS.includes(t.id) || catsOpen)} value={p.cat} onPick={p.onCat} />
+        <CatChips baseCols={tiles.filter((t) => !EXTRA_CATS.includes(t.id)).length} tiles={tiles.filter((t) => phone || !EXTRA_CATS.includes(t.id) || catsOpen)} value={p.cat} onPick={p.onCat} />
         <button class={`morecats ${catsOpen ? "open" : ""}`} aria-expanded={catsOpen} onClick={() => setCatsOpen(!catsOpen)}>{catsOpen ? msg.home.lessCats : msg.home.moreCats}{!catsOpen && extraCount > 0 && <em>{extraCount}</em>}<ChevronDown size={16} /></button>
         {LOCAL_CATS.includes(p.cat) && <h2 class="steplabel">{msg.home.whereLabel}</h2>}
         {LOCAL_CATS.includes(p.cat) && (

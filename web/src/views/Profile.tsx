@@ -14,7 +14,7 @@ const TROPHY_ICON: Record<TrophyId, LucideIcon> = { first_win: Sparkles, all_rin
 
 export function ProfileView(p: {
   onAdmin: () => void; homeNode?: preact.ComponentChildren; missionsNode?: preact.ComponentChildren;
-  giftCard: boolean; onGiftSeen: () => void; push: { on: boolean; denied: boolean; toggle: () => void; flash: boolean; streak: boolean; setPrefs: (f: boolean, s: boolean) => void } | null; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
+  giftCard: boolean; onGiftSeen: () => void; push: { on: boolean; denied: boolean; toggle: () => void; flash: boolean; streak: boolean; friends: boolean; setPrefs: (f: boolean, s: boolean, fr: boolean) => void } | null; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
   onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => void; onDelete: () => Promise<void>; sources: { name: string; via?: string; license: string; licenseUrl: string; url: string }[];
 }) {
   const m = p.msg.profile;
@@ -64,8 +64,9 @@ export function ProfileView(p: {
           )}
           {p.push?.on && (
             <section class="card stack">
-              <label class="switchrow"><input type="checkbox" checked={p.push.flash} onChange={(e) => p.push!.setPrefs((e.target as HTMLInputElement).checked, p.push!.streak)} /><span>{p.msg.push.flashPref}</span></label>
-              <label class="switchrow"><input type="checkbox" checked={p.push.streak} onChange={(e) => p.push!.setPrefs(p.push!.flash, (e.target as HTMLInputElement).checked)} /><span>{p.msg.push.streakPref}</span></label>
+              <label class="switchrow"><input type="checkbox" checked={p.push.flash} onChange={(e) => p.push!.setPrefs((e.target as HTMLInputElement).checked, p.push!.streak, p.push!.friends)} /><span>{p.msg.push.flashPref}</span></label>
+              <label class="switchrow"><input type="checkbox" checked={p.push.streak} onChange={(e) => p.push!.setPrefs(p.push!.flash, (e.target as HTMLInputElement).checked, p.push!.friends)} /><span>{p.msg.push.streakPref}</span></label>
+              <label class="switchrow"><input type="checkbox" checked={p.push.friends} onChange={(e) => p.push!.setPrefs(p.push!.flash, p.push!.streak, (e.target as HTMLInputElement).checked)} /><span>{p.msg.push.friendsPref}</span></label>
               <p class="hint">{p.msg.push.prefsHint}</p>
             </section>
           )}

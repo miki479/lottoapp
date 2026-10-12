@@ -177,3 +177,32 @@ export async function notifySupers(sb: Db): Promise<number> {
   }
   return n;
 }
+
+const BIG: Record<string, (who: string, amount: string) => string> = {
+  it: (who, a) => `${who} ha appena vinto ${a} in una puntata! Riesci a fare di meglio?`,
+  "en-US": (who, a) => `${who} just won ${a} on one bet! Can you beat that?`,
+  "en-GB": (who, a) => `${who} just won ${a} on one bet! Can you beat that?`,
+  ja: (who, a) => `${who}が1回の予想で${a}を獲得しました！あなたは超えられる？`,
+};
+/** Winnings (profit) from which a friend's win is worth a push. */
+export const BIG_WIN = 3000;
+/** A friend won 3,000 or more on one bet: tell the friends who allowed it (once per bet; the optional-push limits apply). */
+export async function notifyFriendWins(sb: Db): Promise<number> {
+  if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
+  const since = new Date(Date.now() - 2 * 3600_000).toISOString();
+  const { data } = await sb.from("bets").select("id,user_id,stake,payout,profiles(display_name)").eq("status", "won").eq("big_notified", false).gte("settled_at", since).limit(40);
+  let n = 0;
+  for (const b of (data ?? []) as unknown as { id: string; user_id: string; stake: number; payout: number; profiles: { display_name: string | null } | null }[]) {
+    const net = b.payout - b.stake;
+    if (net < BIG_WIN) { if (net >= 0) await sb.from("bets").update({ big_notified: true }).eq("id", b.id); continue; }
+    const { data: fr } = await sb.from("friendships").select("friend_id").eq("user_id", b.user_id).limit(200);
+    const ids = (fr ?? []).map((f) => f.friend_id as string);
+    if (ids.length) {
+      const { data: who } = await sb.from("profiles").select(PCOLS).eq("push_friends", true).in("id", ids);
+      const name = b.profiles?.display_name?.trim() || "";
+      n += await sendOptional(sb, (who ?? []) as Pref[], (p) => { const loc = p.locale in BIG ? p.locale : "en-US"; return BIG[loc]!(name || (loc === "it" ? "Un tuo amico" : "A friend"), money(net, loc)); });
+    }
+    await sb.from("bets").update({ big_notified: true }).eq("id", b.id);
+  }
+  return n;
+}
