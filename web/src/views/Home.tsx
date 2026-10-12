@@ -13,6 +13,7 @@ import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
 import { ChevronDown, Flame, Plus, Search } from "lucide-preact";
+import { TrainBoard } from "../components/TrainBoard.tsx";
 import { FEATURED_CITY_IDS, FEATURED_PLACES, type Place } from "../lib/places.ts";
 import type { MarketRow } from "../lib/format.ts";
 import type { LiveDelay, LiveOcc, Pick, Progress } from "../lib/types.ts";
@@ -89,6 +90,7 @@ export function Home(p: HomeProps) {
             <TopCards items={p.top} />
           </section>
         )}
+        {p.italian && <TrainBoard open={!phone} markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} />}
       </div>
       <div class="main stack">
         <h2 class="steplabel">{msg.home.whatLabel}</h2>

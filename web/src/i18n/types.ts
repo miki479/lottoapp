@@ -36,6 +36,8 @@ export interface Messages {
   traffic: { threshold: (kmh: number) => string; jam: string; flow: string };
   /** How full a bus is (GTFS-RT occupancy levels 0..5). */
   occ: { title: string; levels: string[] };
+  /** The board of Italian trains running now (Home). */
+  board: { title: string; following: (n: number) => string; meter: string; over5: string; avg: string; late: string; odds: string; worse: string; better: string; steady: string; kinds: { hs: string; ic: string; rg: string } };
   /** Map of the vehicle behind an open bet. */
   map: { title: string; show: string; hide: string; none: string; estimated: string; stop: string; vehicle: string; updated: (sec: number) => string; credit: string };
   /** The "how full will it be?" bonus on a delay bet. */

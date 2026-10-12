@@ -10,6 +10,7 @@ const ja: Messages = {
   occ: { title: "混雑具合", levels: ["空いている", "座席に余裕あり", "座席わずか", "立ち席のみ", "かなり混雑", "満員"] },
   map: { title: "地図", show: "地図を表示", hide: "地図を隠す", none: "現在位置はありません。車両が位置を送信していません。", estimated: "提供元による推定位置です（実測ではありません）。", stop: "停留所", vehicle: "車両", updated: (s) => (s < 90 ? `${s}秒前に更新` : `${Math.round(s / 60)}分前に更新`), credit: "© OpenStreetMap" },
   bonus: { title: "ボーナス：どのくらい混む？", hint: "停留所でのバスの混み具合を当てよう。賭けにも勝てば獲得額が15%増えます。外れても追加の損失はありません。", none: "ボーナスなし", free: "空席あり", few: "空席わずか", standing: "立ち席", hit: "ボーナス的中：+15%", miss: "ボーナスは外れ（損失なし）", unknown: "バスが混雑情報を送らなかったため、ボーナスなし。", line: (w) => `ボーナス：${w}`, },
+  board: { title: "列車ボード", following: (n) => `運行中 ${n}本`, meter: "いまの遅延メーター", over5: "5分超", avg: "平均遅延", late: "遅れが大きい順", odds: "高オッズ", worse: "遅れが拡大中", better: "回復中", steady: "遅れは横ばい", kinds: { hs: "高速列車", ic: "インターシティ", rg: "普通列車" } },
   traffic: { threshold: (k) => `しきい値 ${k} km/h`, jam: "渋滞", flow: "流れる" },
   strikes: { title: "ストライキ", sub: "イタリア運輸省のデータ。はい＝その日も予定通り、いいえ＝中止または延期。", art: "全国ストライキ" },
   home: { typeLabel: "どの種類？", how: { title: "遊び方", steps: ["イベントを選ぶ", "はい／いいえ", "クレジットを獲得"], close: "わかった" }, whatLabel: "何を予想する？", whereLabel: "どこ？", hereNone: (place) => `${place}にはこのカテゴリーがありません。`, tryInstead: "こちらはどうですか：", hero: { title: "バスが遅れる？ならば予想で楽しもう。", body: "データは本物、クレジットは架空。イベントを選んで予想しよう。" },
