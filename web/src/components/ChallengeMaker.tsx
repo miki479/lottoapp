@@ -28,7 +28,7 @@ function closeAt(k: CloseKey, custom = ""): Date {
 export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: boolean; hasHome: boolean; onClose: () => void; onCreated: (code: string) => void; onAuth: () => void }) {
   const f = p.msg.friends;
   const [title, setTitle] = useState(""), [cat, setCat] = useState<CatKey>("friends"), [more, setMore] = useState(false), [close, setClose] = useState<CloseKey>("tomorrow"), [stake, setStake] = useState(0), [customAt, setCustomAt] = useState("");
-  const [vis, setVis] = useState<"private" | "public">("private"), [judge, setJudge] = useState<"creator" | "vote">("vote"), [world, setWorld] = useState(false);
+  const [vis, setVis] = useState<"private" | "friends" | "public">("private"), [judge, setJudge] = useState<"creator" | "vote">("vote"), [world, setWorld] = useState(false);
   const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null);
   const pub = vis === "public";
   const when = closeAt(close, customAt), whenOk = Number.isFinite(when.getTime()) && when.getTime() >= Date.now() + 10 * 60_000 && when.getTime() <= Date.now() + 30 * 86_400_000;
@@ -66,9 +66,10 @@ export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: b
       <span class="detail">{p.msg.fx.visibility}</span>
       <div class="mkchips">
         <button class={`mkchip ${vis === "private" ? "on" : ""}`} aria-pressed={vis === "private"} onClick={() => setVis("private")}>{p.msg.fx.vPrivate}</button>
+        <button class={`mkchip ${vis === "friends" ? "on" : ""}`} aria-pressed={vis === "friends"} onClick={() => setVis("friends")}>{p.msg.fx.vFriends}</button>
         <button class={`mkchip ${vis === "public" ? "on" : ""}`} aria-pressed={vis === "public"} onClick={() => setVis("public")}>{p.msg.fx.vPublic}</button>
       </div>
-      <p class="hint">{pub ? p.msg.fx.vPublicHint : p.msg.fx.vPrivateHint}</p>
+      <p class="hint">{pub ? p.msg.fx.vPublicHint : vis === "friends" ? p.msg.fx.vFriendsHint : p.msg.fx.vPrivateHint}</p>
       {pub && !p.hasHome && <p class="formerr" role="note">{p.msg.fx.needHome}</p>}
       {pub && <label class="switchrow"><input type="checkbox" checked={world} onChange={(e) => setWorld((e.target as HTMLInputElement).checked)} /><span>{p.msg.fx.world}</span></label>}
       {!pub && <>

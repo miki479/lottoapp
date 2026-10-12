@@ -55,6 +55,7 @@ import { Bets } from "./views/Bets.tsx";
 import { Home, type Trend } from "./views/Home.tsx";
 import { ProfileView } from "./views/Profile.tsx";
 import { Ranking } from "./views/Ranking.tsx";
+import { Friends } from "./views/Friends.tsx";
 
 const store = {
   get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -275,7 +276,7 @@ export function App() {
     const u = new URL(location.href); u.searchParams.delete("c"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
   }, []);
   // a push can open the app on a given screen (?open=ranking)
-  useEffect(() => { const o = new URLSearchParams(location.search).get("open"); if (o === "ranking" || o === "bets" || o === "profile") { setScreen(o); const u = new URL(location.href); u.searchParams.delete("open"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash); } }, []);
+  useEffect(() => { const o = new URLSearchParams(location.search).get("open"); if (o === "ranking" || o === "friends" || o === "bets" || o === "profile") { setScreen(o); const u = new URL(location.href); u.searchParams.delete("open"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash); } }, []);
   const loadReqs = useCallback(async () => { if (!registered) { setReqCount(0); return; } const { data } = await sb.rpc("friend_requests_in"); setReqCount(((data ?? []) as unknown[]).length); }, [registered]);
   useEffect(() => { loadReqs(); if (!registered) return; return every(loadReqs, 60_000); }, [registered, loadReqs]);
   useEffect(() => { loadChallenges(); }, [registered]);
@@ -293,7 +294,7 @@ export function App() {
       const u = new URL(location.href); u.searchParams.delete("m"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
     });
   }, []);
-  useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = every(loadMarkets, 45_000), b = every(() => { loadResults(); loadActivity(); loadTrending(); }, 90_000); return () => { a(); b(); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
+  useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = every(loadMarkets, 20_000), b = every(() => { loadResults(); loadActivity(); loadTrending(); }, 90_000); return () => { a(); b(); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
   useEffect(() => { if (!ready) return; return every(() => { loadBets(); loadProfile(); loadQuests(); }, 60_000); }, [ready]);
 
   const rainIds = useMemo(() => (markets ?? []).filter((m) => m.kind === "rain_at").map((m) => m.id), [markets]);
@@ -466,7 +467,7 @@ export function App() {
     const { error } = await sb.rpc("place_bet", { p_market: m.id, p_pick: pick, p_stake: stake, p_boost: boost, ...(bonus ? { p_bonus: bonus } : {}), ...(vice ? { p_vice: true } : {}) });
     if (error) return msg.errors[Object.keys(msg.errors).find((k) => error.message.includes(k)) ?? "generic"]!;
     setSheet(null);
-    const [pf] = await Promise.all([loadProfile(), loadBets(), loadQuests()]);
+    const [pf] = await Promise.all([loadProfile(), loadBets(), loadQuests(), loadMarkets(), loadChallenges()]);
     const reached = pf && pf.streak > before.streak ? STREAK_MILESTONES[pf.streak] : undefined;
     const [pr, tr] = [await loadProgress(), await loadTrophies()];
     const won = TROPHY_IDS.filter((id) => tr.has(id) && !before.trophies.has(id));
@@ -485,7 +486,7 @@ export function App() {
     if (error) return msg.errors[Object.keys(msg.errors).find((k) => error.message.includes(k)) ?? "generic"]!;
     const win = money(Math.floor(stake * slipOdds(legs)), locale);
     setSlip([]); setParlayOpen(false);
-    await Promise.all([loadProfile(), loadParlays(), loadProgress(), loadTrophies(), loadQuests()]);
+    await Promise.all([loadProfile(), loadParlays(), loadProgress(), loadTrophies(), loadQuests(), loadMarkets(), loadChallenges()]);
     flash(msg.slip.placed(win)); announce(`parlay-${Date.now()}`, msg.voice.placed(win), locale);
     return null;
   };
@@ -597,12 +598,14 @@ export function App() {
     await bootstrap(); flash(msg.profile.delete.done);
   };
   const changeLocale = (l: Locale) => { store.set("locale", l); setLocale(l); };
+  const social = registered && !!profile?.display_name;
+  useEffect(() => { if (screen === "friends" && !social && ready) setScreen("home"); }, [screen, social, ready]);
   const go = (s: Screen) => { if (s === "profile" && giftDot) { store.set("giftdot", "0"); setGiftDot(false); } setScreen(s); scrollTo({ top: 0 }); haptic.tap(); };
   const openBets = bets.filter((b) => b.status === "open").length + invites.length;
 
   return (
     <div class="shell">
-      <Sidebar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} rankBadge={reqCount} />
+      <Sidebar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} rankBadge={reqCount} social={social} />
       <div>
         <Header satire={msg.home.satire} claimable={claimable} onWallet={() => setRewardsOpen(true)} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} wallet={profile ? new Intl.NumberFormat(INTL_TAG[locale]).format(Math.round(wallet)) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
         <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
@@ -610,12 +613,13 @@ export function App() {
         <main class="content">
           {screen === "home" && <Home onSeries={(s) => setSeriesMaker({ show: s ?? null })} occ={occ} friendBets={friendBets} details={detailsOn} stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets canMore={bets.length >= betsLimit} onMore={() => setBetsLimit((n) => n + 60)} invites={invites} challenges={myChallenges} onChallenge={(code) => setChallengeCode(code)} parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
-          {screen === "ranking" && <Ranking reqTick={reqTick} onReqs={loadReqs} onProfile={setPubUser} referral={referral} onShareReferral={shareReferral} onChallenge={() => (registered ? setChallengeMaker(true) : setAuth(true))} home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
+          {screen === "friends" && <Friends reqTick={reqTick} onReqs={loadReqs} onProfile={setPubUser} referral={referral} onShareReferral={shareReferral} onChallenge={() => (registered ? setChallengeMaker(true) : setAuth(true))} onOpen={(code) => setChallengeCode(code)} locale={locale} msg={msg} registered={registered} onToast={flash} onAuth={() => setAuth(true)} now={now} />}
+          {screen === "ranking" && <Ranking onProfile={setPubUser} home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
           {screen === "admin" && <AdminPage msg={msg} onBack={() => go("profile")} />}
           {screen === "profile" && <ProfileView look={look} onLook={() => setLookOpen(true)} homeNode={<CityChip msg={msg} locale={locale} value={home} onChange={changeHome} />} onAdmin={() => go("admin")} giftCard={giftCard} onGiftSeen={() => { store.set("giftcard", "0"); setGiftCard(false); }} push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, friends: !!profile?.push_friends, setPrefs: async (f: boolean, s: boolean, fr: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s, p_friends: fr }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
         </main>
       </div>
-      <TabBar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} rankBadge={reqCount} />
+      <TabBar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} rankBadge={reqCount} social={social} />
 
       {maker && <MarketMaker origin={origin} msg={msg} locale={locale} registered={registered} places={[...CITIES.filter((c) => c.categories.weather?.enabled).map((c) => ({ id: c.id, name: cityName(c, locale) })), ...myPlaces.map((pl) => ({ id: pl.id, name: pl.name }))]} onClose={() => setMaker(false)} onQuake={() => { setMaker(false); setQuakeMaker(true); }} onFriends={() => { setMaker(false); setChallengeMaker(true); }} onCreated={(m) => { setMaker(false); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
       {challengeMaker && <ChallengeMaker hasHome={!!home} msg={msg} locale={locale} registered={registered} onAuth={() => { setChallengeMaker(false); setAuth(true); }} onClose={() => setChallengeMaker(false)} onCreated={(code) => { setChallengeMaker(false); loadChallenges(); flash(msg.friends.created); setChallengeCode(code); }} />}

@@ -15,7 +15,7 @@ type Tab = "world" | "local" | "friends";
 type Local = "near" | "city" | "country";
 const RADII = [10, 30, 50, 100];
 
-export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | null; registered: boolean; onToast: (s: string, kind?: "ok" | "err") => void; onAuth: () => void; onNickname: () => void; home: Place | null; onHome: (pl: Place | null) => void; onRank: (rank: number | null, scope: string) => void; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; onChallenge: () => void; onProfile: (id: string) => void; onReqs?: () => void; reqTick?: number }) {
+export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | null; registered: boolean; onToast: (s: string, kind?: "ok" | "err") => void; onAuth: () => void; onNickname: () => void; home: Place | null; onHome: (pl: Place | null) => void; onRank: (rank: number | null, scope: string) => void; onProfile: (id: string) => void }) {
   const m = p.msg.ranking;
   const [tab, setTab] = useState<Tab>("world");
   const [local, setLocal] = useState<Local>("near");
@@ -27,19 +27,12 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
   const [gname, setGname] = useState("");
   const [code, setCode] = useState("");
   const [fsub, setFsub] = useState<"board" | "groups">("board");
-  const [friends, setFriends] = useState<FriendRow[] | null>(null), [askId, setAskId] = useState<string | null>(null);
+  const [friends, setFriends] = useState<FriendRow[] | null>(null);
   const board = tab === "friends" && fsub === "board";
   const refreshFriends = async () => setFriends(await loadFriends());
   useEffect(() => { if (p.registered && board) refreshFriends(); }, [p.registered, board]);
-  const [showAllReqs, setShowAllReqs] = useState(false);
-  const [reqs, setReqs] = useState<{ user_id: string; display_name: string | null }[]>([]);
-  const loadReqs = async () => { const { data } = await sb.rpc("friend_requests_in"); setReqs((data ?? []) as { user_id: string; display_name: string | null }[]); };
-  useEffect(() => { if (p.registered) loadReqs(); }, [p.registered, p.reqTick]);
-  const declineAll = async () => { await sb.rpc("decline_all_friend_requests"); await loadReqs(); p.onReqs?.(); };
-  const answer = async (id: string, ok: boolean) => { const { error } = await sb.rpc("respond_friend", { p_user: id, p_accept: ok }); if (error) { p.onToast(p.msg.errors.generic!, "err"); return; } if (ok) p.onToast(p.msg.look.nowFriends); await Promise.all([loadReqs(), refreshFriends()]); p.onReqs?.(); };
   const looks = useLooks([...(rows ?? []).map((r) => r.user_id), ...(friends ?? []).map((r) => r.user_id)]);
   const face = (id: string) => { const l = looks[id]; return l ? <Look avatar={l.avatar} decoration={l.decoration} size={36} /> : <span class="lkph" />; };
-  const removeFriend = async (id: string) => { const { error } = await sb.rpc("remove_friend", { p_friend: id }); setAskId(null); if (error) { p.onToast(p.msg.errors.generic!, "err"); return; } p.onToast(p.msg.frd.removed); await refreshFriends(); };
 
   const loadGroups = async () => {
     const { data } = await sb.from("groups").select("code,name").order("created_at", { ascending: false });
@@ -65,13 +58,6 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
   const create = async () => { if (gbusy) return; setGbusy(true); const name = gname; setGname(""); const { data, error } = await sb.rpc("create_group", { p_name: name }); setGbusy(false); if (error) { setGname(name); return p.onToast(p.msg.errors[error.message.includes("nickname_not_allowed") ? "nickname_not_allowed" : error.message.includes("bad_nickname") ? "bad_nickname" : "registration_required"]!, "err"); } await loadGroups(); setGroup(String(data)); };
   const join = async () => { if (gbusy) return; setGbusy(true); const c0 = code; setCode(""); const { data, error } = await sb.rpc("join_group", { p_code: c0 }); setGbusy(false); if (error) { setCode(c0); return p.onToast(p.msg.errors[error.message.includes("unknown_group") ? "unknown_group" : "generic"]!, "err"); } await loadGroups(); setGroup(String(data)); setTab("friends"); setFsub("groups"); };
 
-  const INVITE = (
-          <section class="card stack invitecard">
-            <div class="invhead"><span class="refico"><Users size={22} /></span><div><b>{p.msg.frd.inviteTitle}</b><p class="hint">{p.msg.frd.inviteBody}</p></div></div>
-            {p.referral && <p class="detail">{p.msg.frd.invitedCount(p.referral.invited)}</p>}
-            <button class="btn primary wide" disabled={!p.referral} onClick={p.onShareReferral}><Share2 size={18} />{p.msg.frd.inviteBtn}</button>
-          </section>
-  );
   if (!p.registered) return (
     <div class="screen stack"><h1>{m.title}</h1><div class="card"><Empty icon={Trophy} title={m.gate.title} body={m.gate.body} cta={m.gate.cta} onCta={p.onAuth} /></div></div>
   );
@@ -80,7 +66,7 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
       <h1>{m.title}</h1>
       <p class="detail">{m.season(seasonDaysLeft())}</p>
       {!p.profile?.display_name && <button class="card pressable" style="text-align:left" onClick={p.onNickname}><b>{p.msg.profile.nickname.title}</b><p class="hint">{p.msg.profile.nickname.label}</p></button>}
-      <div class="seg" role="tablist">{(["world", "local", "friends"] as Tab[]).map((x) => <button key={x} role="tab" class={tab === x ? "on" : ""} aria-selected={tab === x} onClick={() => setTab(x)}>{p.msg.rankTabs[x]}{x === "friends" && reqs.length > 0 && <i class="badge inline">{reqs.length}</i>}</button>)}</div>
+      <div class="seg" role="tablist">{(["world", "local", "friends"] as Tab[]).map((x) => <button key={x} role="tab" class={tab === x ? "on" : ""} aria-selected={tab === x} onClick={() => setTab(x)}>{p.msg.rankTabs[x]}</button>)}</div>
       {tab === "local" && (
         <section class="card stack">
           <div class="mkchips">{(["near", "city", "country"] as Local[]).map((x) => <button key={x} class={`mkchip ${local === x ? "on" : ""}`} aria-pressed={local === x} onClick={() => setLocal(x)}>{p.msg.rankTabs[x]}</button>)}</div>
@@ -93,23 +79,8 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
       )}
       {board && (
         <>
-          {reqs.length > 0 && (
-            <section class="card stack reqcard">
-              <div class="reqhead"><b>{p.msg.look.requests} · {reqs.length}</b>{reqs.length > 2 && <button class="linkbtn" onClick={declineAll}>{p.msg.look.declineAll}</button>}</div>
-              {(showAllReqs ? reqs : reqs.slice(0, 5)).map((r) => (
-                <div class="reqrow" key={r.user_id}>
-                  {face(r.user_id)}
-                  <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name || p.msg.frd.anon}</b></button>
-                  <button class="iconbtn reqno" aria-label={p.msg.look.decline} onClick={() => answer(r.user_id, false)}><X size={18} /></button>
-                  <button class="iconbtn reqyes" aria-label={p.msg.look.accept} onClick={() => answer(r.user_id, true)}><Check size={18} strokeWidth={3} /></button>
-                </div>
-              ))}
-              {reqs.length > 5 && <button class="btn secondary" onClick={() => setShowAllReqs(!showAllReqs)}>{showAllReqs ? p.msg.look.showLess : p.msg.look.showMore(reqs.length - 5)}</button>}
-            </section>
-          )}
           <p class="detail">{p.msg.frd.boardHint}</p>
-          {friends !== null && friends.length <= 1 && INVITE}
-          {friends === null && [0, 1, 2].map((i) => <div class="sk s" key={i} />)}
+                    {friends === null && [0, 1, 2].map((i) => <div class="sk s" key={i} />)}
           {friends && friends.length <= 1 && <div class="card"><Empty icon={Users} title={p.msg.frd.empty} body={p.msg.frd.emptyBody} /></div>}
           {friends && friends.length > 1 && (
             <div class="list">
@@ -120,17 +91,11 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
                   <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name || p.msg.frd.anon}</b>{r.is_me && <span class="detail"> · {m.you}</span>}</button>
                   {r.prev_rank !== r.rank && <span class={`mv ${r.rank < r.prev_rank ? "up" : "down"}`} aria-label={r.rank < r.prev_rank ? "up" : "down"}>{r.rank < r.prev_rank ? <ArrowUp size={13} strokeWidth={3} /> : <ArrowDown size={13} strokeWidth={3} />}{Math.abs(r.prev_rank - r.rank)}</span>}
                   <span class={`score big num ${r.score > 0 ? "pos" : r.score < 0 ? "neg" : "zero"}`}>{r.score > 0 ? <ArrowUp size={15} strokeWidth={3} /> : r.score < 0 ? <ArrowDown size={15} strokeWidth={3} /> : null}{r.score > 0 ? "+" : r.score < 0 ? "−" : ""}{Math.abs(r.score)}</span>
-                  {!r.is_me && <button class="iconbtn frdx" aria-label={`${p.msg.frd.remove} ${r.display_name ?? ""}`} onClick={() => setAskId(askId === r.user_id ? null : r.user_id)}><UserMinus size={16} /></button>}
-                  {askId === r.user_id && (
-                    <div class="frask" role="alert"><span>{p.msg.frd.removeAsk(r.display_name || p.msg.frd.anon)}</span><button class="btn secondary" onClick={() => setAskId(null)}>{p.msg.frd.removeNo}</button><button class="btn primary" onClick={() => removeFriend(r.user_id)}>{p.msg.frd.removeYes}</button></div>
-                  )}
                 </div>
               ))}
             </div>
           )}
-          {friends && friends.length > 1 && <button class="btn secondary wide" onClick={p.onChallenge}><Swords size={18} />{p.msg.frd.challenge}</button>}
-          {friends && friends.length > 1 && INVITE}
-        </>
+                            </>
       )}
       {tab === "friends" && fsub === "groups" && (
         <section class="card stack">

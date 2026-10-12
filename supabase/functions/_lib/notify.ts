@@ -165,7 +165,7 @@ export async function notifyFriendRequests(sb: Db): Promise<number> {
   for (const r of (data ?? []) as unknown as { from_id: string; to_id: string; me: { locale: string } | null; by: { display_name: string | null } | null }[]) {
     const loc = (r.me?.locale && r.me.locale in FRIEND_REQ ? r.me.locale : "en-US") as keyof typeof FRIEND_REQ;
     const who = r.by?.display_name?.trim() || WHO[loc];
-    if (!(await send([r.to_id], "LateLotto", FRIEND_REQ[loc](who), "https://latelotto.web.app/?open=ranking"))) continue;
+    if (!(await send([r.to_id], "LateLotto", FRIEND_REQ[loc](who), "https://latelotto.web.app/?open=friends"))) continue;
     await sb.from("friend_requests").update({ notified: true }).eq("from_id", r.from_id).eq("to_id", r.to_id);
     n++;
   }
