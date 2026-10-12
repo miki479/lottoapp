@@ -1,4 +1,5 @@
-import { delayFromPosition, delayFromTripUpdate } from "../delay.ts";
+import { delayFromPosition, delayFromTripUpdate, MAX_EARLY_SEC, MAX_LATE_SEC } from "../delay.ts";
+import { localDayStart, parseGtfsTime } from "../time.ts";
 import type { DelayObservation } from "../types.ts";
 import type { DelayAdapter, RtTrip } from "./types.ts";
 
@@ -87,6 +88,36 @@ export const tripUpdatesTimesAdapter: DelayAdapter = (feed, ctx) => {
       const delaySec = delayFromPosition(predictedAt, sched.time, ctx.timezone);
       if (delaySec === null) continue;
       out.push({ feedId: ctx.feedId, tripId, stopId: sched.stopId, stopSequence: seq, routeId: tu?.trip?.routeId ?? "", observedAt: headerTs, delaySec, predictedAt });
+    }
+  }
+  return out;
+};
+
+/**
+ * TripUpdates with an explicit delay per stop_sequence and no stop id or time (START Romagna, via BusOne): the stop comes from the
+ * static timetable. The delay of a stop already passed is the one measured at the passage (a fact, no predictedAt); for the stops
+ * ahead it is a forecast, so the resolver's freshness rule applies.
+ */
+export const tripUpdatesSeqAdapter: DelayAdapter = (feed, ctx) => {
+  const out: DelayObservation[] = [];
+  if (!ctx.schedule) return out;
+  const headerTs = num(feed.header?.timestamp) ?? ctx.fetchedAt;
+  for (const e of feed.entity ?? []) {
+    const tu = e.tripUpdate;
+    const tripId = tripIdOf(tu?.trip, ctx.tripKey);
+    if (!tripId) continue;
+    const y = tu?.trip?.startDate;
+    // the service day the trip belongs to (the date is read at noon so a daylight-saving change cannot move it)
+    const dayStart = y && /^\d{8}$/.test(y) ? localDayStart(Date.UTC(+y.slice(0, 4), +y.slice(4, 6) - 1, +y.slice(6, 8), 12) / 1000, ctx.timezone) : localDayStart(headerTs, ctx.timezone);
+    for (const stu of tu?.stopTimeUpdate ?? []) {
+      if (stu.stopSequence == null) continue;
+      const sched = ctx.schedule(tripId, stu.stopSequence);
+      if (!sched) continue;
+      if (stu.stopId && stu.stopId !== sched.stopId) continue; // re-routed
+      const delaySec = delayFromTripUpdate(stu);
+      if (delaySec === null || delaySec < MAX_EARLY_SEC || delaySec > MAX_LATE_SEC) continue;
+      const predictedAt = dayStart + parseGtfsTime(sched.time) + delaySec;
+      out.push({ feedId: ctx.feedId, tripId, stopId: sched.stopId, stopSequence: stu.stopSequence, routeId: tu?.trip?.routeId ?? "", observedAt: headerTs, delaySec, ...(predictedAt > headerTs ? { predictedAt } : {}) });
     }
   }
   return out;

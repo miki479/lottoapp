@@ -13,7 +13,7 @@ export interface FeedConfig {
   category: Exclude<Category, "nature" | "strike" | "finance" | "culture" | "sport">;
   /** Selects the adapter, e.g. "gtfs-rt", "open-meteo". */
   type: string;
-  /** For gtfs-rt: "vehicle_positions" | "trip_updates" (explicit delays) | "trip_updates_times" (predicted times only; delay computed against the static timetable). */
+  /** For gtfs-rt: "vehicle_positions" | "trip_updates" (explicit delays) | "trip_updates_times" (predicted times only; delay computed against the static timetable) | "trip_updates_seq" (explicit delay per stop_sequence, stop taken from the static timetable). */
   kind?: string;
   url: string;
   staticGtfsUrl?: string;
@@ -36,6 +36,8 @@ export interface FeedConfig {
   routeTypes?: number[];
   /** The static calendar does not describe today (Renfe): take the trips that appear in the real-time feed as today's service. */
   useRealtimeTrips?: boolean;
+  /** Create questions only on routes that have a tracked trip in the real-time feed right now (otherwise many would end void). */
+  realtimeRoutesOnly?: boolean;
   /** Local hours [from, to) in which questions are created (a feed that goes quiet at night would void them). */
   questionsHours?: [number, number];
   /** The real-time feed has no tripId: trips are matched by route, direction, service day and start time. */

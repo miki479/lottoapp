@@ -33,7 +33,7 @@ Deno.serve(safe(async (req) => {
   // Only markets inside their active window (15 min before the target until the deadline) need readings.
   // Markets for tomorrow must not make an idle feed look broken at night.
   const since = new Date((now - 3600) * 1000).toISOString();
-  const { data: live } = await sb.from("markets").select("feed_id,params,target_at,deadline_at").gte("deadline_at", since).eq("status", "open");
+  const { data: live } = await sb.from("markets").select("feed_id,params,target_at,deadline_at").gte("deadline_at", since).lte("target_at", new Date((now + 15 * 60) * 1000).toISOString()).in("kind", ["bus_delay_gt", "train_delay_gt"]).eq("status", "open").limit(5000); // only delay questions, only the ones inside their window (the default page of 1000 rows hid some)
   // feed -> trip -> stops the markets ask about
   const tracked = new Map<string, Map<string, Set<string>>>();
   for (const m of live ?? []) {
@@ -285,6 +285,8 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
   const adapter = delayAdapterFor(feed);
   if (!adapter) throw new Error(`no adapter for ${feed.type}/${feed.kind}`);
   const headers = { ...(feed.headers ?? {}) };
+  // BusOne asks every client to say who it is and how to reach it: the contact comes from the environment, never from the repository.
+  if (headers["X-BusOne-Client"] && Deno.env.get("CONTACT_EMAIL")) headers["X-BusOne-Client"] += `; contact: ${Deno.env.get("CONTACT_EMAIL")}`;
   if (feed.requiresKey && feed.keyIn === "header") {
     const key = Deno.env.get(feed.requiresKey);
     if (!key) throw new Error(`missing env ${feed.requiresKey}`);
@@ -304,7 +306,7 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
 
   let schedule: ScheduleLookup | undefined;
   let scheduleByStop: ScheduleByStop | undefined;
-  if (feed.kind === "vehicle_positions" || feed.kind === "trip_updates_times") {
+  if (feed.kind === "vehicle_positions" || feed.kind === "trip_updates_times" || feed.kind === "trip_updates_seq") {
     const { data } = await sb.from("trip_schedule").select("trip_id,stop_sequence,stop_id,scheduled_time").eq("feed_id", feed.id).in("trip_id", [...trips]);
     const map = new Map((data ?? []).map((r) => [`${r.trip_id}|${r.stop_sequence}`, { stopId: r.stop_id as string, time: r.scheduled_time as string }]));
     schedule = (trip, seq) => map.get(`${trip}|${seq}`) ?? null;

@@ -23,7 +23,7 @@ jobs:
       - name: Weather (all cities)
         if: github.event.schedule != '41 2 * * *'
         run: |
-          for c in tokyo rome amsterdam sanfrancisco oslo torino zurich paris madrid berlin helsinki boston; do node scripts/generate-markets.mjs --city $c --weather --apply; done
+          for c in tokyo rome amsterdam sanfrancisco oslo torino zurich paris madrid berlin helsinki boston romagna; do node scripts/generate-markets.mjs --city $c --weather --apply; done
       - name: Tokyo buses
         if: github.event.schedule != '41 2 * * *'
         run: node scripts/generate-markets.mjs --city tokyo --feed toei-bus-vehicle --max 30 --apply
@@ -36,6 +36,9 @@ jobs:
       - name: Turin buses
         if: github.event.schedule != '41 2 * * *'
         run: node scripts/generate-markets.mjs --city torino --feed gtt-trip-update --max 30 --apply
+      - name: Romagna buses (START via BusOne)
+        if: github.event.schedule != '41 2 * * *'
+        run: node scripts/generate-markets.mjs --city romagna --feed start-trip-updates --max 30 --apply
       - name: Dutch trains
         if: github.event.schedule == '41 2 * * *' || github.event_name == 'workflow_dispatch'
         run: |

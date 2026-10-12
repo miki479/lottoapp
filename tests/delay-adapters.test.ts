@@ -165,3 +165,23 @@ describe("viaggiatreno adapter", () => {
     expect(parseTrainTripId("garbage")).toBeNull();
   });
 });
+
+import { tripUpdatesSeqAdapter } from "../shared/adapters/gtfsrt.ts";
+describe("trip updates by stop sequence (START Romagna)", () => {
+  const sched = (t: string, s: number) => (t === "fc:T1" ? { stopId: `fc:S${s}`, time: `10:${String(s * 5).padStart(2, "0")}:00` } : null);
+  // 2026-10-12 10:00 local = 08:00 UTC; header at 10:12 local
+  const header = Date.UTC(2026, 9, 12, 8, 12) / 1000;
+  const feed = { header: { timestamp: header }, entity: [{ id: "1", tripUpdate: { trip: { tripId: "fc:T1", startDate: "20261012", routeId: "fc:R" }, stopTimeUpdate: [
+    { stopSequence: 1, arrival: { delay: 240 } }, { stopSequence: 4, arrival: { delay: 300 } }] } }] };
+  const out = tripUpdatesSeqAdapter(feed, { feedId: "f", timezone: "Europe/Rome", fetchedAt: header, schedule: sched });
+  it("passed stop is a fact, stop ahead is a forecast with the predicted time", () => {
+    expect(out).toHaveLength(2);
+    expect(out[0]).toMatchObject({ stopId: "fc:S1", delaySec: 240 });
+    expect(out[0]!.predictedAt).toBeUndefined();
+    expect(out[1]).toMatchObject({ stopId: "fc:S4", delaySec: 300, predictedAt: Date.UTC(2026, 9, 12, 8, 25) / 1000 });
+  });
+  it("skips trips and stops the timetable does not know", () => {
+    const f2 = { entity: [{ tripUpdate: { trip: { tripId: "fc:X" }, stopTimeUpdate: [{ stopSequence: 1, arrival: { delay: 10 } }] } }] };
+    expect(tripUpdatesSeqAdapter(f2, { feedId: "f", timezone: "Europe/Rome", fetchedAt: header, schedule: sched })).toEqual([]);
+  });
+});

@@ -45,7 +45,7 @@ async function historyLookup() {
 async function gtfsDir(feed) {
   if (args["gtfs-dir"]) return args["gtfs-dir"];
   if (!feed.staticGtfsUrl) throw new Error(`feed ${feed.id} has no staticGtfsUrl: pass --gtfs-dir`);
-  const res = await fetch(feed.staticGtfsUrl, { redirect: "follow", signal: AbortSignal.timeout(600000) });
+  const res = await fetch(feed.staticGtfsUrl, { redirect: "follow", headers: { "User-Agent": "LateLotto/0.1 (play-money game)", ...(feed.headers ?? {}) }, signal: AbortSignal.timeout(600000) });
   if (!res.ok) throw new Error(`GTFS download failed: ${res.status}`);
   const dir = mkdtempSync(join(tmpdir(), "gtfs-"));
   // The archive goes to disk and the big table is streamed out of it with `unzip -p`: national feeds (Switzerland: ~300 MB zipped)
@@ -98,6 +98,15 @@ async function realtimeTripIds(feed) {
   return new Set(m.entity.filter((e) => e.tripUpdate?.trip?.tripId).map((e) => e.tripUpdate.trip.tripId));
 }
 
+/** Route ids with at least one trip in the real-time feed right now: other routes have no tracked buses, a question on them would end void. */
+async function realtimeRouteIds(feed) {
+  const GtfsRt = (await import("gtfs-realtime-bindings")).default;
+  const res = await fetch(feed.url, { headers: { "User-Agent": "LateLotto/0.1 (play-money game)", ...(feed.headers ?? {}) } });
+  if (!res.ok) throw new Error(`real-time feed ${res.status}`);
+  const m = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(new Uint8Array(await res.arrayBuffer())));
+  return new Set(m.entity.filter((e) => e.tripUpdate?.trip?.routeId).map((e) => e.tripUpdate.trip.routeId));
+}
+
 async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
   const { ymd, weekday } = localYmd(dayEpoch, city.timezone);
   const services = activeServiceIds(ymd, weekday, await readAll(join(dir, "calendar.txt")).catch(() => []), await readAll(join(dir, "calendar_dates.txt")).catch(() => []));
@@ -106,7 +115,8 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
     if (feed.routeTypes && !feed.routeTypes.includes(Number(r.route_type || 3))) continue;
     routes.set(r.route_id, r.route_short_name || r.route_long_name || r.route_id);
   }
-  const trips = (await readAll(join(dir, "trips.txt"))).filter((t) => (rtTrips ? rtTrips.has(t.trip_id) : services.has(t.service_id)) && routes.has(t.route_id));
+  const liveRoutes = feed.realtimeRoutesOnly ? await realtimeRouteIds(feed) : null;
+  const trips = (await readAll(join(dir, "trips.txt"))).filter((t) => (rtTrips ? rtTrips.has(t.trip_id) : services.has(t.service_id)) && routes.has(t.route_id) && (!liveRoutes || liveRoutes.has(t.route_id)));
   console.error(`[${feed.id}] ${ymd}: ${services.size} services, ${routes.size} routes, ${trips.length} trips today`);
   if (trips.length === 0) return { markets: [], schedule: [] };
 
@@ -142,7 +152,7 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
     const key = historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone);
     const priced = buildDelayMarket({ ...{ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold }, history: hist(key) });
     markets.push(priced);
-    if (feed.kind === "vehicle_positions" || feed.kind === "trip_updates_times") {
+    if (feed.kind === "vehicle_positions" || feed.kind === "trip_updates_times" || feed.kind === "trip_updates_seq") {
       const sd = `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
       for (const s of stops) schedule.push({ feed_id: feed.id, trip_id: tid, stop_sequence: s.seq, stop_id: s.stopId, scheduled_time: s.time, service_date: sd });
     }
