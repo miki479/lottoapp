@@ -15,7 +15,7 @@ const METRIC_LIST = ["temp", "wind", "uv", "aqi", "snow"] as const;
 const SPOT_OFFSETS = [1, 3, 6, 12, 24];
 
 /** Build your own question from a template. The server checks, prices and refuses what would be too obvious. */
-export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: string; name: string }[]; onClose: () => void; onQuake: () => void; onCreated: (m: MarketRow) => void; registered: boolean }) {
+export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: string; name: string }[]; onClose: () => void; onQuake: () => void; onFriends: () => void; onCreated: (m: MarketRow) => void; registered: boolean }) {
   const m = p.msg.maker, nf1 = new Intl.NumberFormat(INTL_TAG[p.locale], { maximumFractionDigits: 1 }), nf0 = new Intl.NumberFormat(INTL_TAG[p.locale], { maximumFractionDigits: 0 });
   const nf = { format: (v: number) => (Math.abs(v) >= 1000 ? nf0 : nf1).format(v) };
   const [tab, setTab] = useState<Tab>("weather");
@@ -71,6 +71,7 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
       <div class="shead"><h2>{m.title}</h2><button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>
       <p class="hint">{m.hint}</p>
       <div class="mkchips">
+        <button class="mkchip" onClick={p.onFriends}>{p.msg.friends.tab}</button>
         {(["weather", "crypto", "games", "culture"] as Tab[]).map((t) => <button key={t} class={`mkchip ${tab === t ? "on" : ""}`} onClick={() => setTab(t)}>{m.tabs[t]}</button>)}
         <button class="mkchip" onClick={p.onQuake}>{m.tabs.quake}</button>
       </div>

@@ -817,3 +817,7 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .morecats { display: inline-flex; align-items: center; gap: 6px; margin: 2px auto 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-weight: 700; font-size: .85rem; }
 .morecats em { font-style: normal; background: var(--primary, #5b47f0); color: #fff; border-radius: 999px; padding: 1px 8px; font-size: .74rem; }
 .morecats svg { transition: transform .2s; } .morecats.open svg { transform: rotate(180deg); }
+.chrow { display: flex; flex-direction: column; gap: 4px; text-align: left; width: 100%; padding: 12px 14px; }
+.resultline { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; margin: 0; }
+textarea.field { resize: vertical; min-height: 84px; }
+.tcstats { display: flex; gap: 16px; flex-wrap: wrap; font-size: .8rem; } .tcstats em { display: block; font-style: normal; color: var(--muted); } .tcstats b { font-weight: 800; }
