@@ -69,7 +69,6 @@ export function Home(p: HomeProps) {
           <button class="chip more" onClick={p.onMorePlaces}><Plus size={16} />{msg.places.more}</button>
         </div>
         {p.cat === "nature" && <button class="btn secondary quakecta" onClick={p.onQuakeMaker}><MapPin size={18} />{msg.quakeMaker.cta}</button>}
-        {p.cat === "train" && shown.some((m) => m.city_id === "rome") && <div class="satire" role="note">🎭 {msg.home.satire}</div>}
         <div class="cardgrid">
           {p.markets === null && [0, 1, 2].map((i) => <div class="sk" key={i} />)}
           {p.markets !== null && p.cat === "traffic" && shown.length === 0 && <div style="grid-column:1/-1"><Empty icon={Car} title={msg.tabs.traffic} body={msg.home.trafficSoon} /></div>}

@@ -14,7 +14,7 @@ const enGB: Messages = {
     top: "Featured", events: "Events", live: "Live",
     idle: ["Real data, pretend credits", "Close the three daily missions for a bonus", "A missed day won't break your streak: freezes have your back"],
     empty: { title: "Nothing to play here", body: "Even buses are entitled to a tea break. Try another category, or go worldwide.", cta: "Show the whole world" },
-    trafficSoon: "Traffic is available where open data exists: Helsinki for now. More cities are coming.", satire: "This is a satirical game with fake credits: no money, no real betting. It is not a service of Trenitalia or RFI.",
+    trafficSoon: "Traffic is available where open data exists: Helsinki for now. More cities are coming.", satire: "Satirical game",
   },
   streak: { title: "Streak", days: (n) => (n === 1 ? "1 day" : `${n} days`), next: (d, b) => `Next reward at ${d} days: ${b}`, max: "Every reward claimed. Legend.", milestone: (n, b) => `${n}-day streak! ${b} on the house`, flash: "Flash" },
   meter: { threshold: (m) => `Over ${m} min = late`, up: (m) => `+${m} min in 10 min`, down: (m) => `−${m} min in 10 min`, steady: "steady", forecast: "forecast", late: "late" },

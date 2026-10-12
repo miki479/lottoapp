@@ -415,6 +415,7 @@ export function App() {
         <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
         <Ticker items={tickerItems} />
         <main class="content">
+          <div class="satire" role="note">🎭 {msg.home.satire}</div>
           {stale && <p class="note warn" style="margin-bottom:12px">{msg.feedWarning}</p>}
           {screen === "home" && <Home onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} nearNode={<NearYou msg={msg} locale={locale} now={now} near={near} items={nearItems.items} fallback={nearItems.fallback} busy={locating} onLocate={locate} onOpen={(m) => setSheet({ m, pick: "yes" })} />} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
