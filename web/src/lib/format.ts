@@ -30,6 +30,9 @@ export function formatWhen(iso: string, locale: Locale, timeZone: string, now = 
 
 export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: string, timeZone: string, now = new Date()): string {
   const time = formatWhen(m.target_at, locale, timeZone, now);
+  // a question we wrote ourselves carries its own text in every language
+  const own = (m.params as { q?: Record<string, string> }).q;
+  if (own) return (locale === "it" ? own.it : locale === "ja" ? own.ja : own.en) ?? own.en ?? own.it ?? "";
   if (m.kind === "bus_full") return msg.question.full({ occ: m.params.occ as "empty", route: String(m.params.routeName ?? ""), stop: String(m.params.stopName ?? ""), time });
   // the answer counts the whole hour: the question names the hour, not the middle of it
   const h0 = new Date(Math.floor(new Date(m.target_at).getTime() / 3600_000) * 3600_000).toISOString(), h1 = new Date(Date.parse(h0) + 3600_000).toISOString();
@@ -91,6 +94,9 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
 
 /** A line like 226.5 written with the locale's decimal sign. */
 export const fmtLine = (n: number, locale: Locale) => String(n).replace(".", locale === "it" ? "," : ".");
+
+/** Whole days from now to an instant (0 on the day itself). */
+export const daysUntil = (ms: number, now = Date.now()) => Math.max(0, Math.ceil((ms - now) / 86_400_000));
 
 export const minutesUntil = (iso: string, now = Date.now()) => Math.max(0, Math.floor((Date.parse(iso) - now) / 60000));
 

@@ -22,6 +22,7 @@ import { Sky } from "./Sky.tsx";
 import { OccScene } from "./OccScene.tsx";
 import { TripScene } from "./TripScene.tsx";
 import { StakeControl } from "./StakeControl.tsx";
+import { Remind } from "./Remind.tsx";
 
 /** Bet slip for one event: pick, stake, then place it (guests do the "last step" sign-up right here when it is required). */
 export function BetSheet(p: {
@@ -61,10 +62,11 @@ export function BetSheet(p: {
       {copied && <p class="hint" role="status">{p.msg.maker.copied}</p>}
       {p.m.kind === "match_bet" && <div class="vscard"><MarketVs m={p.m} size={38} />{reasonOf(p.m, p.msg) && <span class="reason big">{reasonOf(p.m, p.msg)}</span>}</div>}
       <p class="q" style="font-weight:600"><Q m={p.m} msg={p.msg} locale={p.locale} city={cityName(city, p.locale)} tz={city.timezone} /></p>
+      {(p.m.params as { house?: boolean }).house && <Remind id={p.m.id} msg={p.msg} />}
       {typeof p.m.params.by === "string" && p.m.params.by && <p class="byline">{p.msg.maker.by(p.m.params.by)}</p>}
       {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "traffic_speed_lt" ? <TrafficScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "match_bet" ? <SportScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "tick_gt" ? <TickScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" || p.m.kind === "strike_on" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : p.m.kind === "bus_full" ? <OccScene m={p.m} hint={pick} level={p.occ?.level} msg={p.msg} /> : <TripScene m={p.m} now={p.now} hint={pick} big />}
       {(p.m.params.custom === "true" || p.m.params.local === "true") && <AreaStats marketId={p.m.id} msg={p.msg} />}
-      {p.m.kind === "tick_gt" && <TickChart m={p.m} msg={p.msg} locale={p.locale} />}
+      {p.m.kind === "tick_gt" && !(p.m.params as { house?: boolean }).house && <TickChart m={p.m} msg={p.msg} locale={p.locale} />}
       <div>
         <span class="detail">{p.msg.sheet.pick}</span>
         <div class="actions2" style="margin-top:8px">

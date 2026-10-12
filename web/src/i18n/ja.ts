@@ -204,6 +204,7 @@ const ja: Messages = {
     deco: {"copper": "銅", "bronze": "ブロンズ", "silver": "銀", "gold": "金", "diamond": "ダイヤ", "amethyst": "アメジスト", "platinum": "プラチナ", "mithril": "ミスリル", "orichalcum": "オリハルコン", "adamantium": "アダマンチウム", "jade": "翡翠", "ruby": "ルビー", "sapphire": "サファイア", "obsidian": "黒曜石", "opal": "オパール"},
     rarity: {"common": "コモン", "uncommon": "アンコモン", "rare": "レア", "epic": "エピック", "legendary": "レジェンド", "mythic": "ミシック"},
   },
+  house: { excl: "LateLotto限定", inDays: (n) => (n <= 0 ? "今日" : n === 1 ? "明日" : `${n}日後`), daysWord: () => "日", remind: "リマインド", reminding: "前日にお知らせします", needPush: "通知を受け取るにはプロフィールで通知をオンにしてください" },
   frd: {
     boardTab: "友達", groupsTab: "グループ", inviteTitle: "友達を招待", inviteBody: "招待を受けた人はすぐ友達になります。ここで見つけてチャレンジできます。", inviteBtn: "招待を共有", invitedCount: (n) => `${n}人の友達を招待`,
     empty: "まだ友達がいません", emptyBody: "最初の1人を招待しましょう。承認するとここに今月のスコアと一緒に表示されます。", anon: "プレイヤー", remove: "削除", removeAsk: (n) => `${n}さんを友達から外しますか？`, removeYes: "はい、削除", removeNo: "キャンセル", removed: "友達を削除しました", challenge: "チャレンジを作る", boardHint: "あなたと友達の今月のランキングです。",

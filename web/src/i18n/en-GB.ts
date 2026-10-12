@@ -204,6 +204,7 @@ const enGB: Messages = {
     deco: {"copper": "Copper", "bronze": "Bronze", "silver": "Silver", "gold": "Gold", "diamond": "Diamond", "amethyst": "Amethyst", "platinum": "Platinum", "mithril": "Mithril", "orichalcum": "Orichalcum", "adamantium": "Adamantium", "jade": "Jade", "ruby": "Ruby", "sapphire": "Sapphire", "obsidian": "Obsidian", "opal": "Opal"},
     rarity: {"common": "Common", "uncommon": "Uncommon", "rare": "Rare", "epic": "Epic", "legendary": "Legendary", "mythic": "Mythic"},
   },
+  house: { excl: "LateLotto exclusive", inDays: (n) => (n <= 0 ? "Today" : n === 1 ? "Tomorrow" : `In ${n} days`), daysWord: (n) => (n === 1 ? "day" : "days"), remind: "Remind me", reminding: "I'll tell you the day before", needPush: "Turn on notifications in Profile to get the reminder" },
   frd: {
     boardTab: "Friends", groupsTab: "Groups", inviteTitle: "Invite a friend", inviteBody: "Whoever accepts your invite becomes your friend right away: you find them here and can challenge them.", inviteBtn: "Share invite", invitedCount: (n) => (n === 1 ? "1 friend invited" : `${n} friends invited`),
     empty: "No friends yet", emptyBody: "Invite the first one: as soon as they accept they show up here with their score of the month.", anon: "Player", remove: "Remove", removeAsk: (n) => `Remove ${n} from your friends?`, removeYes: "Yes, remove", removeNo: "Cancel", removed: "Friend removed", challenge: "Start a challenge", boardHint: "This month's ranking between you and your friends.",

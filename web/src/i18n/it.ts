@@ -204,6 +204,7 @@ const it: Messages = {
     deco: {"copper": "Rame", "bronze": "Bronzo", "silver": "Argento", "gold": "Oro", "diamond": "Diamante", "amethyst": "Ametista", "platinum": "Platino", "mithril": "Mithril", "orichalcum": "Oricalco", "adamantium": "Adamantio", "jade": "Giada", "ruby": "Rubino", "sapphire": "Zaffiro", "obsidian": "Ossidiana", "opal": "Opale"},
     rarity: {"common": "Comune", "uncommon": "Non comune", "rare": "Rara", "epic": "Epica", "legendary": "Leggendaria", "mythic": "Mitica"},
   },
+  house: { excl: "Esclusiva LateLotto", inDays: (n) => (n <= 0 ? "Oggi" : n === 1 ? "Domani" : `Tra ${n} giorni`), daysWord: (n) => (n === 1 ? "giorno" : "giorni"), remind: "Ricordamelo", reminding: "Ti avviso il giorno prima", needPush: "Per ricevere l'avviso attiva le notifiche dal Profilo" },
   frd: {
     boardTab: "Amici", groupsTab: "Gruppi", inviteTitle: "Invita un amico", inviteBody: "Chi accetta il tuo invito diventa subito tuo amico: lo trovi qui e puoi sfidarlo.", inviteBtn: "Condividi invito", invitedCount: (n) => (n === 1 ? "1 amico invitato" : `${n} amici invitati`),
     empty: "Ancora nessun amico", emptyBody: "Invita il primo: appena accetta, appare qui con il suo punteggio del mese.", anon: "Giocatore", remove: "Rimuovi", removeAsk: (n) => `Togliere ${n} dagli amici?`, removeYes: "Sì, rimuovi", removeNo: "Annulla", removed: "Amico rimosso", challenge: "Lancia una sfida", boardHint: "Classifica del mese tra te e i tuoi amici.",

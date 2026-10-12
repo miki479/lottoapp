@@ -30,6 +30,10 @@ export function AdminPage({ msg, onBack }: { msg: Messages; onBack: () => void }
   const [err, setErr] = useState(false);
   const load = async () => { const { data: d, error } = await sb.rpc("admin_overview"); if (error) setErr(true); else { setErr(false); setData(d as Overview); } };
   useEffect(() => { load(); }, []);
+  const [house, setHouse] = useState<{ id: string; label: string; status: string; outcome: string | null; target_at: string; bets: number }[]>([]);
+  const loadHouse = async () => { const { data: h } = await sb.rpc("admin_house_markets"); setHouse((h ?? []) as typeof house); };
+  useEffect(() => { loadHouse(); }, []);
+  const settle = async (id: string, yes: boolean) => { await sb.rpc("admin_house_settle", { p_market: id, p_yes: yes }); loadHouse(); };
   const resolve = async (id: string) => { await sb.rpc("admin_resolve_report", { p_id: id }); load(); };
   const now = Date.now(), a = msg.admin;
   return (
@@ -58,6 +62,11 @@ export function AdminPage({ msg, onBack }: { msg: Messages; onBack: () => void }
         {!data.moderation || data.moderation.recent.length === 0 ? <p class="hint">{a.noModeration}</p> : data.moderation.recent.map((x, i) => (
           <div class="adminrow" key={i}><span class="grow"><b>«{x.text}»</b><small class="hint" style="display:block">{x.matched} · {x.source} · {ago(x.at, now)}</small></span></div>
         ))}
+        {house.length > 0 && <><h3>Esclusive</h3>{house.map((h) => (
+          <div class="adminrow" key={h.id}>
+            <span class="grow"><b>{h.label}</b><small class="hint" style="display:block">{h.status}{h.outcome ? ` → ${h.outcome}` : ""} · {h.bets} puntate · {new Date(h.target_at).toLocaleString()}</small></span>
+            {h.status === "open" && Date.parse(h.target_at) <= now && <><button class="btn secondary" onClick={() => settle(h.id, false)}>No</button><button class="btn primary" onClick={() => settle(h.id, true)}>Sì</button></>}
+          </div>))}</>}
         <h3>{a.reports} ({data.reports.length})</h3>
         {data.reports.length === 0 ? <p class="hint">{a.noReports}</p> : data.reports.map((r) => (
           <div class="adminrow" key={r.id} style="align-items:flex-start">

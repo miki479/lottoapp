@@ -1,5 +1,5 @@
 import { testMode } from "./lib/testmode.ts";
-import { Activity, Bitcoin, Clapperboard, Clock, CloudLightning, MapPin, Trophy, TrendingUp, Users, Zap } from "lucide-preact";
+import { Activity, Bitcoin, Clapperboard, Clock, CloudLightning, Gamepad2, MapPin, Trophy, TrendingUp, Users, Zap } from "lucide-preact";
 import { RING_BONUS, STREAK_MILESTONES } from "../../shared/rewards.ts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { AuthSheet } from "./components/AuthSheet.tsx";
@@ -40,7 +40,7 @@ import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
 import { every } from "./lib/poll.ts";
 import { computeOdds } from "../../shared/odds.ts";
-import { countdown, currencySymbol, dayIn, fmtOdds, isYesNo, money, question, superText, type MarketRow } from "./lib/format.ts";
+import { countdown, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
 import { PlacePicker } from "./components/PlacePicker.tsx";
@@ -223,8 +223,10 @@ export function App() {
     const mine = placeIds.current.length ? (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("city_id", placeIds.current).gt("closes_at", new Date().toISOString()).order("closes_at").limit(160)).data ?? [] : [];
     // Questions that close far ahead (matches, daily page views, price lines) would fall off the first page: fetch them on their own.
     const far = (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("category", ["sport", "finance", "culture", "nature"]).gt("closes_at", new Date().toISOString()).order("closes_at").limit(200)).data ?? [];
+    // the questions we write ourselves close far ahead: always fetched on their own
+    const house = (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").eq("kind", "tick_gt").like("params->>series", "house:%").gt("closes_at", new Date().toISOString()).limit(10)).data ?? [];
     const seen = new Set([...(data ?? []), ...mine].map((x) => (x as { id: string }).id));
-    const extra = far.filter((x) => !seen.has((x as unknown as { id: string }).id));
+    const extra = [...far, ...house].filter((x) => !seen.has((x as unknown as { id: string }).id));
     if (!error) { setMarkets([...(data ?? []), ...mine, ...extra].filter((m) => testMode() || !(m.params as { testOnly?: boolean } | null)?.testOnly) as MarketRow[]); if (navigator.onLine) setOffline(false); }
     else if (/fetch|network|load failed/i.test(error.message)) setOffline(true);
     const { data: h } = await sb.from("feed_health").select("feed_id,last_ok_at");
@@ -351,6 +353,9 @@ export function App() {
     const open1 = (c: string, within: number) => inFilter.filter((m) => m.category === c && Date.parse(m.closes_at) > now && Date.parse(m.closes_at) - now < within * 3600_000 && !(m.params as { testOnly?: boolean }).testOnly);
     const sub = (m: MarketRow) => question(m, msg, locale, cityName(cityOf(m.city_id), locale), cityOf(m.city_id).timezone, new Date(now));
     const feat = (id: string, icon: TopItem["icon"], label: string, m: MarketRow | undefined, big: preact.ComponentChildren, pick: "yes" | "no" = "yes") => { if (m) items.push({ mid: m.id, id, icon, label, big, sub: sub(m), onClick: () => setSheet({ m, pick }) }); };
+    // the game everybody is waiting for: one hour in, one hour out, so the featured row does not fill up
+    const gta = open.find((m) => String(m.params.series ?? "") === "house:gta6" && Date.parse(m.closes_at) > now);
+    if (gta && Math.floor(now / 3600_000) % 2 === 0) { const d = daysUntil(Number(gta.params.releaseAt) * 1000, now); items.unshift({ mid: gta.id, id: "gta", cls: "gta", icon: Gamepad2, label: msg.house.excl, big: <>{d}<small>{msg.house.daysWord(d)}</small></>, sub: sub(gta), onClick: () => setSheet({ m: gta, pick: "yes" }) }); }
     // football: the likeliest draw, the match where both teams most likely score (its goal bet is opened on tap), the longest-priced away win
     const three = open1("sport", 72).filter((m) => ["home_win", "draw", "away_win"].includes(String(m.params.bet)));
     const prior = (m: MarketRow, k: string) => Number((m.params.priors as Record<string, number> | undefined)?.[k]);

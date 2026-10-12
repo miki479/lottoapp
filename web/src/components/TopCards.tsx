@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-preact";
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef } from "preact/hooks";
 
-export interface TopItem { mid?: string; id: string; icon: LucideIcon; label: string; big: ComponentChildren; sub: string; extra?: ComponentChildren; onClick: () => void }
+export interface TopItem { cls?: string; mid?: string; id: string; icon: LucideIcon; label: string; big: ComponentChildren; sub: string; extra?: ComponentChildren; onClick: () => void }
 
 /** Pixels per frame of the slow drift (about 20 px a second) and how long the row waits after a touch before it moves again. */
 const DRIFT = 0.34, IDLE_MS = 5000;
@@ -42,7 +42,7 @@ export function TopCards({ items, lead }: { items: TopItem[]; lead?: ComponentCh
       {items.map((it, i) => {
         const Icon = it.icon;
         return (
-          <button key={(copy ? "d" : "") + it.id} tabIndex={copy ? -1 : undefined} aria-hidden={copy ? "true" : undefined} class={`card pressable topcard c${i % 4}`} style={copy ? undefined : `animation: rise var(--dur) var(--ease) ${i * 40}ms both`} onClick={it.onClick}>
+          <button key={(copy ? "d" : "") + it.id} tabIndex={copy ? -1 : undefined} aria-hidden={copy ? "true" : undefined} class={`card pressable topcard c${i % 4} ${it.cls ?? ""}`} style={copy ? undefined : `animation: rise var(--dur) var(--ease) ${i * 40}ms both`} onClick={it.onClick}>
             <span class="head"><Icon size={16} /><span class="detail">{it.label}</span></span>
             <span class="big">{it.big}</span>
             {it.extra}

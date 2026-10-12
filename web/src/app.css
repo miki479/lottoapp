@@ -1191,3 +1191,11 @@ textarea.field { resize: vertical; min-height: 84px; }
 
 .top-scroll .top-dup { display: block; width: 0; height: 0; flex: none; margin-left: calc(var(--gap) * -1); }
 @media (min-width: 1024px) { .top-scroll > .top-dup, .top-scroll > .top-dup ~ * { display: none; } }
+
+/* the house question about the game everybody is waiting for */
+.topcard.gta { background: linear-gradient(160deg, #1b8bff 0%, #6a4bff 42%, #d13fd0 74%, #ff9a5a 100%); border-color: rgba(255, 255, 255, .35); color: #fff; }
+.topcard.gta .head, .topcard.gta .head svg, .topcard.gta .big small, .topcard.gta .sub { color: rgba(255, 255, 255, .92); }
+.topcard.gta .big { text-shadow: 0 2px 10px rgba(60, 10, 110, .45); }
+.mscene.house.gta b { text-shadow: 0 1px 6px rgba(40, 8, 90, .6); }
+.remind { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.remind .btn.on { border-color: var(--brand); color: var(--brand); }

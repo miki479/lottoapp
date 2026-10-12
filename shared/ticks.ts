@@ -48,6 +48,8 @@ export function tmWindow(at: number): { from: string; to: string } {
 }
 /** The rating TVmaze shows for one episode (series "tv:<episode id>"): asked again three days after it airs. */
 export const isTv = (s: string) => /^tv:\d+$/.test(s);
+/** A question we write ourselves ("house:gta6"): settled by an admin once the day has passed, refunded if nobody does. */
+export const isHouse = (s: string) => /^house:[a-z0-9_-]{2,30}$/.test(s);
 export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isStorm(s) || isMetal(s) || isTicket(s);
 
 /** Saffir-Simpson scale by sustained wind in knots (1 min average), as NHC reports it. */
@@ -64,6 +66,7 @@ export function tickDef(series: string): TickDef | null {
   if (isAlert(series)) return { category: "nature", label: "Allerta", unit: "", min: 0, max: 3 };
   if (isStorm(series)) return { category: "nature", label: "Storm", unit: " kt", min: 0, max: 200 };
   if (isSteam(series)) return { category: "culture", label: STEAM[series.slice(6) as keyof typeof STEAM], unit: "", min: 0, max: 100_000_000 };
+  if (isHouse(series)) return { category: "culture", label: "Esclusiva", unit: "", min: 0, max: 1 };
   if (isTv(series)) return { category: "culture", label: "Voto episodio", unit: "", min: 0.5, max: 10 };
   if (isTicket(series)) return { category: "culture", label: `Concerti ${TM_PLACES[series.slice(3) as TmPlace].label}`, unit: "", min: 0, max: 100_000 };
   if (series === "kp") return { category: "nature", label: "Kp", unit: "", min: 0, max: 9 };
