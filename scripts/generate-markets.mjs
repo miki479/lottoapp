@@ -106,15 +106,6 @@ async function realtimeTripIds(feed) {
   return new Set(m.entity.filter((e) => e.tripUpdate?.trip?.tripId).map((e) => e.tripUpdate.trip.tripId));
 }
 
-/** Route ids with at least one trip in the real-time feed right now: other routes have no tracked buses, a question on them would end void. */
-async function realtimeRouteIds(feed) {
-  const GtfsRt = (await import("gtfs-realtime-bindings")).default;
-  const res = await fetch(feed.url, { headers: { "User-Agent": "LateLotto/0.1 (play-money game)", ...hdrs(feed) } });
-  if (!res.ok) throw new Error(`real-time feed ${res.status}`);
-  const m = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(new Uint8Array(await res.arrayBuffer())));
-  return new Set(m.entity.filter((e) => e.tripUpdate?.trip?.routeId).map((e) => e.tripUpdate.trip.routeId));
-}
-
 async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
   const { ymd, weekday } = localYmd(dayEpoch, city.timezone);
   const services = activeServiceIds(ymd, weekday, await readAll(join(dir, "calendar.txt")).catch(() => []), await readAll(join(dir, "calendar_dates.txt")).catch(() => []));
@@ -123,8 +114,11 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
     if (feed.routeTypes && !feed.routeTypes.includes(Number(r.route_type || 3))) continue;
     routes.set(r.route_id, r.route_short_name || r.route_long_name || r.route_id);
   }
-  const liveRoutes = feed.realtimeRoutesOnly ? await realtimeRouteIds(feed) : null;
-  const trips = (await readAll(join(dir, "trips.txt"))).filter((t) => (rtTrips ? rtTrips.has(t.trip_id) : services.has(t.service_id)) && routes.has(t.route_id) && (!liveRoutes || liveRoutes.has(t.route_id)));
+  const allTrips = await readAll(join(dir, "trips.txt"));
+  // routes found through the static timetable (some feeds carry no route id): a route is live when one of its trips is in the real-time feed
+  let liveRoutes = null;
+  if (feed.realtimeRoutesOnly) { const live = await realtimeTripIds(feed); liveRoutes = new Set(allTrips.filter((t) => live.has(t.trip_id)).map((t) => t.route_id)); }
+  const trips = allTrips.filter((t) => (rtTrips ? rtTrips.has(t.trip_id) : services.has(t.service_id)) && routes.has(t.route_id) && (!liveRoutes || liveRoutes.has(t.route_id)));
   console.error(`[${feed.id}] ${ymd}: ${services.size} services, ${routes.size} routes, ${trips.length} trips today`);
   if (trips.length === 0) return { markets: [], schedule: [] };
 
