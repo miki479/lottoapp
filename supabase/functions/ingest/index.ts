@@ -134,6 +134,11 @@ async function pingUsgs(sb: ReturnType<typeof db>, now: number, last: number): P
   try {
     const j = JSON.parse(new TextDecoder().decode(await fetchBytes("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_hour.geojson")));
     if (!Array.isArray(j?.features)) throw new Error("unexpected USGS response");
+    const big = (j.features as { properties?: { mag?: number } }[]).map((f) => Number(f.properties?.mag)).filter((m) => m >= 6.5).sort((a, b) => b - a)[0];
+    if (big) {
+      const { data: qm } = await sb.from("markets").select("id").eq("kind", "quake_m").eq("status", "open").gt("closes_at", new Date(Date.now() + 30 * 60_000).toISOString()).order("closes_at").limit(1);
+      if (qm?.[0]) await sb.rpc("make_super", { p_market: qm[0].id, p_subject: "quake", p_reason: "quake", p_value: String(big) });
+    }
   } catch (e) {
     await sb.from("feed_health").upsert({ feed_id: "usgs", last_error: String((e as Error).message ?? e).slice(0, 300), last_error_at: new Date().toISOString() });
     throw e;
@@ -431,6 +436,22 @@ async function fetchOil(): Promise<Partial<Record<OilKey, { date: string; value:
   return out;
 }
 
+/** "Super quota": boosts the Yes odds of the next open question about a series for an hour (the database enforces two a day and no repeats). */
+async function boostSeries(sb: ReturnType<typeof db>, series: string, reason: string, value: string): Promise<boolean> {
+  const { data } = await sb.from("markets").select("id").eq("kind", "tick_gt").eq("status", "open").like("params->>series", series).gt("closes_at", new Date(Date.now() + 30 * 60_000).toISOString()).order("closes_at").limit(1);
+  const id = data?.[0]?.id as string | undefined;
+  if (!id) return false;
+  const { data: ok } = await sb.rpc("make_super", { p_market: id, p_subject: series.replace("%", ""), p_reason: reason, p_value: value });
+  return ok === true;
+}
+/** Percentage move of a price against its value about a day ago (from the stored history); null when there is no history yet. */
+async function dayMove(sb: ReturnType<typeof db>, histSeries: string, now: number, cur: number): Promise<number | null> {
+  const { data } = await sb.from("tick_history").select("value").eq("series", histSeries).lte("at", new Date((now - 23 * 3600) * 1000).toISOString()).gte("at", new Date((now - 40 * 3600) * 1000).toISOString()).order("at", { ascending: false }).limit(1);
+  const old = Number(data?.[0]?.value);
+  return Number.isFinite(old) && old > 0 ? Math.round(((cur - old) / old) * 1000) / 10 : null;
+}
+const MOVE_TH: Record<string, number> = { btc: 3, eth: 4, xau: 1.2, xag: 2.5, xpt: 2.5, hg: 2.5 };
+
 async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
   const notes: string[] = [];
   // 1. Instants that have just passed: record the number once, as a fact.
@@ -507,7 +528,8 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     await sb.from("feed_health").upsert({ feed_id: "ticks", last_attempt_at: new Date(now * 1000).toISOString() });
     const markets: Record<string, unknown>[] = [];
     let ok = 0;
-    try { markets.push(...buildCryptoMarkets(await fetchPrices(), now)); ok++; } catch (e) { notes.push(`prices: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    let cryptoNow: Partial<Record<CryptoSeries, number>> = {};
+    try { cryptoNow = await fetchPrices(); markets.push(...buildCryptoMarkets(cryptoNow, now)); ok++; } catch (e) { notes.push(`prices: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
       const doc = await getJson(ALERT_URL);
       const cur: Record<string, number> = {};
@@ -529,9 +551,11 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     } catch (e) { notes.push(`wiki: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     const extraHist: Record<string, unknown>[] = [];
     const hourIso = new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString();
-    try { const mp = await fetchMetals(now); markets.push(...buildMetalMarkets(mp, now)); for (const [k, v] of Object.entries(mp)) extraHist.push({ series: `metal:${k}`, at: hourIso, value: v }); ok++; } catch (e) { notes.push(`metals: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    let metalsNow: Partial<Record<MetalKey, number>> = {};
+    try { const mp = await fetchMetals(now); metalsNow = mp; markets.push(...buildMetalMarkets(mp, now)); for (const [k, v] of Object.entries(mp)) extraHist.push({ series: `metal:${k}`, at: hourIso, value: v }); ok++; } catch (e) { notes.push(`metals: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    let fuelNow: { date: string; avgs: Partial<Record<FuelKey, number>> } | null = null;
     if (Math.floor(now / 3600) % 6 === 1) {
-      try { const f = await fetchFuel(); markets.push(...buildFuelMarkets(f.avgs, f.date, now)); for (const [k, v] of Object.entries(f.avgs)) extraHist.push({ series: `fuel:${k}`, at: `${f.date}T00:00:00Z`, value: v }); ok++; } catch (e) { notes.push(`fuel: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+      try { const f = await fetchFuel(); markets.push(...buildFuelMarkets(f.avgs, f.date, now)); fuelNow = f; for (const [k, v] of Object.entries(f.avgs)) extraHist.push({ series: `fuel:${k}`, at: `${f.date}T00:00:00Z`, value: v }); ok++; } catch (e) { notes.push(`fuel: ${String((e as Error).message ?? e).slice(0, 80)}`); }
       try {
         const o = await fetchOil(); const latest: Partial<Record<OilKey, { date: string; value: number }>> = {};
         for (const [k, rows2] of Object.entries(o) as [OilKey, { date: string; value: number }[]][]) { if (rows2[0]) latest[k] = rows2[0]; for (const r of rows2) extraHist.push({ series: `oil:${k}`, at: `${r.date}T00:00:00Z`, value: r.value }); }
@@ -540,6 +564,18 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     }
     if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
     notes.push(`${markets.length} offered`);
+    // Super quota triggers: the fuel list moved, a coin or a metal moved sharply in a day, a hurricane is at major strength.
+    try {
+      if (fuelNow) for (const [k, avg] of Object.entries(fuelNow.avgs) as [FuelKey, number][]) {
+        const { data: prev } = await sb.from("tick_history").select("value").eq("series", `fuel:${k}`).lt("at", `${fuelNow.date}T00:00:00Z`).order("at", { ascending: false }).limit(1);
+        const p0 = Number(prev?.[0]?.value);
+        if (Number.isFinite(p0)) { const cents = Math.round((avg - p0) * 1000) / 10; if (Math.abs(cents) >= 0.5) { if (await boostSeries(sb, `fuel:${k}`, "fuel_move", String(cents))) notes.push(`super fuel:${k} ${cents}`); } }
+      }
+      for (const [k, v] of Object.entries(cryptoNow) as [CryptoSeries, number][]) { const mv = await dayMove(sb, `px:${k}`, now, v); if (mv !== null && Math.abs(mv) >= (MOVE_TH[k] ?? 99) && (await boostSeries(sb, k, "price_move", String(mv)))) notes.push(`super ${k} ${mv}`); }
+      for (const [k, v] of Object.entries(metalsNow) as [MetalKey, number][]) { const mv = await dayMove(sb, `metal:${k}`, now, v); if (mv !== null && Math.abs(mv) >= (MOVE_TH[k] ?? 99) && (await boostSeries(sb, `metal:${k}`, "price_move", String(mv)))) notes.push(`super metal:${k} ${mv}`); }
+      const big = stormsNow.filter((x) => x.kt >= 96).sort((x, y) => y.kt - x.kt)[0];
+      if (big && (await boostSeries(sb, "storm:%", "storm", String(big.kt)))) notes.push(`super storm ${big.kt}`);
+    } catch (e) { notes.push(`super: ${String((e as Error).message ?? e).slice(0, 60)}`); }
     if (extraHist.length) await sb.from("tick_history").upsert(extraHist, { onConflict: "series,at" });
     // History for the charts: coin prices by the hour (last ~2 days), Kp by 3-hour window, page views by day.
     try {

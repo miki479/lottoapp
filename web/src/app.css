@@ -1021,3 +1021,4 @@ textarea.field { resize: vertical; min-height: 84px; }
 .matchrow.simple .vs, .matchrow .vs { margin: 2px 0; }
 .plhead { display: flex; align-items: center; gap: 8px; margin-top: 6px; } .plhead b { font-size: 14px; color: var(--text); }
 .subject { display: block; font-size: 12px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--brand); }
+.badge-flash.super { background: linear-gradient(90deg, #ff4d6a, #ff9d3d); color: #fff; } .supernote { margin: 4px 0 0; font-size: 13px; font-weight: 700; color: #d6334f; }

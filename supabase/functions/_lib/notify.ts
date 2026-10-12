@@ -59,7 +59,7 @@ const PCOLS = "id,locale,timezone,city_id,streak,last_play_date,push_day,push_co
 /** A new flash event: tell the opted-in players of that city (once per event). */
 export async function notifyFlash(sb: Db): Promise<number> {
   if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
-  const { data: ms } = await sb.from("markets").select("id,city_id,flash_multiplier").eq("flash_notified", false).gt("flash_multiplier", 1).gt("flash_until", new Date().toISOString()).limit(20);
+  const { data: ms } = await sb.from("markets").select("id,city_id,flash_multiplier").eq("flash_notified", false).neq("city_id", "world").gt("flash_multiplier", 1).gt("flash_until", new Date().toISOString()).limit(20);
   let n = 0;
   for (const m of ms ?? []) {
     const { data: who } = await sb.from("profiles").select(PCOLS).eq("push_flash", true).eq("city_id", m.city_id).limit(500);
@@ -144,6 +144,36 @@ export async function notifyInvites(sb: Db): Promise<number> {
     if (r.friend_challenges?.code && !(await send([r.user_id], "LateLotto", INVITE[loc](who), `https://latelotto.web.app/?c=${r.friend_challenges.code}`))) continue;
     await sb.from("challenge_invites").update({ notified: true }).eq("challenge_id", r.challenge_id).eq("user_id", r.user_id);
     n++;
+  }
+  return n;
+}
+
+const SUPER: Record<string, Record<string, (l: string, v: number) => string>> = {
+  it: { fuel_move: (l, v) => `Super quota: ${l} ${v < 0 ? "in calo" : "in rialzo"} di ${Math.abs(v)} cent`, price_move: (l, v) => `Super quota: ${l} ${v > 0 ? "vola" : "crolla"} del ${Math.abs(v)}%`, quake: (_l, v) => `Super quota: terremoto di magnitudo ${v}`, storm: (_l, v) => `Super quota: uragano a ${v} nodi` },
+  "en-US": { fuel_move: (l, v) => `Super odds: ${l} ${v < 0 ? "down" : "up"} ${Math.abs(v)} cents`, price_move: (l, v) => `Super odds: ${l} ${v > 0 ? "jumps" : "drops"} ${Math.abs(v)}%`, quake: (_l, v) => `Super odds: magnitude ${v} earthquake`, storm: (_l, v) => `Super odds: hurricane at ${v} knots` },
+  ja: { fuel_move: (l, v) => `スーパーオッズ：${l}が${Math.abs(v)}セント${v < 0 ? "下落" : "上昇"}`, price_move: (l, v) => `スーパーオッズ：${l}が${Math.abs(v)}%${v > 0 ? "急騰" : "急落"}`, quake: (_l, v) => `スーパーオッズ：マグニチュード${v}の地震`, storm: (_l, v) => `スーパーオッズ：風速${v}ノットのハリケーン` },
+};
+SUPER["en-GB"] = SUPER["en-US"]!;
+const SUBJECT: Record<string, Record<string, string>> = {
+  it: { "fuel:benzina": "la benzina", "fuel:gasolio": "il gasolio", btc: "Bitcoin", eth: "Ethereum", "metal:xau": "l'oro", "metal:xag": "l'argento", "metal:xpt": "il platino", "metal:hg": "il rame" },
+  en: { "fuel:benzina": "petrol", "fuel:gasolio": "diesel", btc: "Bitcoin", eth: "Ethereum", "metal:xau": "gold", "metal:xag": "silver", "metal:xpt": "platinum", "metal:hg": "copper" },
+  ja: { "fuel:benzina": "ガソリン", "fuel:gasolio": "軽油", btc: "ビットコイン", eth: "イーサリアム", "metal:xau": "金", "metal:xag": "銀", "metal:xpt": "プラチナ", "metal:hg": "銅" },
+};
+
+/** A "super quota" just started: tell everyone who allowed the optional pushes (once per question; at most 2 optional pushes a day each). */
+export async function notifySupers(sb: Db): Promise<number> {
+  if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
+  const { data: ms } = await sb.from("markets").select("id,params").eq("flash_notified", false).eq("flash_kind", "super").gt("flash_until", new Date().toISOString()).limit(3);
+  let n = 0;
+  for (const m of ms ?? []) {
+    const sp = (m.params as { super?: { reason: string; subject: string; value: string } }).super;
+    const { data: who } = await sb.from("profiles").select(PCOLS).eq("push_flash", true).limit(1000);
+    if (sp) n += await sendOptional(sb, (who ?? []) as Pref[], (p) => {
+      const loc = p.locale in SUPER ? p.locale : "en-US", lang = loc === "it" ? "it" : loc === "ja" ? "ja" : "en";
+      const subj = SUBJECT[lang]![sp.subject] ?? SUBJECT[lang]![sp.subject.replace(/:.*/, "")] ?? sp.subject;
+      return (SUPER[loc]![sp.reason] ?? SUPER["en-US"]![sp.reason] ?? ((_l: string, _v: number) => "Super odds"))(subj, Number(sp.value));
+    });
+    await sb.from("markets").update({ flash_notified: true }).eq("id", m.id);
   }
   return n;
 }

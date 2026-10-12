@@ -5,7 +5,7 @@ import { parseStrikeRss } from "../_shared/shared/strikes.ts";
 import { isDetailBet, isPlayerBet, type MatchObservation } from "../_shared/shared/sport.ts";
 import type { DelayObservation, MetricObservation, QuakeReading, StrikeReading, TickObservation, TrafficObservation, WeatherObservation } from "../_shared/shared/types.ts";
 import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
-import { lastNotifyError, notifyFlash, notifyInvites, notifyModeration, notifyResults, notifyStreak } from "../_lib/notify.ts";
+import { lastNotifyError, notifyFlash, notifyInvites, notifySupers, notifyModeration, notifyResults, notifyStreak } from "../_lib/notify.ts";
 
 Deno.serve(safe(async (req) => {
   const denied = requireCron(req);
@@ -107,7 +107,7 @@ Deno.serve(safe(async (req) => {
     }
   }
   const safeCount = (p: Promise<number>) => p.catch((e) => { console.error("notify failed", e); return 0; });
-  const notified = await safeCount(notifyResults(sb)) + await safeCount(notifyFlash(sb)) + await safeCount(notifyStreak(sb)) + await safeCount(notifyModeration(sb)) + await safeCount(notifyInvites(sb));
+  const notified = await safeCount(notifyResults(sb)) + await safeCount(notifyFlash(sb)) + await safeCount(notifyStreak(sb)) + await safeCount(notifyModeration(sb)) + await safeCount(notifyInvites(sb)) + await safeCount(notifySupers(sb));
   return Response.json({ ...out, notified, notifyError: lastNotifyError.msg });
 }));
 

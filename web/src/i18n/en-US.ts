@@ -154,6 +154,7 @@ const enUS: Messages = {
   },
   cm: { Gold: "Gold", Silver: "Silver", Platinum: "Platinum", Copper: "Copper", Benzina: "petrol", Gasolio: "diesel", Brent: "Brent", WTI: "WTI" },
   hist: { title: "Your trend", empty: "Once your first bets close, you will see how your credits are going here.", days: (n) => `${n} days`, best: "Going well", worst: "Going badly", byCategory: "By category", all: "All", won: "Won", lost: "Lost", void: "Refunded", more: "Load more", showing: (a) => `${a} shown` },
+  sup: { badge: "Super odds", top: "Super odds", fuel_move: (l, v) => `${l}: ${v < 0 ? "down" : "up"} ${Math.abs(v)} cents a litre`, price_move: (l, v) => `${l} ${v > 0 ? "jumps" : "drops"} ${Math.abs(v)}% in a day`, quake: (v) => `Magnitude ${v} earthquake just happened`, storm: (v) => `Hurricane at ${v} knots` },
   dm: {
     title: "Today's missions", resets: (t) => `Renews in ${t}`, claim: "Collect", done: "Done", chest: "Daily chest", chestBody: (c) => `Finish all three missions: ${c} and 1 boost`, chestOpen: "Open the chest", chestOpened: (c, b) => `Chest opened: ${c} and ${b} boost`, chestLocked: (n) => `${n} to go`, got: (c) => `Mission complete: ${c}`,
     streak: (n) => `${n}-day streak`,

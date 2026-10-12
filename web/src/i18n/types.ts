@@ -97,6 +97,7 @@ export interface Messages {
   errors: Record<string, string>;
   feedWarning: string;
   cm: Record<string, string>;
+  sup: { badge: string; top: string; fuel_move: (l: string, v: number) => string; price_move: (l: string, v: number) => string; quake: (v: number) => string; storm: (v: number) => string };
   hist: { title: string; empty: string; days: (n: number) => string; best: string; worst: string; byCategory: string; all: string; won: string; lost: string; void: string; more: string; showing: (a: number) => string };
   dm: {
     title: string; resets: (t: string) => string; claim: string; done: string; chest: string; chestBody: (c: string) => string; chestOpen: string; chestOpened: (c: string, b: number) => string; chestLocked: (n: number) => string; got: (c: string) => string;

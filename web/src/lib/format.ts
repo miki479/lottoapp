@@ -148,3 +148,12 @@ export function quip(m: MarketRow, msg: Messages): string {
   const h = [...m.id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);
   return list[h % list.length]!;
 }
+
+/** What happened, in words, for a "super odds" question (null when the question is not one). */
+export function superText(m: MarketRow, msg: Messages): string | null {
+  const sp = m.params.super as { reason?: string; subject?: string; value?: string } | undefined;
+  if (!sp?.reason) return null;
+  const NAMES: Record<string, string> = { "fuel:benzina": "Benzina", "fuel:gasolio": "Gasolio", "metal:xau": "Gold", "metal:xag": "Silver", "metal:xpt": "Platinum", "metal:hg": "Copper", btc: "Bitcoin", eth: "Ethereum" };
+  const lab = msg.cm[NAMES[sp.subject ?? ""] ?? ""] ?? NAMES[sp.subject ?? ""] ?? "", v = Number(sp.value);
+  return sp.reason === "fuel_move" ? msg.sup.fuel_move(lab, v) : sp.reason === "price_move" ? msg.sup.price_move(lab, v) : sp.reason === "quake" ? msg.sup.quake(v) : sp.reason === "storm" ? msg.sup.storm(v) : null;
+}

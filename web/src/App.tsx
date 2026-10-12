@@ -34,7 +34,7 @@ import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
 import { every } from "./lib/poll.ts";
 import { computeOdds } from "../../shared/odds.ts";
-import { countdown, currencySymbol, dayIn, fmtOdds, isYesNo, money, question, type MarketRow } from "./lib/format.ts";
+import { countdown, currencySymbol, dayIn, fmtOdds, isYesNo, money, question, superText, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
 import { PlacePicker } from "./components/PlacePicker.tsx";
@@ -301,7 +301,7 @@ export function App() {
   const top: TopItem[] = useMemo(() => {
     const items: TopItem[] = [];
     const fl = open.filter((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now && (filter === "world" || m.city_id === filter))[0];
-    if (fl) items.push({ mid: fl.id, id: "flash", icon: Zap, label: msg.streak.flash, big: <>×{fl.flash_multiplier}<small class="num">{countdown(Date.parse(fl.flash_until!) - now)}</small></>, sub: question(fl, msg, locale, cityName(cityOf(fl.city_id), locale), cityOf(fl.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: fl, pick: "yes" }) });
+    if (fl) items.push({ mid: fl.id, id: "flash", icon: Zap, label: superText(fl, msg) ? msg.sup.top : msg.streak.flash, big: <>×{fl.flash_multiplier}<small class="num">{countdown(Date.parse(fl.flash_until!) - now)}</small></>, sub: superText(fl, msg) ?? question(fl, msg, locale, cityName(cityOf(fl.city_id), locale), cityOf(fl.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: fl, pick: "yes" }) });
     const facts = inFilter.filter((m) => live[m.id] && !live[m.id]!.is_forecast && live[m.id]!.delay_sec >= 60).sort((a, b) => live[b.id]!.delay_sec - live[a.id]!.delay_sec)[0];
     if (facts) items.push({ mid: facts.id, id: "late", icon: TrendingUp, label: msg.top.late, big: null, extra: <DelayMeter sec={live[facts.id]!.delay_sec} prev={live[facts.id]!.prev_delay_sec} limitSec={Number(facts.params.thresholdSec ?? 180)} msg={msg} big />, sub: `${facts.params.routeName ?? ""} → ${facts.params.headsign ?? ""}`, onClick: () => setSheet({ m: facts, pick: "yes" }) });
     const pop = popular.map((p) => ({ p, m: inFilter.find((m) => m.id === p.market_id) })).find((x) => x.m);

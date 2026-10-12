@@ -154,6 +154,7 @@ const ja: Messages = {
   },
   cm: { Gold: "金", Silver: "銀", Platinum: "プラチナ", Copper: "銅", Benzina: "ガソリン", Gasolio: "軽油", Brent: "ブレント", WTI: "WTI" },
   hist: { title: "あなたの推移", empty: "最初の予想が終わると、ここにクレジットの推移が表示されます。", days: (n) => `${n}日`, best: "好調", worst: "不調", byCategory: "カテゴリー別", all: "すべて", won: "的中", lost: "ハズレ", void: "返金", more: "さらに読み込む", showing: (a) => `${a}件表示` },
+  sup: { badge: "スーパーオッズ", top: "スーパーオッズ", fuel_move: (l, v) => `${l}：1リットルあたり${Math.abs(v)}セント${v < 0 ? "下落" : "上昇"}`, price_move: (l, v) => `${l}が1日で${Math.abs(v)}%${v > 0 ? "急騰" : "急落"}`, quake: (v) => `マグニチュード${v}の地震が発生`, storm: (v) => `風速${v}ノットのハリケーン` },
   dm: {
     title: "今日のミッション", resets: (t) => `更新まであと${t}`, claim: "受け取る", done: "完了", chest: "デイリーチェスト", chestBody: (c) => `3つ達成で ${c} とブースト1個`, chestOpen: "チェストを開く", chestOpened: (c, b) => `チェスト開封：${c}とブースト${b}個`, chestLocked: (n) => `あと${n}つ`, got: (c) => `ミッション達成：${c}`,
     streak: (n) => `${n}日連続`,

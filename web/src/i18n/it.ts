@@ -154,6 +154,7 @@ const it: Messages = {
   },
   cm: { Gold: "Oro", Silver: "Argento", Platinum: "Platino", Copper: "Rame", Benzina: "benzina", Gasolio: "gasolio", Brent: "Brent", WTI: "WTI" },
   hist: { title: "Il tuo andamento", empty: "Quando le prime puntate si chiudono, qui vedi come vanno i tuoi crediti.", days: (n) => `${n} giorni`, best: "Ti va meglio", worst: "Ti va peggio", byCategory: "Per categoria", all: "Tutte", won: "Vinte", lost: "Perse", void: "Rimborsate", more: "Carica altre", showing: (a) => `${a} mostrate` },
+  sup: { badge: "Super quota", top: "Super quota", fuel_move: (l, v) => `${l}: ${v < 0 ? "in calo" : "in rialzo"} di ${Math.abs(v)} cent al litro`, price_move: (l, v) => `${l} ${v > 0 ? "vola" : "crolla"} del ${Math.abs(v)}% in un giorno`, quake: (v) => `Terremoto di magnitudo ${v} appena avvenuto`, storm: (v) => `Uragano a ${v} nodi` },
   dm: {
     title: "Missioni di oggi", resets: (t) => `Si rinnovano tra ${t}`, claim: "Ritira", done: "Fatto", chest: "Baule del giorno", chestBody: (c) => `Chiudi le tre missioni: ${c} e 1 boost`, chestOpen: "Apri il baule", chestOpened: (c, b) => `Baule aperto: ${c} e ${b} boost`, chestLocked: (n) => (n === 1 ? "Ne manca 1" : `Ne mancano ${n}`), got: (c) => `Missione compiuta: ${c}`,
     streak: (n) => `${n} giorni di fila`,
