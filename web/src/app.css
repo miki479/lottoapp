@@ -470,8 +470,8 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .gh * { transform-box: fill-box; }
 .gh-bolt { opacity: 0; } .gh-drops path { opacity: 0; }
 .gh-leaves ellipse { opacity: 0; }
-@media (hover: hover) { .cc.bus:not(:disabled):hover .veh, .cc.train:not(:disabled):hover .veh { animation: drive 1.4s ease-in-out 1 both; } }
-.cc.play.bus .veh, .cc.play.train .veh { animation: drive 1.4s ease-in-out 1 both; }
+@media (hover: hover) { .cc.bus:not(:disabled):hover .veh, .cc.train:not(:disabled):hover .veh { animation: drive 1.7s linear 1 both; } }
+.cc.play.bus .veh, .cc.play.train .veh { animation: drive 1.7s linear 1 both; }
 @media (hover: hover) { .cc.weather:not(:disabled):hover .gh-drops path { animation: fall 0.9s linear 2 both; } }
 .cc.play.weather .gh-drops path { animation: fall 0.9s linear 2 both; }
 .cc.play.weather .gh-bolt { animation: flash .6s ease-out 1 both; }
@@ -480,7 +480,8 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .cc.play.nature .gh-sway { animation: sway 1.8s ease-in-out 1 both; } .cc.play.nature .gh-leaves ellipse { animation: leaf 2s ease-in 1 both; }
 .gh-sway { transform-origin: 30% 100%; } .gh-sway2 { transform-origin: 70% 100%; animation-delay: .2s !important; }
 .gh-leaves .l6 { animation-delay: .75s !important; } .gh-leaves .l7 { animation-delay: .9s !important; } .gh-leaves .l2 { animation-delay: .15s !important; } .gh-leaves .l3 { animation-delay: .3s !important; } .gh-leaves .l4 { animation-delay: .45s !important; } .gh-leaves .l5 { animation-delay: .6s !important; }
-@keyframes drive { 0% { transform: translateX(0) translateY(0); } 15% { transform: translateX(2px) translateY(-.8px); } 55% { transform: translateX(15px) translateY(0); } 70% { transform: translateX(15px) translateY(-.6px); } 100% { transform: translateX(0) translateY(0); } }
+/* the vehicle drives out of the chip on the right and comes back in from the left; the road stays where it is */
+@keyframes drive { 0% { transform: translateX(0); animation-timing-function: cubic-bezier(.5, 0, 1, .6); } 38% { transform: translateX(110px); } 38.1% { transform: translateX(-110px); animation-timing-function: cubic-bezier(0, .5, .4, 1); } 100% { transform: translateX(0); } }
 .gh-veh .veh { transform-box: view-box; }
 @keyframes fall { 0% { opacity: 0; transform: translateY(-6px); } 25% { opacity: .95; } 100% { opacity: 0; transform: translateY(12px); } }
 @keyframes flash { 0%, 100% { opacity: 0; } 15% { opacity: .95; } 30% { opacity: .1; } 45% { opacity: .9; } 70% { opacity: 0; } }
