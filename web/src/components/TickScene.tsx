@@ -1,5 +1,6 @@
 import type { Messages } from "../i18n/index.ts";
 import type { MarketRow } from "../lib/format.ts";
+import { LawScene } from "./Cannabis.tsx";
 import { HouseScene } from "./HouseScene.tsx";
 
 type Hint = "yes" | "no" | null | undefined;
@@ -7,6 +8,7 @@ type Hint = "yes" | "no" | null | undefined;
 /** Scenes of the "number at an instant" questions: a coin price chart, an aurora sky (Kp index) and page-view bars. */
 export function TickScene({ m, hint, msg, now }: { m: MarketRow; hint: Hint; msg: Messages; now?: number }) {
   const series = String(m.params.series ?? "");
+  if (series.startsWith("house:") && m.category === "law") return <LawScene m={m} hint={hint} msg={msg} />;
   if (series.startsWith("house:")) return <HouseScene m={m} hint={hint} msg={msg} now={now ?? Date.now()} />;
   const kind = series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("storm:") ? "storm" : series.startsWith("alert:") ? "alert" : series.startsWith("metal:") ? "metal" : series.startsWith("fuel:") ? "fuel" : series.startsWith("oil:") ? "oil" : series.startsWith("tm:") ? "concert" : /^tv:\d+$/.test(series) ? "tv" : "price";
   const cls = `mscene tick ${kind} ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`;

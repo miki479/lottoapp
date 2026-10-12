@@ -227,7 +227,7 @@ export function App() {
     // Markets of the towns this player picked are loaded separately so a long list of places never crowds out the real cities.
     const mine = placeIds.current.length ? (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("city_id", placeIds.current).gt("closes_at", new Date().toISOString()).order("closes_at").limit(160)).data ?? [] : [];
     // Questions that close far ahead (matches, daily page views, price lines) would fall off the first page: fetch them on their own.
-    const far = (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("category", ["sport", "finance", "culture", "nature"]).gt("closes_at", new Date().toISOString()).order("closes_at").limit(200)).data ?? [];
+    const far = (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("category", ["sport", "finance", "culture", "nature", "law"]).gt("closes_at", new Date().toISOString()).order("closes_at").limit(200)).data ?? [];
     // the questions we write ourselves close far ahead: always fetched on their own
     const house = (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").eq("kind", "tick_gt").like("params->>series", "house:%").gt("closes_at", new Date().toISOString()).limit(10)).data ?? [];
     const seen = new Set([...(data ?? []), ...mine].map((x) => (x as { id: string }).id));
@@ -330,8 +330,8 @@ export function App() {
   /** "Near you" chip: everything from the player's own country (their located town, profile or phone region). */
   const myCountry = near?.country ?? profile?.country ?? region();
   const countryOf = (id: string) => CITIES.find((c) => c.id === id)?.country ?? placeById(id)?.country ?? (near?.id === id ? near.country : undefined);
-  const hasMine = !!myCountry && open.some((m) => m.category !== "nature" && m.category !== "strike" && m.category !== "finance" && m.category !== "culture" && m.category !== "sport" && countryOf(m.city_id) === myCountry);
-  const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter || m.category === "nature" || m.category === "strike" || m.category === "finance" || m.category === "culture" || m.category === "sport" || (filter === "mine" && countryOf(m.city_id) === myCountry)), [open, filter, myCountry, near?.id]);
+  const hasMine = !!myCountry && open.some((m) => m.category !== "nature" && m.category !== "strike" && m.category !== "finance" && m.category !== "culture" && m.category !== "sport" && m.category !== "law" && countryOf(m.city_id) === myCountry);
+  const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter || m.category === "nature" || m.category === "strike" || m.category === "finance" || m.category === "culture" || m.category === "sport" || m.category === "law" || (filter === "mine" && countryOf(m.city_id) === myCountry)), [open, filter, myCountry, near?.id]);
   useEffect(() => { if (hasMine && filter === "world" && !store.get("filter")) setFilter("mine"); }, [hasMine]);
   const byCat = (c: CatId) => inFilter.filter((m) => m.category === c);
   useEffect(() => { if (catChosen || !markets) return; const first = (["bus", "train", "weather"] as CatId[]).find((c) => byCat(c).length > 0); if (first && byCat(cat).length === 0) setCat(first); }, [markets, filter, catChosen]);
@@ -339,7 +339,7 @@ export function App() {
   // trains and buses: the most delayed right now first, then the rest
   const byDelay = (x: MarketRow[]) => [...x].sort((m1, m2) => Number(!!live[m2.id] && !live[m2.id]!.is_forecast) - Number(!!live[m1.id] && !live[m1.id]!.is_forecast) || (live[m2.id]?.delay_sec ?? -1e9) - (live[m1.id]?.delay_sec ?? -1e9));
   const list = cat === "train" || cat === "bus" ? byDelay(byCat(cat)) : flashFirst(byCat(cat));
-  const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: byCat("nature").length, strike: isItalian ? byCat("strike").length : 0, traffic: byCat("traffic").length, finance: byCat("finance").length, culture: byCat("culture").length, sport: new Set(byCat("sport").map((m) => String(m.params.eventId))).size, gov: 0 };
+  const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: byCat("nature").length, strike: isItalian ? byCat("strike").length : 0, traffic: byCat("traffic").length, finance: byCat("finance").length, culture: byCat("culture").length, sport: new Set(byCat("sport").map((m) => String(m.params.eventId))).size, law: byCat("law").length, gov: 0 };
 
   const top: TopItem[] = useMemo(() => {
     const items: TopItem[] = [];

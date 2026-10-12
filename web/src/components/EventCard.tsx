@@ -1,5 +1,5 @@
 import { Q } from "./Q.tsx";
-import { Activity, Car, Clapperboard, Trophy, TrendingUp, Megaphone, Clock, Star, Zap, Users } from "lucide-preact";
+import { Activity, Car, Clapperboard, Trophy, TrendingUp, Megaphone, Clock, Star, Zap, Users, Scale } from "lucide-preact";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { countdown, fmtOdds, isYesNo, money, per10, question, superText, type MarketRow } from "../lib/format.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -15,7 +15,7 @@ import { TrafficScene } from "./TrafficScene.tsx";
 import { TickScene } from "./TickScene.tsx";
 import { SportScene } from "./SportScene.tsx";
 
-const KIND = { bus: BusSide, train: TrainSide, weather: CloudRainSide, nature: Activity, strike: Megaphone, traffic: Car, finance: TrendingUp, culture: Clapperboard, sport: Trophy } as const;
+const KIND = { bus: BusSide, train: TrainSide, weather: CloudRainSide, nature: Activity, strike: Megaphone, traffic: Car, finance: TrendingUp, culture: Clapperboard, sport: Trophy, law: Scale } as const;
 
 export function liveLabel(msg: Messages, l: LiveDelay) {
   const sec = Math.abs(l.delay_sec), min = Math.round(l.delay_sec / 60);
