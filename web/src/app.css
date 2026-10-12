@@ -1048,3 +1048,18 @@ textarea.field { resize: vertical; min-height: 84px; }
 @keyframes occglide { 0%, 100% { transform: translateX(-3px); } 50% { transform: translateX(3px); } }
 @keyframes occroad { to { background-position: -28px 0; } }
 @media (prefers-reduced-motion: reduce) { .occscene .occbus, .occscene .occroad { animation: none; } .occscene .hd { transition: none; } }
+
+.bonusbox { margin: 10px 0 4px; padding: 10px 12px; border-radius: 14px; background: color-mix(in srgb, #2fb36d 9%, transparent); border: 1px dashed color-mix(in srgb, #2fb36d 45%, transparent); }
+.bonusbox b { font-size: 14px; } .bonusbox .hint { margin: 2px 0 8px; font-size: 12px; }
+.bonusline { margin: 6px 0 0; font-size: 12px; font-weight: 700; color: var(--muted); } .bonusline.hit { color: #1f9d5a; }
+
+.betwrap { display: flex; flex-direction: column; gap: 6px; }
+.betmap { margin: -2px 6px 6px; }
+.mapbtn { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--brand); font: inherit; font-size: 13px; font-weight: 700; padding: 6px 4px; cursor: pointer; }
+.mapbody { margin-top: 4px; } .mapbody .hint { margin: 6px 2px 0; font-size: 12px; }
+.mapbox { height: 220px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line, #d9dbe6); background: #e9edf3; z-index: 0; }
+:root[data-theme="dark"] .mapbox .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.9); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mapbox .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.9); } }
+.bm-icon { display: grid; place-items: center; font-size: 22px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.35)); background: transparent; border: 0; }
+.bm-icon.veh { animation: bmpulse 1.8s ease-in-out infinite; }
+@keyframes bmpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }

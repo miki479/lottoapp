@@ -1,5 +1,6 @@
 {
   "id": "trentino",
+  "region": true,
   "country": "IT",
   "name": {
     "it": "Trentino",
@@ -62,7 +63,8 @@
       "questionsHours": [
         5,
         23
-      ]
+      ],
+      "vehiclesUrl": "https://proxy.busone.app/trentino/gtfs-rt/vehicle-positions.pb"
     },
     {
       "id": "open-meteo-trentino",

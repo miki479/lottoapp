@@ -1,5 +1,6 @@
 {
   "id": "alto-adige",
+  "region": true,
   "country": "IT",
   "name": {
     "it": "Alto Adige",
@@ -63,7 +64,8 @@
         5,
         23
       ],
-      "heavy": true
+      "heavy": true,
+      "vehiclesUrl": "https://proxy.busone.app/sta/gtfs-rt/vehicle-positions.pb"
     },
     {
       "id": "open-meteo-alto-adige",

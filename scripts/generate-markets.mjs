@@ -134,7 +134,10 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
     byTrip.set(st.trip_id, arr);
   }
   const stopNames = new Map();
-  for (const s of await readAll(join(dir, "stops.txt"))) stopNames.set(s.stop_id, s.stop_name);
+  const stopPos = new Map();
+  for (const s of await readAll(join(dir, "stops.txt"))) { stopNames.set(s.stop_id, s.stop_name); if (s.stop_lat && s.stop_lon) stopPos.set(s.stop_id, [Number(s.stop_lat), Number(s.stop_lon)]); }
+  /** Extra facts on a market's params: where the stop is (map), whether positions are estimated, whether a how-full bonus is offered. */
+  const withExtras = (m, stopId) => { const pos = stopPos.get(stopId); return { ...m, params: { ...m.params, ...(pos && Number.isFinite(pos[0]) ? { stopLat: pos[0], stopLon: pos[1] } : {}), ...(feed.positionsEstimated ? { posEst: true } : {}), ...(feed.occupancy && m.kind === "bus_delay_gt" ? { occBonus: true } : {}) } }; };
   const hist = await historyLookup();
   const markets = [], schedule = [];
   const threshold = feed.category === "train" ? 300 : 180;
@@ -153,13 +156,13 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
     // Re-price with real history now that the event exists.
     const key = historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone);
     const priced = buildDelayMarket({ ...{ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold }, history: hist(key) });
-    markets.push(priced);
+    markets.push(withExtras(priced, stop.stopId));
     // Buses that report how full they are: one more question on the same trip (empty / few seats left / standing room), a third of the time or so.
-    if (feed.occupancyUrl && rand() < 0.5) {
+    if (feed.occupancy && rand() < 0.5) {
       const r = rand(), occ = r < 0.4 ? "empty" : r < 0.75 ? "few" : "standing";
       const oargs = { cityId: city.id, tz: city.timezone, feedId: feed.id, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, kind: occ };
       const od = buildOccupancyMarket({ ...oargs, history: null });
-      markets.push(buildOccupancyMarket({ ...oargs, history: hist(historyKey(marketToEvent({ ...od, id: "x" }), city.timezone)) }));
+      markets.push(withExtras(buildOccupancyMarket({ ...oargs, history: hist(historyKey(marketToEvent({ ...od, id: "x" }), city.timezone)) }), stop.stopId));
     }
     if (feed.kind === "vehicle_positions" || feed.kind === "trip_updates_times" || feed.kind === "trip_updates_seq") {
       const sd = `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;

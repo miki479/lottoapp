@@ -136,3 +136,16 @@ export function parseOccupancy(feed: RtFeed, fetchedAt: number): { tripId: strin
   }
   return out;
 }
+
+/** Latest position of each vehicle that is on a trip. */
+export function parseVehiclePositions(feed: RtFeed, fetchedAt: number): { tripId: string; at: number; lat: number; lon: number; bearing: number | null }[] {
+  const out: { tripId: string; at: number; lat: number; lon: number; bearing: number | null }[] = [];
+  for (const e of feed.entity ?? []) {
+    const v = e.vehicle as (NonNullable<RtFeed["entity"]>[number]["vehicle"] & { position?: { latitude?: number; longitude?: number; bearing?: number } | null }) | null | undefined;
+    const tripId = v?.trip?.tripId;
+    const lat = v?.position?.latitude, lon = v?.position?.longitude;
+    if (!tripId || typeof lat !== "number" || typeof lon !== "number" || !(Math.abs(lat) <= 90 && Math.abs(lon) <= 180) || (lat === 0 && lon === 0)) continue;
+    out.push({ tripId, at: num(v?.timestamp) ?? fetchedAt, lat, lon, bearing: typeof v?.position?.bearing === "number" ? v.position.bearing : null });
+  }
+  return out;
+}

@@ -1,5 +1,6 @@
 {
   "id": "romagna",
+  "region": true,
   "country": "IT",
   "name": {
     "it": "Romagna",
@@ -63,7 +64,8 @@
         5,
         23
       ],
-      "occupancyUrl": "https://proxy.busone.app/start/gtfs-rt/vehicle-positions.pb"
+      "vehiclesUrl": "https://proxy.busone.app/start/gtfs-rt/vehicle-positions.pb",
+      "occupancy": true
     },
     {
       "id": "open-meteo-romagna",

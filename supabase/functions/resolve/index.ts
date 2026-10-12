@@ -93,6 +93,13 @@ Deno.serve(safe(async (req) => {
         staleAfterSec: feedStale.get(event.feedId) ?? (event.feedId === "usgs" || event.feedId === "mit-scioperi" || event.kind === "tick_gt" || event.kind === "match_bet" ? 7200 : event.feedId.startsWith("om-") ? 10800 : 300), delays, weather, metrics, quake, strike, traffic, ticks, match, occupancy,
       });
       if (res.status === "pending") { out.pending++; continue; }
+      // Delay bets with the "how full" bonus: the bus's own report closest to the moment of the question goes into the evidence (no report = no bonus).
+      if (res.status === "resolved" && (event.kind === "bus_delay_gt") && (row.params as { occBonus?: boolean }).occBonus) {
+        const lo = new Date((event.targetAt - OCC_WINDOW_SEC) * 1000).toISOString(), hi = new Date((event.targetAt + OCC_WINDOW_SEC) * 1000).toISOString();
+        const { data: oo } = await sb.from("occupancy_observations").select("at,level").eq("feed_id", event.feedId).eq("trip_id", event.tripId).gte("at", lo).lte("at", hi);
+        const best = (oo ?? []).map((o) => ({ level: o.level as number, d: Math.abs(Date.parse(o.at) / 1000 - event.targetAt) })).sort((a, b) => a.d - b.d)[0];
+        if (best) res.evidence = { ...res.evidence, occ: best.level };
+      }
 
       const result = res.status === "void" ? "void" : res.outcome;
       const { error: rpcErr } = await sb.rpc("settle_market", {

@@ -1,5 +1,6 @@
 {
   "id": "toscana",
+  "region": true,
   "country": "IT",
   "name": {
     "it": "Toscana",
@@ -63,8 +64,9 @@
         5,
         23
       ],
-      "occupancyUrl": "https://proxy.busone.app/toscana/gtfs-rt/vehicle-positions.pb",
-      "heavy": true
+      "heavy": true,
+      "vehiclesUrl": "https://proxy.busone.app/toscana/gtfs-rt/vehicle-positions.pb",
+      "occupancy": true
     },
     {
       "id": "open-meteo-toscana",

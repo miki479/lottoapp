@@ -36,8 +36,12 @@ export interface FeedConfig {
   routeTypes?: number[];
   /** The static calendar does not describe today (Renfe): take the trips that appear in the real-time feed as today's service. */
   useRealtimeTrips?: boolean;
-  /** VehiclePositions feed of the same operator: its occupancy_status (how full) feeds the "will it be full?" questions and the live indicator. */
-  occupancyUrl?: string;
+  /** VehiclePositions feed of the same operator: where each vehicle is (map in "My bets") and, if `occupancy`, how full it is. */
+  vehiclesUrl?: string;
+  /** The vehicles report occupancy_status: "will it be full?" questions, the live indicator and the bonus on delay bets. */
+  occupancy?: boolean;
+  /** Positions are estimated by the provider, not measured (shown as such on the map). */
+  positionsEstimated?: boolean;
   /** Create questions only on routes that have a tracked trip in the real-time feed right now (otherwise many would end void). */
   realtimeRoutesOnly?: boolean;
   /** Local hours [from, to) in which questions are created (a feed that goes quiet at night would void them). */
@@ -58,6 +62,8 @@ export interface FeedConfig {
 
 export interface CityConfig {
   id: string;
+  /** A whole region or country rather than a town: its questions are listed, but it gets no chip of its own in the place picker. */
+  region?: boolean;
   country: string;
   name: Record<string, string>;
   timezone: string;

@@ -2,7 +2,7 @@
 // record feed health. A failing feed is recorded as failing; its markets get voided by `resolve`.
 import GtfsRt from "npm:gtfs-realtime-bindings@2.2.0";
 import { delayAdapterFor, trainJsonAdapterFor, weatherAdapterFor } from "../_shared/shared/adapters/index.ts";
-import { parseOccupancy } from "../_shared/shared/adapters/gtfsrt.ts";
+import { parseOccupancy, parseVehiclePositions } from "../_shared/shared/adapters/gtfsrt.ts";
 import { parseTrainTripId } from "../_shared/shared/adapters/viaggiatreno.ts";
 import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
@@ -37,15 +37,16 @@ Deno.serve(safe(async (req) => {
   const { data: live } = await sb.from("markets").select("feed_id,kind,params,target_at,deadline_at").gte("deadline_at", since).lte("target_at", new Date((now + 15 * 60) * 1000).toISOString()).in("kind", ["bus_delay_gt", "train_delay_gt", "bus_full"]).eq("status", "open").limit(5000); // only delay questions, only the ones inside their window (the default page of 1000 rows hid some)
   // feed -> trip -> stops the markets ask about
   const tracked = new Map<string, Map<string, Set<string>>>();
-  // feed -> trips whose vehicle's occupancy is wanted (the "will it be full?" questions, and the live indicator on any open bus question)
-  const trackedOcc = new Map<string, Set<string>>();
+  // feed -> trips whose vehicle is wanted (position for the map, occupancy for the "how full" questions and the bonus)
+  const trackedVeh = new Map<string, Set<string>>();
   for (const m of live ?? []) {
     const p = m.params as { tripId?: string; stopId?: string };
     if (!p.tripId) continue;
     const from = Date.parse(m.target_at) / 1000 - 15 * 60;
     const to = Date.parse(m.deadline_at) / 1000;
     if (now < from || now > to) continue;
-    if (m.kind !== "train_delay_gt") { if (!trackedOcc.has(m.feed_id)) trackedOcc.set(m.feed_id, new Set()); trackedOcc.get(m.feed_id)!.add(p.tripId); }
+    if (!trackedVeh.has(m.feed_id)) trackedVeh.set(m.feed_id, new Set());
+    trackedVeh.get(m.feed_id)!.add(p.tripId);
     if (m.kind === "bus_full") continue; // not a delay question: the delay feed has nothing to say about it
     if (!tracked.has(m.feed_id)) tracked.set(m.feed_id, new Map());
     const trips = tracked.get(m.feed_id)!;
@@ -66,7 +67,7 @@ Deno.serve(safe(async (req) => {
         const n = await ingestFeed(sb, city, feed, now, tracked.get(feed.id) ?? new Map(), rtCache);
         await sb.from("feed_health").upsert({ feed_id: feed.id, last_ok_at: new Date().toISOString(), last_error: null });
         report[feed.id] = `ok ${n}`;
-        if (feed.occupancyUrl) report[`${feed.id}-occupancy`] = await ingestOccupancy(sb, feed, now, trackedOcc.get(feed.id) ?? new Set()).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
+        if (feed.vehiclesUrl) report[`${feed.id}-vehicles`] = await ingestVehicles(sb, feed, now, trackedVeh.get(feed.id) ?? new Set()).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
       } catch (e) {
         const msg = String((e as Error).message ?? e).slice(0, 300);
         await sb.from("feed_health").upsert({ feed_id: feed.id, last_error: msg, last_error_at: new Date().toISOString() });
@@ -85,19 +86,29 @@ Deno.serve(safe(async (req) => {
   return Response.json(report);
 }));
 
-/** How full the buses of the open questions are, from the operator's VehiclePositions feed. A failure here never fails the delay feed. */
-async function ingestOccupancy(sb: ReturnType<typeof db>, feed: FeedConfig, now: number, trips: Set<string>): Promise<string> {
+/** Position (map) and, where reported, occupancy of the vehicles behind the open questions, from the operator's VehiclePositions feed. A failure here never fails the delay feed. */
+async function ingestVehicles(sb: ReturnType<typeof db>, feed: FeedConfig, now: number, trips: Set<string>): Promise<string> {
   if (trips.size === 0) return "idle";
   const headers = { ...(feed.headers ?? {}) };
   if (headers["X-BusOne-Client"] && Deno.env.get("CONTACT_EMAIL")) headers["X-BusOne-Client"] += `; contact: ${Deno.env.get("CONTACT_EMAIL")}`;
-  const bytes = await fetchBytes(feed.occupancyUrl!, headers);
+  const bytes = await fetchBytes(feed.vehiclesUrl!, headers);
   const msg = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(bytes), { longs: Number }) as RtFeed;
-  const rows = parseOccupancy(msg, now).filter((o) => trips.has(o.tripId) && o.at <= now + 60 && o.at > now - 600)
-    .map((o) => ({ feed_id: feed.id, trip_id: o.tripId, at: new Date(o.at * 1000).toISOString(), level: o.level }));
-  if (rows.length === 0) return "ok 0";
-  const { error } = await sb.from("occupancy_observations").upsert(rows, { onConflict: "feed_id,trip_id,at", ignoreDuplicates: true });
-  if (error) throw new Error(error.message);
-  return `ok ${rows.length}`;
+  const pos = parseVehiclePositions(msg, now).filter((o) => trips.has(o.tripId) && o.at > now - 900 && o.at <= now + 120);
+  if (pos.length) {
+    const { error } = await sb.from("vehicle_positions").upsert(pos.map((o) => ({ feed_id: feed.id, trip_id: o.tripId, at: new Date(o.at * 1000).toISOString(), lat: o.lat, lon: o.lon, bearing: o.bearing })), { onConflict: "feed_id,trip_id" });
+    if (error) throw new Error(error.message);
+  }
+  let occ = 0;
+  if (feed.occupancy) {
+    const rows = parseOccupancy(msg, now).filter((o) => trips.has(o.tripId) && o.at <= now + 60 && o.at > now - 600)
+      .map((o) => ({ feed_id: feed.id, trip_id: o.tripId, at: new Date(o.at * 1000).toISOString(), level: o.level }));
+    if (rows.length) {
+      const { error } = await sb.from("occupancy_observations").upsert(rows, { onConflict: "feed_id,trip_id,at", ignoreDuplicates: true });
+      if (error) throw new Error(error.message);
+    }
+    occ = rows.length;
+  }
+  return `ok ${pos.length} pos, ${occ} occ`;
 }
 
 /** A bus or train already running late is likely to still be late at the question's stop: the open delay markets follow the real delay (bets placed keep their odds). */

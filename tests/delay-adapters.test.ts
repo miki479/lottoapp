@@ -185,3 +185,14 @@ describe("trip updates by stop sequence (START Romagna)", () => {
     expect(tripUpdatesSeqAdapter(f2, { feedId: "f", timezone: "Europe/Rome", fetchedAt: header, schedule: sched })).toEqual([]);
   });
 });
+
+import { parseOccupancy, parseVehiclePositions } from "../shared/adapters/gtfsrt.ts";
+describe("vehicle feed readers", () => {
+  const feed = { entity: [
+    { vehicle: { trip: { tripId: "t1" }, timestamp: 1000, position: { latitude: 44.1, longitude: 12.2, bearing: 90 }, occupancyStatus: 2 } },
+    { vehicle: { trip: { tripId: "t2" }, position: { latitude: 0, longitude: 0 }, occupancyStatus: "MANY_SEATS_AVAILABLE" } },
+    { vehicle: { position: { latitude: 44, longitude: 12 } } },
+  ] };
+  it("keeps real positions only", () => { expect(parseVehiclePositions(feed, 5)).toEqual([{ tripId: "t1", at: 1000, lat: 44.1, lon: 12.2, bearing: 90 }]); });
+  it("reads occupancy as a number or a name", () => { expect(parseOccupancy(feed, 5).map((o) => o.level)).toEqual([2, 1]); });
+});

@@ -14,8 +14,8 @@ export interface Profile {
 }
 export interface Progress { day: string; bus: number; train: number; weather: number; traffic: number; bonus_claimed: boolean }
 export interface MyBet {
-  id: string; pick: Pick; stake: number; odds: number; status: "open" | "won" | "lost" | "void"; payout: number;
-  markets: MarketRow & { void_reason: string | null; outcome: string | null; evidence: { level?: number; delaySec?: number; precipitationMm?: number; value?: number; count?: number; maxMag?: number; present?: number; avgKmh?: number; home?: number; away?: number } | null };
+  id: string; pick: Pick; stake: number; odds: number; status: "open" | "won" | "lost" | "void"; payout: number; bonus?: "free" | "few" | "standing" | null; bonus_hit?: boolean | null;
+  markets: MarketRow & { void_reason: string | null; outcome: string | null; evidence: { occ?: number; level?: number; delaySec?: number; precipitationMm?: number; value?: number; count?: number; maxMag?: number; present?: number; avgKmh?: number; home?: number; away?: number } | null };
 }
 export interface LbRow { rank: number; user_id: string; display_name: string; score: number; bets: number; streak: number; is_me: boolean }
 export interface GroupRow { code: string; name: string }

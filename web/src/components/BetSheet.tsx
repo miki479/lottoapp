@@ -26,7 +26,7 @@ import { StakeControl } from "./StakeControl.tsx";
 /** Bet slip for one event: pick, stake, then place it (guests do the "last step" sign-up right here when it is required). */
 export function BetSheet(p: {
   m: MarketRow; initial: Pick; msg: Messages; locale: Locale; credits: number; ready: boolean; needJoin: boolean; googleOn: boolean; inSlip: boolean; boosts: number; now: number; mm?: number; occ?: { level: number }; ladder: MarketRow[]; onSwitch: (m: MarketRow) => void;
-  onClose: () => void; onAddSlip: (m: MarketRow, pick: Pick) => void; onJoined: () => Promise<void>; onPlace: (m: MarketRow, pick: Pick, stake: number, boost: boolean) => Promise<string | null>;
+  onClose: () => void; onAddSlip: (m: MarketRow, pick: Pick) => void; onJoined: () => Promise<void>; onPlace: (m: MarketRow, pick: Pick, stake: number, boost: boolean, bonus?: string | null) => Promise<string | null>;
 }) {
   const [pick, setPick] = useState<Pick>(p.initial);
   const [stake, setStake] = useState(50);
@@ -42,6 +42,7 @@ export function BetSheet(p: {
     try { await navigator.clipboard.writeText(`${text} ${url}`); setCopied(true); setTimeout(() => setCopied(false), 2500); } catch { /* nothing to do */ }
   };
   const [boost, setBoost] = useState(false);
+  const [bonus, setBonus] = useState<"free" | "few" | "standing" | null>(null);
   const city = cityOf(p.m.city_id), isRain = isYesNo(p.m.kind);
   const odds = Number(pick === "yes" ? p.m.odds_yes : p.m.odds_no);
   // Upper limit: 500, or the balance when it is known and at least 10 (the server checks it again).
@@ -49,7 +50,7 @@ export function BetSheet(p: {
   const amount = Math.min(stake, cap);
   const place = async () => {
     setBusy(true); setErr(null); haptic.tap();
-    const out = await p.onPlace(p.m, pick, amount, boost && p.boosts > 0);
+    const out = await p.onPlace(p.m, pick, amount, boost && p.boosts > 0, p.m.params.occBonus ? bonus : null);
     if (out) { setErr(out); setBusy(false); haptic.error(); } else haptic.success();
   };
   const label = (k: Pick) => (k === "yes" ? (isRain ? p.msg.card.yes : p.msg.card.late) : (isRain ? p.msg.card.no : p.msg.card.onTime));
@@ -86,6 +87,12 @@ export function BetSheet(p: {
             ))}
           </div>
           <span class="hint">{p.msg.ladder.estimate}</span>
+        </div>
+      )}
+      {p.m.params.occBonus === true && p.m.kind === "bus_delay_gt" && (
+        <div class="bonusbox" role="group" aria-label={p.msg.bonus.title}>
+          <b>{p.msg.bonus.title}</b><p class="hint">{p.msg.bonus.hint}</p>
+          <div class="mkchips wrap">{([null, "free", "few", "standing"] as const).map((k) => <button key={String(k)} type="button" class={`mkchip ${bonus === k ? "on" : ""}`} aria-pressed={bonus === k} onClick={() => setBonus(k)}>{k === null ? p.msg.bonus.none : p.msg.bonus[k]}</button>)}</div>
         </div>
       )}
       <StakeControl value={amount} onChange={setStake} cap={cap} odds={odds} boost={boost && p.boosts > 0} locale={p.locale} msg={p.msg} />

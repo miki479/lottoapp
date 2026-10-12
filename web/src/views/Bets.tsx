@@ -2,6 +2,7 @@ import { Q } from "../components/Q.tsx";
 import { Check, RotateCcw, Ticket, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { MarketVs, reasonOf } from "../components/MatchVs.tsx";
+import { BetMap } from "../components/BetMap.tsx";
 import { Collapse } from "../components/Collapse.tsx";
 import { Empty } from "../components/Empty.tsx";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -67,7 +68,8 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
           const Icon = st === "won" ? Check : st === "lost" ? X : st === "void" ? RotateCcw : Ticket;
           const label = st === "won" ? msg.bets.won : st === "lost" ? msg.bets.lost : st === "void" ? msg.bets.void : msg.bets.open;
           return (
-            <button class="card bet pressable" key={b.id} style={`--i:${Math.min(i, 10)}; text-align:left`} onClick={() => (st !== "open" ? onOpen(b) : undefined)} disabled={st === "open"}>
+            <div class="betwrap" key={b.id}>
+            <button class="card bet pressable" style={`--i:${Math.min(i, 10)}; text-align:left`} onClick={() => (st !== "open" ? onOpen(b) : undefined)} disabled={st === "open"}>
               <div class="row1">
                 <span class={`pill ${st === "won" ? "won" : st === "lost" ? "lost" : ""}`}><Icon size={14} strokeWidth={2.6} />{label}</span>
                 {st === "won" && <span class="amt won num">+{money(b.payout - b.stake, locale)}</span>}
@@ -79,7 +81,11 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
               {m.kind !== "match_bet" && (() => { const sj = m.kind === "tick_gt" ? (msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? "")) : m.kind === "bus_delay_gt" || m.kind === "train_delay_gt" ? `${String(m.params.routeName ?? "")} · ${cityName(city, locale)}` : m.kind === "rain_at" || m.kind === "metric_gt" ? cityName(city, locale) : ""; return sj ? <b class="subject">{sj}</b> : null; })()}
               <p class="q"><Q m={m} msg={msg} locale={locale} city={cityName(city, locale)} tz={city.timezone} now={new Date(now)} /></p>
               <div class="info"><span>{msg.bets.yourPick(b.pick === "yes")}</span><span class="num">{money(b.stake, locale)} × {fmtOdds(Number(b.odds), locale)}</span></div>
+              {b.bonus && <p class={`bonusline ${b.bonus_hit ? "hit" : ""}`}>{msg.bonus.line(msg.bonus[b.bonus])}{st !== "open" && st !== "void" ? ` · ${b.bonus_hit === true ? msg.bonus.hit : b.bonus_hit === false ? msg.bonus.miss : msg.bonus.unknown}` : ""}</p>}
             </button>
+            {st === "open" && (m.category === "bus" || m.category === "train") && !!m.params.tripId && m.kind !== "bus_full" && <BetMap m={m} msg={msg} now={now} />}
+            {st === "open" && m.kind === "bus_full" && !!m.params.tripId && <BetMap m={m} msg={msg} now={now} />}
+            </div>
           );
         })}
       </div>

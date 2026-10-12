@@ -35,6 +35,10 @@ export interface Messages {
   traffic: { threshold: (kmh: number) => string; jam: string; flow: string };
   /** How full a bus is (GTFS-RT occupancy levels 0..5). */
   occ: { title: string; levels: string[] };
+  /** Map of the vehicle behind an open bet. */
+  map: { title: string; show: string; hide: string; none: string; estimated: string; stop: string; vehicle: string; updated: (sec: number) => string; credit: string };
+  /** The "how full will it be?" bonus on a delay bet. */
+  bonus: { title: string; hint: string; none: string; free: string; few: string; standing: string; hit: string; miss: string; unknown: string; line: (what: string) => string };
   strikes: { title: string; sub: string; art: string };
   home: { typeLabel: string; hero: { title: string; body: string }; how: { title: string; steps: [string, string, string]; close: string }; whatLabel: string; whereLabel: string; hereNone: (place: string) => string; tryInstead: string;  missions: string; missionsLeft: (n: number) => string; missionsDone: string; bonusTease: string; top: string; events: string; live: string; idle: string[]; emptyCat: Record<"bus" | "train" | "weather" | "nature" | "strike" | "traffic" | "finance" | "culture" | "sport" | "gov", string>; empty: { title: string; body: string; cta: string }; trafficSoon: string; satire: string; moreCats: string; lessCats: string };
   streak: { title: string; days: (n: number) => string; next: (day: number, bonus: string) => string; max: string; milestone: (n: number, bonus: string) => string; flash: string };

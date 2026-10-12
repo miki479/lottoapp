@@ -62,7 +62,8 @@
       "questionsHours": [
         5,
         23
-      ]
+      ],
+      "vehiclesUrl": "https://proxy.busone.app/tep/gtfs-rt/vehicle-positions.pb"
     },
     {
       "id": "open-meteo-parma",
