@@ -6,6 +6,7 @@ import { StreakCard } from "../components/StreakCard.tsx";
 import { money } from "../lib/format.ts";
 import { LOCALES, TROPHY_IDS, TROPHY_RARITY, type Locale, type Messages, type TrophyId } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
+import { HistoryCard } from "../components/HistoryCard.tsx";
 import type { MyStats, Profile, Progress } from "../lib/types.ts";
 import { INTL_TAG } from "../i18n/index.ts";
 
@@ -89,6 +90,7 @@ export function ProfileView(p: {
             <div class={`card cell ${net > 0 ? "won" : net < 0 ? "lost" : ""}`} style="--i:4"><span class="detail">{m.stats.net}</span><span class="v num">{net > 0 ? "+" : net < 0 ? "−" : ""}{money(Math.abs(net), p.locale)}</span></div>
             <div class="card cell span2" style="--i:5"><span class="detail">{m.stats.trophies}</span><span class="v num"><Trophy size={22} class="ic" style="vertical-align:-3px;margin-right:6px" />{owned}<small>/ {TROPHY_IDS.length}</small></span></div>
           </div>
+          <HistoryCard msg={p.msg} locale={p.locale} />
           <div class="card" style="display:flex;gap:12px;align-items:center"><Snowflake size={22} style="color:var(--brand)" /><div><b>{m.freezes(p.profile?.freezes ?? 0)}</b><p class="hint">{m.freezeHint}</p></div></div>
           <div class="card" style="display:flex;gap:12px;align-items:center"><Rocket size={22} style="color:var(--c-pop)" /><div><b>{p.msg.boost.title} · {(p.profile?.boosts ?? 0) > 0 ? p.msg.boost.have(p.profile?.boosts ?? 0) : p.msg.boost.none}</b><p class="hint">{p.msg.boost.explain}</p></div></div>
         </div>

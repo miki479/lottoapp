@@ -1,7 +1,7 @@
 import { Check, Gift, Rocket, Share2, Snowflake, X } from "lucide-preact";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { money } from "../lib/format.ts";
-import type { DailyMissionsData, Profile, QuestRow } from "../lib/types.ts";
+import type { FlashData, DailyMissionsData, Profile, QuestRow } from "../lib/types.ts";
 import { DailyMissions } from "./DailyMissions.tsx";
 import { Sheet } from "./Sheet.tsx";
 
@@ -14,7 +14,7 @@ export function untilReset(tz: string, nowMs: number): string {
 
 /** Everything that pays credits: today's missions, one-time quests and invites. Claiming is a button; the server checks every condition. */
 export function RewardsSheet(p: {
-  msg: Messages; locale: Locale; now: number; profile: Profile | null; quests: QuestRow[]; referral: { code: string; invited: number; paid: number } | null; registered: boolean; missions: DailyMissionsData | null; onClaimMission: (id: string) => Promise<void>; onClaimChest: () => Promise<void>;
+  msg: Messages; locale: Locale; now: number; profile: Profile | null; quests: QuestRow[]; referral: { code: string; invited: number; paid: number } | null; registered: boolean; flash: FlashData | null; onClaimFlash: () => Promise<void>; missions: DailyMissionsData | null; onClaimMission: (id: string) => Promise<void>; onClaimChest: () => Promise<void>;
   onClaim: (id: string) => void; onGo: (id: string) => void; onShare: () => void; onClose: () => void;
 }) {
   const m = p.msg.rewards;
@@ -38,7 +38,7 @@ export function RewardsSheet(p: {
       <div class="rbal"><span class="coin" aria-hidden="true">€</span><b class="num">{money(p.profile?.credits ?? 0, p.locale)}</b>
         <span class="rstock"><Snowflake size={15} />{p.profile?.freezes ?? 0}</span><span class="rstock"><Rocket size={15} />{p.profile?.boosts ?? 0}</span></div>
       <p class="hint">{m.subtitle}</p>
-      <DailyMissions data={p.missions} msg={p.msg} locale={p.locale} now={p.now} tz={p.profile?.timezone ?? "UTC"} streak={p.profile?.streak ?? 0} onClaim={p.onClaimMission} onChest={p.onClaimChest} />
+      <DailyMissions data={p.missions} msg={p.msg} locale={p.locale} now={p.now} tz={p.profile?.timezone ?? "UTC"} streak={p.profile?.streak ?? 0} onClaim={p.onClaimMission} onChest={p.onClaimChest} flash={p.flash} onFlash={p.onClaimFlash} />
       <section class="stack" style="gap:8px">
         <h3>{m.once}</h3>
         <ul class="quests">{once.map(row)}</ul>

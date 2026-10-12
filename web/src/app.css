@@ -988,3 +988,23 @@ textarea.field { resize: vertical; min-height: 84px; }
 .colhead em { font-style: normal; font-size: 12px; font-weight: 800; padding: 2px 9px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); } .colhead svg { transition: transform .2s; color: var(--muted); } .collapse.open > .colhead svg { transform: rotate(180deg); }
 .collapse { gap: 0; border-bottom: 1px solid var(--border); } .colbody { padding-bottom: 12px; animation: dmin .3s ease both; }
 .friendpick .colhead h2 { font-size: 14px; font-weight: 800; }
+.typerow .chip em { font-style: normal; margin-left: 4px; font-size: 12px; opacity: .75; font-weight: 800; } .typerow .chip.on em { opacity: 1; }
+
+.hist .histhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; } .histtotal { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; font-size: 17px; } .pos { color: var(--won-fg); } .neg { color: var(--lost-fg); }
+.histchart { width: 100%; height: 90px; } .histchart .hz { stroke: var(--border-strong); stroke-dasharray: 4 4; } .histchart .hline { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; } .histchart .hline.pos { stroke: var(--won-fg); } .histchart .hline.neg { stroke: var(--lost-fg); }
+.histchart .harea.pos { fill: color-mix(in srgb, var(--won-fg) 16%, transparent); } .histchart .harea.neg { fill: color-mix(in srgb, var(--lost-fg) 16%, transparent); } .histchart .hdot.pos { fill: var(--won-fg); } .histchart .hdot.neg { fill: var(--lost-fg); }
+.histchart .hline { stroke-dasharray: 600; stroke-dashoffset: 600; animation: histdraw 1.1s ease-out forwards; } @keyframes histdraw { to { stroke-dashoffset: 0; } }
+.histaxis { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+.histbw { display: flex; flex-direction: column; gap: 4px; font-size: 13px; } .histbw span { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.histcats summary { cursor: pointer; font-weight: 700; font-size: 14px; padding: 4px 0; } .histcats ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.histcats li { display: grid; grid-template-columns: minmax(90px, 1fr) 1.2fr auto; gap: 8px; align-items: center; font-size: 13px; } .histcats .cn em { font-style: normal; color: var(--muted); margin-left: 6px; font-size: 11px; }
+.histcats .cb { height: 8px; border-radius: 999px; background: var(--border); overflow: hidden; } .histcats .cb i { display: block; height: 100%; border-radius: inherit; } .histcats .cb i.pos { background: var(--won-fg); } .histcats .cb i.neg { background: var(--lost-fg); }
+
+.dmflash { position: relative; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px; border-radius: 14px; border: 1px solid transparent; overflow: hidden; background: color-mix(in srgb, #ff4d6a 8%, var(--surface-2)); animation: dmin .45s .18s both; }
+.dmflash .dmico.bolt { background: linear-gradient(135deg, #ff5d73, #ff9d3d); color: #fff; }
+.dmflash .flashtag { background: #ff4d6a; }
+.dmflash.live { border-color: #ff4d6a; animation: dmin .45s both, dmglowr 1.4s ease-out infinite; } .dmflash.live .dmico.bolt { animation: dmshake 1s ease-in-out infinite; }
+.dmflash.ready { border-color: #ff9d3d; } .dmflash.soon, .dmflash.missed { opacity: .8; } .dmflash.missed { filter: grayscale(.7); } .dmflash.claimed { opacity: .72; }
+.dmcount { font-weight: 800; color: #ff4d6a; font-size: 14px; } .dmmiss { font-size: 11px; color: var(--muted); text-align: right; max-width: 110px; }
+@keyframes dmglowr { 0% { box-shadow: 0 0 0 0 rgba(255, 77, 106, .5); } 100% { box-shadow: 0 0 0 12px rgba(255, 77, 106, 0); } }
+.dmflash.pop::after { content: ""; position: absolute; left: 34px; top: 50%; width: 8px; height: 8px; border-radius: 50%; background: #ffd24a; box-shadow: -18px -22px 0 #ff5d73, 20px -26px 0 #ffd24a, -34px 6px 0 #ff9d3d, 30px 12px 0 #ff5d73, -8px 26px 0 #ffd24a, 12px 28px 0 #ff9d3d; animation: dmburst .9s ease-out both; pointer-events: none; }

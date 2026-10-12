@@ -1,5 +1,5 @@
 import { CloudRain } from "lucide-preact";
-import { FilterSheet, filterLabel } from "../components/FilterSheet.tsx";
+import { FilterSheet, filterLabel, ICON as KIND_ICON } from "../components/FilterSheet.tsx";
 import { groupMatches, MatchList } from "../components/MatchList.tsx";
 import { quip } from "../lib/format.ts";
 import { CatChips, type CatId } from "../components/CatChips.tsx";
@@ -106,9 +106,17 @@ export function Home(p: HomeProps) {
             <button class="chip more" onClick={p.onMorePlaces}><Plus size={16} />{msg.places.more}</button>
           </div>
         )}
+        {wxKinds.length > 1 && (
+          <>
+            <h2 class="steplabel">{msg.home.typeLabel}</h2>
+            <div class="chiprow typerow" role="tablist">
+              <button class={`chip ${wx === "all" ? "on" : ""}`} role="tab" aria-selected={wx === "all"} onClick={() => setWx("all")}>{msg.wx.all}<em>{p.list.length}</em></button>
+              {wxKinds.map((k) => { const Icon = KIND_ICON[k]; return <button key={k} class={`chip ${wx === k ? "on" : ""}`} role="tab" aria-selected={wx === k} onClick={() => setWx(k)}>{Icon && <Icon size={16} />}{filterLabel(msg, k)}<em>{p.list.filter((m) => wxKey(m) === k).length}</em></button>; })}
+            </div>
+          </>
+        )}
         <div class="sectionhead evhead"><h2>{msg.home.events}</h2>
           <div class="evacts"><button class="createbtn" onClick={p.onCreate}><Plus size={16} />{msg.maker.open}</button>
-          {wxKinds.length > 1 && <button class={`filterbtn ${wx !== "all" ? "on" : ""}`} onClick={() => setFilterOpen(true)}><SlidersHorizontal size={16} />{wx === "all" ? msg.wx.filter : filterLabel(msg, wx)}{wx !== "all" && <i role="button" aria-label={msg.common.close} onClick={(e) => { e.stopPropagation(); setWx("all"); }}><X size={14} /></i>}</button>}
         </div></div>
         {filterOpen && <FilterSheet msg={msg} options={wxKinds.map((k) => ({ key: k, count: p.list.filter((m) => wxKey(m) === k).length }))} value={wx} onPick={setWx} onClose={() => setFilterOpen(false)} />}
         {p.cat === "nature" && <button class="btn secondary quakecta" onClick={p.onQuakeMaker}><MapPin size={18} />{msg.quakeMaker.cta}</button>}

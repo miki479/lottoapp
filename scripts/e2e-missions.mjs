@@ -19,6 +19,10 @@ try {
   ok((await rpc("claim_mission", { p_id: d1.missions[0].id })).status >= 400, "cannot claim before doing it");
   ok((await rpc("claim_mission", { p_id: "m_nope" })).status >= 400, "unknown mission refused");
   ok((await rpc("claim_chest")).status >= 400, "chest stays closed");
+  const f1 = (await rpc("daily_flash")).body, f2 = (await rpc("daily_flash")).body;
+  ok(f1.id && f1.start === f2.start && f1.id === f2.id, `one flash mission, same all day: ${f1.id} ${f1.start} -> ${f1.end}`);
+  ok(Date.parse(f1.end) - Date.parse(f1.start) === 90 * 60_000 && f1.reward >= 300 && f1.boosts === 1, "90-minute window, mega reward and a boost");
+  ok((await rpc("claim_flash")).status >= 400, "flash cannot be claimed before it is done");
   // play: bets in several categories
   const mk = (await j("/rest/v1/markets?status=eq.open&select=id,category,odds_yes,odds_no&order=closes_at.desc&limit=200")).body;
   const cats = new Map(); for (const m of mk) if (!cats.has(m.category)) cats.set(m.category, m);

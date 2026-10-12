@@ -9,9 +9,11 @@ import { countdown, fmtOdds, isYesNo, money, question } from "../lib/format.ts";
 import type { Challenge } from "../components/ChallengeSheet.tsx";
 import type { MyBet, ParlayRow } from "../lib/types.ts";
 
-export function Bets({ invites, challenges, onChallenge, parlays, bets, msg, locale, now, onOpen, onHome }: { invites: (Challenge & { invited_by: string })[]; challenges: Challenge[]; onChallenge: (code: string) => void; parlays: ParlayRow[]; bets: MyBet[]; msg: Messages; locale: Locale; now: number; onOpen: (b: MyBet) => void; onHome: () => void }) {
+export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlays, bets, msg, locale, now, onOpen, onHome }: { canMore: boolean; onMore: () => void; invites: (Challenge & { invited_by: string })[]; challenges: Challenge[]; onChallenge: (code: string) => void; parlays: ParlayRow[]; bets: MyBet[]; msg: Messages; locale: Locale; now: number; onOpen: (b: MyBet) => void; onHome: () => void }) {
   const [tab, setTab] = useState<"open" | "settled">("open");
-  const shown = bets.filter((b) => (tab === "open" ? b.status === "open" : b.status !== "open"));
+  const [st, setSt] = useState<"all" | "won" | "lost" | "void">("all"), [cat, setCat] = useState("all");
+  const cats = [...new Set(bets.filter((b) => b.status !== "open").map((b) => b.markets.category))];
+  const shown = bets.filter((b) => (tab === "open" ? b.status === "open" : b.status !== "open" && (st === "all" || b.status === st) && (cat === "all" || b.markets.category === cat)));
   const shownP = parlays.filter((x) => (tab === "open" ? x.status === "open" : x.status !== "open"));
   const nOpen = bets.filter((b) => b.status === "open").length + parlays.filter((x) => x.status === "open").length;
   const nDone = bets.length + parlays.length - nOpen;
@@ -22,6 +24,12 @@ export function Bets({ invites, challenges, onChallenge, parlays, bets, msg, loc
         <button role="tab" class={tab === "open" ? "on" : ""} aria-selected={tab === "open"} onClick={() => setTab("open")}>{msg.bets.tabs.open} · {nOpen}</button>
         <button role="tab" class={tab === "settled" ? "on" : ""} aria-selected={tab === "settled"} onClick={() => setTab("settled")}>{msg.bets.tabs.settled} · {nDone}</button>
       </div>
+      {tab === "settled" && (
+        <div class="stack" style="gap:6px">
+          <div class="mkchips">{(["all", "won", "lost", "void"] as const).map((k) => <button key={k} class={`mkchip ${st === k ? "on" : ""}`} aria-pressed={st === k} onClick={() => setSt(k)}>{msg.hist[k]}</button>)}</div>
+          {cats.length > 1 && <div class="mkchips"><button class={`mkchip ${cat === "all" ? "on" : ""}`} aria-pressed={cat === "all"} onClick={() => setCat("all")}>{msg.hist.all}</button>{cats.map((c) => <button key={c} class={`mkchip ${cat === c ? "on" : ""}`} aria-pressed={cat === c} onClick={() => setCat(c)}>{msg.tabs[c as keyof typeof msg.tabs] ?? c}</button>)}</div>}
+        </div>
+      )}
       {tab === "open" && invites.length > 0 && <Collapse id="inbox" class="inbox" title={msg.frd.inboxTitle} count={invites.length}>
         {invites.map((c) => <button key={c.id} class="card pressable chrow invite" onClick={() => onChallenge(c.code)}><span class="byline">{msg.frd.inboxFrom(c.invited_by)} · {countdown(Math.max(0, Date.parse(c.closes_at) - now))}</span><b>{c.title}</b><span class="invopen">{msg.frd.inboxOpen}</span></button>)}
       </Collapse>}
@@ -72,6 +80,7 @@ export function Bets({ invites, challenges, onChallenge, parlays, bets, msg, loc
           );
         })}
       </div>
+      {canMore && tab === "settled" && <button class="btn secondary wide" onClick={onMore}>{msg.hist.more}</button>}
     </div>
   );
 }

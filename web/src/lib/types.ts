@@ -22,3 +22,4 @@ export interface MyStats { total: number; won: number; lost: number; voided: num
 export interface PopularRow { market_id: string; bets: number; staked: number }
 
 export interface DailyMissionsData { day: string; missions: { id: string; tier: number; target: number; reward: number; progress: number; claimed: boolean }[]; chest: { reward: number; boosts: number; ready: boolean; claimed: boolean } }
+export interface FlashData { id: string; target: number; reward: number; boosts: number; start: string; end: string; progress: number; claimed: boolean }

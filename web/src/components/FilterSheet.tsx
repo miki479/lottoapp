@@ -5,7 +5,7 @@ import { Sheet } from "./Sheet.tsx";
 
 export interface FilterOption { key: string; count: number }
 
-const ICON: Record<string, typeof Wind> = { rain: CloudRain, temp: Thermometer, wind: Wind, snow: Snowflake, uv: Sun, aqi: CloudFog, hail: CloudHail, world: Globe, crypto: Bitcoin, metals: Gem, oil: Droplet, fuel: Fuel };
+export const ICON: Record<string, typeof Wind> = { rain: CloudRain, temp: Thermometer, wind: Wind, snow: Snowflake, uv: Sun, aqi: CloudFog, hail: CloudHail, world: Globe, crypto: Bitcoin, metals: Gem, oil: Droplet, fuel: Fuel };
 const FLAG: Record<string, string> = { jp: "JP", it: "IT", ca: "US", tr: "TR" };
 
 export function filterLabel(msg: Messages, key: string): string {

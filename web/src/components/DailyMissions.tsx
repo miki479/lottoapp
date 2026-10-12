@@ -1,9 +1,10 @@
-import { Activity, Bus, Check, Clapperboard, CloudRain, Coins, Crown, Droplet, Flame, Fuel, Gem, Gift, Globe, Layers, Moon, PackageOpen, Scale, Sparkles, Sunrise, Target, ThumbsDown, ThumbsUp, Ticket, Timer, TrainFront, Trophy, UserRound, Users } from "lucide-preact";
+import { Zap, Activity, Bus, Check, Clapperboard, CloudRain, Coins, Crown, Droplet, Flame, Fuel, Gem, Gift, Globe, Layers, Moon, PackageOpen, Scale, Sparkles, Sunrise, Target, ThumbsDown, ThumbsUp, Ticket, Timer, TrainFront, Trophy, UserRound, Users } from "lucide-preact";
 import type { LucideIcon } from "lucide-preact";
 import { useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { money } from "../lib/format.ts";
-import type { DailyMissionsData } from "../lib/types.ts";
+import type { DailyMissionsData, FlashData } from "../lib/types.ts";
+import { INTL_TAG } from "../i18n/index.ts";
 import { untilReset } from "./RewardsSheet.tsx";
 
 const ICON: Record<string, LucideIcon> = {
@@ -13,7 +14,7 @@ const ICON: Record<string, LucideIcon> = {
   m_win1: Target, m_win2: Target, m_winodds3: Target, m_leg_win3: Crown };
 
 /** Three missions a day with progress bars and rewards, and a chest when all three are done. The server counts and pays; this only shows and presses "collect". */
-export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages; locale: Locale; now: number; tz: string; streak: number; onClaim: (id: string) => Promise<void>; onChest: () => Promise<void>; compact?: boolean }) {
+export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages; locale: Locale; now: number; tz: string; streak: number; onClaim: (id: string) => Promise<void>; onChest: () => Promise<void>; flash?: FlashData | null; onFlash?: () => Promise<void>; compact?: boolean }) {
   const t = p.msg.dm;
   const [pop, setPop] = useState<string | null>(null);
   if (!p.data) return <section class="card dm"><div class="sk s" /></section>;
@@ -43,6 +44,27 @@ export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages
           );
         })}
       </ul>
+      {p.flash && (() => {
+        const f = p.flash, s = Date.parse(f.start), e = Date.parse(f.end), done = f.progress >= f.target, live = p.now >= s && p.now < e, over = p.now >= e;
+        const st = f.claimed ? "claimed" : done ? "ready" : live ? "live" : over ? "missed" : "soon";
+        const left = Math.max(0, e - p.now), mm = Math.floor(left / 60000), ss = Math.floor((left % 60000) / 1000);
+        const at = new Intl.DateTimeFormat(INTL_TAG[p.locale], { hour: "2-digit", minute: "2-digit", timeZone: p.tz }).format(new Date(s));
+        return (
+          <div class={`dmflash ${st} ${pop === "flash" ? "pop" : ""}`}>
+            <span class="dmico big bolt"><Zap size={24} fill="currentColor" /></span>
+            <div class="dmtx"><b><i class="dmleg flashtag">{t.flash.title}</i>{t.flash.titles[f.id] ?? f.id}</b>
+              <span class="hint">{t.flash.prize(money(f.reward, p.locale), f.boosts)}</span>
+              {st === "live" && <span class="dmbar"><i style={`width:${Math.round((f.progress / f.target) * 100)}%`} /></span>}
+            </div>
+            <span class="dmact">
+              {st === "claimed" ? <span class="dmok"><Check size={16} strokeWidth={3} />{t.done}</span>
+                : st === "ready" ? <button class="btn primary dmbtn" onClick={() => burst("flash", async () => { await p.onFlash?.(); })}><span>{t.flash.claim}</span></button>
+                : st === "live" ? <><em class="num">{f.progress}/{f.target}</em><span class="dmcount num">{String(mm).padStart(2, "0")}:{String(ss).padStart(2, "0")}</span></>
+                : st === "soon" ? <span class="dmcount">{t.flash.soon(at)}</span> : <span class="dmmiss">{t.flash.missed}</span>}
+            </span>
+          </div>
+        );
+      })()}
       <div class={`dmchest ${c.ready && !c.claimed ? "ready" : ""} ${c.claimed ? "claimed" : ""} ${pop === "chest" ? "pop" : ""}`}>
         <span class="dmico big">{c.claimed ? <PackageOpen size={24} /> : <Gift size={24} />}</span>
         <div class="dmtx"><b>{t.chest}</b><span class="hint">{t.chestBody(money(c.reward, p.locale))}</span>
