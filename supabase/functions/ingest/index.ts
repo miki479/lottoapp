@@ -239,8 +239,8 @@ async function ingestPlaces(sb: ReturnType<typeof db>, now: number, last: number
   return `ok ${rows}`;
 }
 
-async function fetchBytes(url: string, extra: Record<string, string> = {}): Promise<Uint8Array> {
-  const res = await fetch(url, { headers: { ...extra, "User-Agent": `LateLotto/0.1 (play-money game; contact: ${Deno.env.get("CONTACT_EMAIL") ?? "unset"})`, "Accept-Encoding": "gzip" }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+async function fetchBytes(url: string, extra: Record<string, string> = {}, timeoutMs = FETCH_TIMEOUT_MS): Promise<Uint8Array> {
+  const res = await fetch(url, { headers: { ...extra, "User-Agent": `LateLotto/0.1 (play-money game; contact: ${Deno.env.get("CONTACT_EMAIL") ?? "unset"})`, "Accept-Encoding": "gzip" }, signal: AbortSignal.timeout(timeoutMs) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const buf = new Uint8Array(await res.arrayBuffer());
   if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) throw new Error(`unexpected size ${buf.byteLength}`);
@@ -272,7 +272,7 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
   // Two feeds (e.g. Berlin buses and trains) can read the same file: fetch and decode it once per run.
   let msg = rtCache.get(url);
   if (!msg) {
-    const bytes = await fetchBytes(url, headers);
+    const bytes = await fetchBytes(url, headers, feed.id.includes("gtt") ? 45_000 : FETCH_TIMEOUT_MS); // the Turin feed is slow
     msg = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(bytes), { longs: Number }) as RtFeed;
     rtCache.set(url, msg);
   }

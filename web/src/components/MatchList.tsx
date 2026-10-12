@@ -119,7 +119,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
   return (
     <>
       <div class="mkchips modes" role="tablist">{([false, true] as const).map((v) => <button key={String(v)} role="tab" aria-selected={adv === v} class={`mkchip ${adv === v ? "on" : ""}`} onClick={() => setMode(v)}>{v ? u.advanced : u.simple}</button>)}</div>
-      {leagues.length > 1 && <div class="mkchips"><button class={`mkchip ${league === "" ? "on" : ""}`} onClick={() => setLeague("")}>{u.all}</button>{leagues.map((l) => <button key={l} class={`mkchip ${league === l ? "on" : ""}`} onClick={() => setLeague(l)}>{l}</button>)}</div>}
+      {leagues.length > 1 && <div class="mkchips wrap"><button class={`mkchip ${league === "" ? "on" : ""}`} onClick={() => setLeague("")}>{u.all}</button>{leagues.map((l) => <button key={l} class={`mkchip ${league === l ? "on" : ""}`} onClick={() => setLeague(l)}>{l}</button>)}</div>}
       {err && <p class="formerr" role="alert">{err}</p>}
       {shown.length === 0 && <p class="hint">{u.noMatches}</p>}
       <div class="matchlist">{shown.slice(0, 60).map(Row)}</div>
@@ -129,7 +129,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
           <span class="byline">{open.league} · {when(open.kickoff)}</span>
           <MatchVs home={open.home} away={open.away} homeBadge={open.homeBadge} awayBadge={open.awayBadge} size={36} />
           {err && <p class="formerr" role="alert">{err}</p>}
-          {hasDetails && <div class="mkchips">{([["main", u.finalT], ["half", u.halves], ["corners", u.cornersT], ["cards", u.cardsT], ["players", u.players]] as const).map(([k, l]) => <button key={k} class={`mkchip ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>}
+          {hasDetails && <div class="mkchips wrap">{([["main", u.finalT], ["half", u.halves], ["corners", u.cornersT], ["cards", u.cardsT], ["players", u.players]] as const).map(([k, l]) => <button key={k} class={`mkchip ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>}
           {(tab === "main" || !hasDetails) && <>
           {group(u.result, <>
             <OddsBtn label="1" odds={oddsOf(open, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "home_win", "yes")} />

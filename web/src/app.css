@@ -1023,3 +1023,5 @@ textarea.field { resize: vertical; min-height: 84px; }
 .subject { display: block; font-size: 12px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--brand); }
 .badge-flash.super { background: linear-gradient(90deg, #ff4d6a, #ff9d3d); color: #fff; } .supernote { margin: 4px 0 0; font-size: 13px; font-weight: 700; color: #d6334f; }
 .nolive { margin: 2px 0 6px; font-size: 12px; color: var(--muted); font-weight: 600; }
+
+.sheet .mkchips.wrap { flex-wrap: wrap; overflow: visible; } .sheet .mkchips.wrap .mkchip { flex: 0 1 auto; }
