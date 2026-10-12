@@ -25,6 +25,9 @@ async function send(userIds: string[], heading: string, body: string, url = "htt
     body: JSON.stringify({ app_id: app, target_channel: "push", include_aliases: { external_id: userIds }, headings: { en: heading }, contents: { en: body }, url, ttl: 3600 }),
   });
   if (!r.ok) { lastNotifyError.msg = `onesignal ${r.status} ${(await r.text()).slice(0, 160)}`; console.error(lastNotifyError.msg); return false; }
+  // OneSignal answers 200 also when nobody could be reached (no device linked to that id): an empty id means nothing was sent
+  const j = await r.json().catch(() => null) as { id?: string; errors?: unknown } | null;
+  if (j && !j.id) { lastNotifyError.msg = `onesignal not delivered ${JSON.stringify(j.errors ?? {}).slice(0, 140)}`; console.error(lastNotifyError.msg); return true; }
   return true;
 }
 

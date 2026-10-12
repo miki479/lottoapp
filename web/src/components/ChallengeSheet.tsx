@@ -9,7 +9,7 @@ import { Sheet } from "./Sheet.tsx";
 
 export interface Challenge {
   id: string; code: string; title: string; category: keyof Messages["friends"]["cats"]; stake: number; closes_at: string; status: "open" | "resolved" | "void"; outcome: "yes" | "no" | null; judge_mode: "creator" | "vote"; visibility: "private" | "public"; my_vote: "yes" | "no" | null; voted: number;
-  creator: string; is_creator: boolean; my_pick: "yes" | "no" | null; my_payout: number | null; yes: number; no: number; pot: number; people: { name: string; pick: "yes" | "no"; payout: number }[];
+  creator: string; is_creator: boolean; my_pick: "yes" | "no" | null; my_payout: number | null; yes: number; no: number; pot: number; people: { name: string; pick: "yes" | "no" | null; payout: number | null }[];
 }
 
 export const challengeLink = (code: string) => `${location.origin}/?c=${code}`;
@@ -95,7 +95,7 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
         : <button class="btn secondary" onClick={() => setAsking(true)}>{f.deleteBtn}</button>)}
       {c.visibility === "public" && !c.is_creator && <button class="btn secondary" disabled={reported} onClick={report}>{reported ? p.msg.fx.reported : p.msg.fx.report}</button>}
       {c.people.length > 0 && <div class="tickchart"><div class="tchead"><b>{f.people}</b></div>
-        {c.people.map((x, i) => <div key={i} class="tchead" style="padding:4px 0"><span>{x.name === "?" ? p.msg.ticker.anon : x.name}</span><span class="num"><b>{x.pick === "yes" ? f.yes : f.no}</b>{x.payout > 0 && c.status === "resolved" ? ` · ${f.won} ${money(x.payout, p.locale)}` : ""}</span></div>)}
+        {c.people.map((x, i) => <div key={i} class="tchead" style="padding:4px 0"><span>{x.name === "?" ? p.msg.ticker.anon : x.name}</span><span class="num"><b>{x.pick === null ? "✓" : x.pick === "yes" ? f.yes : f.no}</b>{(x.payout ?? 0) > 0 && c.status === "resolved" ? ` · ${f.won} ${money(x.payout, p.locale)}` : ""}</span></div>)}
       </div>}
       {err && <p class="formerr" role="alert">{err}</p>}
     </Sheet>
