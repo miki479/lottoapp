@@ -1,11 +1,12 @@
 import { CloudRain } from "lucide-preact";
+import { FilterSheet, filterLabel } from "../components/FilterSheet.tsx";
 import { CatChips, type CatId } from "../components/CatChips.tsx";
 import { Empty } from "../components/Empty.tsx";
 import { CrowdCard } from "../components/CrowdCard.tsx";
 import { EventCard } from "../components/EventCard.tsx";
 import { Flag } from "../components/Flag.tsx";
 import { TopCards, type TopItem } from "../components/TopCards.tsx";
-import { Globe, MapPin, Sparkles } from "lucide-preact";
+import { Globe, MapPin, SlidersHorizontal, Sparkles, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
@@ -28,7 +29,8 @@ export function Home(p: HomeProps) {
   // Weather has sub-pills (rain, temperature, wind…) so the category row stays short; only the kinds that exist today are shown.
   const [wxSel, setWx] = useState<string>("all");
   const wxKey = (m: MarketRow) => (m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : m.kind === "quake_m" ? String(m.params.region ?? "world") : "");
-  const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi"] : [];
+  const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi"] : p.cat === "nature" ? ["world", "jp", "it", "ca", "tr"] : [];
+  const [filterOpen, setFilterOpen] = useState(false);
   const wxKinds = order.filter((k) => p.list.some((m) => wxKey(m) === k));
   const wx = wxKinds.includes(wxSel) ? wxSel : "all";
   const picked = wx !== "all" ? p.list.filter((m) => wxKey(m) === wx) : p.list;
@@ -52,9 +54,11 @@ export function Home(p: HomeProps) {
         )}
       </div>
       <div class="main stack">
-        <div class="sectionhead"><h2>{msg.home.events}</h2></div>
+        <div class="sectionhead evhead"><h2>{msg.home.events}</h2>
+          {wxKinds.length > 1 && <button class={`filterbtn ${wx !== "all" ? "on" : ""}`} onClick={() => setFilterOpen(true)}><SlidersHorizontal size={16} />{wx === "all" ? msg.wx.filter : filterLabel(msg, wx)}{wx !== "all" && <i role="button" aria-label={msg.common.close} onClick={(e) => { e.stopPropagation(); setWx("all"); }}><X size={14} /></i>}</button>}
+        </div>
+        {filterOpen && <FilterSheet msg={msg} options={wxKinds.map((k) => ({ key: k, count: p.list.filter((m) => wxKey(m) === k).length }))} value={wx} onPick={setWx} onClose={() => setFilterOpen(false)} />}
         <CatChips tiles={tiles} value={p.cat} onPick={p.onCat} />
-        {wxKinds.length > 1 && <div class="wxpills" role="tablist">{["all", ...wxKinds].map((k) => <button key={k} role="tab" aria-selected={wx === k} class={wx === k ? "on" : ""} onClick={() => setWx(k)}>{k === "all" ? msg.wx.all : k === "rain" ? msg.wx.rain : k === "world" ? msg.wx.world : msg.wx.regions[k] ?? msg.wx.names[k as "temp"]}</button>)}</div>}
         <div class="chiprow" role="tablist">
           <button class={`chip ${p.filter === "world" ? "on" : ""}`} role="tab" aria-selected={p.filter === "world"} onClick={() => p.onFilter("world")}><Globe size={16} />{msg.world}</button>
           {cities.filter((c) => FEATURED_CITY_IDS.includes(c.id)).map((c) => <button key={c.id} class={`chip ${p.filter === c.id ? "on" : ""}`} role="tab" aria-selected={p.filter === c.id} onClick={() => p.onFilter(c.id)}><Flag cc={c.country} size={13} />{cityName(c, p.locale)}</button>)}
