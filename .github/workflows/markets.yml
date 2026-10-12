@@ -23,7 +23,7 @@ jobs:
       - name: Weather (all cities)
         if: github.event.schedule != '41 2 * * *'
         run: |
-          for c in tokyo rome amsterdam sanfrancisco oslo torino zurich paris madrid berlin helsinki; do node scripts/generate-markets.mjs --city $c --weather --apply; done
+          for c in tokyo rome amsterdam sanfrancisco oslo torino zurich paris madrid berlin helsinki boston; do node scripts/generate-markets.mjs --city $c --weather --apply; done
       - name: Tokyo buses
         if: github.event.schedule != '41 2 * * *'
         run: node scripts/generate-markets.mjs --city tokyo --feed toei-bus-vehicle --max 30 --apply
@@ -46,6 +46,8 @@ jobs:
           node scripts/generate-markets.mjs --city berlin --feed vbb-train-trip-update --max 30 --apply
           node scripts/generate-markets.mjs --city helsinki --feed hsl-trip-update --max 30 --apply
           node scripts/generate-markets.mjs --city helsinki --feed hsl-train-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city boston --feed mbta-bus-trip-update --max 30 --apply
+          node scripts/generate-markets.mjs --city boston --feed mbta-train-trip-update --max 20 --apply
       - name: Italian trains (unlicensed feed, needs ALLOW_UNVERIFIED_FEEDS and a reachable IP)
         if: vars.ENABLE_VIAGGIATRENO == '1' && (github.event.schedule != '41 2 * * *')
         continue-on-error: true
