@@ -52,7 +52,7 @@ export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: b
       <p class="hint">{f.hint}</p>
       <label class="qmfield"><textarea class="field" rows={3} maxLength={120} value={title} placeholder={f.placeholder} onInput={(e) => setTitle((e.target as HTMLTextAreaElement).value)} /></label>
       <span class="detail">{f.category}</span>
-      <div class="mkchips">
+      <div class="mkchips wrap">
         {MAIN.map(chip)}
         {more && MORE.map(chip)}
       </div>
