@@ -34,7 +34,8 @@ try {
   ok((await j("/rest/v1/friendships?select=*", {}, A.tok)).status >= 400 || (await j("/rest/v1/friendships?select=*", {}, A.tok)).body?.length === 0, "the table is not readable directly");
   ok((await rpc(null, "friends_board")).status >= 400 || (await rpc(G, "friends_board")).body?.length === 0, "anonymous callers get nothing");
 
-  const mk = (await j("/rest/v1/markets?status=eq.open&kind=eq.rain_at&select=id&limit=1")).body?.[0]?.id ?? (await j("/rest/v1/markets?status=eq.open&select=id&limit=1")).body?.[0]?.id;
+  const soon = encodeURIComponent(new Date(Date.now() + 30 * 60_000).toISOString());
+  const mk = (await j(`/rest/v1/markets?status=eq.open&closes_at=gt.${soon}&kind=eq.match_bet&select=id&limit=1`)).body?.[0]?.id;
   if (mk) {
     const pb = await rpc(B, "place_bet", { p_market: mk, p_pick: "yes", p_stake: 10 });
     ok(pb.status === 200, `B places a bet (${pb.status})`);
