@@ -30,5 +30,12 @@ ok((await offer({ type: "metric", placeId: "nowhere", metric: "temp", dayOffset:
 ok((await j("/rest/v1/rpc/register_share", { method: "POST", body: JSON.stringify({ p_market: mid }) }, tok)).status < 300, "share registered");
 const tr = await j("/rest/v1/rpc/trending_markets", { method: "POST", body: JSON.stringify({ p_limit: 20 }) });
 ok(tr.status === 200 && tr.body.some((r) => r.market_id === mid), "new player market is eligible for trending");
+const fx = (await j("/rest/v1/markets?kind=eq.match_bet&status=eq.open&select=params&order=closes_at.desc&limit=1")).body?.[0]?.params;
+if (fx) {
+  const pv1 = await offer({ type: "match", eventId: fx.eventId, bet: "over_2_5", preview: true }); ok(pv1.status === 200 && pv1.body.preview.odds_yes >= 1.1, `football: goals line previewed (${pv1.status})`);
+  const pv2 = await offer({ type: "match", eventId: fx.eventId, bet: "ht_home", preview: true });
+  ok(pv2.status === 200 || (pv2.status === 503 && pv2.body?.error === "details_unavailable"), `football: half-time bet is offered only when its source works (${pv2.status})`);
+  ok((await offer({ type: "match", eventId: fx.eventId, bet: "made_up", preview: true })).status === 400, "football: unknown bet refused");
+} else console.log("skip football (no open match)");
 if (mid) await j(`/rest/v1/markets?id=eq.${mid}`, { method: "DELETE" }, SRV, SRV);
 await j(`/auth/v1/admin/users/${uid}`, { method: "DELETE" }, SRV, SRV);

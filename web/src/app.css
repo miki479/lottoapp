@@ -869,7 +869,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 .tryalt { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: center; }
 .tryalt span { font-size: 13px; color: var(--muted); width: 100%; text-align: center; }
 .tryalt .chip em { font-style: normal; margin-left: 6px; font-size: 12px; opacity: .8; }
-@media (max-width: 1023px) { .home .aside > * { order: 5; } .home .legal { order: 9; } .home .nearwrap { order: 6; } }
+@media (max-width: 1023px) { .home .legal { order: 9; } .home .nearwrap { order: 6; } }
 
 @media (max-width: 560px) {
   .catchips, .catchips.many { display: flex; overflow-x: auto; scroll-snap-type: x proximity; gap: 8px; margin: 0 calc(var(--gutter) * -1); padding: 2px var(--gutter) 6px; scrollbar-width: none; }
@@ -880,3 +880,4 @@ textarea.field { resize: vertical; min-height: 84px; }
 @media (max-width: 560px) { .hero { padding: 16px 18px; } .hero-ico { display: none; } .hero h1 { font-size: 22px; max-width: none; } }
 
 .sheet .mkchips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .sheet .mkchips::-webkit-scrollbar { display: none; } .sheet .mkchips .mkchip { flex: none; }
+@media (min-width: 1024px) { .home .howto { grid-column: 1 / -1; grid-row: 3; } .home .main, .home .aside { grid-row: 4; } }

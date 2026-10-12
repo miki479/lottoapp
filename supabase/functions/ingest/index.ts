@@ -576,6 +576,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
         for (let d = 0; d < 7; d++) {
           const day = new Date((now + d * 86400) * 1000).toISOString().slice(0, 10);
           const evs = ((await getJson(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
+          await new Promise((r) => setTimeout(r, 150)); // the free tier is polite-use: about 30 calls a minute
           for (const e of evs) {
             const k = Date.parse(`${e.strTimestamp}Z`) / 1000;
             if (e.idEvent && e.strHomeTeam && e.strAwayTeam && Number.isFinite(k)) { fixtures.push({ eventId: e.idEvent, league: league.name, home: e.strHomeTeam, away: e.strAwayTeam, kickoff: k, ...(e.idAPIfootball ? { apiId: e.idAPIfootball } : {}) }); season = season || String(e.strSeason ?? ""); }
@@ -586,6 +587,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
         for (let d = 1; d <= 3; d++) {
           const day = new Date((now - d * 86400) * 1000).toISOString().slice(0, 10);
           const evs = ((await getJson(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
+          await new Promise((r) => setTimeout(r, 150));
           for (const e of evs) {
             const k = Date.parse(`${e.strTimestamp}Z`) / 1000, hg = e.intHomeScore, ag = e.intAwayScore;
             if (e.idEvent && e.strHomeTeam && e.strAwayTeam && Number.isFinite(k) && FINISHED.has(String(e.strStatus)) && hg !== null && hg !== undefined && ag !== null && ag !== undefined) {

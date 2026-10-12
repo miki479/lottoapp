@@ -1,5 +1,5 @@
 import { testMode } from "./lib/testmode.ts";
-import { Clock, MapPin, TrendingUp, Users, Zap } from "lucide-preact";
+import { Activity, Bitcoin, Clapperboard, Clock, CloudLightning, MapPin, Trophy, TrendingUp, Users, Zap } from "lucide-preact";
 import { RING_BONUS, STREAK_MILESTONES } from "../../shared/rewards.ts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { AuthSheet } from "./components/AuthSheet.tsx";
@@ -32,7 +32,8 @@ import { ensureGuest, guestState, sb } from "./lib/api.ts";
 import { CITIES, cityInfos, cityName, cityOf } from "./lib/cities.ts";
 import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
-import { countdown, currencySymbol, dayIn, isYesNo, money, question, type MarketRow } from "./lib/format.ts";
+import { computeOdds } from "../../shared/odds.ts";
+import { countdown, currencySymbol, dayIn, fmtOdds, isYesNo, money, question, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
 import { PlacePicker } from "./components/PlacePicker.tsx";
@@ -301,6 +302,27 @@ export function App() {
     if (worst) items.push({ id: "city", icon: MapPin, label: msg.top.city, big: <>{cityName(cityOf(worst[0]), locale)}</>, sub: msg.top.avg(Math.max(0, Math.round(worst[1] / 60))), onClick: () => { store.set("filter", worst[0]); setFilter(worst[0]); setCatChosen(true); const k = (["bus", "train"] as CatId[]).find((c) => open.some((m) => m.city_id === worst[0] && m.category === c)); if (k && !(["bus", "train", "weather", "traffic"] as CatId[]).includes(cat)) setCat(k); } });
     const tr0 = trendRows.find((t) => (t.m.params as { testOnly?: boolean }).testOnly !== true && Date.parse(t.m.closes_at) > now);
     if (tr0) { const c = cityOf(tr0.m.city_id); items.unshift({ id: "trend", icon: TrendingUp, label: tr0.near ? msg.maker.trendingNear : msg.maker.trending, big: <>{tr0.bettors}<small>{msg.top.players(tr0.bettors).replace(/^\d+\s*/, "")}</small></>, sub: question(tr0.m, msg, locale, cityName(c, locale), c.timezone, new Date(now)), onClick: () => setSheet({ m: tr0.m, pick: "yes" }) }); }
+    // One standout per topic, each for its own reason: the best-paying match, the closest coin toss, the next thing in the spotlight, the wildest long shot, the sky.
+    const open1 = (c: string, within: number) => inFilter.filter((m) => m.category === c && Date.parse(m.closes_at) > now && Date.parse(m.closes_at) - now < within * 3600_000 && !(m.params as { testOnly?: boolean }).testOnly);
+    const sub = (m: MarketRow) => question(m, msg, locale, cityName(cityOf(m.city_id), locale), cityOf(m.city_id).timezone, new Date(now));
+    const feat = (id: string, icon: TopItem["icon"], label: string, m: MarketRow | undefined, big: preact.ComponentChildren, pick: "yes" | "no" = "yes") => { if (m) items.push({ id, icon, label, big, sub: sub(m), onClick: () => setSheet({ m, pick }) }); };
+    // football: the likeliest draw, the match where both teams most likely score (its goal bet is opened on tap), the longest-priced away win
+    const three = open1("sport", 72).filter((m) => ["home_win", "draw", "away_win"].includes(String(m.params.bet)));
+    const prior = (m: MarketRow, k: string) => Number((m.params.priors as Record<string, number> | undefined)?.[k]);
+    const dr = three.filter((m) => m.params.bet === "draw").sort((x, y) => Number(x.odds_yes) - Number(y.odds_yes))[0];
+    feat("sport-draw", Trophy, msg.top.draw, dr, dr ? <>×{fmtOdds(Number(dr.odds_yes), locale)}</> : null);
+    const gl = three.filter((m) => m.params.bet === "draw" && Number.isFinite(prior(m, "btts"))).sort((x, y) => prior(y, "btts") - prior(x, "btts"))[0];
+    if (gl) { const o = computeOdds(Math.min(0.9, Math.max(0.1, prior(gl, "btts")))).yes; items.push({ id: "sport-goal", icon: Trophy, label: msg.top.goal, big: <>×{fmtOdds(o, locale)}</>, sub: question({ ...gl, params: { ...gl.params, bet: "btts" } } as MarketRow, msg, locale, "", "UTC", new Date(now)), onClick: () => void openMatchBet(gl, "btts") }); }
+    const up = three.filter((m) => m.params.bet === "away_win" && Number(m.odds_yes) >= 4).sort((x, y) => Number(y.odds_yes) - Number(x.odds_yes))[0];
+    feat("sport-upset", Trophy, msg.top.upset, up, up ? <>×{fmtOdds(Number(up.odds_yes), locale)}</> : null);
+    const toss = open1("finance", 24).sort((x, y) => Math.abs(Number(x.odds_yes) - Number(x.odds_no)) - Math.abs(Number(y.odds_yes) - Number(y.odds_no)))[0];
+    feat("coin", Bitcoin, msg.top.coin, toss, toss ? <>{fmtOdds(Number(toss.odds_yes), locale)}<small> / {fmtOdds(Number(toss.odds_no), locale)}</small></> : null);
+    const spot = open1("culture", 48).sort((x, y) => Date.parse(x.closes_at) - Date.parse(y.closes_at))[0];
+    feat("culture", Clapperboard, msg.top.spotlight, spot, <span class="num">{spot ? countdown(Date.parse(spot.closes_at) - now) : ""}</span>);
+    const wild = open1("nature", 36).filter((m) => Number(m.odds_yes) < 25).sort((x, y) => Number(y.odds_yes) - Number(x.odds_yes))[0];
+    feat("wild", Activity, msg.top.wild, wild, wild ? <>×{fmtOdds(Number(wild.odds_yes), locale)}</> : null);
+    const sky = open1("weather", 24).sort((x, y) => Number(y.odds_yes) - Number(x.odds_yes))[0];
+    feat("sky", CloudLightning, msg.top.sky, sky, sky ? <>×{fmtOdds(Number(sky.odds_yes), locale)}</> : null);
     const soon = inFilter[0];
     if (soon) items.push({ id: "soon", icon: Clock, label: msg.top.closing, big: <span class="num">{countdown(Date.parse(soon.closes_at) - now)}</span>, sub: question(soon, msg, locale, cityName(cityOf(soon.city_id), locale), cityOf(soon.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: soon, pick: "no" }) });
     return items;
@@ -390,6 +412,13 @@ export function App() {
     await Promise.all([loadProfile(), loadParlays(), loadProgress(), loadTrophies(), loadQuests()]);
     flash(msg.slip.placed(win)); announce(`parlay-${Date.now()}`, msg.voice.placed(win), locale);
     return null;
+  };
+  /** Opens one reason (goal, double chance…) of a match from a featured card: the market is made once, on tap, then the bet sheet opens. */
+  const openMatchBet = async (sib: MarketRow, bet: string) => {
+    if (!registered) { setAuth(true); return; }
+    const { data } = await sb.functions.invoke("market-offer", { body: { type: "match", eventId: String(sib.params.eventId), bet } });
+    const m = data?.market as MarketRow | undefined;
+    if (m) { setSheet({ m, pick: "yes" }); loadMarkets(); } else flash(msg.sportui.unavailable, "err");
   };
   const pickPlace = async (pl: Place) => {
     // register the place on the server first: the id it returns is the one the markets carry
