@@ -358,6 +358,8 @@ export function App() {
     if (tr0) { const c = cityOf(tr0.m.city_id); items.unshift({ mid: tr0.m.id, id: "trend", icon: TrendingUp, label: tr0.near ? msg.maker.trendingNear : msg.maker.trending, big: <>{tr0.bettors}<small>{msg.top.players(tr0.bettors).replace(/^\d+\s*/, "")}</small></>, sub: question(tr0.m, msg, locale, cityName(c, locale), c.timezone, new Date(now)), onClick: () => setSheet({ m: tr0.m, pick: "yes" }) }); }
     // One standout per topic, each for its own reason: the best-paying match, the closest coin toss, the next thing in the spotlight, the wildest long shot, the sky.
     const open1 = (c: string, within: number) => inFilter.filter((m) => m.category === c && Date.parse(m.closes_at) > now && Date.parse(m.closes_at) - now < within * 3600_000 && !(m.params as { testOnly?: boolean }).testOnly);
+    // the picks that depend on a ranking take one of the best three, a different one each day (UTC), so the row is not always the same
+    const daily = <T,>(a: T[]): T | undefined => a[Math.floor(now / 86400_000) % Math.min(3, a.length)];
     const sub = (m: MarketRow) => question(m, msg, locale, cityName(cityOf(m.city_id), locale), cityOf(m.city_id).timezone, new Date(now));
     const feat = (id: string, icon: TopItem["icon"], label: string, m: MarketRow | undefined, big: preact.ComponentChildren, pick: "yes" | "no" = "yes") => { if (m) items.push({ mid: m.id, id, icon, label, big, sub: sub(m), onClick: () => setSheet({ m, pick }) }); };
     // the game everybody is waiting for: one hour in, one hour out, so the featured row does not fill up
@@ -366,19 +368,19 @@ export function App() {
     // football: the likeliest draw, the match where both teams most likely score (its goal bet is opened on tap), the longest-priced away win
     const three = open1("sport", 72).filter((m) => ["home_win", "draw", "away_win"].includes(String(m.params.bet)));
     const prior = (m: MarketRow, k: string) => Number((m.params.priors as Record<string, number> | undefined)?.[k]);
-    const dr = three.filter((m) => m.params.bet === "draw").sort((x, y) => Number(x.odds_yes) - Number(y.odds_yes))[0];
+    const dr = daily(three.filter((m) => m.params.bet === "draw").sort((x, y) => Number(x.odds_yes) - Number(y.odds_yes)));
     feat("sport-draw", Trophy, msg.top.draw, dr, dr ? <>×{fmtOdds(Number(dr.odds_yes), locale)}</> : null);
     const gl = three.filter((m) => m.params.bet === "draw" && Number.isFinite(prior(m, "btts"))).sort((x, y) => prior(y, "btts") - prior(x, "btts"))[0];
     if (gl) { const o = computeOdds(Math.min(0.9, Math.max(0.1, prior(gl, "btts")))).yes; items.push({ id: "sport-goal", icon: Trophy, label: msg.top.goal, big: <>×{fmtOdds(o, locale)}</>, sub: question({ ...gl, params: { ...gl.params, bet: "btts" } } as MarketRow, msg, locale, "", "UTC", new Date(now)), onClick: () => void openMatchBet(gl, "btts") }); }
-    const up = three.filter((m) => m.params.bet === "away_win" && Number(m.odds_yes) >= 4).sort((x, y) => Number(y.odds_yes) - Number(x.odds_yes))[0];
+    const up = daily(three.filter((m) => m.params.bet === "away_win" && Number(m.odds_yes) >= 4).sort((x, y) => Number(y.odds_yes) - Number(x.odds_yes)));
     feat("sport-upset", Trophy, msg.top.upset, up, up ? <>×{fmtOdds(Number(up.odds_yes), locale)}</> : null);
-    const toss = open1("finance", 24).sort((x, y) => Math.abs(Number(x.odds_yes) - Number(x.odds_no)) - Math.abs(Number(y.odds_yes) - Number(y.odds_no)))[0];
+    const toss = daily(open1("finance", 24).sort((x, y) => Math.abs(Number(x.odds_yes) - Number(x.odds_no)) - Math.abs(Number(y.odds_yes) - Number(y.odds_no))));
     feat("coin", Bitcoin, msg.top.coin, toss, toss ? <>{fmtOdds(Number(toss.odds_yes), locale)}<small> / {fmtOdds(Number(toss.odds_no), locale)}</small></> : null);
     const spot = open1("culture", 48).sort((x, y) => Date.parse(x.closes_at) - Date.parse(y.closes_at))[0];
     feat("culture", Clapperboard, msg.top.spotlight, spot, <span class="num">{spot ? countdown(Date.parse(spot.closes_at) - now) : ""}</span>);
-    const wild = open1("nature", 36).filter((m) => Number(m.odds_yes) < 25).sort((x, y) => Number(y.odds_yes) - Number(x.odds_yes))[0];
+    const wild = daily(open1("nature", 36).filter((m) => Number(m.odds_yes) < 25).sort((x, y) => Number(y.odds_yes) - Number(x.odds_yes)));
     feat("wild", Activity, msg.top.wild, wild, wild ? <>×{fmtOdds(Number(wild.odds_yes), locale)}</> : null);
-    const sky = open1("weather", 24).sort((x, y) => Number(y.odds_yes) - Number(x.odds_yes))[0];
+    const sky = daily(open1("weather", 24).sort((x, y) => Number(y.odds_yes) - Number(x.odds_yes)));
     feat("sky", CloudLightning, msg.top.sky, sky, sky ? <>×{fmtOdds(Number(sky.odds_yes), locale)}</> : null);
     const hotId = Object.entries(friendBets).sort((x, y) => y[1] - x[1]).find(([id]) => inFilter.some((m) => m.id === id));
     const hotM = hotId && inFilter.find((m) => m.id === hotId[0]);
