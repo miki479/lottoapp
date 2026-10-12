@@ -21,6 +21,10 @@ export const isCrypto = (s: string): s is CryptoSeries => s === "btc" || s === "
 /** Games whose number of players online (Steam Web API, no key) is asked about. */
 export const STEAM = { "730": "Counter-Strike 2", "570": "Dota 2", "271590": "Grand Theft Auto V", "578080": "PUBG", "1245620": "Elden Ring" } as const;
 export const isSteam = (s: string) => s.startsWith("steam:") && s.slice(6) in STEAM;
+/** Artists whose total number of Last.fm listeners is asked about. The total only grows, so the line sits where the recent pace of growth puts it. */
+export const LASTFM = { taylorswift: "Taylor Swift", billieeilish: "Billie Eilish", drake: "Drake", theweeknd: "The Weeknd", dualipa: "Dua Lipa", badbunny: "Bad Bunny", maneskin: "Måneskin", sferaebbasta: "Sfera Ebbasta" } as const;
+export type LastfmKey = keyof typeof LASTFM;
+export const isLastfm = (s: string) => s.startsWith("lastfm:") && s.slice(7) in LASTFM;
 /** Numbers that exist only "right now": they must be read within minutes of the instant. */
 export const isStorm = (s: string) => s.startsWith("storm:");
 export const isAlert = (s: string) => s.startsWith("alert:");
@@ -50,7 +54,7 @@ export function tmWindow(at: number): { from: string; to: string } {
 export const isTv = (s: string) => /^tv:\d+$/.test(s);
 /** A question we write ourselves ("house:gta6"): settled by an admin once the day has passed, refunded if nobody does. */
 export const isHouse = (s: string) => /^house:[a-z0-9_-]{2,30}$/.test(s);
-export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isStorm(s) || isMetal(s) || isTicket(s);
+export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isLastfm(s) || isStorm(s) || isMetal(s) || isTicket(s);
 
 /** Saffir-Simpson scale by sustained wind in knots (1 min average), as NHC reports it. */
 export const STORM_STEPS: { kt: number; label: string }[] = [{ kt: 34, label: "TS" }, { kt: 64, label: "Cat. 1" }, { kt: 83, label: "Cat. 2" }, { kt: 96, label: "Cat. 3" }, { kt: 113, label: "Cat. 4" }, { kt: 137, label: "Cat. 5" }];
@@ -66,6 +70,7 @@ export function tickDef(series: string): TickDef | null {
   if (isAlert(series)) return { category: "nature", label: "Allerta", unit: "", min: 0, max: 3 };
   if (isStorm(series)) return { category: "nature", label: "Storm", unit: " kt", min: 0, max: 200 };
   if (isSteam(series)) return { category: "culture", label: STEAM[series.slice(6) as keyof typeof STEAM], unit: "", min: 0, max: 100_000_000 };
+  if (isLastfm(series)) return { category: "culture", label: LASTFM[series.slice(7) as LastfmKey], unit: "", min: 1000, max: 2_000_000_000 };
   if (isHouse(series)) return { category: "culture", label: "Esclusiva", unit: "", min: 0, max: 1 };
   if (isTv(series)) return { category: "culture", label: "Voto episodio", unit: "", min: 0.5, max: 10 };
   if (isTicket(series)) return { category: "culture", label: `Concerti ${TM_PLACES[series.slice(3) as TmPlace].label}`, unit: "", min: 0, max: 100_000 };
@@ -159,6 +164,22 @@ export function buildSteamMarkets(counts: Record<string, number>, now: number): 
   return out;
 }
 
+/** Listeners on Last.fm at 12 UTC tomorrow and the day after. `stats[key]` = the total now and its pace in listeners per hour (from our own history); no pace yet, no question. */
+export function buildLastfmMarkets(stats: Record<string, { listeners: number; perHour: number }>, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const [key, { listeners: n, perHour }] of Object.entries(stats)) {
+    if (!(n > 10_000) || !(perHour > 0) || !(key in LASTFM)) continue;
+    const series = `lastfm:${key}`, def = tickDef(series)!;
+    for (let at = Math.floor(now / 86400) * 86400 + 12 * H; at <= now + 50 * H; at += 86400) {
+      if (at - 600 <= now + 4 * H) continue;
+      const hours = (at - now) / H, expected = n + perHour * hours, step = Math.max(100, 10 ** Math.floor(Math.log10(Math.max(1, perHour * hours / 2))));
+      const thr = Math.round(expected / step) * step;
+      out.push(tickMarket(series, def, expected, thr, Math.max(step, perHour * hours * 0.3), at, at - 600, at + 3 * H));
+    }
+  }
+  return out;
+}
+
 /** Typical error of "what it is now" as a forecast `hours` ahead, used to price player-made questions. */
 export function tickSigma(series: string, ref: number, hours: number): number {
   if (isStorm(series)) return Math.max(8, 11 * Math.sqrt(Math.max(1, hours) / 12));
@@ -167,6 +188,7 @@ export function tickSigma(series: string, ref: number, hours: number): number {
   if (isFuel(series)) return ref * 0.002 * Math.sqrt(Math.max(1, hours / 24));
   if (isOil(series)) return ref * 0.0185 * Math.sqrt(Math.max(1, hours / 24));
   if (isSteam(series)) return ref * 0.07 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4);
+  if (isLastfm(series)) return ref * 0.0004 * Math.sqrt(Math.max(1, hours) / 24);
   if (isTv(series)) return 0.45;
   if (isTicket(series)) return Math.max(1.2, ref * 0.02 * Math.sqrt(Math.max(1, hours) / 24));
   return ref * 0.15;
@@ -179,6 +201,7 @@ export function tickStep(series: string, ref: number): number {
   if (isFuel(series)) return 0.005;
   if (isOil(series)) return 0.5;
   if (isTv(series)) return 0.1;
+  if (isLastfm(series)) return Math.max(100, 10 ** Math.floor(Math.log10(ref * 0.0004)));
   if (isTicket(series)) return 1;
   if (isSteam(series)) return ref >= 500_000 ? 25_000 : ref >= 100_000 ? 10_000 : ref >= 20_000 ? 1_000 : 500;
   return ref >= 200_000 ? 10_000 : ref >= 50_000 ? 5_000 : ref >= 10_000 ? 1_000 : 500;

@@ -12,6 +12,7 @@ import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts
 import { tvReference, tvRating, tvUpcoming } from "../_lib/tv.ts";
 import { TM_PLACES, buildTicketMarkets, buildTvMarket, isTicket, isTv, tmWindow, type TmPlace } from "../_shared/shared/ticks.ts";
 import { FUELS, METALS, OIL, buildFuelMarkets, buildMetalMarkets, buildOilMarkets, isFuel, isMetal, isOil, type FuelKey, type MetalKey, type OilKey } from "../_shared/shared/ticks.ts";
+import { LASTFM, buildLastfmMarkets } from "../_shared/shared/ticks.ts";
 import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildAlertMarkets, alertLevel, alertQueryDate, ALERT_AREAS, ALERT_HAZARDS, ALERT_URL, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
 import { bookPriors, buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, type Fixture, type Geo, type MatchBet, type TableRow } from "../_shared/shared/sport.ts";
 import { apiFootball, apiKey, fetchBookQuotes, fetchDetails, fetchPlayerFacts, loadTable } from "../_lib/football.ts";
@@ -486,6 +487,16 @@ async function steamCounts(): Promise<Record<string, number>> {
   return out;
 }
 
+/** Total listeners of each artist on Last.fm (needs LAST_KEY; without it nothing is offered). */
+async function lastfmCounts(): Promise<Record<string, number>> {
+  const key = (Deno.env.get("LAST_KEY") ?? "").trim(), out: Record<string, number> = {};
+  if (!key) return out;
+  for (const [id, name] of Object.entries(LASTFM)) {
+    try { const j = await getJson(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=${encodeURIComponent(name)}&api_key=${encodeURIComponent(key)}&format=json`); const n = Number(j?.artist?.stats?.listeners); if (Number.isFinite(n) && n > 0) out[id] = n; } catch { /* skip this artist */ }
+  }
+  return out;
+}
+
 async function kpSeries(): Promise<{ observed: Map<number, number>; predicted: Map<number, number> }> {
   const rows = (await getJson(KP_URL)) as { time_tag: string; kp: number; observed: string }[];
   const observed = new Map<number, number>(), predicted = new Map<number, number>();
@@ -600,6 +611,10 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       if (steamDue.length) { const c = await steamCounts(); for (const { x, at } of steamDue) { const v = c[x.slice(6)]; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
     } catch (e) { notes.push(`steam: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
+      const lfDue = [...need.keys()].filter((x) => x.startsWith("lastfm:")).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (lfDue.length) { const c = await lastfmCounts(); for (const { x, at } of lfDue) { const v = c[x.slice(7)]; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
+    } catch (e) { notes.push(`lastfm: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
       const stormDue = [...need.keys()].filter((x) => x.startsWith("storm:")).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
       if (stormDue.length) {
         // a storm that is no longer on the list has weakened below tracking: its wind counts as 0
@@ -673,6 +688,19 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     try { stormsNow = await activeStorms(); markets.push(...buildStormMarkets(stormsNow, now)); ok++; } catch (e) { notes.push(`storms: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     let steamNow: Record<string, number> = {};
     try { steamNow = await steamCounts(); markets.push(...buildSteamMarkets(steamNow, now)); ok++; } catch (e) { notes.push(`steam: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    let lastfmNow: Record<string, number> = {};
+    try {
+      lastfmNow = await lastfmCounts();
+      const stats: Record<string, { listeners: number; perHour: number }> = {};
+      for (const [id, n] of Object.entries(lastfmNow)) {
+        // pace = growth since the oldest reading between 20 hours and 4 days ago
+        const { data: old } = await sb.from("tick_history").select("value,at").eq("series", `lastfm:${id}`).lte("at", new Date((now - 20 * 3600) * 1000).toISOString()).gte("at", new Date((now - 4 * 86400) * 1000).toISOString()).order("at", { ascending: false }).limit(1);
+        const o = old?.[0]; if (!o) continue;
+        const hrs = (now - Date.parse(o.at as string) / 1000) / 3600, pace = (n - Number(o.value)) / hrs;
+        if (pace > 0) stats[id] = { listeners: n, perHour: pace };
+      }
+      markets.push(...buildLastfmMarkets(stats, now));
+    } catch (e) { notes.push(`lastfm: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try { markets.push(...buildKpMarkets((await kpSeries()).predicted, now)); ok++; } catch (e) { notes.push(`kp: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
       const means: Record<string, number> = {};
@@ -747,6 +775,7 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
         for (const [at, value] of byHour) hist.push({ series: `px:${k}`, at: new Date(at * 1000).toISOString(), value: Math.round(value * 100) / 100 });
       }
       for (const st of stormsNow) hist.push({ series: `storm:${st.id}`, at: new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString(), value: st.kt });
+      for (const [id, n] of Object.entries(lastfmNow)) hist.push({ series: `lastfm:${id}`, at: new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString(), value: n });
       for (const [id, n] of Object.entries(steamNow)) hist.push({ series: `steam:${id}`, at: new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString(), value: n });
       const { observed } = await kpSeries();
       for (const [at, value] of observed) hist.push({ series: "kp", at: new Date(at * 1000).toISOString(), value });

@@ -1,6 +1,4 @@
 // PRIVATE TEST ONLY: runs on your own PC (a normal home IP; ViaggiaTreno blocks datacenters).
-// ViaggiaTreno has no licence: markets built from it are flagged testOnly and hidden from everyone except
-// whoever opened the app once with ?test=1. Replace with the official feed as soon as Trenitalia/RFI answer.
 //
 //   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/viaggiatreno-local.mjs
 //

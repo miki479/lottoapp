@@ -27,7 +27,7 @@ function closeAt(k: CloseKey, custom = ""): Date {
 /** Write your own question for friends. Only people with the link see it; you are the judge. */
 export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: boolean; hasHome: boolean; onClose: () => void; onCreated: (code: string) => void; onAuth: () => void }) {
   const f = p.msg.friends;
-  const [title, setTitle] = useState(""), [cat, setCat] = useState<CatKey>("friends"), [more, setMore] = useState(false), [close, setClose] = useState<CloseKey>("tomorrow"), [stake, setStake] = useState(0), [customAt, setCustomAt] = useState("");
+  const [title, setTitle] = useState(""), [cat, setCat] = useState<CatKey>("friends"), [more, setMore] = useState(false), [close, setClose] = useState<CloseKey>("tomorrow"), [stake, setStake] = useState(0), [customStake, setCustomStake] = useState(""), [customAt, setCustomAt] = useState("");
   const [vis, setVis] = useState<"private" | "friends" | "public">("private"), [judge, setJudge] = useState<"creator" | "vote">("vote"), [world, setWorld] = useState(false);
   const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null);
   const pub = vis === "public";
@@ -81,8 +81,8 @@ export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: b
         <p class="hint">{p.msg.fx.judgeHint}</p>
       </>}
       <span class="detail">{f.stake}</span>
-      <div class="mkchips" style={pub ? "opacity:.5;pointer-events:none" : ""}>{STAKES.map((s) => <button key={s} class={`mkchip ${stake === s ? "on" : ""}`} aria-pressed={stake === s} onClick={() => setStake(s)}>{s === 0 ? f.noStake : s}</button>)}</div>
-      {!pub && <input class="field" type="number" inputMode="numeric" min={0} max={1000} step={1} placeholder={f.customStake} value={STAKES.includes(stake) ? "" : stake} onInput={(e) => { const n = Math.floor(Number((e.target as HTMLInputElement).value)); setStake(Number.isFinite(n) ? Math.max(0, Math.min(1000, n)) : 0); }} />}
+      <div class="mkchips" style={pub ? "opacity:.5;pointer-events:none" : ""}>{STAKES.map((s) => <button key={s} class={`mkchip ${stake === s && customStake === "" ? "on" : ""}`} aria-pressed={stake === s && customStake === ""} onClick={() => { setCustomStake(""); setStake(s); }}>{s === 0 ? f.noStake : s}</button>)}</div>
+      {!pub && <input class="field" type="number" inputMode="numeric" min={0} max={1000} step={1} placeholder={f.customStake} value={customStake} onInput={(e) => { const raw = (e.target as HTMLInputElement).value; const n = Math.floor(Number(raw)); if (raw === "" || !Number.isFinite(n)) { setCustomStake(""); setStake(0); return; } const v = Math.max(0, Math.min(1000, n)); setCustomStake(String(v)); setStake(v); }} />}
       {!pub && stake > 0 && <p class="hint">{f.stakeNote}</p>}
       <p class="hint">{f.rules}</p>
       {err && <p class="formerr" role="alert">{err}</p>}
