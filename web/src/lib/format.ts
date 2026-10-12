@@ -87,11 +87,12 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
 
 export const minutesUntil = (iso: string, now = Date.now()) => Math.max(0, Math.floor((Date.parse(iso) - now) / 60000));
 
-/** "05:12" under an hour, "2h 05m" above. */
+/** "05:12" under an hour, "2h 05m" above, "17g 03h" from 48h. */
 export function countdown(ms: number): string {
   const t = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = t % 60;
   const p = (n: number) => String(n).padStart(2, "0");
+  if (h >= 48) return `${Math.floor(h / 24)}g ${p(h % 24)}h`;
   return h > 0 ? `${h}h ${p(m)}m` : `${p(m)}:${p(sec)}`;
 }
 
