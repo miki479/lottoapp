@@ -982,3 +982,4 @@ textarea.field { resize: vertical; min-height: 84px; }
 .evhead { flex-wrap: wrap; row-gap: 8px; } .evhead h2 { white-space: nowrap; } .createbtn, .filterbtn { white-space: nowrap; }
 .dmbtn { flex-direction: column; gap: 0; line-height: 1.15; min-width: 78px; padding: 4px 12px; } .dmbtn b { font-size: 12px; opacity: .92; }
 .dmrow, .dmchest { grid-template-columns: 44px minmax(0, 1fr) auto; }
+.evacts { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; align-items: center; }

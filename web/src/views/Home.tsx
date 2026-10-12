@@ -27,7 +27,7 @@ export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>;
   cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null;
   onQuakeMaker: () => void; onCreate: () => void; registered: boolean; onAuth: () => void; italian: boolean; nearNode?: preact.ComponentChildren; nearbyNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
-  missionsNode?: preact.ComponentChildren; stale?: boolean; details: boolean; friendBets: Record<string, number>;
+  stale?: boolean; details: boolean; friendBets: Record<string, number>;
   attributions: { name: string; via?: string; license: string; licenseUrl: string; url: string }[]; installEvt: Event | null;
 }
 
@@ -82,7 +82,6 @@ export function Home(p: HomeProps) {
           </ol>
         </section>
       )}
-      {p.missionsNode}
       <div class="aside">
         {p.top.length > 0 && (
           <section class="stack" style="gap:8px">
@@ -108,9 +107,9 @@ export function Home(p: HomeProps) {
           </div>
         )}
         <div class="sectionhead evhead"><h2>{msg.home.events}</h2>
-          <button class="createbtn" onClick={p.onCreate}><Plus size={16} />{msg.maker.open}</button>
+          <div class="evacts"><button class="createbtn" onClick={p.onCreate}><Plus size={16} />{msg.maker.open}</button>
           {wxKinds.length > 1 && <button class={`filterbtn ${wx !== "all" ? "on" : ""}`} onClick={() => setFilterOpen(true)}><SlidersHorizontal size={16} />{wx === "all" ? msg.wx.filter : filterLabel(msg, wx)}{wx !== "all" && <i role="button" aria-label={msg.common.close} onClick={(e) => { e.stopPropagation(); setWx("all"); }}><X size={14} /></i>}</button>}
-        </div>
+        </div></div>
         {filterOpen && <FilterSheet msg={msg} options={wxKinds.map((k) => ({ key: k, count: p.list.filter((m) => wxKey(m) === k).length }))} value={wx} onPick={setWx} onClose={() => setFilterOpen(false)} />}
         {p.cat === "nature" && <button class="btn secondary quakecta" onClick={p.onQuakeMaker}><MapPin size={18} />{msg.quakeMaker.cta}</button>}
         {p.cat === "sport" && <label class="searchbox"><Search size={18} /><input class="field" type="search" value={teamQ} placeholder={msg.teamSearch} onInput={(e) => setTeamQ((e.target as HTMLInputElement).value)} /></label>}
