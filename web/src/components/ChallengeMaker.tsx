@@ -24,18 +24,21 @@ function closeAt(k: CloseKey): Date {
 }
 
 /** Write your own question for friends. Only people with the link see it; you are the judge. */
-export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: boolean; onClose: () => void; onCreated: (code: string) => void; onAuth: () => void }) {
+export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: boolean; hasHome: boolean; onClose: () => void; onCreated: (code: string) => void; onAuth: () => void }) {
   const f = p.msg.friends;
   const [title, setTitle] = useState(""), [cat, setCat] = useState<CatKey>("friends"), [more, setMore] = useState(false), [close, setClose] = useState<CloseKey>("tomorrow"), [stake, setStake] = useState(0);
+  const [vis, setVis] = useState<"private" | "public">("private"), [judge, setJudge] = useState<"creator" | "vote">("creator"), [world, setWorld] = useState(false);
   const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null);
+  const pub = vis === "public";
   const create = async () => {
     if (!p.registered) { p.onAuth(); return; }
     setBusy(true); setErr(null);
-    const { data, error } = await sb.rpc("create_challenge", { p_title: title.trim(), p_category: cat, p_stake: stake, p_closes_at: closeAt(close).toISOString() });
+    const { data, error } = await sb.rpc("create_challenge", { p_title: title.trim(), p_category: cat, p_stake: pub ? 0 : stake, p_closes_at: closeAt(close).toISOString(), p_judge: pub ? "vote" : judge, p_visibility: vis, p_world: pub && world });
     setBusy(false);
     if (error || !data?.code) {
       const key = Object.keys(f.errors).find((k) => error?.message?.includes(k)) as keyof typeof f.errors | undefined;
-      setErr(f.errors[key ?? "generic"]); return;
+      const k2 = Object.keys(p.msg.fx.errors).find((k) => error?.message?.includes(k)) as keyof typeof p.msg.fx.errors | undefined;
+      setErr(k2 ? p.msg.fx.errors[k2] : f.errors[key ?? "generic"]); return;
     }
     p.onCreated(String(data.code));
   };
@@ -53,12 +56,28 @@ export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: b
       <button class={`morecats ${more ? "open" : ""}`} aria-expanded={more} onClick={() => setMore(!more)}>{more ? f.lessCats : f.moreCats}<ChevronDown size={16} /></button>
       <span class="detail">{f.closes}</span>
       <div class="mkchips">{(Object.keys(f.closeOpts) as CloseKey[]).map((k) => <button key={k} class={`mkchip ${close === k ? "on" : ""}`} aria-pressed={close === k} onClick={() => setClose(k)}>{f.closeOpts[k]}</button>)}</div>
+      <span class="detail">{p.msg.fx.visibility}</span>
+      <div class="mkchips">
+        <button class={`mkchip ${vis === "private" ? "on" : ""}`} aria-pressed={vis === "private"} onClick={() => setVis("private")}>{p.msg.fx.vPrivate}</button>
+        <button class={`mkchip ${vis === "public" ? "on" : ""}`} aria-pressed={vis === "public"} onClick={() => setVis("public")}>{p.msg.fx.vPublic}</button>
+      </div>
+      <p class="hint">{pub ? p.msg.fx.vPublicHint : p.msg.fx.vPrivateHint}</p>
+      {pub && !p.hasHome && <p class="formerr" role="note">{p.msg.fx.needHome}</p>}
+      {pub && <label class="switchrow"><input type="checkbox" checked={world} onChange={(e) => setWorld((e.target as HTMLInputElement).checked)} /><span>{p.msg.fx.world}</span></label>}
+      {!pub && <>
+        <span class="detail">{p.msg.fx.judgeLabel}</span>
+        <div class="mkchips">
+          <button class={`mkchip ${judge === "creator" ? "on" : ""}`} aria-pressed={judge === "creator"} onClick={() => setJudge("creator")}>{p.msg.fx.judgeCreator}</button>
+          <button class={`mkchip ${judge === "vote" ? "on" : ""}`} aria-pressed={judge === "vote"} onClick={() => setJudge("vote")}>{p.msg.fx.judgeVote}</button>
+        </div>
+        <p class="hint">{p.msg.fx.judgeHint}</p>
+      </>}
       <span class="detail">{f.stake}</span>
-      <div class="mkchips">{STAKES.map((s) => <button key={s} class={`mkchip ${stake === s ? "on" : ""}`} aria-pressed={stake === s} onClick={() => setStake(s)}>{s === 0 ? f.noStake : s}</button>)}</div>
-      {stake > 0 && <p class="hint">{f.stakeNote}</p>}
+      <div class="mkchips" style={pub ? "opacity:.5;pointer-events:none" : ""}>{STAKES.map((s) => <button key={s} class={`mkchip ${stake === s ? "on" : ""}`} aria-pressed={stake === s} onClick={() => setStake(s)}>{s === 0 ? f.noStake : s}</button>)}</div>
+      {!pub && stake > 0 && <p class="hint">{f.stakeNote}</p>}
       <p class="hint">{f.rules}</p>
       {err && <p class="formerr" role="alert">{err}</p>}
-      <button class="btn primary wide" disabled={busy || title.trim().length < 8} onClick={create}>{busy ? f.creating : f.create}</button>
+      <button class="btn primary wide" disabled={busy || title.trim().length < 8 || (pub && !p.hasHome)} onClick={create}>{busy ? f.creating : f.create}</button>
     </Sheet>
   );
 }

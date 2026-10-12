@@ -6,6 +6,7 @@ import { cityName, cityOf } from "../lib/cities.ts";
 import { fmtOdds, type MarketRow } from "../lib/format.ts";
 import type { Pick } from "../lib/types.ts";
 import type { Place } from "../lib/places.ts";
+import type { Challenge } from "./ChallengeSheet.tsx";
 import { HomePlaceField } from "./HomePlaceField.tsx";
 import { Q } from "./Q.tsx";
 
@@ -13,10 +14,15 @@ const RADII = [10, 25, 50, 100];
 const COLS = "id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status";
 
 /** Player-made questions and local matches within some km of the player's town (or located place), most played and closest first. */
-export function NearbyBets(p: { msg: Messages; locale: Locale; now: number; origin: { lat: number; lon: number; name: string } | null; home: Place | null; onHome: (pl: Place | null) => void; onLocate: () => void; onPick: (m: MarketRow, pick: Pick) => void; popular: { m: MarketRow; bets: number }[]; fallback: boolean; zone: string | null; busy: boolean }) {
+export function NearbyBets(p: { msg: Messages; locale: Locale; now: number; origin: { lat: number; lon: number; name: string } | null; home: Place | null; onHome: (pl: Place | null) => void; onLocate: () => void; onPick: (m: MarketRow, pick: Pick) => void; onChallenge: (code: string) => void; country: string | null; popular: { m: MarketRow; bets: number }[]; fallback: boolean; zone: string | null; busy: boolean }) {
   const n = p.msg.nearby;
   const [open, setOpen] = useState(true), [km, setKm] = useState(25);
+  const [chal, setChal] = useState<{ c: Challenge; km: number; players: number }[]>([]);
   const [rows, setRows] = useState<{ m: MarketRow; km: number; bettors: number }[] | null>(null);
+  useEffect(() => {
+    if (!p.origin) { setChal([]); return; }
+    sb.rpc("nearby_challenges", { p_lat: p.origin.lat, p_lon: p.origin.lon, p_country: p.country, p_limit: 8 }).then(({ data }) => setChal(((data ?? []) as { challenge: Challenge; km: number | string; players: number | string }[]).map((x) => ({ c: x.challenge, km: +x.km, players: +x.players }))));
+  }, [p.origin?.lat, p.origin?.lon, Math.floor(p.now / 60000)]);
   useEffect(() => {
     if (!p.origin) { setRows(null); return; }
     let live = true;
@@ -37,7 +43,9 @@ export function NearbyBets(p: { msg: Messages; locale: Locale; now: number; orig
         <p class="hint">{n.hint}</p>
         {!p.origin && <><button class="btn secondary" disabled={p.busy} onClick={p.onLocate}><MapPin size={16} />{n.askLocate}</button><HomePlaceField msg={p.msg} locale={p.locale} value={p.home} onChange={p.onHome} /></>}
         {p.origin && <div class="mkchips">{RADII.map((r) => <button key={r} class={`mkchip ${km === r ? "on" : ""}`} aria-pressed={km === r} onClick={() => setKm(r)}>{r} {n.km}</button>)}</div>}
-        {p.origin && rows && rows.length === 0 && <p class="hint">{n.none}</p>}
+        {p.origin && chal.length > 0 && <span class="detail">{p.msg.fx.nearTitle}</span>}
+        {chal.map(({ c, km: d, players }) => <button key={c.id} class="nbitem" onClick={() => p.onChallenge(c.code)}><span class="q"><b>{c.title}</b></span><span class="nbmeta"><span>{d < 1 ? "<1" : Math.round(d)} {n.km}</span><span>{players} {p.msg.fx.players}</span></span></button>)}
+        {p.origin && rows && rows.length === 0 && chal.length === 0 && <p class="hint">{n.none}</p>}
         {p.origin && p.zone && p.popular.length > 0 && !p.fallback && <span class="detail">{p.zone}</span>}
         {p.origin && !p.fallback && p.popular.map(({ m, bets }) => {
           const c = cityOf(m.city_id);
