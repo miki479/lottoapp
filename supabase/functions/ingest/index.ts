@@ -409,7 +409,8 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       const kpDue = todo("kp");
       if (kpDue.length) { const { observed } = await kpSeries(); for (const at of kpDue) { const v = observed.get(at - 3 * 3600); if (v !== undefined) rows.push({ series: "kp", at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
     } catch (e) { notes.push(`kp: ${String((e as Error).message ?? e).slice(0, 80)}`); }
-    for (const series of [...need.keys()].filter((s) => s.startsWith("wiki:"))) {
+    // Wikimedia publishes a day's count some hours after midnight: look every 10 minutes, not every minute.
+    for (const series of Math.floor(now / 60) % 10 === 0 ? [...need.keys()].filter((s) => s.startsWith("wiki:")) : []) {
       try {
         for (const at of todo(series)) {
           const day = wikiDay(at - 86400), v = (await wikiViews(series.slice(5), at - 86400, at - 86400)).get(day);

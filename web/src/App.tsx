@@ -177,7 +177,11 @@ export function App() {
     const { data, error } = await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").not("city_id", "like", "p-%").gt("closes_at", new Date().toISOString()).order("closes_at").limit(300);
     // Markets of the towns this player picked are loaded separately so a long list of places never crowds out the real cities.
     const mine = placeIds.current.length ? (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("city_id", placeIds.current).gt("closes_at", new Date().toISOString()).order("closes_at").limit(160)).data ?? [] : [];
-    if (!error) { setMarkets([...(data ?? []), ...mine].filter((m) => testMode() || !(m.params as { testOnly?: boolean } | null)?.testOnly) as MarketRow[]); if (navigator.onLine) setOffline(false); }
+    // Questions that close far ahead (matches, daily page views, price lines) would fall off the first page: fetch them on their own.
+    const far = (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("category", ["sport", "finance", "culture", "nature"]).gt("closes_at", new Date().toISOString()).order("closes_at").limit(200)).data ?? [];
+    const seen = new Set([...(data ?? []), ...mine].map((x) => (x as { id: string }).id));
+    const extra = far.filter((x) => !seen.has((x as unknown as { id: string }).id));
+    if (!error) { setMarkets([...(data ?? []), ...mine, ...extra].filter((m) => testMode() || !(m.params as { testOnly?: boolean } | null)?.testOnly) as MarketRow[]); if (navigator.onLine) setOffline(false); }
     else if (/fetch|network|load failed/i.test(error.message)) setOffline(true);
     const { data: h } = await sb.from("feed_health").select("feed_id,last_ok_at");
     const nowMs = Date.now();
@@ -285,7 +289,7 @@ export function App() {
   const tickerItems = useMemo(() => {
     const out: { id: string; node: preact.ComponentChildren }[] = [];
     for (const a of activity) {
-      const c = cityOf(a.city_id), what = isYesNo(a.market_kind) ? cityName(c, locale) : a.label || cityName(c, locale);
+      const c = cityOf(a.city_id), what = a.label || cityName(c, locale);
       const verb = msg.ticker[a.kind];
       out.push({ id: `a${a.at}${a.who}${a.amount}`, node: <><b>{a.who ?? msg.ticker.anon}</b> {verb} <i class={`amt ${a.kind}`}>{a.kind === "won" ? "+" : a.kind === "lost" ? "−" : ""}{money(a.amount, locale)}</i> {msg.ticker.on} {what}</> });
     }

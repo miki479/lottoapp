@@ -97,7 +97,13 @@ Deno.serve(safe(async (req) => {
     const wiki = series.startsWith("wiki:");
     const target = wiki ? Math.round(at / 86400) * 86400 : Math.round(at / 300) * 300;
     if (wiki ? (target < now + 13 * 3600 || target > now + 3 * 86400) : (target < now + 40 * 60 || target > now + 72 * 3600)) return json({ error: "bad_time" }, 400);
-    const ref = await tickReference(series);
+    let ref = await tickReference(series);
+    if (ref === null) {
+      // the live source is rate-limited or down: fall back to the last hourly reading kept for the charts, if it is recent
+      const key = isCrypto(series) ? `px:${series}` : series;
+      const { data: last } = await sb.from("tick_history").select("value,at").eq("series", key).order("at", { ascending: false }).limit(1).maybeSingle();
+      if (last && Date.parse(last.at as string) > Date.now() - 3 * 3600_000 && !series.startsWith("wiki:")) ref = Number(last.value);
+    }
     if (ref === null) return json({ error: "source_unavailable" }, 503);
     const step = tickStep(series, ref), thr = Math.round(threshold / step) * step;
     const chance = Math.round(tickChance(series, ref, thr, Math.max(0.6, (target - now) / 3600)) * 100) / 100;

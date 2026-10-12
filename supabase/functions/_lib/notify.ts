@@ -97,7 +97,7 @@ export async function notifyResults(sb: Db): Promise<number> {
   for (const r of rows) {
     const loc = (r.profiles?.locale && r.profiles.locale in TEXT ? r.profiles.locale : "en-US") as keyof typeof TEXT;
     const t = TEXT[loc];
-    const what = r.kind === "parlay" ? t.parlay : String(r.markets?.params.routeName ?? r.markets?.params.headsign ?? "LateLotto");
+    const what = r.kind === "parlay" ? t.parlay : String(r.markets?.params.routeName ?? r.markets?.params.headsign ?? r.markets?.params.label ?? (r.markets?.params.home ? `${r.markets.params.home} – ${r.markets.params.away}` : "LateLotto"));
     const body = r.status === "won" ? t.won(money(r.payout - r.stake, loc), what) : r.status === "lost" ? t.lost(what) : t.void(what);
     // Only mark as announced when OneSignal accepted it, so a wrong key or an outage retries within the 30-minute window.
     if (!(await send([r.user_id], "LateLotto", body))) continue;

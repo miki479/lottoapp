@@ -16,7 +16,8 @@ const SPOT_OFFSETS = [1, 3, 6, 12, 24];
 
 /** Build your own question from a template. The server checks, prices and refuses what would be too obvious. */
 export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: string; name: string }[]; onClose: () => void; onQuake: () => void; onCreated: (m: MarketRow) => void; registered: boolean }) {
-  const m = p.msg.maker, nf = new Intl.NumberFormat(INTL_TAG[p.locale], { maximumFractionDigits: 1 });
+  const m = p.msg.maker, nf1 = new Intl.NumberFormat(INTL_TAG[p.locale], { maximumFractionDigits: 1 }), nf0 = new Intl.NumberFormat(INTL_TAG[p.locale], { maximumFractionDigits: 0 });
+  const nf = { format: (v: number) => (Math.abs(v) >= 1000 ? nf0 : nf1).format(v) };
   const [tab, setTab] = useState<Tab>("weather");
   const [place, setPlace] = useState(p.places[0]?.id ?? ""), [metric, setMetric] = useState<(typeof METRIC_LIST)[number]>("temp"), [dayOffset, setDayOffset] = useState(1), [hour, setHour] = useState(15);
   const [series, setSeries] = useState("btc"), [offset, setOffset] = useState(6), [wikiDay, setWikiDay] = useState(1);
@@ -26,7 +27,7 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
   const seriesList = tab === "crypto" ? Object.keys(CRYPTO) : tab === "games" ? Object.keys(STEAM).map((id) => `steam:${id}`) : WIKI_ARTICLES.map((a) => `wiki:${a}`);
   const label = (s: string) => (s === "btc" || s === "eth" ? CRYPTO[s].label : s.startsWith("steam:") ? STEAM[s.slice(6) as keyof typeof STEAM] : s.slice(5).replace(/_/g, " "));
   const wiki = tab === "culture";
-  const at = () => { const now = Math.floor(Date.now() / 1000); return wiki ? Math.floor(now / 86400) * 86400 + (wikiDay + 1) * 86400 : now + offset * 3600; };
+  const at = () => { const now = Math.floor(Date.now() / 1000); return wiki ? Math.floor(now / 86400) * 86400 + (wikiDay + 1) * 86400 : Math.ceil((now + offset * 3600) / 1800) * 1800; };
   const body = (threshold: number, preview: boolean) => tab === "weather"
     ? { type: "metric", placeId: place, metric, dayOffset, hour, threshold, preview }
     : { type: "tick", series, at: at(), threshold, preview };

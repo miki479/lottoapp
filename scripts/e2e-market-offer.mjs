@@ -17,11 +17,16 @@ ok((await offer({ type: "tick", series: "doge", at, threshold: 1 })).status === 
 ok((await offer({ type: "tick", series: "btc", at: now + 60, threshold: 80000 })).status === 400, "too-soon time refused");
 const pv = await offer({ type: "tick", series: "btc", at, threshold: 0, preview: true }); ok(pv.status === 422 || pv.status === 400, `zero threshold refused (${pv.status})`);
 const ref = (await offer({ type: "tick", series: "btc", at, threshold: 1, preview: true })).body?.reference;
-ok((await offer({ type: "tick", series: "btc", at, threshold: 1000000 })).status === 422, "absurd threshold refused as too certain");
+{ const r = await offer({ type: "tick", series: "btc", at, threshold: 1000000 }); ok(r.status === 422, `absurd threshold refused as too certain (${r.status} ${JSON.stringify(r.body).slice(0, 80)})`); }
 const p = await offer({ type: "tick", series: "btc", at, threshold: ref ?? 80000, preview: true }); ok(p.status === 200 && p.body.preview.odds_yes >= 1.1, `fair preview, odds ${p.body?.preview?.odds_yes}/${p.body?.preview?.odds_no}`);
 const c = await offer({ type: "tick", series: "btc", at, threshold: ref }); ok(c.status === 200 && c.body.market?.params?.custom === "true", "market created");
 const c2 = await offer({ type: "tick", series: "btc", at, threshold: ref }); ok(c2.body?.market?.id === c.body?.market?.id && c2.body.existing, "same question is not duplicated");
 const mid = c.body?.market?.id;
+const cityPv = await offer({ type: "metric", placeId: "rome", metric: "temp", dayOffset: 1, hour: 15, threshold: 1, preview: true });
+ok(cityPv.status === 422 && typeof cityPv.body?.forecast === "number", `weather: absurd line refused (forecast ${cityPv.body?.forecast})`);
+const fine = await offer({ type: "metric", placeId: "rome", metric: "temp", dayOffset: 1, hour: 15, threshold: Math.round(cityPv.body.forecast), preview: true });
+ok(fine.status === 200 && fine.body.preview.odds_yes >= 1.1, `weather: fair preview, odds ${fine.body?.preview?.odds_yes}/${fine.body?.preview?.odds_no}`);
+ok((await offer({ type: "metric", placeId: "nowhere", metric: "temp", dayOffset: 1, hour: 15, threshold: 10, preview: true })).status === 400, "weather: unknown place refused");
 ok((await j("/rest/v1/rpc/register_share", { method: "POST", body: JSON.stringify({ p_market: mid }) }, tok)).status < 300, "share registered");
 const tr = await j("/rest/v1/rpc/trending_markets", { method: "POST", body: JSON.stringify({ p_limit: 20 }) });
 ok(tr.status === 200 && tr.body.some((r) => r.market_id === mid), "new player market is eligible for trending");
