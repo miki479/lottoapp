@@ -3,7 +3,9 @@
 import GtfsRt from "npm:gtfs-realtime-bindings@2.2.0";
 import { delayAdapterFor, trainJsonAdapterFor, weatherAdapterFor } from "../_shared/shared/adapters/index.ts";
 import { parseOccupancy, parseVehiclePositions } from "../_shared/shared/adapters/gtfsrt.ts";
-import { parseTrainTripId } from "../_shared/shared/adapters/viaggiatreno.ts";
+import { parseTrainTripId, viaggiatrenoCancellations } from "../_shared/shared/adapters/viaggiatreno.ts";
+import { cancellationsFromTripUpdates } from "../_shared/shared/adapters/gtfsrt.ts";
+import type { Cancellation } from "../_shared/shared/adapters/types.ts";
 import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
@@ -386,6 +388,7 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
     }
   }
   const all = adapter(msg, { feedId: feed.id, timezone: city.timezone, fetchedAt: now, schedule, scheduleByStop, tripKey: feed.tripKey });
+  if (feed.kind !== "vehicle_positions") await saveCancellations(sb, feed.id, cancellationsFromTripUpdates(msg, feed.tripKey, schedule).filter((c) => tracked.has(c.tripId)));
   // Trip updates list every stop of the trip: keep only the stops a market asks about.
   // Position feeds are kept for the whole trip: a bus can skip a sample at the exact stop.
   const mine = feed.kind === "vehicle_positions"
@@ -402,6 +405,14 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
   return rows.length;
 }
 
+/** Remembers the trips an operator says are cancelled; the resolver refunds the open questions about them. */
+async function saveCancellations(sb: ReturnType<typeof db>, feedId: string, list: Cancellation[]): Promise<void> {
+  if (list.length === 0) return;
+  const rows = list.map((c) => ({ feed_id: feedId, trip_id: c.tripId, stop_id: c.stopId ?? "" }));
+  const { error } = await sb.from("trip_cancellations").upsert(rows, { onConflict: "feed_id,trip_id,stop_id", ignoreDuplicates: true });
+  if (error) console.error("cancellations", error.message);
+}
+
 const MAX_TRAINS_PER_RUN = 40;
 
 /** Per-train JSON feeds: one request per train that has an open market. A failing train fails the run only if none succeeded. */
@@ -413,6 +424,7 @@ async function ingestPerTrain(sb: ReturnType<typeof db>, city: CityConfig, feed:
   const trips = [...tracked.keys()].slice(0, MAX_TRAINS_PER_RUN);
   if (trips.length === 0) return 0;
   const rows: Record<string, unknown>[] = [];
+  const gone: Cancellation[] = [];
   let ok = 0;
   let lastError = "";
   for (const tripId of trips) {
@@ -421,6 +433,7 @@ async function ingestPerTrain(sb: ReturnType<typeof db>, city: CityConfig, feed:
     try {
       const json = JSON.parse(new TextDecoder().decode(await fetchBytes(`${base}/andamentoTreno/${t.codOrigine}/${t.numero}/${t.serviceDayMs}`, relayHeaders)));
       ok++;
+      gone.push(...viaggiatrenoCancellations(json, tripId));
       for (const o of adapter(json, { feedId: feed.id, fetchedAt: now, tripId })) {
         if (!tracked.get(tripId)?.has(o.stopId)) continue;
         rows.push({
@@ -433,6 +446,7 @@ async function ingestPerTrain(sb: ReturnType<typeof db>, city: CityConfig, feed:
     }
   }
   if (ok === 0) throw new Error(`all ${trips.length} train requests failed: ${lastError}`);
+  await saveCancellations(sb, feed.id, gone);
   if (rows.length === 0) return 0;
   const { error } = await sb.from("delay_observations").upsert(rows, { onConflict: "feed_id,trip_id,stop_id,observed_at", ignoreDuplicates: true });
   if (error) throw new Error(error.message);

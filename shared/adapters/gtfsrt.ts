@@ -2,7 +2,7 @@ import { delayFromPosition, delayFromTripUpdate, MAX_EARLY_SEC, MAX_LATE_SEC } f
 import { occupancyLevel } from "../occupancy.ts";
 import { localDayStart, parseGtfsTime } from "../time.ts";
 import type { DelayObservation } from "../types.ts";
-import type { DelayAdapter, RtFeed, RtTrip } from "./types.ts";
+import type { Cancellation, DelayAdapter, RtFeed, RtTrip } from "./types.ts";
 
 const num = (v: number | string | null | undefined): number | null => {
   if (v === null || v === undefined) return null;
@@ -146,6 +146,27 @@ export function parseVehiclePositions(feed: RtFeed, fetchedAt: number): { tripId
     const lat = v?.position?.latitude, lon = v?.position?.longitude;
     if (!tripId || typeof lat !== "number" || typeof lon !== "number" || !(Math.abs(lat) <= 90 && Math.abs(lon) <= 180) || (lat === 0 && lon === 0)) continue;
     out.push({ tripId, at: num(v?.timestamp) ?? fetchedAt, lat, lon, bearing: typeof v?.position?.bearing === "number" ? v.position.bearing : null });
+  }
+  return out;
+}
+
+/** GTFS-RT ScheduleRelationship: a trip is CANCELED (3) or DELETED (6); one stop is SKIPPED (1). The decoder gives numbers or names, both are read. */
+const isTripGone = (v: number | string | null | undefined) => v === 3 || v === 6 || v === "CANCELED" || v === "DELETED";
+const isStopSkipped = (v: number | string | null | undefined) => v === 1 || v === "SKIPPED";
+
+/** Cancelled trips and skipped stops announced by the TripUpdates of a feed. */
+export function cancellationsFromTripUpdates(feed: RtFeed, tripKey?: "route_dir_start", schedule?: (tripId: string, seq: number) => { stopId: string } | null): Cancellation[] {
+  const out: Cancellation[] = [];
+  for (const e of feed.entity ?? []) {
+    const tu = e.tripUpdate;
+    const tripId = tripIdOf(tu?.trip, tripKey);
+    if (!tripId) continue;
+    if (isTripGone(tu?.trip?.scheduleRelationship)) { out.push({ tripId, stopId: null }); continue; }
+    for (const stu of tu?.stopTimeUpdate ?? []) {
+      if (!isStopSkipped(stu.scheduleRelationship)) continue;
+      const stopId = stu.stopId ?? (stu.stopSequence != null ? schedule?.(tripId, stu.stopSequence)?.stopId : null);
+      if (stopId) out.push({ tripId, stopId });
+    }
   }
   return out;
 }

@@ -1,5 +1,5 @@
 import type { DelayObservation } from "../types.ts";
-import type { TrainJsonAdapter } from "./types.ts";
+import type { Cancellation, TrainJsonAdapter } from "./types.ts";
 
 /** Subset of ViaggiaTreno `andamentoTreno` we rely on (unofficial, undocumented API). Times are epoch ms. */
 interface VtStop {
@@ -7,10 +7,14 @@ interface VtStop {
   progressivo?: number | null;
   arrivoReale?: number | null;
   partenzaReale?: number | null;
+  /** 3 = the stop is cancelled */
+  actualFermataType?: number | null;
   ritardoArrivo?: number | null;
   ritardoPartenza?: number | null;
 }
 interface VtTrain {
+  /** 1 = the train is cancelled, 2 = partly cancelled */
+  provvedimento?: number | null;
   categoria?: string | null;
   oraUltimoRilevamento?: number | null;
   fermate?: VtStop[] | null;
@@ -54,3 +58,11 @@ export const viaggiatrenoAdapter: TrainJsonAdapter = (json, ctx) => {
   }
   return out;
 };
+
+/** A cancelled train (provvedimento 1) or the stops of it that are cancelled (actualFermataType 3). */
+export function viaggiatrenoCancellations(json: unknown, tripId: string): Cancellation[] {
+  const t = json as VtTrain | null;
+  if (!t || typeof t !== "object") return [];
+  if (t.provvedimento === 1) return [{ tripId, stopId: null }];
+  return (t.fermate ?? []).filter((s) => s.id && s.actualFermataType === 3).map((s) => ({ tripId, stopId: s.id! }));
+}

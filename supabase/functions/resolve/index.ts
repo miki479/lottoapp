@@ -6,6 +6,7 @@ import { isDetailBet, isPlayerBet, type MatchObservation } from "../_shared/shar
 import { OCC_WINDOW_SEC } from "../_shared/shared/occupancy.ts";
 import type { DelayObservation, MetricObservation, OccupancyObservation, QuakeReading, StrikeReading, TickObservation, TrafficObservation, WeatherObservation } from "../_shared/shared/types.ts";
 import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
+import { cancelledMarkets } from "../_shared/shared/cancel.ts";
 import { lastNotifyError, notifyFlash, notifyFriendWins, notifyInvites, notifyFriendRequests, notifyReminders, notifySupers, notifyModeration, notifyResults, notifyStreak } from "../_lib/notify.ts";
 
 Deno.serve(safe(async (req) => {
@@ -17,6 +18,17 @@ Deno.serve(safe(async (req) => {
   const cities = new Map((await loadCities()).map((c) => [c.id, c]));
   const feedStale = new Map<string, number>();
   for (const c of cities.values()) for (const f of c.feeds) feedStale.set(f.id, f.staleAfterSeconds);
+
+  // Cancelled trips and stops: the open questions about them are refunded at once, whatever the time (the operator's own feed says so).
+  try {
+    const { data: gone } = await sb.from("trip_cancellations").select("feed_id,trip_id,stop_id").gt("detected_at", new Date(Date.now() - 2 * 86400_000).toISOString()).limit(1000);
+    if (gone && gone.length) {
+      const trips = [...new Set(gone.map((g) => g.trip_id as string))].slice(0, 300);
+      const { data: open } = await sb.from("markets").select("id,feed_id,params").eq("status", "open").in("kind", ["bus_delay_gt", "train_delay_gt", "bus_full"]).in("params->>tripId", trips).limit(300);
+      const hits = cancelledMarkets((open ?? []) as { id: string; feed_id: string; params: Record<string, unknown> }[], gone.map((g) => ({ feed_id: g.feed_id as string, tripId: g.trip_id as string, stopId: (g.stop_id as string) || null })));
+      for (const m of hits) await sb.rpc("settle_market", { p_market: m.id, p_result: "void", p_evidence: null, p_void_reason: "cancelled" });
+    }
+  } catch (e) { console.error("cancellations", e); }
 
   // Only markets whose target time has passed can be settled.
   const { data: due, error } = await sb.from("markets").select("*").eq("status", "open").lte("target_at", nowIso).limit(500);

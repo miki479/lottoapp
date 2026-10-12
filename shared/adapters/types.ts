@@ -6,7 +6,7 @@ export interface RtFeed {
   entity?: RtEntity[];
 }
 /** Trip descriptor. Some feeds (Helsinki) have no tripId: the trip is told by route, direction, service day and start time. */
-export interface RtTrip { tripId?: string | null; routeId?: string | null; directionId?: number | null; startDate?: string | null; startTime?: string | null }
+export interface RtTrip { scheduleRelationship?: number | string | null; tripId?: string | null; routeId?: string | null; directionId?: number | null; startDate?: string | null; startTime?: string | null }
 export interface RtEntity {
   id?: string;
   vehicle?: {
@@ -19,6 +19,7 @@ export interface RtEntity {
   tripUpdate?: {
     trip?: RtTrip | null;
     stopTimeUpdate?: Array<{
+      scheduleRelationship?: number | string | null;
       stopSequence?: number | null;
       stopId?: string | null;
       arrival?: { delay?: number | null; time?: number | string | null } | null;
@@ -55,3 +56,6 @@ export interface TrainJsonAdapterContext {
 }
 /** For per-train JSON APIs (ViaggiaTreno): one response describes one train. */
 export type TrainJsonAdapter = (json: unknown, ctx: TrainJsonAdapterContext) => DelayObservation[];
+
+/** A trip (stopId = null) or one stop of it that the feed says will not be served. */
+export interface Cancellation { tripId: string; stopId: string | null }
