@@ -21,17 +21,17 @@ Deno.serve(safe(async (req) => {
 
   // Cancelled trips and stops: the open questions about them are refunded at once, whatever the time (the operator's own feed says so).
   try {
-    const { data: gone } = await sb.from("trip_cancellations").select("feed_id,trip_id,stop_id").gt("detected_at", new Date(Date.now() - 2 * 86400_000).toISOString()).limit(1000);
+    const { data: gone } = await sb.from("trip_cancellations").select("feed_id,trip_id,stop_id,detected_at").gt("detected_at", new Date(Date.now() - 2 * 86400_000).toISOString()).limit(1000);
     if (gone && gone.length) {
       const trips = [...new Set(gone.map((g) => g.trip_id as string))].slice(0, 300);
-      const { data: open } = await sb.from("markets").select("id,feed_id,params").eq("status", "open").in("kind", ["bus_delay_gt", "train_delay_gt", "bus_full"]).in("params->>tripId", trips).limit(300);
-      const hits = cancelledMarkets((open ?? []) as { id: string; feed_id: string; params: Record<string, unknown> }[], gone.map((g) => ({ feed_id: g.feed_id as string, tripId: g.trip_id as string, stopId: (g.stop_id as string) || null })));
+      const { data: open } = await sb.from("markets").select("id,feed_id,target_at,params").eq("status", "open").in("kind", ["bus_delay_gt", "train_delay_gt", "bus_full"]).in("params->>tripId", trips).limit(300);
+      const hits = cancelledMarkets((open ?? []) as { id: string; feed_id: string; target_at: string; params: Record<string, unknown> }[], gone.map((g) => ({ feed_id: g.feed_id as string, tripId: g.trip_id as string, stopId: (g.stop_id as string) || null, detectedAt: Date.parse(g.detected_at as string) / 1000 })));
       for (const m of hits) await sb.rpc("settle_market", { p_market: m.id, p_result: "void", p_evidence: null, p_void_reason: "cancelled" });
     }
   } catch (e) { console.error("cancellations", e); }
 
   // Only markets whose target time has passed can be settled.
-  const { data: due, error } = await sb.from("markets").select("*").eq("status", "open").lte("target_at", nowIso).limit(500);
+  const { data: due, error } = await sb.from("markets").select("*").eq("status", "open").lte("target_at", nowIso).order("deadline_at").limit(500);
   if (error) return new Response(error.message, { status: 500 });
 
   // Places (any town a player searched for): their weather feed is shared, so health and staleness are tracked once.
@@ -128,7 +128,8 @@ Deno.serve(safe(async (req) => {
       } else out.voided++;
     } catch (e) {
       console.error("resolve failed", row.id, e);
-      out.errors++; // left open: it will be retried next minute, never settled on a guess
+      out.errors++; // left open and retried next minute, never settled on a guess; past its deadline it is refunded so it cannot stay open forever
+      if (Date.parse(row.deadline_at as string) < Date.now()) await sb.rpc("settle_market", { p_market: row.id, p_result: "void", p_evidence: null, p_void_reason: "error" });
     }
   }
   const safeCount = (p: Promise<number>) => p.catch((e) => { console.error("notify failed", e); return 0; });

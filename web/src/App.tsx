@@ -84,7 +84,7 @@ export function App() {
   const [fresh, setFresh] = useState<Set<string>>(new Set());
   const [email, setEmail] = useState<string | null>(null);
   const [registered, setRegistered] = useState(false);
-  const [reqCount, setReqCount] = useState(0);
+  const [reqCount, setReqCount] = useState(0), [reqTick, setReqTick] = useState(0);
   const [look, setLook] = useState<MyProgress | null>(null), [lookOpen, setLookOpen] = useState(false), [pubUser, setPubUser] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [sheet, setSheet] = useState<{ m: MarketRow; pick: Pick } | null>(null);
@@ -140,7 +140,8 @@ export function App() {
   const tz = profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [activity, setActivity] = useState<ActivityRow[]>([]);
   const wallet = useCountUp(profile?.credits ?? 0, 600);
-  const flash = (text: string, kind: "ok" | "err" = "ok") => { setToast({ text, kind }); setTimeout(() => setToast(null), 3600); };
+  const toastTimer = useRef<number | undefined>(undefined);
+  const flash = (text: string, kind: "ok" | "err" = "ok") => { setToast({ text, kind }); clearTimeout(toastTimer.current); toastTimer.current = window.setTimeout(() => setToast(null), 3600); };
   const seenKey = `seen.${profile?.id ?? "x"}`;
 
   useEffect(() => { document.documentElement.lang = locale; }, [locale]);
@@ -206,10 +207,12 @@ export function App() {
     setReady(true);
   }, [locale]);
 
+  // the sign-in listener is registered once: it must call the newest bootstrap (current language), not the first one
+  const bootRef = useRef(bootstrap); bootRef.current = bootstrap;
   useEffect(() => {
     const sub = sb.auth.onAuthStateChange((event, s) => {
       const u = s?.user; setRegistered(!!u && !u.is_anonymous && !!u.email); setEmail(u?.email ?? null);
-      if (event === "SIGNED_IN" || event === "USER_UPDATED") setTimeout(() => bootstrap(), 0);
+      if (event === "SIGNED_IN" || event === "USER_UPDATED") setTimeout(() => bootRef.current(), 0);
     });
     bootstrap().catch(() => {});
     fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY } }).then((r) => r.json()).then((s) => { setGoogleOn(!!s?.external?.google); }).catch(() => {});
@@ -217,6 +220,8 @@ export function App() {
   }, []);
   useEffect(() => { if (profile && !profile.country && region()) sb.rpc("set_country", { p_country: region() }).then(loadProfile); }, [profile?.id]);
 
+  // loadMarkets runs on a timer from the first render: it reads the player's current town, country and filter through a ref
+  const envRef = useRef({ near, profile, filter }); envRef.current = { near, profile, filter };
   const loadMarkets = useCallback(async () => {
     const { data, error } = await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").not("city_id", "like", "p-%").gt("closes_at", new Date().toISOString()).order("closes_at").limit(300);
     // Markets of the towns this player picked are loaded separately so a long list of places never crowds out the real cities.
@@ -235,8 +240,9 @@ export function App() {
     setStaleCats([...new Set((h ?? []).flatMap((r) => { const f = CITIES.flatMap((c) => c.feeds).find((x) => x.id === r.feed_id); return f && f.category !== "weather" && f.licenseVerified && !!r.last_ok_at && nowMs - Date.parse(r.last_ok_at) > f.staleAfterSeconds * 1000 && (data ?? []).some((m) => m.category === f.category) ? [f.category as string] : []; }))]);
     const { data: pop } = await sb.rpc("popular_markets", { p_limit: 5 }); setPopular(((pop ?? []) as PopularRow[]).map((x) => ({ ...x, bets: +x.bets })));
     try {
-      const nearIds = CITIES.filter((c) => c.country === (near?.country ?? profile?.country ?? region())).map((c) => c.id);
-      const here = near?.id ?? (filter !== "world" && filter !== "mine" ? filter : null);
+      const env = envRef.current;
+      const nearIds = CITIES.filter((c) => c.country === (env.near?.country ?? env.profile?.country ?? region())).map((c) => c.id);
+      const here = env.near?.id ?? (env.filter !== "world" && env.filter !== "mine" ? env.filter : null);
       const { data: tr } = await sb.rpc("trending_markets", { p_place: here, p_near: nearIds, p_limit: 6 });
       const ids = ((tr ?? []) as { market_id: string; bettors: number | string }[]);
       if (ids.length) {
@@ -260,7 +266,7 @@ export function App() {
     }
     setTrending(out);
   }, [locale]);
-  const loadResults = useCallback(async () => { const { data } = await sb.from("markets").select("id,city_id,kind,status,outcome,void_reason,params,evidence").neq("status", "open").order("target_at", { ascending: false }).limit(12); setResults((data ?? []) as ResultRow[]); }, []);
+  const loadResults = useCallback(async () => { const { data } = await sb.from("markets").select("id,city_id,kind,status,outcome,void_reason,params,evidence,target_at").neq("status", "open").order("target_at", { ascending: false }).limit(12); setResults((data ?? []) as ResultRow[]); }, []);
   /** A friend-challenge link (?c=<code>) opens that challenge. */
   useEffect(() => {
     const c = new URLSearchParams(location.search).get("c");
@@ -403,7 +409,11 @@ export function App() {
     for (const r of results) {
       const c = cityOf(r.city_id), route = String(r.params.routeName ?? "");
       const txt = r.status === "void" ? msg.bets.void : isYesNo(r.kind) ? (r.outcome === "yes" ? msg.card.yes : msg.card.no) : r.outcome === "yes" ? msg.card.late : msg.card.onTime;
-      out.push({ id: `r${r.id}`, node: <>{route || cityName(c, locale)} · {txt}</> });
+      if (route || r.kind === "bus_delay_gt" || r.kind === "train_delay_gt") { out.push({ id: `r${r.id}`, node: <>{route || cityName(c, locale)} · {txt}</> }); continue; }
+      // any other question is shown with its own words, never as a bare "World · No"
+      if (!r.target_at) continue;
+      const mk = { ...r, category: "", closes_at: r.target_at, odds_yes: 1, odds_no: 1, flash_multiplier: 1, flash_until: null, flash_kind: null } as unknown as MarketRow;
+      out.push({ id: `r${r.id}`, node: <>{question(mk, msg, locale, cityName(c, locale), c.timezone, new Date(now))} · <b>{txt}</b></> });
     }
     // What is happening on the lines and in the markets right now (not only what players did).
     const q = (m: MarketRow) => { const c = cityOf(m.city_id); return question(m, msg, locale, cityName(c, locale), c.timezone, new Date(now)); };
@@ -579,11 +589,11 @@ export function App() {
     const blob = await makeProfileCard({ name: profile?.display_name ?? null, streak: profile?.streak ?? 0, stats: s ? { total: +s.total, won: +s.won, lost: +s.lost, voided: +s.voided, best_win: +s.best_win, net: +s.net, staked: +s.staked } : null, trophies: TROPHY_IDS.filter((x) => trophies.has(x)) }, msg);
     if ((await shareImage(blob, "LateLotto", msg.profile.shareText)) === "saved") flash(msg.result.saved);
   };
-  const signOut = async () => { await sb.auth.signOut(); setProfile(null); setBets([]); setProgress(null); setTrophies(new Set()); setReady(false); await bootstrap(); };
+  const signOut = async () => { await sb.auth.signOut(); setProfile(null); setBets([]); setParlays([]); setProgress(null); setTrophies(new Set()); setReferral(null); setMissions(null); setFlashM(null); setQuests([]); setLook(null); setReqCount(0); store.set("lvl", ""); setReady(false); await bootstrap(); };
   const deleteAccount = async () => {
     const { error } = await sb.rpc("delete_my_account");
     if (error) { flash(msg.errors.generic!, "err"); return; }
-    await sb.auth.signOut({ scope: "local" }); setProfile(null); setBets([]); setProgress(null); setTrophies(new Set()); setReady(false); setScreen("home");
+    await sb.auth.signOut({ scope: "local" }); setProfile(null); setBets([]); setParlays([]); setProgress(null); setTrophies(new Set()); setReferral(null); setMissions(null); setFlashM(null); setQuests([]); setLook(null); setReqCount(0); store.set("lvl", ""); setReady(false); setScreen("home");
     await bootstrap(); flash(msg.profile.delete.done);
   };
   const changeLocale = (l: Locale) => { store.set("locale", l); setLocale(l); };
@@ -600,7 +610,7 @@ export function App() {
         <main class="content">
           {screen === "home" && <Home onSeries={(s) => setSeriesMaker({ show: s ?? null })} occ={occ} friendBets={friendBets} details={detailsOn} stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets canMore={bets.length >= betsLimit} onMore={() => setBetsLimit((n) => n + 60)} invites={invites} challenges={myChallenges} onChallenge={(code) => setChallengeCode(code)} parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
-          {screen === "ranking" && <Ranking onReqs={loadReqs} onProfile={setPubUser} referral={referral} onShareReferral={shareReferral} onChallenge={() => (registered ? setChallengeMaker(true) : setAuth(true))} home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
+          {screen === "ranking" && <Ranking reqTick={reqTick} onReqs={loadReqs} onProfile={setPubUser} referral={referral} onShareReferral={shareReferral} onChallenge={() => (registered ? setChallengeMaker(true) : setAuth(true))} home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
           {screen === "admin" && <AdminPage msg={msg} onBack={() => go("profile")} />}
           {screen === "profile" && <ProfileView look={look} onLook={() => setLookOpen(true)} homeNode={<CityChip msg={msg} locale={locale} value={home} onChange={changeHome} />} onAdmin={() => go("admin")} giftCard={giftCard} onGiftSeen={() => { store.set("giftcard", "0"); setGiftCard(false); }} push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, friends: !!profile?.push_friends, setPrefs: async (f: boolean, s: boolean, fr: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s, p_friends: fr }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
         </main>
@@ -608,8 +618,8 @@ export function App() {
       <TabBar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} rankBadge={reqCount} />
 
       {maker && <MarketMaker origin={origin} msg={msg} locale={locale} registered={registered} places={[...CITIES.filter((c) => c.categories.weather?.enabled).map((c) => ({ id: c.id, name: cityName(c, locale) })), ...myPlaces.map((pl) => ({ id: pl.id, name: pl.name }))]} onClose={() => setMaker(false)} onQuake={() => { setMaker(false); setQuakeMaker(true); }} onFriends={() => { setMaker(false); setChallengeMaker(true); }} onCreated={(m) => { setMaker(false); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
-      {challengeMaker && <ChallengeMaker hasHome={!!home} msg={msg} locale={locale} registered={registered} onAuth={() => { setChallengeMaker(false); setAuth(true); }} onClose={() => setChallengeMaker(false)} onCreated={(code) => { setChallengeMaker(false); loadChallenges(); setChallengeCode(code); }} />}
-      {challengeCode && <ChallengeSheet code={challengeCode} msg={msg} locale={locale} now={now} registered={registered} onClose={() => { setChallengeCode(null); loadChallenges(); }} onAuth={() => { setChallengeCode(null); setAuth(true); }} onChanged={() => { loadProfile(); loadChallenges(); }} />}
+      {challengeMaker && <ChallengeMaker hasHome={!!home} msg={msg} locale={locale} registered={registered} onAuth={() => { setChallengeMaker(false); setAuth(true); }} onClose={() => setChallengeMaker(false)} onCreated={(code) => { setChallengeMaker(false); loadChallenges(); flash(msg.friends.created); setChallengeCode(code); }} />}
+      {challengeCode && <ChallengeSheet code={challengeCode} msg={msg} locale={locale} now={now} registered={registered} onClose={() => { setChallengeCode(null); loadChallenges(); }} onAuth={() => { setChallengeCode(null); setAuth(true); }} onChanged={() => { loadProfile(); loadChallenges(); }} onDeleted={(text) => { setChallengeCode(null); flash(text); }} />}
       {seriesMaker && <SeriesMaker msg={msg} locale={locale} initial={seriesMaker.show} onClose={() => setSeriesMaker(null)} onCreated={(m) => { setSeriesMaker(null); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
       {quakeMaker && <QuakeMaker msg={msg} locale={locale} onClose={() => setQuakeMaker(false)} onCreated={(m) => { setQuakeMaker(false); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
       {placePicker && <PlacePicker msg={msg} locale={locale} recent={myPlaces} onPick={pickPlace} onCity={(id) => { store.set("filter", id); setFilter(id); setCatChosen(true); setPlacePicker(false); }} onClose={() => setPlacePicker(false)} />}
@@ -619,8 +629,8 @@ export function App() {
       {sheet && <BetSheet now={now} occ={occ[sheet.m.id]} mm={outlook[sheet.m.id]} boosts={profile?.boosts ?? 0} key={sheet.m.id} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
       {parlayOpen && slip.length > 0 && <ParlaySheet boosts={profile?.boosts ?? 0} legs={slip} msg={msg} locale={locale} credits={profile?.credits ?? 0} needJoin={needJoin} googleOn={googleOn} onClose={() => setParlayOpen(false)} onRemove={(id) => setSlip((s) => s.filter((l) => l.m.id !== id))} onClear={() => { setSlip([]); setParlayOpen(false); }} onJoined={async () => {}} onPlace={placeParlay} />}
       {auth && <AuthSheet msg={msg} guest={!registered} googleOn={googleOn} onClose={() => setAuth(false)} onDone={(text) => { setAuth(false); flash(text); }} />}
-      {lookOpen && look && <LookSheet progress={look} msg={msg} onClose={() => setLookOpen(false)} onSaved={(p) => { setLook(p); flash(msg.look.saved); }} />}
-      {pubUser && <PublicProfile id={pubUser} msg={msg} locale={locale} onClose={() => { setPubUser(null); loadReqs(); }} onToast={flash} />}
+      {lookOpen && look && <LookSheet progress={look} msg={msg} myId={profile?.id ?? ""} onClose={() => setLookOpen(false)} onSaved={(p) => { setLook(p); flash(msg.look.saved); }} />}
+      {pubUser && <PublicProfile id={pubUser} msg={msg} locale={locale} onClose={() => { setPubUser(null); loadReqs(); setReqTick((n) => n + 1); }} onToast={flash} />}
       {nick && <NicknameSheet msg={msg} current={profile?.display_name ?? null} onClose={() => setNick(false)} onSaved={(n) => { setNick(false); loadProfile(); loadQuests(); flash(n); }} />}
       {resultBet && <ResultScreen bet={resultBet} msg={msg} locale={locale} remaining={Math.max(0, unseen.filter((b) => b.id !== resultBet.id).length)} onClose={closeResult} onShare={shareResult} onNext={() => { markSeen(resultBet.id); const next = unseen.find((b) => b.id !== resultBet.id); setResultBet(next ?? null); }} />}
       {toast && <Toast text={toast.text} kind={toast.kind} />}

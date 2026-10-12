@@ -1,6 +1,6 @@
 import { delayFromPosition, delayFromTripUpdate, MAX_EARLY_SEC, MAX_LATE_SEC } from "../delay.ts";
 import { occupancyLevel } from "../occupancy.ts";
-import { localDayStart, parseGtfsTime } from "../time.ts";
+import { gtfsDayStart, parseGtfsTime } from "../time.ts";
 import type { DelayObservation } from "../types.ts";
 import type { Cancellation, DelayAdapter, RtFeed, RtTrip } from "./types.ts";
 
@@ -109,7 +109,7 @@ export const tripUpdatesSeqAdapter: DelayAdapter = (feed, ctx) => {
     if (!tripId) continue;
     const y = tu?.trip?.startDate;
     // the service day the trip belongs to (the date is read at noon so a daylight-saving change cannot move it)
-    const dayStart = y && /^\d{8}$/.test(y) ? localDayStart(Date.UTC(+y.slice(0, 4), +y.slice(4, 6) - 1, +y.slice(6, 8), 12) / 1000, ctx.timezone) : localDayStart(headerTs, ctx.timezone);
+    const dayStart = y && /^\d{8}$/.test(y) ? gtfsDayStart(Date.UTC(+y.slice(0, 4), +y.slice(4, 6) - 1, +y.slice(6, 8), 12) / 1000, ctx.timezone) : gtfsDayStart(headerTs, ctx.timezone);
     for (const stu of tu?.stopTimeUpdate ?? []) {
       if (stu.stopSequence == null) continue;
       const sched = ctx.schedule(tripId, stu.stopSequence);

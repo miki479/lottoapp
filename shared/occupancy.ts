@@ -1,5 +1,5 @@
 import { computeOdds, yesProbability, type History } from "./odds.ts";
-import { localDayStart, parseGtfsTime } from "./time.ts";
+import { gtfsDayStart, parseGtfsTime } from "./time.ts";
 import type { MarketInsert, StopTimeRow } from "./generator.ts";
 
 /** How full a vehicle is, from GTFS-RT occupancy_status (0 empty ... 5 full). */
@@ -32,7 +32,7 @@ export interface OccupancyMarketArgs {
 
 export function buildOccupancyMarket(a: OccupancyMarketArgs): MarketInsert {
   const bet = OCC_BETS[a.kind];
-  const targetAt = localDayStart(a.serviceDayEpoch, a.tz) + parseGtfsTime(a.stop.time);
+  const targetAt = gtfsDayStart(a.serviceDayEpoch, a.tz) + parseGtfsTime(a.stop.time);
   const odds = computeOdds(yesProbability(a.history, bet.prior));
   const iso = (t: number) => new Date(t * 1000).toISOString();
   return {

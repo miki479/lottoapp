@@ -146,6 +146,7 @@ export interface MatchStats { players?: PlayerFacts | null; hg: number; ag: numb
 
 /** The result of a bet, or null when the figure it needs is not available (the market is then voided and refunded, never guessed). */
 export function evalMatch(bet: MatchBet | PlayerBet | TwoBet, s: MatchStats): boolean | null {
+  if (!isTwoBet(bet) && !isPlayerBet(bet) && !(ALL_BETS as string[]).includes(bet)) return null;
   if (isTwoBet(bet)) { const line = twoBetLine(bet); return bet.startsWith("tot") ? s.hg + s.ag > line : s.hg - s.ag > line; }
   if (isPlayerBet(bet)) {
     if (!s.players) return null;
@@ -169,7 +170,7 @@ export function evalMatch(bet: MatchBet | PlayerBet | TwoBet, s: MatchStats): bo
 /** Only for the bets that need the final score alone. */
 export const evalBet = (bet: BasicBet, h: number, a: number): boolean =>
   bet === "home_win" ? h > a : bet === "draw" ? h === a : bet === "away_win" ? a > h : bet === "dc_1x" ? h >= a : bet === "dc_x2" ? a >= h : bet === "dc_12" ? h !== a : bet === "over_1_5" ? h + a >= 2 : bet === "over_2_5" ? h + a >= 3 : bet === "over_3_5" ? h + a >= 4
-  : bet === "btts" ? h > 0 && a > 0 : bet === "home_clean" ? a === 0 : h === 0;
+  : bet === "btts" ? h > 0 && a > 0 : bet === "home_clean" ? a === 0 : bet === "away_clean" ? h === 0 : false;
 
 export function matchMarket(f: Fixture, bet: MatchBet, priors: Record<MatchBet, number>, geo: Geo | undefined, testOnly: boolean, custom?: { by: string | null }): MatchMarketInsert {
   const odds = computeOdds(clamp(priors[bet], 0.1, 0.9));

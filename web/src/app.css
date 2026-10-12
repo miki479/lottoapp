@@ -1146,7 +1146,11 @@ textarea.field { resize: vertical; min-height: 84px; }
 .rowlink { background: none; border: 0; padding: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; min-width: 0; }
 .rowlink b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; max-width: 100%; vertical-align: bottom; }
 .reqrow { display: flex; align-items: center; gap: 10px; }
-.reqrow .btn { min-height: 36px; padding: 0 12px; }
+.reqrow .iconbtn { width: 40px; height: 40px; border-radius: 12px; flex: none; }
+.reqyes { background: var(--brand); color: #fff; } .reqno { background: var(--surface-2); }
+.reqhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.linkbtn { background: none; border: 0; color: var(--brand); font: inherit; font-weight: 700; cursor: pointer; padding: 4px 0; }
+.badge.inline { position: static; display: inline-grid; margin-left: 6px; vertical-align: middle; }
 .lkme { position: relative; background: none; border: 0; padding: 0; cursor: pointer; flex: none; }
 .lkme .lvl { position: absolute; right: -2px; bottom: -2px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; display: grid; place-items: center; background: var(--brand); color: #fff; font-size: 12px; font-weight: 800; border: 2px solid var(--surface); }
 .lkxp { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; width: 100%; }
@@ -1155,10 +1159,10 @@ textarea.field { resize: vertical; min-height: 84px; }
 .lkprev { display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 6px; }
 .lkprev .xpbar { width: 70%; flex: none; }
 .lkh { font-size: 14px; color: var(--text-2); margin: 0; }
-.lkavs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.lkavs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; } .lkav .look { max-width: 100%; height: auto; }
 .lkav { background: var(--surface-2); border: 2px solid transparent; border-radius: 16px; padding: 6px; display: grid; place-items: center; cursor: pointer; }
 .lkav.on, .lkcell.on { border-color: var(--brand); }
-.lkgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.lkgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .lkcell { background: var(--surface-2); border: 2px solid transparent; border-radius: 16px; padding: 10px 6px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; color: inherit; font: inherit; }
 .lkcell small { font-weight: 700; font-size: 12px; } .lkcell em { font-style: normal; font-size: 10.5px; color: var(--text-2); text-align: center; line-height: 1.25; }
 .lkcell.lock { cursor: default; } .lkcell.lock .look { filter: grayscale(.85) brightness(.55); }
@@ -1190,6 +1194,8 @@ textarea.field { resize: vertical; min-height: 84px; }
 @media (min-width: 1024px) { .led.full { display: block; } .led.ledcard, .topdiv { display: none; } }
 
 .top-scroll .top-dup { display: block; width: 0; height: 0; flex: none; margin-left: calc(var(--gap) * -1); }
+.top-scroll:not(.looping) .top-dup, .top-scroll:not(.looping) .top-dup ~ * { display: none; }
+.top-ghost { display: contents; }
 @media (min-width: 1024px) { .top-scroll > .top-dup, .top-scroll > .top-dup ~ * { display: none; } }
 
 /* the house question about the game everybody is waiting for */

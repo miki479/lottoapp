@@ -92,14 +92,14 @@ describe("trip updates with times only", () => {
 });
 
 describe("open-meteo adapter", () => {
-  it("converts local hourly times to UTC hour starts", () => {
+  it("converts local hourly times to UTC and assigns each sum to the hour it covers (the one BEFORE its stamp)", () => {
     const obs = openMeteoAdapter(
       { utc_offset_seconds: 32400, hourly: { time: ["2026-10-11T08:00", "2026-10-11T09:00"], precipitation: [0, 1.2] } },
       "om",
     );
     expect(obs).toEqual([
-      { feedId: "om", hourStart: jst(8), precipitationMm: 0 },
-      { feedId: "om", hourStart: jst(9), precipitationMm: 1.2 },
+      { feedId: "om", hourStart: jst(7), precipitationMm: 0 },
+      { feedId: "om", hourStart: jst(8), precipitationMm: 1.2 },
     ]);
   });
   it("skips null values and malformed payloads", () => {

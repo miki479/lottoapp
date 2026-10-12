@@ -11,8 +11,9 @@ const STAKES = [0, 10, 25, 50];
 type CloseKey = keyof Messages["friends"]["closeOpts"];
 
 /** Closing time presets, in the player's own time zone. */
-function closeAt(k: CloseKey): Date {
+function closeAt(k: CloseKey, custom = ""): Date {
   const d = new Date();
+  if (k === "custom") return custom ? new Date(custom) : new Date(NaN);
   if (k === "h1") return new Date(d.getTime() + 3600_000);
   if (k === "h3") return new Date(d.getTime() + 3 * 3600_000);
   if (k === "d3") return new Date(d.getTime() + 3 * 86400_000);
@@ -26,14 +27,16 @@ function closeAt(k: CloseKey): Date {
 /** Write your own question for friends. Only people with the link see it; you are the judge. */
 export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: boolean; hasHome: boolean; onClose: () => void; onCreated: (code: string) => void; onAuth: () => void }) {
   const f = p.msg.friends;
-  const [title, setTitle] = useState(""), [cat, setCat] = useState<CatKey>("friends"), [more, setMore] = useState(false), [close, setClose] = useState<CloseKey>("tomorrow"), [stake, setStake] = useState(0);
+  const [title, setTitle] = useState(""), [cat, setCat] = useState<CatKey>("friends"), [more, setMore] = useState(false), [close, setClose] = useState<CloseKey>("tomorrow"), [stake, setStake] = useState(0), [customAt, setCustomAt] = useState("");
   const [vis, setVis] = useState<"private" | "public">("private"), [judge, setJudge] = useState<"creator" | "vote">("vote"), [world, setWorld] = useState(false);
   const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null);
   const pub = vis === "public";
+  const when = closeAt(close, customAt), whenOk = Number.isFinite(when.getTime()) && when.getTime() >= Date.now() + 10 * 60_000 && when.getTime() <= Date.now() + 30 * 86_400_000;
+  const local = (t: number) => { const d = new Date(t); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
   const create = async () => {
     if (!p.registered) { p.onAuth(); return; }
     setBusy(true); setErr(null);
-    const { data, error } = await sb.rpc("create_challenge", { p_title: title.trim(), p_category: cat, p_stake: pub ? 0 : stake, p_closes_at: closeAt(close).toISOString(), p_judge: pub ? "vote" : judge, p_visibility: vis, p_world: pub && world });
+    const { data, error } = await sb.rpc("create_challenge", { p_title: title.trim(), p_category: cat, p_stake: pub ? 0 : stake, p_closes_at: when.toISOString(), p_judge: pub ? "vote" : judge, p_visibility: vis, p_world: pub && world });
     setBusy(false);
     if (error || !data?.code) {
       const key = Object.keys(f.errors).find((k) => error?.message?.includes(k)) as keyof typeof f.errors | undefined;
@@ -55,7 +58,11 @@ export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: b
       </div>
       <button class={`morecats ${more ? "open" : ""}`} aria-expanded={more} onClick={() => setMore(!more)}>{more ? f.lessCats : f.moreCats}<ChevronDown size={16} /></button>
       <span class="detail">{f.closes}</span>
-      <div class="mkchips">{(Object.keys(f.closeOpts) as CloseKey[]).map((k) => <button key={k} class={`mkchip ${close === k ? "on" : ""}`} aria-pressed={close === k} onClick={() => setClose(k)}>{f.closeOpts[k]}</button>)}</div>
+      <div class="mkchips wrap">{(Object.keys(f.closeOpts) as CloseKey[]).map((k) => <button key={k} class={`mkchip ${close === k ? "on" : ""}`} aria-pressed={close === k} onClick={() => setClose(k)}>{f.closeOpts[k]}</button>)}</div>
+      {close === "custom" && <>
+        <input class="field" type="datetime-local" value={customAt} min={local(Date.now() + 10 * 60_000)} max={local(Date.now() + 30 * 86_400_000)} aria-label={f.closeOpts.custom} onInput={(e) => setCustomAt((e.target as HTMLInputElement).value)} />
+        <p class={customAt && !whenOk ? "formerr" : "hint"}>{customAt && !whenOk ? f.customBad : f.customHint}</p>
+      </>}
       <span class="detail">{p.msg.fx.visibility}</span>
       <div class="mkchips">
         <button class={`mkchip ${vis === "private" ? "on" : ""}`} aria-pressed={vis === "private"} onClick={() => setVis("private")}>{p.msg.fx.vPrivate}</button>
@@ -77,7 +84,7 @@ export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: b
       {!pub && stake > 0 && <p class="hint">{f.stakeNote}</p>}
       <p class="hint">{f.rules}</p>
       {err && <p class="formerr" role="alert">{err}</p>}
-      <button class="btn primary wide" disabled={busy || title.trim().length < 8 || (pub && !p.hasHome)} onClick={create}>{busy ? f.creating : f.create}</button>
+      <button class="btn primary wide" disabled={busy || !whenOk || title.trim().length < 8 || (pub && !p.hasHome)} onClick={create}>{busy ? f.creating : f.create}</button>
     </Sheet>
   );
 }

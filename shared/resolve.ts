@@ -49,7 +49,7 @@ export interface ResolveInput {
 const BUS_WINDOW_BEFORE_SEC = 5 * 60;
 const BUS_WINDOW_AFTER_SEC = 15 * 60;
 /** A train's arrival is recorded when it happens: a very late train must still be read, not voided. */
-const TRAIN_WINDOW_AFTER_SEC = 60 * 60;
+const TRAIN_WINDOW_AFTER_SEC = 85 * 60;
 /**
  * Position feeds are sampled every ~30 s and a bus can pass a stop between two samples.
  * A reading taken at the event's stop, or at most this many stops later, still counts.

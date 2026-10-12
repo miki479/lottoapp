@@ -1,6 +1,6 @@
 import { computeOdds } from "./odds.ts";
 import { normalCdf } from "./metrics.ts";
-import { localDayStart } from "./time.ts";
+import { addDays, localDateString, zonedEpoch } from "./time.ts";
 
 /** Questions about a single number at a given instant, for the whole world: coin prices, the Kp index, Wikipedia page views. */
 export type TickCategory = "finance" | "nature" | "culture";
@@ -327,7 +327,7 @@ export function buildAlertMarkets(now: number, current: Record<string, number>):
     for (const hz of hazards) {
       const series = `alert:${area}:${hz}`, active = (current[series] ?? 0) >= 1;
       for (const dayOff of [2, 3]) {
-        const day = localDayStart(now + dayOff * 86400, ALERT_TZ), at = day + 12 * H, closes = day - 16 * H;
+        const dayStr = addDays(localDateString(now, ALERT_TZ), dayOff), day = zonedEpoch(dayStr, 0, ALERT_TZ), at = zonedEpoch(dayStr, 12 * H, ALERT_TZ), closes = day - 16 * H;
         if (closes <= now + 300) continue;
         for (const thr of hz === "temporali" ? [1] : [1, 2]) {
           const base = ALERT_BASE[hz]![thr - 1]!, p = Math.min(0.6, active ? base * 2.5 : base);

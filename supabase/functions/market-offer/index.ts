@@ -6,7 +6,7 @@ import { FAIR_MAX, FAIR_MIN, CRYPTO, WIKI_ARTICLES, buildCustomTick, buildTvMark
 import { computeOdds } from "../_shared/shared/odds.ts";
 import { ALL_BETS, DETAIL_LEAGUES, LEAGUES, isDetailBet, isPlayerBet, isTwoBet, twoWayPriors, leagueAverage, matchMarket, matchPriors, playerBetId, playerChance, playerMarket, type LineupPlayer, type MatchBet, type PlayerBet } from "../_shared/shared/sport.ts";
 import { METRICS, METRIC_IDS, metricOdds, normalCdf, type MetricId } from "../_shared/shared/metrics.ts";
-import { localDayStart } from "../_shared/shared/time.ts";
+import { addDays, localDateString, zonedEpoch } from "../_shared/shared/time.ts";
 import { db, loadCities, safe } from "../_lib/common.ts";
 import { detailsAvailable, fetchLineup, loadTable } from "../_lib/football.ts";
 
@@ -77,7 +77,7 @@ Deno.serve(safe(async (req) => {
       if (pl) { loc = { lat: Number(pl.lat), lon: Number(pl.lon), tz: pl.timezone as string }; if (!preview) await sb.from("places").update({ last_used_at: iso(now) }).eq("id", placeId); }
     }
     if (!loc) return json({ error: "bad_place" }, 400);
-    const targetAt = localDayStart(now + dayOffset * 86400, loc.tz) + hour * 3600 + 1800;
+    const targetAt = zonedEpoch(addDays(localDateString(now, loc.tz), dayOffset), hour * 3600 + 1800, loc.tz);
     if (targetAt - 600 < now + 35 * 60 || targetAt > now + 48 * 3600) return json({ error: "bad_time" }, 400);
     const def = METRICS[metric];
     let forecast: number | undefined;
@@ -196,6 +196,8 @@ Deno.serve(safe(async (req) => {
     // older markets were made before these bets existed: price them from the same strengths
     const two = LEAGUES.find((l) => l.name === sp.league)?.two;
     if (twoBet && !two) return json({ error: "bad_request" }, 400);
+    // a sport without draws only has the winner, the total points and the handicap: the football bets would be a sure thing there
+    if (two && !twoBet && bet !== "home_win" && bet !== "away_win") return json({ error: "bad_request" }, 400);
     let priors = sp.priors ?? ({} as Record<MatchBet, number>);
     if (typeof priors[bet] !== "number") {
       const table = await loadTable(sb, sp.league), by = new Map(table.map((r) => [r.team, r]));

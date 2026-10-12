@@ -15,7 +15,7 @@ export interface Challenge {
 export const challengeLink = (code: string) => `${location.origin}/?c=${code}`;
 
 /** One friend challenge: look, pick, wait for the judge; the judge decides after closing. */
-export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale; now: number; registered: boolean; onClose: () => void; onAuth: () => void; onChanged: () => void }) {
+export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale; now: number; registered: boolean; onClose: () => void; onAuth: () => void; onChanged: () => void; onDeleted: (text: string) => void }) {
   const f = p.msg.friends;
   const [c, setC] = useState<Challenge | null | undefined>(undefined);
   const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null), [copied, setCopied] = useState(false);
@@ -29,6 +29,14 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
     setBusy(false);
     if (error) { fail(error); return; }
     setC(data as Challenge); p.onChanged();
+  };
+  const [asking, setAsking] = useState(false);
+  const remove = async () => {
+    setBusy(true); setErr(null);
+    const { data, error } = await sb.rpc("cancel_challenge", { p_code: p.code });
+    setBusy(false);
+    if (error) { fail(error); return; }
+    p.onChanged(); p.onDeleted(data === "deleted" ? f.deleted : f.voidedMsg);
   };
   const [reported, setReported] = useState(false);
   const report = async () => { if (!c) return; await sb.rpc("report_challenge", { p_code: c.code }); setReported(true); };
@@ -82,6 +90,9 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
         <button class="btn secondary wide" disabled={busy} onClick={() => act("resolve_challenge", { p_code: c.code, p_outcome: "void" })}>{f.decideVoid}</button>
       </>}
       {awaiting && c.judge_mode === "creator" && !c.is_creator && <p class="hint">{f.waitJudge}: {c.creator || p.msg.ticker.anon}</p>}
+      {isOpen && c.is_creator && (asking
+        ? <div class="frask" role="alert"><span>{c.yes + c.no - (c.my_pick ? 1 : 0) > 0 ? f.askJoined : f.askSolo}</span><button class="btn secondary" disabled={busy} onClick={() => setAsking(false)}>{f.deleteNo}</button><button class="btn primary" disabled={busy} onClick={remove}>{f.deleteYes}</button></div>
+        : <button class="btn secondary" onClick={() => setAsking(true)}>{f.deleteBtn}</button>)}
       {c.visibility === "public" && !c.is_creator && <button class="btn secondary" disabled={reported} onClick={report}>{reported ? p.msg.fx.reported : p.msg.fx.report}</button>}
       {c.people.length > 0 && <div class="tickchart"><div class="tchead"><b>{f.people}</b></div>
         {c.people.map((x, i) => <div key={i} class="tchead" style="padding:4px 0"><span>{x.name === "?" ? p.msg.ticker.anon : x.name}</span><span class="num"><b>{x.pick === "yes" ? f.yes : f.no}</b>{x.payout > 0 && c.status === "resolved" ? ` · ${f.won} ${money(x.payout, p.locale)}` : ""}</span></div>)}

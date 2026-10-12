@@ -4,7 +4,7 @@
  */
 export const HOUSE_MARGIN = 0.08;
 export const PRIOR_STRENGTH = 10; // pseudo-observations behind the fixed starting probability
-export const MIN_ODDS = 1.1;
+export const MIN_ODDS = 1.01;
 export const MAX_ODDS = 15;
 export const FLASH_MAX_MULTIPLIER = 3;
 

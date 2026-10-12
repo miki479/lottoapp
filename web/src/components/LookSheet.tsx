@@ -2,12 +2,12 @@ import { Check, Lock } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { AVATARS, DECORATIONS, levelProgress } from "../../../shared/looks";
 import type { Messages } from "../i18n/index.ts";
-import { loadMyProgress, saveLook, type MyProgress } from "../lib/looks.ts";
+import { forgetLook, loadMyProgress, saveLook, type MyProgress } from "../lib/looks.ts";
 import { Look } from "./looks/Look.tsx";
 import { Sheet } from "./Sheet.tsx";
 
 /** The "Decorations" sheet: preview on top, the character row, then the grid of rings with their padlocks. */
-export function LookSheet({ progress, msg, onClose, onSaved }: { progress: MyProgress; msg: Messages; onClose: () => void; onSaved: (p: MyProgress) => void }) {
+export function LookSheet({ progress, msg, myId, onClose, onSaved }: { progress: MyProgress; msg: Messages; myId: string; onClose: () => void; onSaved: (p: MyProgress) => void }) {
   const t = msg.look;
   const [av, setAv] = useState(progress.avatar), [deco, setDeco] = useState<string | null>(progress.decoration), [busy, setBusy] = useState(false);
   const open = (d: (typeof DECORATIONS)[number]) => (d.level !== undefined && d.level <= progress.level) || progress.owned.includes(d.id);
@@ -15,7 +15,7 @@ export function LookSheet({ progress, msg, onClose, onSaved }: { progress: MyPro
   const lp = levelProgress(progress.xp);
   const apply = async () => {
     setBusy(true);
-    if (await saveLook(av, deco)) { const p = await loadMyProgress(); if (p) onSaved(p); onClose(); } else setBusy(false);
+    if (await saveLook(av, deco)) { forgetLook(myId); const p = await loadMyProgress(); onSaved(p ?? { ...progress, avatar: av, decoration: deco }); onClose(); } else setBusy(false);
   };
   return (
     <Sheet onClose={onClose} label={t.title}>

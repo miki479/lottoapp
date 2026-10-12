@@ -1,5 +1,5 @@
 import { computeOdds } from "./odds.ts";
-import { localDayStart } from "./time.ts";
+import { addDays, localDateString, zonedEpoch } from "./time.ts";
 
 /** Weather-style measurements beyond rain. One hourly value per place, compared with a threshold. */
 export type MetricId = "temp" | "wind" | "snow" | "uv" | "aqi" | "hail";
@@ -7,6 +7,8 @@ export type MetricId = "temp" | "wind" | "snow" | "uv" | "aqi" | "hail";
 export interface MetricDef {
   /** Open-Meteo hourly variable. */
   api: string;
+  /** The value stamped with an hour is the maximum or sum of the hour BEFORE it (Open-Meteo), so it belongs to the previous hour. */
+  preceding?: boolean;
   /** "forecast" or "air-quality" API. */
   source: "forecast" | "air";
   unit: string;
@@ -25,8 +27,8 @@ export interface MetricDef {
 
 export const METRICS: Record<MetricId, MetricDef> = {
   temp: { api: "temperature_2m", source: "forecast", unit: "°C", sigma: 2, step: 1, hour: 15, min: -90, max: 60 },
-  wind: { api: "wind_gusts_10m", source: "forecast", unit: "km/h", sigma: 7, step: 5, hour: 15, min: 0, max: 400 },
-  snow: { api: "snowfall", source: "forecast", unit: "cm", sigma: 0.3, step: 0.1, hour: 12, min: 0, max: 50 },
+  wind: { api: "wind_gusts_10m", preceding: true, source: "forecast", unit: "km/h", sigma: 7, step: 5, hour: 15, min: 0, max: 400 },
+  snow: { api: "snowfall", preceding: true, source: "forecast", unit: "cm", sigma: 0.3, step: 0.1, hour: 12, min: 0, max: 50 },
   uv: { api: "uv_index", source: "forecast", unit: "", sigma: 1.2, step: 1, hour: 13, min: 0, max: 16 },
   aqi: { api: "european_aqi", source: "air", unit: "", sigma: 12, step: 10, hour: 12, min: 0, max: 500 },
   /** Hail: WMO weather code 96 or 99 (thunderstorm with hail) in that hour. Only offered through player-made questions. */
@@ -76,13 +78,13 @@ export interface MetricMarketInsert {
  */
 export function buildMetricMarkets(o: { id: string; tz: string; nowEpoch: number; series: Partial<Record<MetricId, Map<number, number>>> }): MetricMarketInsert[] {
   const out: MetricMarketInsert[] = [];
-  const days = [localDayStart(o.nowEpoch, o.tz), localDayStart(o.nowEpoch + 86400, o.tz)];
-  for (const dayStart of days) {
+  const today = localDateString(o.nowEpoch, o.tz), days = [today, addDays(today, 1)];
+  for (const day of days) {
     for (const metric of METRIC_IDS) {
       const def = METRICS[metric];
       const series = o.series[metric];
       if (!series) continue;
-      const targetAt = dayStart + def.hour * 3600 + 1800;
+      const targetAt = zonedEpoch(day, def.hour * 3600 + 1800, o.tz);
       if (targetAt - 600 <= o.nowEpoch + 300) continue;
       const forecast = series.get(Math.floor(targetAt / 3600) * 3600);
       if (forecast === undefined) continue;

@@ -23,22 +23,24 @@ export function TopCards({ items, lead }: { items: TopItem[]; lead?: ComponentCh
     const step = () => {
       raf = requestAnimationFrame(step);
       if (!seen.current || document.hidden || performance.now() < hold.current || getComputedStyle(el).flexDirection !== "row") { pos = el.scrollLeft; return; }
+      // the copy only exists while the row really scrolls: when everything fits there is nothing to loop and nothing is duplicated
+      if (!el.classList.contains("looping")) { if (el.scrollWidth > el.clientWidth + 2) el.classList.add("looping"); return; }
       const dup = el.querySelector<HTMLElement>(".top-dup"), first = el.firstElementChild as HTMLElement | null;
       if (!dup || !first) return;
       const loop = dup.offsetLeft + (parseFloat(getComputedStyle(el).columnGap) || 0) - first.offsetLeft;
-      if (loop <= el.clientWidth) return; // everything fits: nothing to scroll
+      if (loop <= el.clientWidth) { el.classList.remove("looping"); return; }
       pos += DRIFT;
       if (pos >= loop) pos -= loop;
       el.scrollLeft = pos;
     };
     raf = requestAnimationFrame(step);
-    return () => { cancelAnimationFrame(raf); io?.disconnect(); };
+    return () => { cancelAnimationFrame(raf); io?.disconnect(); el.classList.remove("looping"); };
   }, [items.length, !!lead]);
   const pause = (ms = IDLE_MS) => { hold.current = performance.now() + ms; };
   const cards = (copy: boolean) => (
     <>
       {copy ? <span class="top-dup" aria-hidden="true" /> : null}
-      {lead}
+      {copy ? <div class="top-ghost" aria-hidden="true" {...{ inert: true }}>{lead}</div> : lead}
       {items.map((it, i) => {
         const Icon = it.icon;
         return (

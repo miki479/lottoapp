@@ -66,7 +66,8 @@ export function marketToEvent(row: MarketRow): MarketEvent {
     return ev;
   }
   if (row.kind === "match_bet") {
-    const bet = ((ALL_BETS as string[]).includes(String(p.bet)) || isPlayerBet(String(p.bet)) || isTwoBet(String(p.bet))) ? (p.bet as MatchEvent["bet"]) : "home_win";
+    // an unknown bet is kept as it is: it can never be evaluated, so the question is refunded instead of being settled as a home win
+    const bet = String(p.bet) as MatchEvent["bet"];
     const ev: MatchEvent = { ...base, kind: "match_bet", category: "sport", eventId: String(p.eventId), bet, league: String(p.league ?? "") };
     return ev;
   }

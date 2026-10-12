@@ -65,6 +65,8 @@ Deno.serve(safe(async (req) => {
       if (!!feed.heavy !== heavyRun) continue;
       if (seen.has(feed.id)) continue;
       seen.add(feed.id);
+      // ViaggiaTreno refuses datacenter addresses: it is read by scripts/viaggiatreno-local.mjs on a normal connection, not here
+      if (feed.type === "viaggiatreno" && !Deno.env.get("VIAGGIATRENO_BASE_URL")) { report[feed.id] = "local-only"; continue; }
       if (now - (lastAttempt.get(feed.id) ?? 0) < feed.pollSeconds - 5) { report[feed.id] = "not due"; continue; }
       await sb.from("feed_health").upsert({ feed_id: feed.id, last_attempt_at: new Date(now * 1000).toISOString() });
       try {
@@ -125,7 +127,7 @@ async function learnedPriors(sb: ReturnType<typeof db>, now: number): Promise<(c
     for (const c of cities) byCountry.set(c.country, [...(byCountry.get(c.country) ?? []), c.id]);
     const map = new Map<string, number>();
     for (const [cc, ids] of byCountry) for (const kind of ["bus_delay_gt", "train_delay_gt"] as const) {
-      const { data } = await sb.from("markets").select("outcome").eq("kind", kind).eq("status", "resolved").is("params->>ladderOf", null).in("city_id", ids).limit(1000);
+      const { data } = await sb.from("markets").select("outcome").eq("kind", kind).eq("status", "resolved").is("params->>ladderOf", null).in("city_id", ids).order("target_at", { ascending: false }).limit(1000);
       const n = data?.length ?? 0, yes = (data ?? []).filter((r) => r.outcome === "yes").length;
       map.set(`${cc}|${kind}`, learnedPrior(yes, n, DEFAULT_YES_PROBABILITY[kind]));
     }
@@ -247,7 +249,7 @@ async function ingestMetrics(sb: ReturnType<typeof db>, now: number, last: numbe
   await sb.from("feed_health").upsert({ feed_id: "open-meteo-metrics", last_attempt_at: new Date(now * 1000).toISOString() });
   const targets: { id: string; lat: number; lon: number; tz: string }[] = [];
   for (const c of await loadCities()) if (c.categories.weather?.enabled && c.location) targets.push({ id: c.id, lat: c.location.lat, lon: c.location.lon, tz: c.timezone });
-  const { data: places } = await sb.from("places").select("id,lat,lon,timezone").gt("last_used_at", new Date((now - 3 * 86400) * 1000).toISOString()).limit(300);
+  const { data: places } = await sb.from("places").select("id,lat,lon,timezone").gt("last_used_at", new Date((now - 3 * 86400) * 1000).toISOString()).order("last_used_at", { ascending: false }).limit(300);
   for (const p of places ?? []) targets.push({ id: p.id as string, lat: Number(p.lat), lon: Number(p.lon), tz: p.timezone as string });
   let rows = 0, created = 0;
   try {
@@ -272,7 +274,7 @@ async function ingestMetrics(sb: ReturnType<typeof db>, now: number, last: numbe
           const times: string[] | undefined = src?.hourly?.time; const vals: Array<number | null> | undefined = src?.hourly?.[METRICS[m].api];
           if (!times || !vals) continue;
           const map = new Map<number, number>();
-          times.forEach((ts, h) => { const raw = vals[h]; if (typeof raw !== "number") return; const v = METRICS[m].transform ? METRICS[m].transform!(raw) : raw; const e = Date.parse(`${ts}:00Z`) / 1000; if (!Number.isFinite(e)) return; map.set(e, v); obsRows.push({ feed_id: `om-${t.id}`, metric: m, hour_start: new Date(e * 1000).toISOString(), value: v, fetched_at: fetchedAt }); });
+          times.forEach((ts, h) => { const raw = vals[h]; if (typeof raw !== "number") return; const v = METRICS[m].transform ? METRICS[m].transform!(raw) : raw; const e = Date.parse(`${ts}:00Z`) / 1000 - (METRICS[m].preceding ? 3600 : 0); if (!Number.isFinite(e)) return; map.set(e, v); obsRows.push({ feed_id: `om-${t.id}`, metric: m, hour_start: new Date(e * 1000).toISOString(), value: v, fetched_at: fetchedAt }); });
           series[m] = map;
         }
         markets.push(...buildMetricMarkets({ id: t.id, tz: t.tz, nowEpoch: now, series }));
@@ -300,13 +302,13 @@ async function ingestMetrics(sb: ReturnType<typeof db>, now: number, last: numbe
 async function ingestPlaces(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
   if (now - last < 3600 - 5) return "not due";
   await sb.from("feed_health").upsert({ feed_id: "open-meteo-places", last_attempt_at: new Date(now * 1000).toISOString() });
-  const { data: places } = await sb.from("places").select("id,lat,lon").gt("last_used_at", new Date((now - 3 * 86400) * 1000).toISOString()).limit(300);
+  const { data: places } = await sb.from("places").select("id,lat,lon").gt("last_used_at", new Date((now - 3 * 86400) * 1000).toISOString()).order("last_used_at", { ascending: false }).limit(300);
   if (!places || places.length === 0) { await sb.from("feed_health").upsert({ feed_id: "open-meteo-places", last_ok_at: new Date().toISOString(), last_error: null }); return "ok 0"; }
   let rows = 0;
   try {
     for (let i = 0; i < places.length; i += 40) {
       const chunk = places.slice(i, i + 40);
-      const q = new URLSearchParams({ latitude: chunk.map((p) => p.lat).join(","), longitude: chunk.map((p) => p.lon).join(","), hourly: "precipitation", timezone: "auto", forecast_days: "2", past_days: "1" });
+      const q = new URLSearchParams({ latitude: chunk.map((p) => p.lat).join(","), longitude: chunk.map((p) => p.lon).join(","), hourly: "precipitation", timezone: "GMT", forecast_days: "2", past_days: "1" });
       const json = JSON.parse(new TextDecoder().decode(await fetchBytes(`https://api.open-meteo.com/v1/forecast?${q}`)));
       const list = Array.isArray(json) ? json : [json];
       const out: Record<string, unknown>[] = [];
@@ -408,8 +410,8 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
 /** Remembers the trips an operator says are cancelled; the resolver refunds the open questions about them. */
 async function saveCancellations(sb: ReturnType<typeof db>, feedId: string, list: Cancellation[]): Promise<void> {
   if (list.length === 0) return;
-  const rows = list.map((c) => ({ feed_id: feedId, trip_id: c.tripId, stop_id: c.stopId ?? "" }));
-  const { error } = await sb.from("trip_cancellations").upsert(rows, { onConflict: "feed_id,trip_id,stop_id", ignoreDuplicates: true });
+  const at = new Date().toISOString(), rows = list.map((c) => ({ feed_id: feedId, trip_id: c.tripId, stop_id: c.stopId ?? "", detected_at: at }));
+  const { error } = await sb.from("trip_cancellations").upsert(rows, { onConflict: "feed_id,trip_id,stop_id" });
   if (error) console.error("cancellations", error.message);
 }
 
@@ -505,9 +507,11 @@ async function wikiViews(title: string, fromEpoch: number, toEpoch: number): Pro
 async function fetchMetals(now: number): Promise<Partial<Record<MetalKey, number>>> {
   const out: Partial<Record<MetalKey, number>> = {};
   for (const [k, cfg] of Object.entries(METALS) as [MetalKey, (typeof METALS)[MetalKey]][]) {
-    const j = await getJson(`https://api.gold-api.com/price/${cfg.sym}`);
-    const at = Date.parse(String(j?.updatedAt ?? "")) / 1000;
-    if (typeof j?.price === "number" && Number.isFinite(at) && now - at <= 20 * 60) out[k] = j.price;
+    try { // one metal that fails must not lose the others
+      const j = await getJson(`https://api.gold-api.com/price/${cfg.sym}`);
+      const at = Date.parse(String(j?.updatedAt ?? "")) / 1000;
+      if (typeof j?.price === "number" && Number.isFinite(at) && now - at <= 20 * 60) out[k] = j.price;
+    } catch (e) { console.error("metal", k, String((e as Error).message ?? e)); }
   }
   return out;
 }
@@ -536,8 +540,10 @@ async function fetchOil(): Promise<Partial<Record<OilKey, { date: string; value:
   if (!key) return {};
   const out: Partial<Record<OilKey, { date: string; value: number }[]>> = {};
   for (const [k, cfg] of Object.entries(OIL) as [OilKey, (typeof OIL)[OilKey]][]) {
-    const j = await getJson(`https://api.eia.gov/v2/petroleum/pri/spt/data/?api_key=${encodeURIComponent(key)}&frequency=daily&data[0]=value&facets[series][]=${cfg.eia}&sort[0][column]=period&sort[0][direction]=desc&length=12`);
-    out[k] = ((j?.response?.data ?? []) as { period: string; value: string }[]).map((r) => ({ date: r.period, value: Number(r.value) })).filter((r) => Number.isFinite(r.value));
+    try { // one series that fails must not lose the others
+      const j = await getJson(`https://api.eia.gov/v2/petroleum/pri/spt/data/?api_key=${encodeURIComponent(key)}&frequency=daily&data[0]=value&facets[series][]=${cfg.eia}&sort[0][column]=period&sort[0][direction]=desc&length=12`);
+      out[k] = ((j?.response?.data ?? []) as { period: string; value: string }[]).map((r) => ({ date: r.period, value: Number(r.value) })).filter((r) => Number.isFinite(r.value));
+    } catch (e) { console.error("oil", k, String((e as Error).message ?? e)); }
   }
   return out;
 }
@@ -572,7 +578,7 @@ async function tmCount(place: TmPlace, from: string, to: string): Promise<number
 async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
   const notes: string[] = [];
   // 1. Instants that have just passed: record the number once, as a fact.
-  const { data: waiting } = await sb.from("markets").select("params,target_at").eq("kind", "tick_gt").eq("status", "open").lte("target_at", new Date(now * 1000).toISOString()).limit(300);
+  const { data: waiting } = await sb.from("markets").select("params,target_at").eq("kind", "tick_gt").eq("status", "open").lte("target_at", new Date(now * 1000).toISOString()).order("target_at", { ascending: false }).limit(300);
   const need = new Map<string, Set<number>>();
   for (const m of waiting ?? []) {
     const p = m.params as { series: string; at: number };
@@ -763,7 +769,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
   const base = `https://www.thesportsdb.com/api/v1/json/${key}`;
   const notes: string[] = [];
   // 1. Matches that should be over: store the final score once it is published.
-  const { data: open } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").lte("target_at", new Date(now * 1000).toISOString()).limit(100);
+  const { data: open } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").lte("target_at", new Date(now * 1000).toISOString()).order("target_at").limit(100);
   const ids = [...new Set((open ?? []).map((m) => String((m.params as { eventId: string }).eventId)))];
   if (ids.length) {
     const { data: have } = await sb.from("match_results").select("event_id,status").in("event_id", ids);
@@ -782,7 +788,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
   // 1b. Half-time score, corners and cards for the matches that are over (needs the API-Football key; at most a few matches per minute, and never past today's free quota).
   if (apiKey()) {
     try {
-      const { data: wait } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").lte("target_at", new Date(now * 1000).toISOString()).limit(300);
+      const { data: wait } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").lte("target_at", new Date(now * 1000).toISOString()).order("target_at").limit(300);
       const todo = new Map<string, { apiId: string; kickoff: number; detail: boolean; players: boolean }>();
       for (const m of wait ?? []) {
         const p = m.params as { eventId: string; apiId?: string; kickoff: number; bet: string };

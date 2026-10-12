@@ -1,5 +1,5 @@
 import { computeOdds } from "./odds.ts";
-import { localDayStart } from "./time.ts";
+import { localDateString, zonedEpoch } from "./time.ts";
 
 /** One strike announced on the Italian Ministry of Transport's public list (RSS). */
 export interface Strike {
@@ -53,7 +53,7 @@ export function buildStrikeMarkets(strikes: Strike[], nowEpoch: number, tz = "Eu
   for (const s of strikes.filter(isTrainNational)) {
     const [y, mo, d] = s.date.split("-").map(Number);
     const noonUtc = Date.UTC(y!, mo! - 1, d!, 12) / 1000;
-    const target = localDayStart(noonUtc, tz) + 1800;
+    const target = zonedEpoch(localDateString(noonUtc, tz), 1800, tz);
     const days = (target - nowEpoch) / 86400;
     if (days < 2 || days > 60) continue;
     const odds = computeOdds(STRIKE_GOES_AHEAD);

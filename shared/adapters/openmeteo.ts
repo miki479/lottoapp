@@ -3,7 +3,7 @@ import type { WeatherAdapter } from "./types.ts";
 
 /**
  * Open-Meteo hourly response → one observation per hour.
- * Request it with `timezone=auto` or a fixed zone; `utc_offset_seconds` converts local times back to UTC.
+ * Request it with `timezone=GMT` (no daylight-saving change can mislabel an hour); `utc_offset_seconds` converts local times back to UTC.
  */
 export const openMeteoAdapter: WeatherAdapter = (json, feedId) => {
   const j = json as {
@@ -19,7 +19,8 @@ export const openMeteoAdapter: WeatherAdapter = (json, feedId) => {
     if (typeof mm !== "number") return;
     const localAsUtc = Date.parse(`${t}:00Z`) / 1000;
     if (!Number.isFinite(localAsUtc)) return;
-    out.push({ feedId, hourStart: localAsUtc - j.utc_offset_seconds!, precipitationMm: mm });
+    // Open-Meteo stamps a precipitation value with the END of the hour it sums (the preceding hour): the hour that starts one hour earlier
+    out.push({ feedId, hourStart: localAsUtc - j.utc_offset_seconds! - 3600, precipitationMm: mm });
   });
   return out;
 };

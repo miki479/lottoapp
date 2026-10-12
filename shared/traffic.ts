@@ -1,5 +1,5 @@
 import { computeOdds, yesProbability, type History } from "./odds.ts";
-import { localDayStart } from "./time.ts";
+import { addDays, localDateString, zonedEpoch } from "./time.ts";
 
 /** One road measuring station of a traffic feed, as listed in the city file. */
 export interface TrafficStation {
@@ -68,13 +68,13 @@ export function buildTrafficMarkets(o: {
   history?: (key: string, hour: number, threshold: number) => History | null;
 }): TrafficMarketInsert[] {
   const out: TrafficMarketInsert[] = [];
-  const days = [localDayStart(o.nowEpoch, o.tz), localDayStart(o.nowEpoch + 86400, o.tz)];
-  for (const dayStart of days) {
+  const today = localDateString(o.nowEpoch, o.tz), days = [today, addDays(today, 1)];
+  for (const day of days) {
     for (const st of o.stations) {
       for (const dir of [1, 2] as const) {
         const free = st.freeKmh[dir - 1]!, thr = thresholdKmh(free);
         for (const [hStr, prior] of Object.entries(RUSH_HOURS)) {
-          const h = Number(hStr), hourStart = dayStart + h * 3600;
+          const h = Number(hStr), hourStart = zonedEpoch(day, h * 3600, o.tz);
           const target = hourStart + 1800;
           if (target - 600 <= o.nowEpoch + 300) continue;
           const p = yesProbability(o.history?.(`${st.id}|${dir}`, h, thr) ?? null, prior);

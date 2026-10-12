@@ -3,6 +3,7 @@ import type { Locale, Messages } from "../i18n/index.ts";
 import { fmtOdds, type MarketRow } from "../lib/format.ts";
 import type { LiveDelay, Pick } from "../lib/types.ts";
 
+const CLOCK = new Intl.DateTimeFormat("it-IT", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Europe/Rome" });
 /** At most this many trains on the board, like the rows of a real one. */
 const MAX_ROWS = 6, MAX_ROWS_PHONE = 4;
 
@@ -39,7 +40,7 @@ export function TrainBoard(p: { variant?: "full" | "card"; markets: MarketRow[];
   const late5 = rows.filter((r) => r.delay > 300).length;
   const avg = Math.max(0, Math.round(rows.reduce((a, r) => a + Math.max(0, r.delay), 0) / rows.length / 60));
   const sorted = [...rows].sort((a, b) => (tab === "late" ? b.delay - a.delay : Math.max(Number(b.m.odds_yes), Number(b.m.odds_no)) - Math.max(Number(a.m.odds_yes), Number(a.m.odds_no)))).slice(0, p.variant === "card" ? 3 : typeof matchMedia === "function" && matchMedia("(max-width: 720px)").matches ? MAX_ROWS_PHONE : MAX_ROWS);
-  const clock = new Intl.DateTimeFormat("it-IT", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Europe/Rome" }).format(new Date(p.now));
+  const clock = CLOCK.format(new Date(p.now));
   if (p.variant === "card") {
     // The small version that sits among the featured cards: same width as they are, just the trains, the time and the share of late ones.
     return (

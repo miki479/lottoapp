@@ -44,7 +44,7 @@ export function feedUrl(feed: FeedConfig, city: CityConfig): string {
       latitude: String(city.location.lat),
       longitude: String(city.location.lon),
       hourly: "precipitation",
-      timezone: city.timezone,
+      timezone: "GMT",
       forecast_days: "2",
       past_days: "1",
     });

@@ -1,4 +1,4 @@
-import { localDayStart, parseGtfsTime } from "./time.ts";
+import { gtfsDayStart, parseGtfsTime } from "./time.ts";
 
 /** Plausibility window for a computed delay. Outside it the reading is discarded, never used. */
 export const MAX_EARLY_SEC = -15 * 60;
@@ -17,7 +17,7 @@ export const MAX_LATE_SEC = 3 * 60 * 60;
  * @returns seconds late, or null if the reading is implausible
  */
 export function delayFromPosition(observedAt: number, scheduledGtfsTime: string, tz: string): number | null {
-  const dayStart = localDayStart(observedAt, tz);
+  const dayStart = gtfsDayStart(observedAt, tz);
   let scheduled = dayStart + parseGtfsTime(scheduledGtfsTime);
   // Trips after midnight are published as 24:xx on the previous service day.
   if (observedAt - scheduled > 12 * 3600) scheduled += 24 * 3600;

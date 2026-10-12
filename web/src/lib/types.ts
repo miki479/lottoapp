@@ -7,7 +7,7 @@ export interface SlipLeg { m: import("./format.ts").MarketRow; pick: Pick }
 export interface ParlayRow { id: string; boosted?: boolean; stake: number; odds: number; status: "open" | "won" | "lost" | "void"; payout: number; placed_at: string; settled_at: string | null; parlay_legs: { market_id: string; pick: Pick; odds: number; status: string; markets: { city_id: string; kind: string; params: Record<string, unknown> } }[] }
 export interface QuestRow { id: string; kind: "daily" | "once"; reward: number; done: boolean; claimed: boolean }
 export interface ActivityRow { kind: "placed" | "won" | "lost"; who: string | null; amount: number; market_kind: string; label: string; city_id: string; at: string }
-export interface ResultRow { id: string; city_id: string; kind: MarketRow["kind"]; status: string; outcome: string | null; void_reason: string | null; params: Record<string, unknown>; evidence: { delaySec?: number } | null }
+export interface ResultRow { target_at?: string; id: string; city_id: string; kind: MarketRow["kind"]; status: string; outcome: string | null; void_reason: string | null; params: Record<string, unknown>; evidence: { delaySec?: number } | null }
 export interface Profile {
   id: string; credits: number; city_id: string; locale: string; timezone: string; country: string | null;
   streak: number; best_streak: number; freezes: number; boosts: number; push_flash?: boolean; push_streak?: boolean; push_friends?: boolean; display_name: string | null; last_play_date: string | null;

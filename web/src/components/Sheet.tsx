@@ -25,7 +25,7 @@ export function Sheet({ onClose, label, children }: { onClose: () => void; label
   return createPortal(
     <div class="scrim" onClick={onClose}>
       <div class="sheet" ref={sheet} role="dialog" aria-modal="true" aria-label={label} onClick={(e) => e.stopPropagation()}>
-        <div class="grab" role="button" aria-label="Close" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} />
+        <div class="grab" aria-hidden="true" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} />
         {children}
       </div>
     </div>,

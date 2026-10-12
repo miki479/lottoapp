@@ -11,25 +11,29 @@ import { Sheet } from "./Sheet.tsx";
 /** What another player shows: level, streak, biggest win, trophies. Only what makes you want to catch up: never losses. */
 export function PublicProfile({ id, msg, locale, onClose, onToast }: { id: string; msg: Messages; locale: Locale; onClose: () => void; onToast: (s: string) => void }) {
   const t = msg.look;
-  const [d, setD] = useState<PublicProfileData | null>(null), [busy, setBusy] = useState(false);
-  useEffect(() => { forgetLook(id); loadPublicProfile(id).then(setD); }, [id]);
+  const [d, setD] = useState<PublicProfileData | null>(null), [busy, setBusy] = useState(false), [failed, setFailed] = useState(false);
+  useEffect(() => { forgetLook(id); loadPublicProfile(id).then((x) => { if (x) setD(x); else setFailed(true); }); }, [id]);
+  /** A reload that fails keeps what is already shown. */
+  const refresh = async () => { const x = await loadPublicProfile(id); if (x) setD(x); };
   const add = async () => {
     setBusy(true);
-    const { data } = await sb.rpc("request_friend", { p_user: id });
+    const { data, error } = await sb.rpc("request_friend", { p_user: id });
     setBusy(false);
+    if (error) { onToast(msg.errors.generic ?? ""); return; }
     onToast(data === "friends" ? t.nowFriends : t.requestSent);
-    setD(await loadPublicProfile(id));
+    await refresh();
   };
   const cancel = async () => {
     setBusy(true);
-    await sb.rpc("cancel_friend_request", { p_user: id });
+    const { error } = await sb.rpc("cancel_friend_request", { p_user: id });
     setBusy(false);
+    if (error) { onToast(msg.errors.generic ?? ""); return; }
     onToast(t.requestCancelled);
-    setD(await loadPublicProfile(id));
+    await refresh();
   };
   return (
     <Sheet onClose={onClose} label={d?.name ?? msg.frd.anon}>
-      {!d ? <div class="sk s" /> : (
+      {!d ? (failed ? <p class="hint">{msg.errors.generic}</p> : <div class="sk s" />) : (
         <>
           <div class="lkprev"><Look avatar={d.avatar} decoration={d.decoration} size={132} /><b style="font-size:20px">{d.name || msg.frd.anon}</b><span class="hint">{t.level(d.level)}</span></div>
           <div class="pstats">

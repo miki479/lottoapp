@@ -16,7 +16,7 @@ import { join } from "node:path";
 import { unzipSync } from "fflate";
 import { validateCity } from "../shared/cities.ts";
 import { activeServiceIds, buildDelayMarket, buildWeatherMarkets, localYmd, pickTargetStop, seededRandom } from "../shared/generator.ts";
-import { localDayStart, tzOffsetSec } from "../shared/time.ts";
+import { addDays, gtfsDayStart, localDateString, tzOffsetSec, zonedEpoch } from "../shared/time.ts";
 import { buildOccupancyMarket } from "../shared/occupancy.ts";
 import { DEFAULT_YES_PROBABILITY, learnedPrior } from "../shared/odds.ts";
 import { readdirSync } from "node:fs";
@@ -238,7 +238,7 @@ async function trainMarkets(feed) {
     const t = await vt(`andamentoTreno/${x.codOrigine}/${x.numeroTreno}/${x.dataPartenzaTreno}`).catch((e) => (console.error(e.message), null));
     if (!t?.fermate || t.provvedimento === 1) continue; // unknown or cancelled
     const dayEpoch = Math.floor(x.dataPartenzaTreno / 1000);
-    const base0 = localDayStart(dayEpoch, city.timezone);
+    const base0 = gtfsDayStart(dayEpoch, city.timezone);
     const names = new Map(t.fermate.map((f) => [f.id, f.stazione]));
     const stops = t.fermate
       .filter((f) => f.id && f.programmata && f.progressivo != null && f.programmata / 1000 > now + 900)
@@ -266,7 +266,7 @@ if (args.weather) {
   markets = [
     ...buildWeatherMarkets({ ...args, nowEpoch: now }),
     // tomorrow: just after local midnight, so every hour of that day is still open
-    ...buildWeatherMarkets({ ...args, nowEpoch: localDayStart(now + 86400, city.timezone) + 1 }),
+    ...buildWeatherMarkets({ ...args, nowEpoch: zonedEpoch(addDays(localDateString(now, city.timezone), 1), 1, city.timezone) }),
   ];
 } else {
   const feed = city.feeds.find((f) => f.id === args.feed);
