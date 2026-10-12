@@ -217,3 +217,18 @@ describe("live delay odds", () => {
     expect(liveYesProbability(0.06, 0, 300, 9, true)).toBeLessThan(0.1);
   });
 });
+
+import { buildTicketMarkets, isTicket, tmWindow } from "../shared/ticks.ts";
+describe("concert counts (Ticketmaster)", () => {
+  it("knows its series and window", () => {
+    expect(isTicket("tm:milano")).toBe(true); expect(isTicket("tm:nowhere")).toBe(false);
+    const w = tmWindow(Date.UTC(2026, 9, 14, 6) / 1000);
+    expect(w.from).toBe("2026-10-16T00:00:00Z"); expect(w.to).toBe("2026-11-12T23:59:59Z");
+  });
+  it("one question per place, a little above today's count, resolved with the same window", () => {
+    const now = Date.UTC(2026, 9, 13, 6) / 1000;
+    const ms = buildTicketMarkets({ it: 79, milano: 22, roma: 2 }, now);
+    expect(ms.map((m) => m.params.series)).toEqual(["tm:it", "tm:milano"]);
+    for (const m of ms) { expect(m.params.threshold).toBeGreaterThan(m.params.now as number); expect(m.params.from).toBe(tmWindow(Date.parse(m.target_at) / 1000).from); expect(m.odds_yes).toBeGreaterThanOrEqual(1.1); expect(m.category).toBe("culture"); }
+  });
+});

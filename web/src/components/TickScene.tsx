@@ -6,9 +6,24 @@ type Hint = "yes" | "no" | null | undefined;
 /** Scenes of the "number at an instant" questions: a coin price chart, an aurora sky (Kp index) and page-view bars. */
 export function TickScene({ m, hint, msg }: { m: MarketRow; hint: Hint; msg: Messages }) {
   const series = String(m.params.series ?? "");
-  const kind = series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("storm:") ? "storm" : series.startsWith("alert:") ? "alert" : series.startsWith("metal:") ? "metal" : series.startsWith("fuel:") ? "fuel" : series.startsWith("oil:") ? "oil" : "price";
+  const kind = series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("storm:") ? "storm" : series.startsWith("alert:") ? "alert" : series.startsWith("metal:") ? "metal" : series.startsWith("fuel:") ? "fuel" : series.startsWith("oil:") ? "oil" : series.startsWith("tm:") ? "concert" : "price";
   const cls = `mscene tick ${kind} ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`;
   const cap = kind === "kp" ? "Kp ≥ " + m.params.threshold : msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? "");
+  if (kind === "concert") {
+    const crowd = hint === "yes" ? 9 : hint === "no" ? 3 : 6;
+    return (
+      <div class={cls} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <defs><linearGradient id="tk-stage" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a1240" /><stop offset="1" stop-color="#3a1b5e" /></linearGradient></defs>
+          <rect width="320" height="84" fill="url(#tk-stage)" />
+          <g class="cn-beams"><path class="b1" d="M70 0L40 60H100Z" fill="#ff5fa8" opacity=".35" /><path class="b2" d="M160 0L130 60H190Z" fill="#7aa2ff" opacity=".35" /><path class="b3" d="M250 0L220 60H280Z" fill="#ffd24a" opacity=".35" /></g>
+          <rect x="60" y="46" width="200" height="8" rx="2" fill="#2b2250" /><rect x="150" y="30" width="20" height="16" rx="3" fill="#ff5fa8" />
+          <g fill="#0c0820">{Array.from({ length: 11 }, (_, i) => <g key={i} class={`cn-fan ${i < crowd ? "on" : ""}`} style={`--k:${i}`}><circle cx={20 + i * 28} cy="68" r="6" /><rect x={14 + i * 28} y="72" width="12" height="14" rx="5" /></g>)}</g>
+        </svg>
+        <b>{cap}</b>
+      </div>
+    );
+  }
   if (kind === "kp") {
     return (
       <div class={cls} aria-hidden="true">

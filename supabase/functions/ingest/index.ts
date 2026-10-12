@@ -7,6 +7,7 @@ import { parseTrainTripId } from "../_shared/shared/adapters/viaggiatreno.ts";
 import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
+import { TM_PLACES, buildTicketMarkets, isTicket, tmWindow, type TmPlace } from "../_shared/shared/ticks.ts";
 import { FUELS, METALS, OIL, buildFuelMarkets, buildMetalMarkets, buildOilMarkets, isFuel, isMetal, isOil, type FuelKey, type MetalKey, type OilKey } from "../_shared/shared/ticks.ts";
 import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildAlertMarkets, alertLevel, alertQueryDate, ALERT_AREAS, ALERT_HAZARDS, ALERT_URL, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
 import { buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, type Fixture, type Geo, type TableRow } from "../_shared/shared/sport.ts";
@@ -508,6 +509,17 @@ async function dayMove(sb: ReturnType<typeof db>, histSeries: string, now: numbe
 }
 const MOVE_TH: Record<string, number> = { btc: 3, eth: 4, xau: 1.2, xag: 2.5, xpt: 2.5, hg: 2.5 };
 
+/** Music events Ticketmaster lists in Italy (or one city) between two instants: only the total is read (one call, size 1). Null without a key. */
+async function tmCount(place: TmPlace, from: string, to: string): Promise<number | null> {
+  const key = (Deno.env.get("TICKETMASTER_KEY") ?? "").trim();
+  if (!key) return null;
+  const cfg = TM_PLACES[place] as { label: string; city?: string };
+  const q = new URLSearchParams({ apikey: key, countryCode: "IT", classificationName: "music", size: "1", startDateTime: from, endDateTime: to, ...(cfg.city ? { city: cfg.city } : {}) });
+  const j = await getJson(`https://app.ticketmaster.com/discovery/v2/events.json?${q}`);
+  const n = Number(j?.page?.totalElements);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
 async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
   const notes: string[] = [];
   // 1. Instants that have just passed: record the number once, as a fact.
@@ -557,6 +569,11 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       const metalDue = [...need.keys()].filter(isMetal).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
       if (metalDue.length) { const pr = await fetchMetals(now); for (const { x, at } of metalDue) { const v = pr[x.slice(6) as MetalKey]; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
     } catch (e) { notes.push(`metals: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      // concert counts: the number is read within minutes of the instant (a small pause between calls keeps under the provider's rate limit)
+      const tmDue = [...need.keys()].filter(isTicket).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      for (const { x, at } of tmDue.slice(0, 8)) { const w = tmWindow(at), v = await tmCount(x.slice(3) as TmPlace, w.from, w.to); if (v !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); await new Promise((r) => setTimeout(r, 250)); }
+    } catch (e) { notes.push(`tm: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     // fuel and oil are published once a day: look every 10 minutes, and the day's file must be the one the question is about
     if (Math.floor(now / 60) % 10 === 0) {
       try {
@@ -617,6 +634,15 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
         for (const [k, rows2] of Object.entries(o) as [OilKey, { date: string; value: number }[]][]) { if (rows2[0]) latest[k] = rows2[0]; for (const r of rows2) extraHist.push({ series: `oil:${k}`, at: `${r.date}T00:00:00Z`, value: r.value }); }
         markets.push(...buildOilMarkets(latest, now)); ok++;
       } catch (e) { notes.push(`oil: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    }
+    // once a day (06:00 UTC), or whenever none is open (first run, a missed day): a concert-count question per place
+    const tmOpen = (Deno.env.get("TICKETMASTER_KEY") ?? "").trim() ? ((await sb.from("markets").select("id", { count: "exact", head: true }).like("feed_id", "tick-tm:%").eq("status", "open").gt("closes_at", new Date(now * 1000).toISOString())).count ?? 0) : -1;
+    if (tmOpen === 0 || (tmOpen > 0 && Math.floor(now / 3600) % 24 === 6)) {
+      try {
+        const at = Math.floor(now / 86400) * 86400 + 86400 + 6 * 3600, w = tmWindow(at), counts: Partial<Record<TmPlace, number>> = {};
+        for (const id of Object.keys(TM_PLACES) as TmPlace[]) { const n = await tmCount(id, w.from, w.to); if (n !== null) counts[id] = n; await new Promise((r) => setTimeout(r, 250)); }
+        markets.push(...buildTicketMarkets(counts, now)); ok++;
+      } catch (e) { notes.push(`tm: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     }
     if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
     notes.push(`${markets.length} offered`);

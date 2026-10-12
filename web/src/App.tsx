@@ -395,6 +395,7 @@ export function App() {
       { name: "Ministero delle Infrastrutture e dei Trasporti — Scioperi", license: "Dati pubblici del MIT (nessuna licenza dichiarata)", licenseUrl: "https://scioperi.mit.gov.it", url: "https://scioperi.mit.gov.it" },
       { name: CROWD_SOURCE.name, via: CROWD_SOURCE.via, license: CROWD_SOURCE.license, licenseUrl: CROWD_SOURCE.licenseUrl, url: CROWD_SOURCE.url },
       { name: "Allerta Meteo Emilia-Romagna", license: "CC BY-NC-SA 4.0 (non commercial use)", licenseUrl: "https://allertameteo.regione.emilia-romagna.it/note-legali", url: "https://allertameteo.regione.emilia-romagna.it/" },
+      { name: "Ticketmaster", license: "Discovery API, free key; event data © Ticketmaster (see their terms of use)", licenseUrl: "https://developer.ticketmaster.com/support/terms-of-use/", url: "https://www.ticketmaster.it" },
       { name: "TheSportsDB", license: "Free API key (see their terms); data © its contributors", licenseUrl: "https://www.thesportsdb.com/api.php", url: "https://www.thesportsdb.com" },
       { name: "Gold API (gold-api.com)", license: "Free price API, terms of service", licenseUrl: "https://gold-api.com/terms", url: "https://gold-api.com" },
       { name: "Ministero delle Imprese e del Made in Italy — Osservatorio prezzi carburanti", license: "IODL 2.0 (open data)", licenseUrl: "https://www.dati.gov.it/content/italian-open-data-license-v20", url: "https://www.mimit.gov.it/it/prezzo-medio-carburanti" },

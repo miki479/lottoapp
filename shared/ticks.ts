@@ -37,7 +37,16 @@ export const isFuel = (s: string) => s.startsWith("fuel:") && s.slice(5) in FUEL
 export const OIL = { brent: { label: "Brent", eia: "RBRTE" }, wti: { label: "WTI", eia: "RWTC" } } as const;
 export type OilKey = keyof typeof OIL;
 export const isOil = (s: string) => s.startsWith("oil:") && s.slice(4) in OIL;
-export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isStorm(s) || isMetal(s);
+/** Number of music events Ticketmaster lists in Italy (or in one city) for a fixed window of dates: new tours are announced all the time. */
+export const TM_PLACES = { it: { label: "Italia" }, milano: { label: "Milano", city: "Milano" }, roma: { label: "Roma", city: "Roma" }, torino: { label: "Torino", city: "Torino" }, firenze: { label: "Firenze", city: "Firenze" }, napoli: { label: "Napoli", city: "Napoli" }, padova: { label: "Padova", city: "Padova" }, verona: { label: "Verona", city: "Verona" } } as const;
+export type TmPlace = keyof typeof TM_PLACES;
+export const isTicket = (s: string) => s.startsWith("tm:") && s.slice(3) in TM_PLACES;
+/** The dates the count is about: from two days after the instant, for four weeks (the same window is asked again when the instant comes). */
+export function tmWindow(at: number): { from: string; to: string } {
+  const start = Math.floor(at / 86400) * 86400 + 2 * 86400, iso = (e: number) => new Date(e * 1000).toISOString().replace(/\.\d+Z$/, "Z");
+  return { from: iso(start), to: iso(start + 28 * 86400 - 1) };
+}
+export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isStorm(s) || isMetal(s) || isTicket(s);
 
 /** Saffir-Simpson scale by sustained wind in knots (1 min average), as NHC reports it. */
 export const STORM_STEPS: { kt: number; label: string }[] = [{ kt: 34, label: "TS" }, { kt: 64, label: "Cat. 1" }, { kt: 83, label: "Cat. 2" }, { kt: 96, label: "Cat. 3" }, { kt: 113, label: "Cat. 4" }, { kt: 137, label: "Cat. 5" }];
@@ -53,6 +62,7 @@ export function tickDef(series: string): TickDef | null {
   if (isAlert(series)) return { category: "nature", label: "Allerta", unit: "", min: 0, max: 3 };
   if (isStorm(series)) return { category: "nature", label: "Storm", unit: " kt", min: 0, max: 200 };
   if (isSteam(series)) return { category: "culture", label: STEAM[series.slice(6) as keyof typeof STEAM], unit: "", min: 0, max: 100_000_000 };
+  if (isTicket(series)) return { category: "culture", label: `Concerti ${TM_PLACES[series.slice(3) as TmPlace].label}`, unit: "", min: 0, max: 100_000 };
   if (series === "kp") return { category: "nature", label: "Kp", unit: "", min: 0, max: 9 };
   if (series.startsWith("wiki:")) return { category: "culture", label: series.slice(5).replace(/_/g, " "), unit: "", min: 0, max: 200_000_000 };
   return null;
@@ -61,7 +71,7 @@ export function tickDef(series: string): TickDef | null {
 export interface TickMarketInsert {
   city_id: "world"; category: TickCategory; kind: "tick_gt"; feed_id: string;
   lat?: number; lon?: number;
-  params: { series: string; label: string; threshold: number; unit: string; forecast: number; at: number; note?: string; digits?: number; local?: "true" };
+  params: { series: string; label: string; threshold: number; unit: string; forecast: number; at: number; note?: string; digits?: number; local?: "true"; from?: string; to?: string; now?: number };
   closes_at: string; target_at: string; deadline_at: string; odds_yes: number; odds_no: number; dedupe_key: string;
 }
 
@@ -151,6 +161,7 @@ export function tickSigma(series: string, ref: number, hours: number): number {
   if (isFuel(series)) return ref * 0.002 * Math.sqrt(Math.max(1, hours / 24));
   if (isOil(series)) return ref * 0.0185 * Math.sqrt(Math.max(1, hours / 24));
   if (isSteam(series)) return ref * 0.07 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4);
+  if (isTicket(series)) return Math.max(1.2, ref * 0.02 * Math.sqrt(Math.max(1, hours) / 24));
   return ref * 0.15;
 }
 
@@ -160,6 +171,7 @@ export function tickStep(series: string, ref: number): number {
   if (isMetal(series)) return METALS[series.slice(6) as MetalKey].step;
   if (isFuel(series)) return 0.005;
   if (isOil(series)) return 0.5;
+  if (isTicket(series)) return 1;
   if (isSteam(series)) return ref >= 500_000 ? 25_000 : ref >= 100_000 ? 10_000 : ref >= 20_000 ? 1_000 : 500;
   return ref >= 200_000 ? 10_000 : ref >= 50_000 ? 5_000 : ref >= 10_000 ? 1_000 : 500;
 }
@@ -318,6 +330,24 @@ export function buildAlertMarkets(now: number, current: Record<string, number>):
         }
       }
     }
+  }
+  return out;
+}
+
+/**
+ * "Will Ticketmaster list at least N music events in <place> for the four weeks starting two days after the instant?" One question per place,
+ * at 06:00 UTC the next day; N is a little above today's count (new tours are announced all the time, a few are cancelled).
+ */
+export function buildTicketMarkets(counts: Partial<Record<TmPlace, number>>, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  const at = Math.floor(now / 86400) * 86400 + 86400 + 6 * H;
+  const hours = (at - now) / H, win = tmWindow(at);
+  for (const [id, n] of Object.entries(counts) as [TmPlace, number][]) {
+    if (!(n >= 3)) continue;
+    const series = `tm:${id}`, def = tickDef(series)!;
+    const drift = n * 0.012 * (hours / 24), thr = Math.max(n + 1, Math.round(n + Math.max(1, n * 0.03)));
+    const m = tickMarket(series, def, n + drift, thr, tickSigma(series, n, hours), at, at - 10 * 60, at + 3 * H);
+    out.push({ ...m, params: { ...m.params, from: win.from, to: win.to, now: n } });
   }
   return out;
 }

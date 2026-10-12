@@ -37,6 +37,10 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
   }
   if (m.kind === "match_bet" && /^(pg|pa|ps):/.test(String(m.params.bet))) return msg.question.player({ kind: String(m.params.bet).slice(0, 2) as "pg", name: String((m.params.player as { name?: string } | undefined)?.name ?? ""), home: String(m.params.home), away: String(m.params.away), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
   if (m.kind === "match_bet") return msg.question.match({ bet: m.params.bet as "home_win", home: String(m.params.home), away: String(m.params.away), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
+  if (m.kind === "tick_gt" && String(m.params.series).startsWith("tm:")) {
+    const dm = (iso: unknown) => new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(String(iso)));
+    return msg.question.concerts({ place: String(m.params.label ?? "").replace(/^Concerti /, ""), from: dm(m.params.from), to: dm(m.params.to), value: String(Math.round(Number(m.params.threshold))), time: formatWhen(m.target_at, locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
+  }
   if (m.kind === "tick_gt") {
     const series = String(m.params.series), at = m.target_at, thr = Number(m.params.threshold);
     const nf = new Intl.NumberFormat(INTL_TAG[locale], { maximumFractionDigits: series === "kp" ? 0 : 0 });
