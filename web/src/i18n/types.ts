@@ -117,6 +117,7 @@ export interface Messages {
     streak: (n: number) => string; titles: Record<string, string>; legend: string;
     flash: { title: string; soon: (t: string) => string; live: (left: string) => string; missed: string; prize: (c: string, b: number) => string; claim: string; titles: Record<string, string>; got: (c: string, b: number) => string };
   };
+  look: { title: string; avatars: string; apply: string; saved: string; none: string; level: (n: number) => string; xp: (a: number, b: number) => string; unlockAt: (n: number) => string; dropOnly: string; next: (n: number, name: string) => string; newDrop: (name: string) => string; levelUp: (n: number, name: string | null) => string; change: string; locked: string; view: string; addFriend: string; sent: string; accept: string; decline: string; isFriend: string; streak: string; bestWin: string; monthWins: string; trophies: string; balance: (v: string) => string; balanceLabel: string; requests: string; requestSent: string; nowFriends: string; noTrophies: string; av: Record<string, string>; deco: Record<string, string>; rarity: Record<string, string> };
   frd: {
     boardTab: string; groupsTab: string; inviteTitle: string; inviteBody: string; inviteBtn: string; invitedCount: (n: number) => string;
     empty: string; emptyBody: string; anon: string; remove: string; removeAsk: (n: string) => string; removeYes: string; removeNo: string; removed: string; challenge: string; boardHint: string;

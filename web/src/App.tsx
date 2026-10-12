@@ -25,6 +25,10 @@ import { ChallengeSheet, type Challenge } from "./components/ChallengeSheet.tsx"
 import { AdminPage } from "./components/AdminPage.tsx";
 import { Sidebar, TabBar, type Screen } from "./components/Nav.tsx";
 import { NicknameSheet } from "./components/NicknameSheet.tsx";
+import { LookSheet } from "./components/LookSheet.tsx";
+import { PublicProfile } from "./components/PublicProfile.tsx";
+import { loadMyProgress, type MyProgress } from "./lib/looks.ts";
+import { DECORATIONS } from "../../shared/looks";
 import { ResultScreen } from "./components/ResultScreen.tsx";
 import { Toast } from "./components/Toast.tsx";
 import type { TopItem } from "./components/TopCards.tsx";
@@ -80,6 +84,7 @@ export function App() {
   const [fresh, setFresh] = useState<Set<string>>(new Set());
   const [email, setEmail] = useState<string | null>(null);
   const [registered, setRegistered] = useState(false);
+  const [look, setLook] = useState<MyProgress | null>(null), [lookOpen, setLookOpen] = useState(false), [pubUser, setPubUser] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [sheet, setSheet] = useState<{ m: MarketRow; pick: Pick } | null>(null);
   const [auth, setAuth] = useState(false);
@@ -145,6 +150,17 @@ export function App() {
   }, []);
 
   // ---------- data loading ----------
+  /** Level and look; a level reached since the last visit is announced once, with the ring it unlocks. */
+  const loadLook = useCallback(async () => {
+    const p = await loadMyProgress(); if (!p) return;
+    setLook(p);
+    const before = Number(store.get("lvl") ?? 0);
+    if (before > 0 && p.level > before) {
+      const got = DECORATIONS.filter((d) => d.level !== undefined && d.level > before && d.level <= p.level).sort((a, b) => b.level! - a.level!)[0];
+      flash(msg.look.levelUp(p.level, got ? msg.look.deco[got.id] ?? got.id : null)); haptic.success();
+    }
+    if (p.level !== before) store.set("lvl", String(p.level));
+  }, [msg]);
   const loadProfile = useCallback(async () => { const { data } = await sb.from("profiles").select(PROFILE_COLS).maybeSingle(); if (data) setProfile(data as Profile); return data as Profile | null; }, []);
   const loadProgress = useCallback(async (zone = tz) => {
     const { data } = await sb.from("daily_progress").select("day,bus,train,weather,traffic,bonus_claimed").order("day", { ascending: false }).limit(1).maybeSingle();
@@ -249,6 +265,7 @@ export function App() {
     const u = new URL(location.href); u.searchParams.delete("c"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
   }, []);
   useEffect(() => { loadChallenges(); }, [registered]);
+  useEffect(() => { if (registered) loadLook(); else setLook(null); }, [registered, profile?.credits]);
   useEffect(() => { if (screen === "bets") loadChallenges(); }, [screen]);
   useEffect(() => { if (ready) loadBets(); }, [betsLimit]);
   useEffect(() => { if (!registered) return; return every(loadChallenges, 120_000); }, [registered, loadChallenges]);
@@ -515,14 +532,16 @@ export function App() {
   const claimFlash = async () => {
     const { data, error } = await sb.rpc("claim_flash");
     if (error) { flash(msg.errors.generic!, "err"); return; }
-    const r = data as { credits: number; boosts: number };
+    const r = data as { credits: number; boosts: number; decoration?: string | null };
+    if (r.decoration) setTimeout(() => { flash(msg.look.newDrop(msg.look.deco[r.decoration!] ?? r.decoration!)); loadLook(); }, 2600);
     if (r.credits > 0) { flash(msg.dm.flash.got(`+${money(r.credits, locale)}`, r.boosts)); haptic.success(); }
     await Promise.all([loadProfile(), loadQuests()]);
   };
   const claimChest = async () => {
     const { data, error } = await sb.rpc("claim_chest");
     if (error) { flash(msg.errors.generic!, "err"); return; }
-    const r = data as { credits: number; boosts: number };
+    const r = data as { credits: number; boosts: number; decoration?: string | null };
+    if (r.decoration) setTimeout(() => { flash(msg.look.newDrop(msg.look.deco[r.decoration!] ?? r.decoration!)); loadLook(); }, 2600);
     if (r.credits > 0) { flash(msg.dm.chestOpened(`+${money(r.credits, locale)}`, r.boosts)); haptic.success(); }
     await Promise.all([loadProfile(), loadQuests()]);
   };
@@ -570,9 +589,9 @@ export function App() {
         <main class="content">
           {screen === "home" && <Home onSeries={(s) => setSeriesMaker({ show: s ?? null })} occ={occ} friendBets={friendBets} details={detailsOn} stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets canMore={bets.length >= betsLimit} onMore={() => setBetsLimit((n) => n + 60)} invites={invites} challenges={myChallenges} onChallenge={(code) => setChallengeCode(code)} parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
-          {screen === "ranking" && <Ranking referral={referral} onShareReferral={shareReferral} onChallenge={() => (registered ? setChallengeMaker(true) : setAuth(true))} home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
+          {screen === "ranking" && <Ranking onProfile={setPubUser} referral={referral} onShareReferral={shareReferral} onChallenge={() => (registered ? setChallengeMaker(true) : setAuth(true))} home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
           {screen === "admin" && <AdminPage msg={msg} onBack={() => go("profile")} />}
-          {screen === "profile" && <ProfileView homeNode={<CityChip msg={msg} locale={locale} value={home} onChange={changeHome} />} onAdmin={() => go("admin")} giftCard={giftCard} onGiftSeen={() => { store.set("giftcard", "0"); setGiftCard(false); }} push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, friends: !!profile?.push_friends, setPrefs: async (f: boolean, s: boolean, fr: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s, p_friends: fr }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
+          {screen === "profile" && <ProfileView look={look} onLook={() => setLookOpen(true)} homeNode={<CityChip msg={msg} locale={locale} value={home} onChange={changeHome} />} onAdmin={() => go("admin")} giftCard={giftCard} onGiftSeen={() => { store.set("giftcard", "0"); setGiftCard(false); }} push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, friends: !!profile?.push_friends, setPrefs: async (f: boolean, s: boolean, fr: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s, p_friends: fr }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
         </main>
       </div>
       <TabBar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} />
@@ -589,6 +608,8 @@ export function App() {
       {sheet && <BetSheet now={now} occ={occ[sheet.m.id]} mm={outlook[sheet.m.id]} boosts={profile?.boosts ?? 0} key={sheet.m.id} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
       {parlayOpen && slip.length > 0 && <ParlaySheet boosts={profile?.boosts ?? 0} legs={slip} msg={msg} locale={locale} credits={profile?.credits ?? 0} needJoin={needJoin} googleOn={googleOn} onClose={() => setParlayOpen(false)} onRemove={(id) => setSlip((s) => s.filter((l) => l.m.id !== id))} onClear={() => { setSlip([]); setParlayOpen(false); }} onJoined={async () => {}} onPlace={placeParlay} />}
       {auth && <AuthSheet msg={msg} guest={!registered} googleOn={googleOn} onClose={() => setAuth(false)} onDone={(text) => { setAuth(false); flash(text); }} />}
+      {lookOpen && look && <LookSheet progress={look} msg={msg} onClose={() => setLookOpen(false)} onSaved={(p) => { setLook(p); flash(msg.look.saved); }} />}
+      {pubUser && <PublicProfile id={pubUser} msg={msg} locale={locale} onClose={() => setPubUser(null)} onToast={flash} />}
       {nick && <NicknameSheet msg={msg} current={profile?.display_name ?? null} onClose={() => setNick(false)} onSaved={(n) => { setNick(false); loadProfile(); loadQuests(); flash(n); }} />}
       {resultBet && <ResultScreen bet={resultBet} msg={msg} locale={locale} remaining={Math.max(0, unseen.filter((b) => b.id !== resultBet.id).length)} onClose={closeResult} onShare={shareResult} onNext={() => { markSeen(resultBet.id); const next = unseen.find((b) => b.id !== resultBet.id); setResultBet(next ?? null); }} />}
       {toast && <Toast text={toast.text} kind={toast.kind} />}

@@ -8,12 +8,14 @@ import type { GroupRow, LbRow, Profile } from "../lib/types.ts";
 import type { Place } from "../lib/places.ts";
 import { HomePlaceField } from "../components/HomePlaceField.tsx";
 import { loadFriends, type FriendRow } from "../lib/friends.ts";
+import { Look } from "../components/looks/Look.tsx";
+import { useLooks } from "../lib/looks.ts";
 
 type Tab = "world" | "local" | "friends";
 type Local = "near" | "city" | "country";
 const RADII = [10, 30, 50, 100];
 
-export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | null; registered: boolean; onToast: (s: string, kind?: "ok" | "err") => void; onAuth: () => void; onNickname: () => void; home: Place | null; onHome: (pl: Place | null) => void; onRank: (rank: number | null, scope: string) => void; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; onChallenge: () => void }) {
+export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | null; registered: boolean; onToast: (s: string, kind?: "ok" | "err") => void; onAuth: () => void; onNickname: () => void; home: Place | null; onHome: (pl: Place | null) => void; onRank: (rank: number | null, scope: string) => void; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; onChallenge: () => void; onProfile: (id: string) => void }) {
   const m = p.msg.ranking;
   const [tab, setTab] = useState<Tab>("world");
   const [local, setLocal] = useState<Local>("near");
@@ -29,6 +31,12 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
   const board = tab === "friends" && fsub === "board";
   const refreshFriends = async () => setFriends(await loadFriends());
   useEffect(() => { if (p.registered && board) refreshFriends(); }, [p.registered, board]);
+  const [reqs, setReqs] = useState<{ user_id: string; display_name: string | null }[]>([]);
+  const loadReqs = async () => { const { data } = await sb.rpc("friend_requests_in"); setReqs((data ?? []) as { user_id: string; display_name: string | null }[]); };
+  useEffect(() => { if (p.registered && board) loadReqs(); }, [p.registered, board]);
+  const answer = async (id: string, ok: boolean) => { await sb.rpc("respond_friend", { p_user: id, p_accept: ok }); if (ok) p.onToast(p.msg.look.nowFriends); await Promise.all([loadReqs(), refreshFriends()]); };
+  const looks = useLooks([...(rows ?? []).map((r) => r.user_id), ...(friends ?? []).map((r) => r.user_id)]);
+  const face = (id: string) => { const l = looks[id]; return l ? <Look avatar={l.avatar} decoration={l.decoration} size={36} /> : <span class="lkph" />; };
   const removeFriend = async (id: string) => { await sb.rpc("remove_friend", { p_friend: id }); setAskId(null); p.onToast(p.msg.frd.removed); await refreshFriends(); };
 
   const loadGroups = async () => {
@@ -79,6 +87,11 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
       )}
       {board && (
         <>
+          {reqs.length > 0 && (
+            <section class="card stack reqcard"><b>{p.msg.look.requests}</b>
+              {reqs.map((r) => <div class="reqrow" key={r.user_id}>{face(r.user_id)}<button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name || p.msg.frd.anon}</b></button><button class="btn secondary" onClick={() => answer(r.user_id, false)}>{p.msg.look.decline}</button><button class="btn primary" onClick={() => answer(r.user_id, true)}>{p.msg.look.accept}</button></div>)}
+            </section>
+          )}
           <p class="detail">{p.msg.frd.boardHint}</p>
           {friends !== null && friends.length <= 1 && INVITE}
           {friends === null && [0, 1, 2].map((i) => <div class="sk s" key={i} />)}
@@ -88,7 +101,8 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
               {friends.map((r) => (
                 <div class={`row ${r.is_me ? "me" : ""}`} key={r.user_id}>
                   <span class={`rank ${r.rank <= 3 ? "top" : ""}`}>{r.rank}</span>
-                  <span class="grow"><b>{r.display_name || p.msg.frd.anon}</b>{r.is_me && <span class="detail"> · {m.you}</span>}</span>
+                  {face(r.user_id)}
+                  <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name || p.msg.frd.anon}</b>{r.is_me && <span class="detail"> · {m.you}</span>}</button>
                   {r.prev_rank !== r.rank && <span class={`mv ${r.rank < r.prev_rank ? "up" : "down"}`} aria-label={r.rank < r.prev_rank ? "up" : "down"}>{r.rank < r.prev_rank ? <ArrowUp size={13} strokeWidth={3} /> : <ArrowDown size={13} strokeWidth={3} />}{Math.abs(r.prev_rank - r.rank)}</span>}
                   <span class={`score big num ${r.score > 0 ? "pos" : r.score < 0 ? "neg" : "zero"}`}>{r.score > 0 ? <ArrowUp size={15} strokeWidth={3} /> : r.score < 0 ? <ArrowDown size={15} strokeWidth={3} /> : null}{r.score > 0 ? "+" : r.score < 0 ? "−" : ""}{Math.abs(r.score)}</span>
                   {!r.is_me && <button class="iconbtn frdx" aria-label={`${p.msg.frd.remove} ${r.display_name ?? ""}`} onClick={() => setAskId(askId === r.user_id ? null : r.user_id)}><UserMinus size={16} /></button>}
@@ -119,7 +133,8 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
           {rows.map((r) => (
             <div class={`row ${r.is_me ? "me" : ""}`} key={r.user_id}>
               <span class={`rank ${r.rank <= 3 ? "top" : ""}`}>{r.rank}</span>
-              <span class="grow"><b>{r.display_name}</b>{r.is_me && <span class="detail"> · {m.you}</span>}</span>
+              {face(r.user_id)}
+              <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name}</b>{r.is_me && <span class="detail"> · {m.you}</span>}</button>
               <span class={`score num ${r.score > 0 ? "pos" : r.score < 0 ? "neg" : "zero"}`}>{r.score > 0 ? <TrendingUp size={14} /> : r.score < 0 ? <TrendingDown size={14} /> : null}{r.score > 0 ? "+" : r.score < 0 ? "−" : ""}{Math.abs(r.score)}</span>
             </div>
           ))}

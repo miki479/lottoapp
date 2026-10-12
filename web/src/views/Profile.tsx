@@ -9,10 +9,14 @@ import { sb } from "../lib/api.ts";
 import { HistoryCard } from "../components/HistoryCard.tsx";
 import type { MyStats, Profile, Progress } from "../lib/types.ts";
 import { INTL_TAG } from "../i18n/index.ts";
+import { Look } from "../components/looks/Look.tsx";
+import { levelProgress } from "../../../shared/looks";
+import type { MyProgress } from "../lib/looks.ts";
 
-const TROPHY_ICON: Record<TrophyId, LucideIcon> = { first_win: Sparkles, all_rings: Target, long_shot: Telescope, rain_man: Umbrella, streak_7: CalendarCheck, train_whisperer: TrainFront, high_roller: Gem, streak_30: Medal, ghost_feed: Ghost };
+export const TROPHY_ICON: Record<TrophyId, LucideIcon> = { first_win: Sparkles, all_rings: Target, long_shot: Telescope, rain_man: Umbrella, streak_7: CalendarCheck, train_whisperer: TrainFront, high_roller: Gem, streak_30: Medal, ghost_feed: Ghost };
 
 export function ProfileView(p: {
+  look: MyProgress | null; onLook: () => void;
   onAdmin: () => void; homeNode?: preact.ComponentChildren; missionsNode?: preact.ComponentChildren;
   giftCard: boolean; onGiftSeen: () => void; push: { on: boolean; denied: boolean; toggle: () => void; flash: boolean; streak: boolean; friends: boolean; setPrefs: (f: boolean, s: boolean, fr: boolean) => void } | null; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
   onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => void; onDelete: () => Promise<void>; sources: { name: string; via?: string; license: string; licenseUrl: string; url: string }[];
@@ -45,10 +49,11 @@ export function ProfileView(p: {
         <div class="stack">
           <section class="card stack">
             <div style="display:flex;align-items:center;gap:14px">
-              <span class="rank top" style="width:56px;height:56px;border-radius:18px;font-size:22px"><User size={26} /></span>
+              {p.look ? <button class="lkme" onClick={p.onLook} aria-label={p.msg.look.change}><Look avatar={p.look.avatar} decoration={p.look.decoration} size={72} /><span class="lvl num">{p.look.level}</span></button> : <span class="rank top" style="width:56px;height:56px;border-radius:18px;font-size:22px"><User size={26} /></span>}
               <div style="min-width:0;flex:1"><b style="font-size:18px;display:block;overflow:hidden;text-overflow:ellipsis">{name}</b><span class="hint">{p.registered ? p.email : m.guest}</span>{p.homeNode}</div>
               {p.registered && <button class="iconbtn" onClick={p.onNickname} aria-label={m.nickname.title}><Pencil size={20} /></button>}
             </div>
+            {p.look && (() => { const lp = levelProgress(p.look.xp); return <button class="lkxp" onClick={p.onLook}><span class="xpbar"><i style={`width:${Math.round(lp.ratio * 100)}%`} /></span><span class="hint num">{p.msg.look.level(lp.level)} · {p.msg.look.xp(lp.into, lp.need)}</span></button>; })()}
             {!p.registered && <p class="hint">{m.guestHint}</p>}
             {!p.registered ? <button class="btn primary wide" onClick={p.onAuth}>{m.signIn}</button> : !p.profile?.display_name && <button class="btn secondary wide" onClick={p.onNickname}>{m.nickname.title}</button>}
           </section>
