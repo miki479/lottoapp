@@ -166,17 +166,21 @@ async function trainMarkets(feed) {
   const base = (process.env.VIAGGIATRENO_BASE_URL ?? feed.url).replace(/\/$/, "");
   const headers = { "User-Agent": "LateLotto-markets/0.1", ...(process.env.RELAY_SECRET ? { "x-relay-secret": process.env.RELAY_SECRET } : {}) };
   const vt = async (path) => {
+    if (pause) await new Promise((r) => setTimeout(r, pause));
     const res = await fetch(`${base}/${path}`, { headers, signal: AbortSignal.timeout(20000) });
     const text = await res.text();
     if (!res.ok || /Access Denied/i.test(text)) throw new Error(`ViaggiaTreno ${path.split("/")[0]}: HTTP ${res.status} ${text.slice(0, 80).replace(/s+/g, " ")}`);
     return text.trim() ? JSON.parse(text) : null;
   };
-  if (!feed.stations?.length) throw new Error(`feed ${feed.id} has no "stations"`);
+  const stations = process.env.VT_STATIONS ? process.env.VT_STATIONS.split(",") : feed.stations;
+  const slots = process.env.VT_SLOTS ? JSON.parse(process.env.VT_SLOTS) : [0, 2, 4, 6, 8, 10, 12];
+  const pause = Number(process.env.VT_DELAY_MS ?? 0);
+  if (!stations?.length) throw new Error(`feed ${feed.id} has no "stations"`);
 
   // Trains that have not left yet, from the boards over the next hours.
   const candidates = new Map();
-  for (const st of feed.stations) {
-    for (const h of [0, 2, 4, 6, 8, 10, 12]) {
+  for (const st of stations) {
+    for (const h of slots) {
       const board = (await vt(`partenze/${st}/${vtDate(now + h * 3600)}`).catch((e) => (console.error(e.message), null))) ?? [];
       for (const x of board) {
         if (!x.nonPartito || !x.numeroTreno || !x.dataPartenzaTreno || !x.codOrigine) continue;

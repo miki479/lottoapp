@@ -1,0 +1,65 @@
+{
+  "id": "italia",
+  "country": "IT",
+  "name": {
+    "it": "Italia",
+    "en-US": "Italy",
+    "en-GB": "Italy",
+    "ja": "イタリア"
+  },
+  "timezone": "Europe/Rome",
+  "defaultLocale": "it",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 42.5,
+    "lon": 12.5
+  },
+  "categories": {
+    "bus": {
+      "enabled": false
+    },
+    "train": {
+      "enabled": false
+    },
+    "weather": {
+      "enabled": false
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "it-train-viaggiatreno",
+      "category": "train",
+      "type": "viaggiatreno",
+      "url": "https://www.viaggiatreno.it/infomobilitamobile/resteasy/viaggiatreno",
+      "requiresKey": null,
+      "pollSeconds": 120,
+      "staleAfterSeconds": 600,
+      "licenseVerified": false,
+      "attribution": {
+        "name": "ViaggiaTreno (Trenitalia / RFI)",
+        "license": "Nessuna licenza: API non ufficiale e non documentata",
+        "licenseUrl": "http://www.viaggiatreno.it/",
+        "url": "http://www.viaggiatreno.it/"
+      },
+      "note": "Whole-Italy trains (unofficial ViaggiaTreno, no licence): private test only, run from the owner's PC with scripts/viaggiatreno-local.mjs. Replace with the official feed when Trenitalia/RFI answer.",
+      "stations": [
+        "S08409",
+        "S08217",
+        "S01700",
+        "S09218",
+        "S06421",
+        "S05043",
+        "S00219",
+        "S02593"
+      ]
+    }
+  ],
+  "futureFeeds": []
+}

@@ -54,4 +54,4 @@ jobs:
         env:
           VIAGGIATRENO_BASE_URL: ${{ secrets.VIAGGIATRENO_BASE_URL }}
           RELAY_SECRET: ${{ secrets.RELAY_SECRET }}
-        run: node scripts/generate-markets.mjs --city rome --feed it-train-viaggiatreno --max 30 --apply
+        run: node scripts/generate-markets.mjs --city italia --feed it-train-viaggiatreno --max 30 --apply
