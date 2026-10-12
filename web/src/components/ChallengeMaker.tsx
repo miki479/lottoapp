@@ -81,6 +81,7 @@ export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: b
       </>}
       <span class="detail">{f.stake}</span>
       <div class="mkchips" style={pub ? "opacity:.5;pointer-events:none" : ""}>{STAKES.map((s) => <button key={s} class={`mkchip ${stake === s ? "on" : ""}`} aria-pressed={stake === s} onClick={() => setStake(s)}>{s === 0 ? f.noStake : s}</button>)}</div>
+      {!pub && <input class="field" type="number" inputMode="numeric" min={0} max={1000} step={1} placeholder={f.customStake} value={STAKES.includes(stake) ? "" : stake} onInput={(e) => { const n = Math.floor(Number((e.target as HTMLInputElement).value)); setStake(Number.isFinite(n) ? Math.max(0, Math.min(1000, n)) : 0); }} />}
       {!pub && stake > 0 && <p class="hint">{f.stakeNote}</p>}
       <p class="hint">{f.rules}</p>
       {err && <p class="formerr" role="alert">{err}</p>}
