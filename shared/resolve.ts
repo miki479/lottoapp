@@ -33,6 +33,8 @@ export interface ResolveInput {
 /** A bus delay reading counts only if taken within this window around the scheduled time. */
 const BUS_WINDOW_BEFORE_SEC = 5 * 60;
 const BUS_WINDOW_AFTER_SEC = 15 * 60;
+/** A train's arrival is recorded when it happens: a very late train must still be read, not voided. */
+const TRAIN_WINDOW_AFTER_SEC = 60 * 60;
 /**
  * Position feeds are sampled every ~30 s and a bus can pass a stop between two samples.
  * A reading taken at the event's stop, or at most this many stops later, still counts.
@@ -86,7 +88,7 @@ type Reading =
 
 function delayReading(event: DelayEvent, input: ResolveInput): Reading {
   const lo = event.targetAt - BUS_WINDOW_BEFORE_SEC;
-  const hi = event.targetAt + BUS_WINDOW_AFTER_SEC;
+  const hi = event.targetAt + (event.kind === "train_delay_gt" ? TRAIN_WINDOW_AFTER_SEC : BUS_WINDOW_AFTER_SEC);
   const matchesStop = (o: DelayObservation): boolean => {
     if (o.stopSequence !== undefined && event.stopSequence !== undefined) {
       return o.stopSequence >= event.stopSequence && o.stopSequence <= event.stopSequence + MAX_STOP_SKIP;

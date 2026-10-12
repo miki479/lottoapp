@@ -44,3 +44,13 @@ export interface DelayAdapterContext {
 
 export type DelayAdapter = (feed: RtFeed, ctx: DelayAdapterContext) => DelayObservation[];
 export type WeatherAdapter = (json: unknown, feedId: string) => WeatherObservation[];
+
+export interface TrainJsonAdapterContext {
+  feedId: string;
+  /** Epoch seconds when the response was fetched. */
+  fetchedAt: number;
+  /** The trip id that was requested (see trainTripId). */
+  tripId: string;
+}
+/** For per-train JSON APIs (ViaggiaTreno): one response describes one train. */
+export type TrainJsonAdapter = (json: unknown, ctx: TrainJsonAdapterContext) => DelayObservation[];

@@ -131,3 +131,37 @@ describe("feeds without tripId (Helsinki)", () => {
     expect(tripUpdatesTimesAdapter(noStart, ctx)).toEqual([]);
   });
 });
+
+import { parseTrainTripId, trainTripId, viaggiatrenoAdapter } from "../shared/adapters/viaggiatreno.ts";
+
+describe("viaggiatreno adapter", () => {
+  const day = Date.UTC(2026, 9, 11, 22); // service-day epoch ms (arbitrary but fixed)
+  const ctx = { feedId: "it-train-viaggiatreno", fetchedAt: 1_800_000_000, tripId: trainTripId("S01700", 9600, day) };
+  const train = {
+    categoria: "FR", oraUltimoRilevamento: 1_799_999_000_000,
+    fermate: [
+      { id: "S01700", progressivo: 1, arrivoReale: null, partenzaReale: 1_799_990_000_000, ritardoArrivo: 0, ritardoPartenza: 3 },
+      { id: "S01600", progressivo: 2, arrivoReale: 1_799_995_000_000, partenzaReale: null, ritardoArrivo: 7, ritardoPartenza: 0 },
+      { id: "S01500", progressivo: 3, arrivoReale: null, partenzaReale: null, ritardoArrivo: 0, ritardoPartenza: 0 },
+    ],
+  };
+  it("emits one observation per stop already reached, in seconds", () => {
+    const obs = viaggiatrenoAdapter(train, ctx);
+    expect(obs.map((o) => [o.stopId, o.delaySec])).toEqual([["S01700", 180], ["S01600", 420]]);
+    expect(obs[0]!.tripId).toBe(trainTripId("S01700", 9600, day));
+    expect(obs[1]!.stopSequence).toBe(2);
+  });
+  it("never reports future stops as on time", () => {
+    expect(viaggiatrenoAdapter(train, ctx).some((o) => o.stopId === "S01500")).toBe(false);
+  });
+  it("discards implausible delays and malformed responses", () => {
+    const bad = { ...train, fermate: [{ id: "X", progressivo: 1, arrivoReale: 1, ritardoArrivo: 5000 }] };
+    expect(viaggiatrenoAdapter(bad, ctx)).toEqual([]);
+    expect(viaggiatrenoAdapter(null, ctx)).toEqual([]);
+    expect(viaggiatrenoAdapter({}, ctx)).toEqual([]);
+  });
+  it("round-trips the trip id", () => {
+    expect(parseTrainTripId(trainTripId("S01700", 9600, day))).toEqual({ codOrigine: "S01700", numero: "9600", serviceDayMs: String(day) });
+    expect(parseTrainTripId("garbage")).toBeNull();
+  });
+});

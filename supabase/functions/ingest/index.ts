@@ -1,7 +1,8 @@
 // Runs every minute (pg_cron). For each usable feed that is due: fetch, parse, keep what matters,
 // record feed health. A failing feed is recorded as failing; its markets get voided by `resolve`.
 import GtfsRt from "npm:gtfs-realtime-bindings@2.2.0";
-import { delayAdapterFor, weatherAdapterFor } from "../_shared/shared/adapters/index.ts";
+import { delayAdapterFor, trainJsonAdapterFor, weatherAdapterFor } from "../_shared/shared/adapters/index.ts";
+import { parseTrainTripId } from "../_shared/shared/adapters/viaggiatreno.ts";
 import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
@@ -262,6 +263,43 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
     observed_at: new Date(o.observedAt * 1000).toISOString(), delay_sec: Math.round(o.delaySec),
     predicted_at: o.predictedAt ? new Date(o.predictedAt * 1000).toISOString() : null,
   }));
+  const { error } = await sb.from("delay_observations").upsert(rows, { onConflict: "feed_id,trip_id,stop_id,observed_at", ignoreDuplicates: true });
+  if (error) throw new Error(error.message);
+  return rows.length;
+}
+
+const MAX_TRAINS_PER_RUN = 40;
+
+/** Per-train JSON feeds: one request per train that has an open market. A failing train fails the run only if none succeeded. */
+async function ingestPerTrain(sb: ReturnType<typeof db>, city: CityConfig, feed: FeedConfig, now: number, tracked: Map<string, Set<string>>): Promise<number> {
+  const adapter = trainJsonAdapterFor(feed)!;
+  // Datacenter IPs are refused upstream: VIAGGIATRENO_BASE_URL + RELAY_SECRET point to scripts/viaggiatreno-relay.mjs on a normal connection.
+  const base = (Deno.env.get("VIAGGIATRENO_BASE_URL") ?? feed.url).replace(/\/$/, "");
+  const relayHeaders: Record<string, string> = Deno.env.get("RELAY_SECRET") ? { "x-relay-secret": Deno.env.get("RELAY_SECRET")! } : {};
+  const trips = [...tracked.keys()].slice(0, MAX_TRAINS_PER_RUN);
+  if (trips.length === 0) return 0;
+  const rows: Record<string, unknown>[] = [];
+  let ok = 0;
+  let lastError = "";
+  for (const tripId of trips) {
+    const t = parseTrainTripId(tripId);
+    if (!t) continue;
+    try {
+      const json = JSON.parse(new TextDecoder().decode(await fetchBytes(`${base}/andamentoTreno/${t.codOrigine}/${t.numero}/${t.serviceDayMs}`, relayHeaders)));
+      ok++;
+      for (const o of adapter(json, { feedId: feed.id, fetchedAt: now, tripId })) {
+        if (!tracked.get(tripId)?.has(o.stopId)) continue;
+        rows.push({
+          city_id: city.id, feed_id: feed.id, route_id: o.routeId, trip_id: o.tripId, stop_id: o.stopId, stop_sequence: o.stopSequence ?? null,
+          observed_at: new Date(o.observedAt * 1000).toISOString(), delay_sec: Math.round(o.delaySec), predicted_at: null,
+        });
+      }
+    } catch (e) {
+      lastError = String((e as Error).message ?? e);
+    }
+  }
+  if (ok === 0) throw new Error(`all ${trips.length} train requests failed: ${lastError}`);
+  if (rows.length === 0) return 0;
   const { error } = await sb.from("delay_observations").upsert(rows, { onConflict: "feed_id,trip_id,stop_id,observed_at", ignoreDuplicates: true });
   if (error) throw new Error(error.message);
   return rows.length;

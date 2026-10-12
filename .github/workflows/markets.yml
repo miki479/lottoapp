@@ -46,3 +46,10 @@ jobs:
           node scripts/generate-markets.mjs --city berlin --feed vbb-train-trip-update --max 30 --apply
           node scripts/generate-markets.mjs --city helsinki --feed hsl-trip-update --max 30 --apply
           node scripts/generate-markets.mjs --city helsinki --feed hsl-train-trip-update --max 20 --apply
+      - name: Italian trains (unlicensed feed, needs ALLOW_UNVERIFIED_FEEDS and a reachable IP)
+        if: vars.ENABLE_VIAGGIATRENO == '1' && (github.event.schedule != '41 2 * * *')
+        continue-on-error: true
+        env:
+          VIAGGIATRENO_BASE_URL: ${{ secrets.VIAGGIATRENO_BASE_URL }}
+          RELAY_SECRET: ${{ secrets.RELAY_SECRET }}
+        run: node scripts/generate-markets.mjs --city rome --feed it-train-viaggiatreno --max 30 --apply

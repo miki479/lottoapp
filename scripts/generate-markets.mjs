@@ -16,7 +16,8 @@ import { join } from "node:path";
 import { unzipSync } from "fflate";
 import { validateCity } from "../shared/cities.ts";
 import { activeServiceIds, buildDelayMarket, buildWeatherMarkets, localYmd, pickTargetStop, seededRandom } from "../shared/generator.ts";
-import { localDayStart } from "../shared/time.ts";
+import { localDayStart, tzOffsetSec } from "../shared/time.ts";
+import { trainTripId } from "../shared/adapters/viaggiatreno.ts";
 import { historyKey } from "../shared/market.ts";
 import { marketToEvent } from "../shared/market.ts";
 import { supabaseUrl } from "./lib-env.mjs";
@@ -149,6 +150,71 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
   return { markets, schedule };
 }
 
+// ---- ViaggiaTreno: no static timetable, so candidates come from the departure boards of the hub stations ----
+const VT_TRAIN_DEADLINE_SEC = 90 * 60; // trains are read when they arrive; allow for late ones
+const pad = (n) => String(n).padStart(2, "0");
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** The date format the API expects ("Mon Oct 12 2026 10:00:00 GMT+0200"), always in the city's timezone. */
+function vtDate(epoch) {
+  const off = tzOffsetSec(epoch, city.timezone), d = new Date((epoch + off) * 1000);
+  const sign = off < 0 ? "-" : "+", a = Math.abs(off);
+  return encodeURIComponent(`${DAYS[d.getUTCDay()]} ${MONTHS[d.getUTCMonth()]} ${pad(d.getUTCDate())} ${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())} GMT${sign}${pad(Math.floor(a / 3600))}${pad(Math.floor((a % 3600) / 60))}`);
+}
+const hms = (secs) => `${pad(Math.floor(secs / 3600))}:${pad(Math.floor((secs % 3600) / 60))}:${pad(secs % 60)}`;
+
+async function trainMarkets(feed) {
+  const base = (process.env.VIAGGIATRENO_BASE_URL ?? feed.url).replace(/\/$/, "");
+  const headers = { "User-Agent": "LateLotto-markets/0.1", ...(process.env.RELAY_SECRET ? { "x-relay-secret": process.env.RELAY_SECRET } : {}) };
+  const vt = async (path) => {
+    const res = await fetch(`${base}/${path}`, { headers, signal: AbortSignal.timeout(20000) });
+    const text = await res.text();
+    if (!res.ok || /Access Denied/i.test(text)) throw new Error(`ViaggiaTreno ${path.split("/")[0]}: HTTP ${res.status} ${text.slice(0, 80).replace(/s+/g, " ")}`);
+    return text.trim() ? JSON.parse(text) : null;
+  };
+  if (!feed.stations?.length) throw new Error(`feed ${feed.id} has no "stations"`);
+
+  // Trains that have not left yet, from the boards over the next hours.
+  const candidates = new Map();
+  for (const st of feed.stations) {
+    for (const h of [0, 2, 4, 6, 8, 10, 12]) {
+      const board = (await vt(`partenze/${st}/${vtDate(now + h * 3600)}`).catch((e) => (console.error(e.message), null))) ?? [];
+      for (const x of board) {
+        if (!x.nonPartito || !x.numeroTreno || !x.dataPartenzaTreno || !x.codOrigine) continue;
+        candidates.set(trainTripId(x.codOrigine, x.numeroTreno, x.dataPartenzaTreno), x);
+      }
+    }
+  }
+  console.error(`[${feed.id}] ${candidates.size} trains on the boards`);
+  const { ymd } = localYmd(now, city.timezone);
+  const rand = seededRandom(`${city.id}-${feed.id}-${ymd}-${Math.floor(now / 21600)}`);
+  const shuffled = [...candidates.entries()].map((e) => [rand(), e]).sort((a, b) => a[0] - b[0]).map((x) => x[1]).slice(0, max * 3);
+
+  const hist = await historyLookup();
+  const markets = [];
+  for (const [tripId, x] of shuffled) {
+    if (markets.length >= max) break;
+    const t = await vt(`andamentoTreno/${x.codOrigine}/${x.numeroTreno}/${x.dataPartenzaTreno}`).catch((e) => (console.error(e.message), null));
+    if (!t?.fermate || t.provvedimento === 1) continue; // unknown or cancelled
+    const dayEpoch = Math.floor(x.dataPartenzaTreno / 1000);
+    const base0 = localDayStart(dayEpoch, city.timezone);
+    const names = new Map(t.fermate.map((f) => [f.id, f.stazione]));
+    const stops = t.fermate
+      .filter((f) => f.id && f.programmata && f.progressivo != null && f.programmata / 1000 > now + 900)
+      .map((f) => ({ seq: f.progressivo, stopId: f.id, time: hms(Math.floor(f.programmata / 1000) - base0), timepoint: true }))
+      .filter((s) => !s.time.startsWith("-"))
+      .sort((a, b) => a.seq - b.seq);
+    const stop = pickTargetStop(stops, rand);
+    if (!stop) continue;
+    const common = { cityId: city.id, tz: city.timezone, feedId: feed.id, category: "train", routeId: (t.categoria || x.categoriaDescrizione || "").trim() || "train", routeName: `${(x.categoriaDescrizione || "").trim()} ${x.numeroTreno}`.trim(), headsign: x.destinazione ?? "", tripId, stop, stopName: names.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: 300 };
+    const draft = buildDelayMarket({ ...common, history: null });
+    const targetAt = Date.parse(draft.target_at) / 1000;
+    if (Date.parse(draft.closes_at) / 1000 <= now + 300 || targetAt > now + 30 * 3600) continue;
+    const priced = buildDelayMarket({ ...common, history: hist(historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone)) });
+    markets.push({ ...priced, deadline_at: new Date((targetAt + VT_TRAIN_DEADLINE_SEC) * 1000).toISOString() });
+  }
+  return { markets, schedule: [] };
+}
+
 let markets = [], schedule = [];
 if (args.weather) {
   const feed = city.feeds.find((f) => f.category === "weather");
@@ -162,7 +228,7 @@ if (args.weather) {
 } else {
   const feed = city.feeds.find((f) => f.id === args.feed);
   if (!feed) throw new Error(`--feed must be one of: ${city.feeds.map((f) => f.id).join(", ")}`);
-  ({ markets, schedule } = await delayMarkets(feed));
+  ({ markets, schedule } = feed.type === "viaggiatreno" ? await trainMarkets(feed) : await delayMarkets(feed));
 }
 console.error(`${markets.length} markets, ${schedule.length} schedule rows`);
 console.log(JSON.stringify({ markets: markets.slice(0, args.apply ? 0 : 5), scheduleSample: schedule.slice(0, 2) }, null, 2));
