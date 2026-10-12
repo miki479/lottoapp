@@ -98,7 +98,7 @@ const ja: Messages = {
   bets: {
     title: "マイ予想", tabs: { open: "進行中", settled: "終了" }, open: "進行中", won: "的中", lost: "外れ", void: "返金",
     empty: { title: "まだ予想がありません", body: "イベントを選んで、最初の予想をしてみましょう。", cta: "イベントを見る" },
-    yourPick: (y) => (y ? "あなたの選択：はい" : "あなたの選択：いいえ"), settles: "結果", details: "詳細",
+    yourPick: (y) => (y ? "あなたの選択：はい" : "あなたの選択：いいえ"), settles: "結果", waiting: ["サーバーが線路を確認中…","車掌が報告書にサインしています…","公式データを待っています…","伝書鳩が向かっています…","サーバーが休憩中…","のんびり分を数えています…"], details: "詳細",
     voidReason: { feed_down: "データ配信が止まっていました。当て推量で判定することはありません。", no_observation: "この便の有効なデータがありませんでした。", implausible_data: "データが信頼できませんでした。" },
   },
   result: {

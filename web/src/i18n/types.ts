@@ -76,7 +76,7 @@ export interface Messages {
   quips: Record<"bus" | "train" | "rain" | "temp" | "wind" | "snow" | "uv" | "aqi" | "quake" | "strike" | "traffic" | "price" | "kp" | "wiki" | "game" | "sport" | "storm" | "hail" | "alert" | "metal" | "fuel" | "oil", string[]>;
   question: { episode: (q: EpisodeQ) => string; concerts: (q: ConcertsQ) => string; full: (q: FullQ) => string; bus: (q: BusQ) => string; train: (q: BusQ) => string; rain: (q: RainQ) => string; metric: (q: MetricQ) => string; quake: (q: QuakeQ) => string; strike: (q: StrikeQ) => string; traffic: (q: TrafficQ) => string; tick: (q: TickQ) => string; match: (q: MatchQ) => string; player: (q: { kind: "pg" | "pa" | "ps"; name: string; home: string; away: string; time: string }) => string };
   sheet: { title: string; pick: string; stake: string; potential: string; confirm: string; confirming: string; odds: string; placed: (win: string) => string };
-  bets: { title: string; tabs: { open: string; settled: string }; open: string; won: string; lost: string; void: string; empty: { title: string; body: string; cta: string }; yourPick: (yes: boolean) => string; settles: string; voidReason: Record<string, string>; details: string };
+  bets: { title: string; tabs: { open: string; settled: string }; open: string; won: string; lost: string; void: string; empty: { title: string; body: string; cta: string }; yourPick: (yes: boolean) => string; settles: string; waiting: string[]; voidReason: Record<string, string>; details: string };
   result: {
     won: string; lost: string; void: string; amountWon: (n: number) => string; amountLost: (n: number) => string; amountVoid: (n: number) => string;
     subWon: string; subLost: string; subVoid: string;

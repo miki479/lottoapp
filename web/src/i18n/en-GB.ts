@@ -98,7 +98,7 @@ const enGB: Messages = {
   bets: {
     title: "My bets", tabs: { open: "Pending", settled: "Settled" }, open: "Pending", won: "Won", lost: "Lost", void: "Returned",
     empty: { title: "No bets yet", body: "Have a look at the events and make your first call.", cta: "Browse events" },
-    yourPick: (y) => (y ? "You picked: Yes" : "You picked: No"), settles: "Result", details: "Details",
+    yourPick: (y) => (y ? "You picked: Yes" : "You picked: No"), settles: "Result", waiting: ["The server is checking the tracks…","The guard is signing the report…","Waiting for the official data…","A carrier pigeon is on its way…","The server is putting the kettle on…","Counting the minutes, slowly…"], details: "Details",
     voidReason: { feed_down: "The data feed was down. We never settle on a hunch.", no_observation: "No valid reading for this service.", implausible_data: "The reading looked dubious." },
   },
   result: {

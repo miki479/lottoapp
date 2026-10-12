@@ -75,7 +75,7 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
                 {st === "won" && <span class="amt won num">+{money(b.payout - b.stake, locale)}</span>}
                 {st === "lost" && <span class="amt lost num">−{money(b.stake, locale)}</span>}
                 {st === "void" && <span class="amt num">{money(b.stake, locale)}</span>}
-                {st === "open" && <span class="detail">{msg.bets.settles} · {Date.parse(m.target_at) > now ? countdown(Date.parse(m.target_at) - now) : "…"}</span>}
+                {st === "open" && <span class="detail">{Date.parse(m.target_at) > now ? <>{msg.bets.settles} · {countdown(Date.parse(m.target_at) - now)}</> : msg.bets.waiting[(Math.floor(now / 6000) + b.id.charCodeAt(0)) % msg.bets.waiting.length]}</span>}
               </div>
               {m.kind === "match_bet" && <div class="vscard"><MarketVs m={m} size={28} />{reasonOf(m, msg) && <span class="reason">{reasonOf(m, msg)}</span>}</div>}
               {m.kind !== "match_bet" && (() => { const sj = m.kind === "tick_gt" ? (msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? "")) : m.kind === "bus_delay_gt" || m.kind === "train_delay_gt" ? `${String(m.params.routeName ?? "")} · ${cityName(city, locale)}` : m.kind === "rain_at" || m.kind === "metric_gt" ? cityName(city, locale) : ""; return sj ? <b class="subject">{sj}</b> : null; })()}
