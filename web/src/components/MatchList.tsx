@@ -52,6 +52,8 @@ function OddsBtn(p: { label: string; odds: number | null; locale: Locale; onClic
 export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; onPick: (m: MarketRow, pick: Pick) => void; registered: boolean; onAuth: () => void; details: boolean; friendBets?: Record<string, number> }) {
   const u = p.msg.sportui;
   const [open, setOpen] = useState<Match | null>(null), [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null);
+  const [adv, setAdv] = useState(() => { try { return localStorage.getItem("sportadv") === "1"; } catch { return false; } });
+  const setMode = (v: boolean) => { setAdv(v); try { localStorage.setItem("sportadv", v ? "1" : "0"); } catch { /* */ } };
   const [tab, setTab] = useState<"main" | "half" | "corners" | "cards">("main");
   const hasDetails = !!open && p.details && DETAIL_LEAGUES.includes(open.league);
   const line = (l: string) => (p.locale === "it" ? l.replace("_", ",") : l.replace("_", "."));
@@ -74,6 +76,17 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
   const fr = (mt: Match) => Math.max(0, ...[...mt.markets.values()].map((x) => p.friendBets?.[x.id] ?? 0));
   const Row = (mt: Match) => {
     const two = TWO_WAY_LEAGUES.includes(mt.league);
+    if (!adv) return (
+      <article class={`card matchrow simple ${fr(mt) > 0 ? "has-friends" : ""}`} key={mt.eventId}>
+        {fr(mt) > 0 && <span class="frbadge" title={p.msg.frd.friendsOn(fr(mt))} aria-label={p.msg.frd.friendsOn(fr(mt))}><Users size={13} />{fr(mt)}</span>}
+        <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span></div>
+        <b class="teams">{p.msg.question.match({ bet: "home_win", home: mt.home, away: mt.away, time: "" }).replace(/\?.*$/, "?")}</b>
+        <div class="oddsrow two">
+          <OddsBtn label={u.yes} odds={oddsOf(mt, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(mt, "home_win", "yes")} />
+          <OddsBtn label={u.no} odds={oddsOf(mt, "home_win", "no")} locale={p.locale} busy={busy} onClick={() => go(mt, "home_win", "no")} />
+        </div>
+      </article>
+    );
     return (
       <article class={`card matchrow ${fr(mt) > 0 ? "has-friends" : ""}`} key={mt.eventId}>
         {fr(mt) > 0 && <span class="frbadge" title={p.msg.frd.friendsOn(fr(mt))} aria-label={p.msg.frd.friendsOn(fr(mt))}><Users size={13} />{fr(mt)}</span>}
@@ -91,6 +104,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
   const t = p.msg.matchmaker.bets;
   return (
     <>
+      <div class="mkchips modes" role="tablist">{([false, true] as const).map((v) => <button key={String(v)} role="tab" aria-selected={adv === v} class={`mkchip ${adv === v ? "on" : ""}`} onClick={() => setMode(v)}>{v ? u.advanced : u.simple}</button>)}</div>
       {leagues.length > 1 && <div class="mkchips"><button class={`mkchip ${league === "" ? "on" : ""}`} onClick={() => setLeague("")}>{u.all}</button>{leagues.map((l) => <button key={l} class={`mkchip ${league === l ? "on" : ""}`} onClick={() => setLeague(l)}>{l}</button>)}</div>}
       {err && <p class="formerr" role="alert">{err}</p>}
       {shown.length === 0 && <p class="hint">{u.noMatches}</p>}
