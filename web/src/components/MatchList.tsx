@@ -71,7 +71,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
   const hasDetails = !!open && p.details && DETAIL_LEAGUES.includes(open.league);
   const line = (l: string) => (p.locale === "it" ? l.replace("_", ",") : l.replace("_", "."));
   const leagues = useMemo(() => [...new Set(p.matches.map((m) => m.league))], [p.matches]);
-  const [league, setLeague] = useState("");
+  const [league, setLeague] = useState(""), [q, setQ] = useState("");
   const when = (e: number) => new Intl.DateTimeFormat(INTL_TAG[p.locale], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(e * 1000));
   const go = async (mt: Match, bet: string, pick: Pick) => {
     setErr(null);
@@ -85,7 +85,8 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
     setOpen(null);
     p.onPick(m, pick);
   };
-  const shown = p.matches.filter((m) => !league || m.league === league);
+  const needle = q.trim().toLowerCase();
+  const shown = p.matches.filter((m) => (!league || m.league === league) && (!needle || `${m.home} ${m.away}`.toLowerCase().includes(needle)));
   const fr = (mt: Match) => Math.max(0, ...[...mt.markets.values()].map((x) => p.friendBets?.[x.id] ?? 0));
   const Row = (mt: Match) => {
     const two = TWO_WAY_LEAGUES.includes(mt.league);
@@ -120,6 +121,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
     <>
       <div class="mkchips modes" role="tablist">{([false, true] as const).map((v) => <button key={String(v)} role="tab" aria-selected={adv === v} class={`mkchip ${adv === v ? "on" : ""}`} onClick={() => setMode(v)}>{v ? u.advanced : u.simple}</button>)}</div>
       {leagues.length > 1 && <div class="mkchips wrap"><button class={`mkchip ${league === "" ? "on" : ""}`} onClick={() => setLeague("")}>{u.all}</button>{leagues.map((l) => <button key={l} class={`mkchip ${league === l ? "on" : ""}`} onClick={() => setLeague(l)}>{l}</button>)}</div>}
+      {p.matches.length > 6 && <input class="field teamq" type="search" value={q} placeholder={u.searchTeam} aria-label={u.searchTeam} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />}
       {err && <p class="formerr" role="alert">{err}</p>}
       {shown.length === 0 && <p class="hint">{u.noMatches}</p>}
       <div class="matchlist">{shown.slice(0, 60).map(Row)}</div>
