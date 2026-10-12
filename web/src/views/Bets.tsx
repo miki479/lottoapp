@@ -16,7 +16,7 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
   const [st, setSt] = useState<"all" | "won" | "lost" | "void">("all"), [cat, setCat] = useState("all");
   const cats = [...new Set(bets.filter((b) => b.status !== "open").map((b) => b.markets.category))];
   const shown = bets.filter((b) => (tab === "open" ? b.status === "open" : b.status !== "open" && (st === "all" || b.status === st) && (cat === "all" || b.markets.category === cat)));
-  const shownP = parlays.filter((x) => (tab === "open" ? x.status === "open" : x.status !== "open"));
+  const shownP = parlays.filter((x) => (tab === "open" ? x.status === "open" : x.status !== "open" && (st === "all" || x.status === st) && cat === "all"));
   const nOpen = bets.filter((b) => b.status === "open").length + parlays.filter((x) => x.status === "open").length;
   const nDone = bets.length + parlays.length - nOpen;
   return (
@@ -75,7 +75,7 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
                 {st === "won" && <span class="amt won num">+{money(b.payout - b.stake, locale)}</span>}
                 {st === "lost" && <span class="amt lost num">−{money(b.stake, locale)}</span>}
                 {st === "void" && <span class="amt num">{money(b.stake, locale)}</span>}
-                {st === "open" && <span class="detail">{msg.bets.settles} · {countdown(Date.parse(m.target_at) - now)}</span>}
+                {st === "open" && <span class="detail">{msg.bets.settles} · {Date.parse(m.target_at) > now ? countdown(Date.parse(m.target_at) - now) : "…"}</span>}
               </div>
               {m.kind === "match_bet" && <div class="vscard"><MarketVs m={m} size={28} />{reasonOf(m, msg) && <span class="reason">{reasonOf(m, msg)}</span>}</div>}
               {m.kind !== "match_bet" && (() => { const sj = m.kind === "tick_gt" ? (msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? "")) : m.kind === "bus_delay_gt" || m.kind === "train_delay_gt" ? `${String(m.params.routeName ?? "")} · ${cityName(city, locale)}` : m.kind === "rain_at" || m.kind === "metric_gt" ? cityName(city, locale) : ""; return sj ? <b class="subject">{sj}</b> : null; })()}
