@@ -210,7 +210,8 @@ async function trainMarkets(feed) {
     const targetAt = Date.parse(draft.target_at) / 1000;
     if (Date.parse(draft.closes_at) / 1000 <= now + 300 || targetAt > now + 30 * 3600) continue;
     const priced = buildDelayMarket({ ...common, history: hist(historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone)) });
-    markets.push({ ...priced, deadline_at: new Date((targetAt + VT_TRAIN_DEADLINE_SEC) * 1000).toISOString() });
+    // Unlicensed source: private test markets, hidden from everyone but the owner (web/src/lib/testmode.ts).
+    markets.push({ ...priced, params: { ...priced.params, ...(feed.licenseVerified ? {} : { testOnly: true }) }, deadline_at: new Date((targetAt + VT_TRAIN_DEADLINE_SEC) * 1000).toISOString() });
   }
   return { markets, schedule: [] };
 }
