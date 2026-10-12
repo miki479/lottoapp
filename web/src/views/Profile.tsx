@@ -10,6 +10,7 @@ import { HistoryCard } from "../components/HistoryCard.tsx";
 import type { MyStats, Profile, Progress } from "../lib/types.ts";
 import { INTL_TAG } from "../i18n/index.ts";
 import { Look } from "../components/looks/Look.tsx";
+import { Trophy3D } from "../components/looks/Trophy3D.tsx";
 import { levelProgress } from "../../../shared/looks";
 import type { MyProgress } from "../lib/looks.ts";
 
@@ -102,10 +103,10 @@ export function ProfileView(p: {
           <h2>{m.trophies}</h2>
           <div class="trophies">
             {TROPHY_IDS.map((id) => {
-              const have = p.trophies.has(id), t = m.trophy[id], Icon = TROPHY_ICON[id];
+              const have = p.trophies.has(id), t = m.trophy[id];
               return (
                 <div class={`card trophy ${have ? "" : "lock"} ${p.fresh.has(id) ? "fresh" : ""}`} key={id}>
-                  <span class="ti"><Icon size={20} /></span>
+                  <span class="ti b3"><Trophy3D id={id} have={have} size={56} /></span>
                   <b>{have ? t.name : "???"}</b><small>{have ? t.desc : m.locked}</small>
                   <span class="detail">{m.rarity[TROPHY_RARITY[id]]}</span>
                 </div>

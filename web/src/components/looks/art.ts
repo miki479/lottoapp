@@ -2,7 +2,7 @@ import { C, Metal, band, cornerAngles, edgeFacing, f, inset, light, mix, poly, p
 import { frameOf } from "./frames";
 
 /** The material of every decoration. */
-const M: Record<string, Metal> = {
+export const M: Record<string, Metal> = {
   copper: { d: "#4a2112", m: "#a85a32", l: "#e0905c", h: "#ffd0a8" },
   bronze: { d: "#3a2c12", m: "#8a6b2e", l: "#c4a050", h: "#ecd9a0" },
   silver: { d: "#4a5058", m: "#a9b0b8", l: "#e6eaee", h: "#ffffff" },

@@ -1,10 +1,10 @@
-import { Flame, Trophy, UserCheck, UserPlus } from "lucide-preact";
+import { Flame, UserCheck, UserPlus } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages, TrophyId } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 import { money } from "../lib/format.ts";
 import { forgetLook, loadPublicProfile, type PublicProfileData } from "../lib/looks.ts";
-import { TROPHY_ICON } from "../views/Profile.tsx";
+import { Trophy3D } from "./looks/Trophy3D.tsx";
 import { Look } from "./looks/Look.tsx";
 import { Sheet } from "./Sheet.tsx";
 
@@ -32,7 +32,7 @@ export function PublicProfile({ id, msg, locale, onClose, onToast }: { id: strin
             {d.balance !== null && <div class="card"><b class="num">{t.balance(money(d.balance, locale))}</b><small>{t.balanceLabel}</small></div>}
           </div>
           <div class="card ptro"><small>{t.trophies}{d.trophy_count > 0 ? ` · ${d.trophy_count}` : ""}</small>
-            {d.trophies.length === 0 ? <span class="hint">{t.noTrophies}</span> : <div class="ptrow">{d.trophies.map((x) => { const I = TROPHY_ICON[x as TrophyId] ?? Trophy; return <span class="ti" key={x} title={msg.profile.trophy[x as TrophyId]?.name}><I size={20} /></span>; })}</div>}
+            {d.trophies.length === 0 ? <span class="hint">{t.noTrophies}</span> : <div class="ptrow">{d.trophies.map((x) => <span key={x} title={msg.profile.trophy[x as TrophyId]?.name}><Trophy3D id={x as TrophyId} have size={44} /></span>)}</div>}
           </div>
           {d.relation === "none" && <button class="btn primary wide" disabled={busy} onClick={add}><UserPlus size={18} />{t.addFriend}</button>}
           {d.relation === "received" && <button class="btn primary wide" disabled={busy} onClick={add}><UserPlus size={18} />{t.accept}</button>}

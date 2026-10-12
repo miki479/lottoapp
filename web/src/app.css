@@ -1170,3 +1170,10 @@ textarea.field { resize: vertical; min-height: 84px; }
 .ptro { display: flex; flex-direction: column; gap: 8px; }
 .ptrow { display: flex; flex-wrap: wrap; gap: 8px; }
 .ptrow .ti { width: 36px; height: 36px; border-radius: 10px; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; }
+
+/* 3D trophies */
+.tr3d { display: block; flex: none; overflow: visible; }
+.tr-sheen { animation: trsweep 6s ease-in-out infinite; }
+@keyframes trsweep { 0% { transform: translateX(-60px); } 28%, 100% { transform: translateX(170px); } }
+@media (prefers-reduced-motion: reduce) { .tr-sheen { animation: none; opacity: 0; } }
+.trophy .ti.b3 { width: 56px; height: 56px; background: none; border-radius: 0; }
