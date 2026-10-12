@@ -529,16 +529,18 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
     let geocoded = 0;
     for (const league of LEAGUES) {
       try {
-        const next = ((await getJson(`${base}/eventsnextleague.php?id=${league.id}`))?.events ?? [])[0];
-        if (!next) continue;
-        const round = Number(next.intRound), season = String(next.strSeason);
+        // every match of the next 7 days, day by day (the "round" calls of the free tier are capped at 5)
         const fixtures: Fixture[] = [];
-        for (const r of [round, round + 1]) {
-          for (const e of ((await getJson(`${base}/eventsround.php?id=${league.id}&r=${r}&s=${season}`))?.events ?? []) as Record<string, string>[]) {
+        let season = "";
+        for (let d = 0; d < 7; d++) {
+          const day = new Date((now + d * 86400) * 1000).toISOString().slice(0, 10);
+          const evs = ((await getJson(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
+          for (const e of evs) {
             const k = Date.parse(`${e.strTimestamp}Z`) / 1000;
-            if (e.idEvent && e.strHomeTeam && e.strAwayTeam && Number.isFinite(k)) fixtures.push({ eventId: e.idEvent, league: league.name, home: e.strHomeTeam, away: e.strAwayTeam, kickoff: k });
+            if (e.idEvent && e.strHomeTeam && e.strAwayTeam && Number.isFinite(k)) { fixtures.push({ eventId: e.idEvent, league: league.name, home: e.strHomeTeam, away: e.strAwayTeam, kickoff: k }); season = season || String(e.strSeason ?? ""); }
           }
         }
+        if (fixtures.length === 0) continue;
         let table: TableRow[] = [];
         try { table = (((await getJson(`${base}/lookuptable.php?l=${league.id}&s=${season}`))?.table ?? []) as Record<string, string>[]).map((r) => ({ team: r.strTeam!, played: Number(r.intPlayed), points: Number(r.intPoints), goalsFor: Number(r.intGoalsFor), goalsAgainst: Number(r.intGoalsAgainst) })); } catch { /* priors fall back to averages */ }
         // town of every home team, geocoded once and remembered

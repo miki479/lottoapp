@@ -859,3 +859,22 @@ textarea.field { resize: vertical; min-height: 84px; }
 .matchlist { display: grid; gap: 10px; } .matchrow { display: grid; gap: 8px; padding: 12px 14px; } .matchrow .mhead { display: flex; justify-content: space-between; align-items: center; gap: 8px; } .matchrow .more { display: inline-flex; align-items: center; background: none; border: 0; color: var(--brand); font-weight: 700; font-size: .8rem; padding: 4px 0; } .matchrow .teams { font-size: 1.05rem; }
 .oddsrow { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; } .oddsbtn { display: grid; gap: 2px; justify-items: center; padding: 8px 6px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: .8rem; font-weight: 700; min-height: 52px; } .oddsbtn b { font-size: 1.05rem; } .oddsbtn:disabled { opacity: .5; } .oddsbtn:active { transform: scale(.97); }
 .mgroup { display: grid; gap: 6px; }
+
+/* home: how it works, step labels, "try instead" */
+.howto { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; list-style: none; margin: 0; padding: 10px 34px 10px 12px; position: relative; border-radius: var(--radius-card); background: var(--surface); border: 1px solid var(--border); font-size: 13.5px; font-weight: 600; color: var(--text); }
+.howto li { display: flex; align-items: center; gap: 6px; line-height: 1.2; font-size: 12.5px; }
+.howto li b { flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); color: #fff; font-size: 12px; }
+.howto .howx { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; border: 0; background: transparent; color: var(--muted); }
+.steplabel { margin: var(--space-2) 0 0; font-size: 15px; font-weight: 800; color: var(--text); }
+.tryalt { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: center; }
+.tryalt span { font-size: 13px; color: var(--muted); width: 100%; text-align: center; }
+.tryalt .chip em { font-style: normal; margin-left: 6px; font-size: 12px; opacity: .8; }
+@media (max-width: 1023px) { .home .aside > * { order: 5; } .home .legal { order: 9; } .home .nearwrap { order: 6; } }
+
+@media (max-width: 560px) {
+  .catchips, .catchips.many { display: flex; overflow-x: auto; scroll-snap-type: x proximity; gap: 8px; margin: 0 calc(var(--gutter) * -1); padding: 2px var(--gutter) 6px; scrollbar-width: none; }
+  .catchips::-webkit-scrollbar { display: none; }
+  .catchips .cc, .catchips.many .cc { flex: 0 0 108px; min-height: 92px; scroll-snap-align: center; }
+  .morecats { display: none; }
+}
+@media (max-width: 560px) { .hero { padding: 16px 18px; } .hero-ico { display: none; } .hero h1 { font-size: 22px; max-width: none; } }

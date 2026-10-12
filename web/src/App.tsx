@@ -83,7 +83,7 @@ export function App() {
   const [resultBet, setResultBet] = useState<MyBet | null>(null);
   const [seen, setSeen] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{ text: string; kind: "ok" | "err" } | null>(null);
-  const [stale, setStale] = useState(false);
+  const [staleCats, setStaleCats] = useState<string[]>([]);
   const [offline, setOffline] = useState(!navigator.onLine);
   const [rank, setRank] = useState<{ rank: number | null; scope: string }>({ rank: null, scope: "" });
   const [myPlaces, setMyPlaces] = useState<Place[]>(() => recentPlaces());
@@ -199,7 +199,7 @@ export function App() {
     else if (/fetch|network|load failed/i.test(error.message)) setOffline(true);
     const { data: h } = await sb.from("feed_health").select("feed_id,last_ok_at");
     const nowMs = Date.now();
-    setStale((h ?? []).some((r) => { const f = CITIES.flatMap((c) => c.feeds).find((x) => x.id === r.feed_id); return !!f && f.category !== "weather" && f.licenseVerified && !!r.last_ok_at && nowMs - Date.parse(r.last_ok_at) > f.staleAfterSeconds * 1000 && (data ?? []).some((m) => m.category === f.category); }));
+    setStaleCats([...new Set((h ?? []).flatMap((r) => { const f = CITIES.flatMap((c) => c.feeds).find((x) => x.id === r.feed_id); return f && f.category !== "weather" && f.licenseVerified && !!r.last_ok_at && nowMs - Date.parse(r.last_ok_at) > f.staleAfterSeconds * 1000 && (data ?? []).some((m) => m.category === f.category) ? [f.category as string] : []; }))]);
     const { data: pop } = await sb.rpc("popular_markets", { p_limit: 5 }); setPopular(((pop ?? []) as PopularRow[]).map((x) => ({ ...x, bets: +x.bets })));
     try {
       const nearIds = CITIES.filter((c) => c.country === (near?.country ?? profile?.country ?? region())).map((c) => c.id);
@@ -296,7 +296,7 @@ export function App() {
     const byCity = new Map<string, number[]>();
     for (const m of open) { const l = live[m.id]; if (l && !l.is_forecast) byCity.set(m.city_id, [...(byCity.get(m.city_id) ?? []), l.delay_sec]); }
     const worst = [...byCity.entries()].filter(([, v]) => v.length >= 2).map(([c, v]) => [c, v.reduce((a, b) => a + b, 0) / v.length] as const).sort((a, b) => b[1] - a[1])[0];
-    if (worst) items.push({ id: "city", icon: MapPin, label: msg.top.city, big: <>{cityName(cityOf(worst[0]), locale)}</>, sub: msg.top.avg(Math.max(0, Math.round(worst[1] / 60))), onClick: () => setFilter(worst[0]) });
+    if (worst) items.push({ id: "city", icon: MapPin, label: msg.top.city, big: <>{cityName(cityOf(worst[0]), locale)}</>, sub: msg.top.avg(Math.max(0, Math.round(worst[1] / 60))), onClick: () => { store.set("filter", worst[0]); setFilter(worst[0]); setCatChosen(true); const k = (["bus", "train"] as CatId[]).find((c) => open.some((m) => m.city_id === worst[0] && m.category === c)); if (k && !(["bus", "train", "weather", "traffic"] as CatId[]).includes(cat)) setCat(k); } });
     const tr0 = trendRows.find((t) => (t.m.params as { testOnly?: boolean }).testOnly !== true && Date.parse(t.m.closes_at) > now);
     if (tr0) { const c = cityOf(tr0.m.city_id); items.unshift({ id: "trend", icon: TrendingUp, label: tr0.near ? msg.maker.trendingNear : msg.maker.trending, big: <>{tr0.bettors}<small>{msg.top.players(tr0.bettors).replace(/^\d+\s*/, "")}</small></>, sub: question(tr0.m, msg, locale, cityName(c, locale), c.timezone, new Date(now)), onClick: () => setSheet({ m: tr0.m, pick: "yes" }) }); }
     const soon = inFilter[0];
@@ -392,7 +392,7 @@ export function App() {
     // register the place on the server first: the id it returns is the one the markets carry
     try { const sid = await ensurePlace(pl); pl = { ...pl, id: sid }; } catch (e) { flash(String((e as Error).message).includes("places_limit") ? msg.places.limit : msg.errors.generic!, "err"); return; }
     setMyPlaces(rememberPlace(pl)); placeIds.current = [pl.id, ...placeIds.current.filter((x) => x !== pl.id)].slice(0, 6);
-    setPlacePicker(false); store.set("filter", pl.id); setFilter(pl.id); setCatChosen(true); setCat("weather"); await loadMarkets();
+    setPlacePicker(false); store.set("filter", pl.id); setFilter(pl.id); setCatChosen(true); await loadMarkets();
   };
   /** Reads the device position once, picks the nearest known city and keeps ONLY that city's id (the coordinates are never stored or sent). */
   const locate = () => {
@@ -478,8 +478,7 @@ export function App() {
         <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
         <Ticker items={tickerItems} />
         <main class="content">
-          {stale && <p class="note warn" style="margin-bottom:12px">{msg.feedWarning}</p>}
-          {screen === "home" && <Home registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
+          {screen === "home" && <Home stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets challenges={myChallenges} onChallenge={(code) => setChallengeCode(code)} parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "ranking" && <Ranking home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
           {screen === "admin" && <AdminPage msg={msg} onBack={() => go("profile")} />}
@@ -492,7 +491,7 @@ export function App() {
       {challengeMaker && <ChallengeMaker hasHome={!!home} msg={msg} locale={locale} registered={registered} onAuth={() => { setChallengeMaker(false); setAuth(true); }} onClose={() => setChallengeMaker(false)} onCreated={(code) => { setChallengeMaker(false); loadChallenges(); setChallengeCode(code); }} />}
       {challengeCode && <ChallengeSheet code={challengeCode} msg={msg} locale={locale} now={now} registered={registered} onClose={() => { setChallengeCode(null); loadChallenges(); }} onAuth={() => { setChallengeCode(null); setAuth(true); }} onChanged={() => { loadProfile(); loadChallenges(); }} />}
       {quakeMaker && <QuakeMaker msg={msg} locale={locale} onClose={() => setQuakeMaker(false)} onCreated={(m) => { setQuakeMaker(false); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
-      {placePicker && <PlacePicker msg={msg} locale={locale} recent={myPlaces} onPick={pickPlace} onCity={(id) => { store.set("filter", id); setFilter(id); setPlacePicker(false); }} onClose={() => setPlacePicker(false)} />}
+      {placePicker && <PlacePicker msg={msg} locale={locale} recent={myPlaces} onPick={pickPlace} onCity={(id) => { store.set("filter", id); setFilter(id); setCatChosen(true); setPlacePicker(false); }} onClose={() => setPlacePicker(false)} />}
       {rewardsOpen && <RewardsSheet msg={msg} locale={locale} now={now} profile={profile} quests={quests} referral={referral} registered={registered} onClaim={claimQuest} onGo={goQuest} onShare={shareReferral} onClose={() => setRewardsOpen(false)} />}
       {askPush && <PushAsk lifted={slip.length > 0} msg={msg} onYes={() => turnPush(true)} onNo={() => { rememberPush(false); setAskPush(false); }} />}
       <ParlayBar count={slip.length} odds={slipOdds(slip)} msg={msg} locale={locale} onOpen={() => setParlayOpen(true)} />
