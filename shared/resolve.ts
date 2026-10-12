@@ -1,5 +1,5 @@
 import { METRICS } from "./metrics.ts";
-import { FINISHED, type MatchObservation } from "./sport.ts";
+import { evalBet, FINISHED, type MatchObservation } from "./sport.ts";
 import { CRYPTO_GRACE_SEC, isSpot, tickDef } from "./ticks.ts";
 import { MIN_VEHICLES, MIN_WINDOW_SEC } from "./traffic.ts";
 import type {
@@ -148,7 +148,7 @@ function matchReading(event: MatchEvent, input: ResolveInput): Reading {
   // Only a final score counts: a live or postponed match stays pending, then is voided at the deadline.
   if (!o || !FINISHED.has(o.status) || o.homeGoals === null || o.awayGoals === null) return { kind: "none" };
   if (o.homeGoals < 0 || o.awayGoals < 0 || o.homeGoals > 30 || o.awayGoals > 30) return { kind: "implausible" };
-  const yes = event.bet === "home_win" ? o.homeGoals > o.awayGoals : event.bet === "over_2_5" ? o.homeGoals + o.awayGoals >= 3 : o.homeGoals > 0 && o.awayGoals > 0;
+  const yes = evalBet(event.bet, o.homeGoals, o.awayGoals);
   return { kind: "ok", yes, evidence: { home: o.homeGoals, away: o.awayGoals, bet: event.bet } };
 }
 

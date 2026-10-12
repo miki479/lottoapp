@@ -3,7 +3,7 @@ import { Q } from "./Q.tsx";
 import { Layers, Rocket, Share2, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
-import { fmtOdds, isYesNo, money, question, quip, type MarketRow } from "../lib/format.ts";
+import { fmtOdds, isYesNo, money, question, type MarketRow } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { Pick } from "../lib/types.ts";
@@ -16,6 +16,7 @@ import { TrafficScene } from "./TrafficScene.tsx";
 import { TickScene } from "./TickScene.tsx";
 import { SportScene } from "./SportScene.tsx";
 import { TickChart } from "./TickChart.tsx";
+import { AreaStats } from "./AreaStats.tsx";
 import { Sky } from "./Sky.tsx";
 import { TripScene } from "./TripScene.tsx";
 import { StakeControl } from "./StakeControl.tsx";
@@ -56,9 +57,9 @@ export function BetSheet(p: {
       <div class="shead"><h2>{p.msg.sheet.title}</h2><span class="grow" /><button class="iconbtn" onClick={share} aria-label={p.msg.maker.share}><Share2 size={20} /></button><button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>
       {copied && <p class="hint" role="status">{p.msg.maker.copied}</p>}
       <p class="q" style="font-weight:600"><Q m={p.m} msg={p.msg} locale={p.locale} city={cityName(city, p.locale)} tz={city.timezone} /></p>
-      <p class="quip">{quip(p.m, p.msg)}</p>
       {typeof p.m.params.by === "string" && p.m.params.by && <p class="byline">{p.msg.maker.by(p.m.params.by)}</p>}
       {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "traffic_speed_lt" ? <TrafficScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "match_bet" ? <SportScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "tick_gt" ? <TickScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" || p.m.kind === "strike_on" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : <TripScene m={p.m} now={p.now} hint={pick} big />}
+      {(p.m.params.custom === "true" || p.m.params.local === "true") && <AreaStats marketId={p.m.id} msg={p.msg} />}
       {p.m.kind === "tick_gt" && <TickChart m={p.m} msg={p.msg} locale={p.locale} />}
       <div>
         <span class="detail">{p.msg.sheet.pick}</span>

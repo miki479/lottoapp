@@ -1,3 +1,4 @@
+import { MATCH_BETS } from "./sport.ts";
 import { tzOffsetSec } from "./time.ts";
 import type { DelayEvent, MarketEvent, MetricEvent, QuakeEvent, RainEvent, MatchEvent, StrikeEvent, TickEvent, TrafficEvent } from "./types.ts";
 
@@ -65,7 +66,7 @@ export function marketToEvent(row: MarketRow): MarketEvent {
     return ev;
   }
   if (row.kind === "match_bet") {
-    const bet = p.bet === "over_2_5" || p.bet === "btts" ? p.bet : "home_win";
+    const bet = (MATCH_BETS as string[]).includes(String(p.bet)) ? (p.bet as MatchEvent["bet"]) : "home_win";
     const ev: MatchEvent = { ...base, kind: "match_bet", category: "sport", eventId: String(p.eventId), bet };
     return ev;
   }

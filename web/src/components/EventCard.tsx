@@ -1,7 +1,7 @@
 import { Q } from "./Q.tsx";
 import { Activity, Car, Clapperboard, Trophy, TrendingUp, Megaphone, Clock, Star, Zap } from "lucide-preact";
 import { cityName, cityOf } from "../lib/cities.ts";
-import { countdown, fmtOdds, isYesNo, money, per10, question, quip, type MarketRow } from "../lib/format.ts";
+import { countdown, fmtOdds, isYesNo, money, per10, question, type MarketRow } from "../lib/format.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { LiveDelay, Pick } from "../lib/types.ts";
 import { BusSide, CloudRainSide, isMetroLine, MetroSide, TrainSide } from "./Vehicles.tsx";
@@ -42,7 +42,6 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
         <span class={`timer ${left < 300_000 ? "hot" : ""}`}><Clock size={12} style="vertical-align:-1px;margin-right:4px" />{countdown(left)}</span>
       </div>
       <p class="q"><Q m={m} msg={msg} locale={locale} city={cityName(city, locale)} tz={city.timezone} now={new Date(now)} /></p>
-      <p class="quip">{quip(m, msg)}</p>
       {typeof m.params.by === "string" && m.params.by && <p class="byline">{msg.maker.by(m.params.by)}</p>}
       {live && <DelayMeter sec={live.delay_sec} prev={live.prev_delay_sec} limitSec={Number(m.params.thresholdSec ?? 180)} forecast={live.is_forecast} msg={msg} />}
       <div class="actions2">

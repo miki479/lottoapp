@@ -8,9 +8,9 @@ type Hint = "yes" | "no" | null | undefined;
  * hovering or pressing YES pushes it to the extreme (hot, gale, blizzard, strong UV, smog) and NO calms it down.
  */
 export function MetricScene({ m, hint, msg }: { m: MarketRow; hint: Hint; msg: Messages }) {
-  const metric = String(m.params.metric) as "temp" | "wind" | "snow" | "uv" | "aqi";
+  const metric = String(m.params.metric) as "temp" | "wind" | "snow" | "uv" | "aqi" | "hail";
   const f = m.params.forecast;
-  const cap = `${msg.wx.names[metric]}${typeof f === "number" && metric !== "snow" ? ` · ${msg.wx.forecast(`${f}${String(m.params.unit ?? "")}`)}` : ""}`;
+  const cap = `${msg.wx.names[metric]}${typeof f === "number" && metric !== "snow" && metric !== "hail" ? ` · ${msg.wx.forecast(`${f}${String(m.params.unit ?? "")}`)}` : ""}`;
   return (
     <div class={`mscene ${metric} ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
       <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
@@ -19,6 +19,7 @@ export function MetricScene({ m, hint, msg }: { m: MarketRow; hint: Hint; msg: M
         {metric === "snow" && <Snow />}
         {metric === "uv" && <Uv />}
         {metric === "aqi" && <Air />}
+        {metric === "hail" && <Hail />}
       </svg>
       <b>{cap}</b>
     </div>
@@ -98,3 +99,17 @@ const Air = () => (
     <g class="m-leafc" fill="#5fbf6a"><path d="M292 12q10 2 8 14q-10-2-8-14z" /><path d="M16 18q8 2 6 11q-8-2-6-11z" /></g>
   </>
 );
+
+/** A storm cloud; with YES the hailstones pelt down, with NO the sky stays dry. */
+function Hail() {
+  const stones = [[40, 0], [78, 2], [112, 1], [150, 3], [190, 0], [228, 2], [262, 1], [296, 3]] as const;
+  return (
+    <>
+      <rect width="320" height="84" fill="#46506e" />
+      <g class="m-hcloud"><ellipse cx="110" cy="22" rx="54" ry="16" fill="#2c3350" /><ellipse cx="170" cy="18" rx="62" ry="18" fill="#252b45" /><ellipse cx="236" cy="24" rx="50" ry="15" fill="#2c3350" /></g>
+      <path class="m-bolt" d="M170 30 l-10 18 h9 l-6 16 16 -22 h-10 l8 -12 z" fill="#ffe36a" />
+      <g class="m-stones">{stones.map(([x, d], i) => <circle key={i} class="stone" cx={x} cy="40" r="3.600" fill="#f3f8ff" style={`--d:${d * 0.18}s`} />)}</g>
+      <path d="M0 80 H320" stroke="#2b3350" stroke-width="6" />
+    </>
+  );
+}

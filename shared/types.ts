@@ -53,7 +53,7 @@ export interface RainEvent extends BaseEvent {
 export interface MetricEvent extends BaseEvent {
   kind: "metric_gt";
   category: "weather";
-  metric: "temp" | "wind" | "snow" | "uv" | "aqi";
+  metric: "temp" | "wind" | "snow" | "uv" | "aqi" | "hail";
   threshold: number;
 }
 
@@ -173,5 +173,5 @@ export interface MatchEvent extends BaseEvent {
   kind: "match_bet";
   category: "sport";
   eventId: string;
-  bet: "home_win" | "over_2_5" | "btts";
+  bet: import("./sport.ts").MatchBet;
 }

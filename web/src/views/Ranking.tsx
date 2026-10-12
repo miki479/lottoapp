@@ -1,16 +1,23 @@
 import { Trophy, TrendingDown, TrendingUp, Users } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Empty } from "../components/Empty.tsx";
-import type { Messages } from "../i18n/index.ts";
+import type { Locale, Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 import { seasonDaysLeft } from "../lib/format.ts";
 import type { GroupRow, LbRow, Profile } from "../lib/types.ts";
+import type { Place } from "../lib/places.ts";
+import { HomePlaceField } from "../components/HomePlaceField.tsx";
 
-type Scope = "global" | "country" | "city" | "friends";
+type Tab = "world" | "local" | "friends";
+type Local = "near" | "city" | "country";
+const RADII = [10, 30, 50, 100];
 
-export function Ranking(p: { msg: Messages; profile: Profile | null; registered: boolean; onToast: (s: string, kind?: "ok" | "err") => void; onAuth: () => void; onNickname: () => void; onRank: (rank: number | null, scope: string) => void }) {
+export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | null; registered: boolean; onToast: (s: string, kind?: "ok" | "err") => void; onAuth: () => void; onNickname: () => void; home: Place | null; onHome: (pl: Place | null) => void; onRank: (rank: number | null, scope: string) => void }) {
   const m = p.msg.ranking;
-  const [scope, setScope] = useState<Scope>("global");
+  const [tab, setTab] = useState<Tab>("world");
+  const [local, setLocal] = useState<Local>("near");
+  const [km, setKm] = useState(30);
+  const scope = tab === "world" ? "global" : tab === "friends" ? "friends" : local === "near" ? "near" : local;
   const [rows, setRows] = useState<LbRow[] | null>(null);
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [group, setGroup] = useState<string | null>(null);
@@ -22,19 +29,20 @@ export function Ranking(p: { msg: Messages; profile: Profile | null; registered:
     const list = (data ?? []) as GroupRow[]; setGroups(list); if (!group && list[0]) setGroup(list[0].code);
   };
   useEffect(() => { if (p.registered) loadGroups(); }, [p.registered]);
-  const key = scope === "country" ? p.profile?.country : scope === "city" ? p.profile?.city_id : scope === "friends" ? group : null;
+  const key = scope === "country" ? p.profile?.country : scope === "city" ? p.profile?.city_id : scope === "friends" ? group : scope === "near" ? String(km) : null;
   useEffect(() => {
     if (!p.registered) return;
     if (scope !== "global" && !key) { setRows([]); return; }
+    if (scope === "near" && !p.home) { setRows([]); return; }
     setRows(null);
     sb.rpc("leaderboard", { p_scope: scope === "friends" ? "group" : scope, p_key: key ?? null, p_limit: 50 }).then(({ data }) => {
       const r = ((data ?? []) as LbRow[]).map((x) => ({ ...x, rank: Number(x.rank), score: Number(x.score) }));
       setRows(r); if (scope === "global") p.onRank(r.find((x) => x.is_me)?.rank ?? null, m.scopes.global);
     });
-  }, [scope, key, p.registered]);
+  }, [scope, key, p.registered, p.home?.id]);
 
   const create = async () => { const { data, error } = await sb.rpc("create_group", { p_name: gname }); if (error) return p.onToast(p.msg.errors[error.message.includes("nickname_not_allowed") ? "nickname_not_allowed" : error.message.includes("bad_nickname") ? "bad_nickname" : "registration_required"]!, "err"); await loadGroups(); setGroup(String(data)); setGname(""); };
-  const join = async () => { const { data, error } = await sb.rpc("join_group", { p_code: code }); if (error) return p.onToast(p.msg.errors[error.message.includes("unknown_group") ? "unknown_group" : "generic"]!, "err"); await loadGroups(); setGroup(String(data)); setCode(""); setScope("friends"); };
+  const join = async () => { const { data, error } = await sb.rpc("join_group", { p_code: code }); if (error) return p.onToast(p.msg.errors[error.message.includes("unknown_group") ? "unknown_group" : "generic"]!, "err"); await loadGroups(); setGroup(String(data)); setCode(""); setTab("friends"); };
 
   if (!p.registered) return (
     <div class="screen stack"><h1>{m.title}</h1><div class="card"><Empty icon={Trophy} title={m.gate.title} body={m.gate.body} cta={m.gate.cta} onCta={p.onAuth} /></div></div>
@@ -44,7 +52,14 @@ export function Ranking(p: { msg: Messages; profile: Profile | null; registered:
       <h1>{m.title}</h1>
       <p class="detail">{m.season(seasonDaysLeft())}</p>
       {!p.profile?.display_name && <button class="card pressable" style="text-align:left" onClick={p.onNickname}><b>{p.msg.profile.nickname.title}</b><p class="hint">{p.msg.profile.nickname.label}</p></button>}
-      <div class="seg" role="tablist">{(["global", "country", "city", "friends"] as Scope[]).map((s) => <button key={s} role="tab" class={scope === s ? "on" : ""} aria-selected={scope === s} onClick={() => setScope(s)}>{m.scopes[s]}</button>)}</div>
+      <div class="seg" role="tablist">{(["world", "local", "friends"] as Tab[]).map((x) => <button key={x} role="tab" class={tab === x ? "on" : ""} aria-selected={tab === x} onClick={() => setTab(x)}>{p.msg.rankTabs[x]}</button>)}</div>
+      {tab === "local" && (
+        <section class="card stack">
+          <div class="mkchips">{(["near", "city", "country"] as Local[]).map((x) => <button key={x} class={`mkchip ${local === x ? "on" : ""}`} aria-pressed={local === x} onClick={() => setLocal(x)}>{p.msg.rankTabs[x]}</button>)}</div>
+          {local === "near" && !p.home && <><p class="hint">{p.msg.rankTabs.needHome}</p><HomePlaceField msg={p.msg} locale={p.locale} value={p.home} onChange={p.onHome} /></>}
+          {local === "near" && p.home && <><div class="mkchips">{RADII.map((r) => <button key={r} class={`mkchip ${km === r ? "on" : ""}`} aria-pressed={km === r} onClick={() => setKm(r)}>{r} {p.msg.rankTabs.km}</button>)}</div><HomePlaceField msg={p.msg} locale={p.locale} value={p.home} onChange={p.onHome} /></>}
+        </section>
+      )}
       {scope === "friends" && (
         <section class="card stack">
           {groups.length > 0 && <div class="chiprow">{groups.map((g) => <button key={g.code} class={`chip ${g.code === group ? "on" : ""}`} onClick={() => setGroup(g.code)}>{g.name}</button>)}</div>}

@@ -6,16 +6,17 @@ import { sb } from "../lib/api.ts";
 import type { MarketRow } from "../lib/format.ts";
 import { fmtOdds } from "../lib/format.ts";
 import { Sheet } from "./Sheet.tsx";
+import { MatchPicker } from "./MatchPicker.tsx";
 import { STEAM, WIKI_ARTICLES, CRYPTO } from "../../../shared/ticks.ts";
 import { METRICS } from "../../../shared/metrics.ts";
 
-type Tab = "weather" | "crypto" | "games" | "culture";
+type Tab = "weather" | "crypto" | "games" | "culture" | "match";
 interface Preview { threshold: number; step?: number; odds_yes: number; odds_no: number; chance: number; forecast?: number; reference?: number; unit?: string }
-const METRIC_LIST = ["temp", "wind", "uv", "aqi", "snow"] as const;
+const METRIC_LIST = ["temp", "wind", "uv", "aqi", "snow", "hail"] as const;
 const SPOT_OFFSETS = [1, 3, 6, 12, 24];
 
 /** Build your own question from a template. The server checks, prices and refuses what would be too obvious. */
-export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: string; name: string }[]; onClose: () => void; onQuake: () => void; onFriends: () => void; onCreated: (m: MarketRow) => void; registered: boolean }) {
+export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: string; name: string }[]; onClose: () => void; onQuake: () => void; onFriends: () => void; onCreated: (m: MarketRow) => void; registered: boolean; origin: { lat: number; lon: number } | null }) {
   const m = p.msg.maker, nf1 = new Intl.NumberFormat(INTL_TAG[p.locale], { maximumFractionDigits: 1 }), nf0 = new Intl.NumberFormat(INTL_TAG[p.locale], { maximumFractionDigits: 0 });
   const nf = { format: (v: number) => (Math.abs(v) >= 1000 ? nf0 : nf1).format(v) };
   const [tab, setTab] = useState<Tab>("weather");
@@ -72,10 +73,11 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
       <p class="hint">{m.hint}</p>
       <div class="mkchips">
         <button class="mkchip" onClick={p.onFriends}>{p.msg.friends.tab}</button>
-        {(["weather", "crypto", "games", "culture"] as Tab[]).map((t) => <button key={t} class={`mkchip ${tab === t ? "on" : ""}`} onClick={() => setTab(t)}>{m.tabs[t]}</button>)}
+        {(["weather", "crypto", "games", "culture"] as Tab[]).map((t) => <button key={t} class={`mkchip ${tab === t ? "on" : ""}`} onClick={() => setTab(t)}>{m.tabs[t as "weather"]}</button>)}
+        <button class={`mkchip ${tab === "match" ? "on" : ""}`} onClick={() => setTab("match")}>{p.msg.matchmaker.tab}</button>
         <button class="mkchip" onClick={p.onQuake}>{m.tabs.quake}</button>
       </div>
-      {tab === "weather" ? <>
+      {tab === "match" ? <MatchPicker msg={p.msg} locale={p.locale} origin={p.origin} registered={p.registered} onCreated={p.onCreated} /> : tab === "weather" ? <>
         <label class="qmfield"><span class="detail">{m.place}</span><select class="field" value={place} onChange={(e) => setPlace((e.target as HTMLSelectElement).value)}>{p.places.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
         <span class="detail">{m.metric}</span>{chips(METRIC_LIST.map((k) => ({ k, t: p.msg.wx.names[k] })), metric, (k) => setMetric(k as typeof metric))}
         <div class="qmgrid">
@@ -88,13 +90,13 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
         {wiki ? chips([{ k: "1", t: m.midnightToday }, { k: "2", t: m.midnightTomorrow }].map((x) => ({ ...x })), String(wikiDay + 1), (k) => setWikiDay(Number(k) - 1))
           : chips(SPOT_OFFSETS.map((h) => ({ k: String(h), t: m.in_h.replace("{n}", String(h)) })), String(offset), (k) => setOffset(Number(k)))}
       </>}
-      {thr !== null && <div class="mkline">
+      {tab !== "match" && thr !== null && <div class="mkline">
         <span class="detail">{m.line}</span>
         <div class="stepper"><button class="iconbtn" onClick={() => setThr(Math.max(step, thr - step))} aria-label="−"><Minus size={20} /></button><b class="num">{nf.format(thr)}{tab === "weather" ? ` ${METRICS[metric].unit}` : tab === "crypto" ? " $" : ""}</b><button class="iconbtn" onClick={() => setThr(thr + step)} aria-label="+"><Plus size={20} /></button></div>
         {pv && <p class="hint num">{pv.forecast !== undefined ? `${m.forecastLbl}: ${nf.format(pv.forecast)}` : `${m.now}: ${nf.format(pv.reference ?? 0)}`} · {m.odds}: {fmtOdds(pv.odds_yes, p.locale)} / {fmtOdds(pv.odds_no, p.locale)}</p>}
       </div>}
-      {err && <p class="formerr" role="alert">{err}</p>}
-      <button class="btn primary wide" disabled={busy || !pv} onClick={create}>{busy ? m.creating : m.create}</button>
+      {tab !== "match" && err && <p class="formerr" role="alert">{err}</p>}
+      {tab !== "match" && <button class="btn primary wide" disabled={busy || !pv} onClick={create}>{busy ? m.creating : m.create}</button>}
     </Sheet>
   );
 }

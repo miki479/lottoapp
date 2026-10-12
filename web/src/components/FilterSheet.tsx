@@ -1,11 +1,11 @@
-import { CloudFog, CloudRain, Globe, Snowflake, Sun, Thermometer, Wind, X } from "lucide-preact";
+import { CloudFog, CloudHail, CloudRain, Globe, Snowflake, Sun, Thermometer, Wind, X } from "lucide-preact";
 import type { Messages } from "../i18n/index.ts";
 import { Flag } from "./Flag.tsx";
 import { Sheet } from "./Sheet.tsx";
 
 export interface FilterOption { key: string; count: number }
 
-const ICON: Record<string, typeof Wind> = { rain: CloudRain, temp: Thermometer, wind: Wind, snow: Snowflake, uv: Sun, aqi: CloudFog, world: Globe };
+const ICON: Record<string, typeof Wind> = { rain: CloudRain, temp: Thermometer, wind: Wind, snow: Snowflake, uv: Sun, aqi: CloudFog, hail: CloudHail, world: Globe };
 const FLAG: Record<string, string> = { jp: "JP", it: "IT", ca: "US", tr: "TR" };
 
 export function filterLabel(msg: Messages, key: string): string {

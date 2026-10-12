@@ -2,7 +2,7 @@ import { computeOdds } from "./odds.ts";
 import { localDayStart } from "./time.ts";
 
 /** Weather-style measurements beyond rain. One hourly value per place, compared with a threshold. */
-export type MetricId = "temp" | "wind" | "snow" | "uv" | "aqi";
+export type MetricId = "temp" | "wind" | "snow" | "uv" | "aqi" | "hail";
 
 export interface MetricDef {
   /** Open-Meteo hourly variable. */
@@ -19,6 +19,8 @@ export interface MetricDef {
   /** Plausible range: anything outside is treated as bad data. */
   min: number;
   max: number;
+  /** Turns the raw API value into the stored one (hail: weather code -> 1 if thunderstorm with hail). */
+  transform?: (v: number) => number;
 }
 
 export const METRICS: Record<MetricId, MetricDef> = {
@@ -27,6 +29,8 @@ export const METRICS: Record<MetricId, MetricDef> = {
   snow: { api: "snowfall", source: "forecast", unit: "cm", sigma: 0.3, step: 0.1, hour: 12, min: 0, max: 50 },
   uv: { api: "uv_index", source: "forecast", unit: "", sigma: 1.2, step: 1, hour: 13, min: 0, max: 16 },
   aqi: { api: "european_aqi", source: "air", unit: "", sigma: 12, step: 10, hour: 12, min: 0, max: 500 },
+  /** Hail: WMO weather code 96 or 99 (thunderstorm with hail) in that hour. Only offered through player-made questions. */
+  hail: { api: "weather_code", source: "forecast", unit: "", sigma: 1, step: 1, hour: 15, min: 0, max: 1, transform: (v) => (v >= 96 ? 1 : 0) },
 };
 export const METRIC_IDS = Object.keys(METRICS) as MetricId[];
 
@@ -54,6 +58,7 @@ export function metricOdds(metric: MetricId, forecast: number, threshold: number
 /** Is a market worth offering for this forecast? (Nobody bets on UV at night or on snow in the tropics.) */
 export function worthOffering(metric: MetricId, forecast: number, tempAround?: number): boolean {
   if (!Number.isFinite(forecast)) return false;
+  if (metric === "hail") return false;
   if (metric === "uv") return forecast >= 2;
   if (metric === "snow") return forecast >= 0.05 || (tempAround !== undefined && tempAround <= 1 && forecast > 0);
   if (metric === "wind") return forecast >= 15;

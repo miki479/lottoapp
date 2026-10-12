@@ -8,9 +8,10 @@ export const LOCALES: { id: Locale; label: string; short: string }[] = [
 
 export interface BusQ { route: string; headsign: string; stop: string; time: string; min: number }
 export interface RainQ { city: string; time: string }
-export type MetricKey = "temp" | "wind" | "snow" | "uv" | "aqi";
+export type MetricKey = "temp" | "wind" | "snow" | "uv" | "aqi" | "hail";
 export interface MetricQ { metric: MetricKey; city: string; time: string; value: number; unit: string }
-export interface MatchQ { bet: "home_win" | "over_2_5" | "btts"; home: string; away: string; time: string }
+export type MatchBetKey = "home_win" | "draw" | "away_win" | "over_1_5" | "over_2_5" | "over_3_5" | "btts" | "home_clean" | "away_clean";
+export interface MatchQ { bet: MatchBetKey; home: string; away: string; time: string }
 export interface TickQ { kind: "price" | "kp" | "wiki" | "players" | "storm"; label: string; value: string; time: string; from: string; to: string; day: string }
 export interface TrafficQ { site: string; toward: string; from: string; to: string; kmh: number }
 export interface StrikeQ { date: string; day: string; who: string; hours: string }
@@ -50,10 +51,12 @@ export interface Messages {
   places: { more: string; title: string; hint: string; search: string; recent: string; capitals: string; famous: string; withData: string; none: string; searchError: string; limit: string; full: string; credit: string };
   top: { late: string; popular: string; city: string; closing: string; avg: (min: number) => string; players: (n: number) => string; ontime: string; open: string };
   card: { late: string; onTime: string; per10: (win: number) => string; closes: string; forecast: string; live: string; yes: string; no: string; over: (min: number) => string; topOdds: string; hot: string };
+  nearby: { title: string; hint: string; radius: string; none: string; home: string; homeHint: string; homeSet: string; homeClear: string; homeSearch: string; homeNone: string; askLocate: string; statsTitle: string; statsIntro: string; towns: string; bands: string; yes: string; notEnough: string; people: string; total: string; km: string };
+  matchmaker: { tab: string; pick: string; reason: string; exists: string; none: string; open: string; bets: Record<MatchBetKey, string> };
   friends: { tab: string; title: string; hint: string; placeholder: string; category: string; moreCats: string; lessCats: string; closes: string; stake: string; noStake: string; stakeNote: string; create: string; creating: string; needAccount: string; judge: string; rules: string; mine: string; none: string; yes: string; no: string; waitJudge: string; decide: string; decideYes: string; decideNo: string; decideVoid: string; pot: string; perHead: string; closesIn: string; closed: string; resolvedYes: string; resolvedNo: string; voided: string; people: string; won: string; share: string; copied: string; join: string; full: string; shareText: string; closeOpts: Record<"h1" | "h3" | "tonight" | "tomorrow" | "d3" | "d7", string>; errors: Record<"bad_title" | "title_not_allowed" | "limit" | "too_many_open" | "bad_time" | "registration_required" | "insufficient_credits" | "already_picked" | "challenge_closed" | "challenge_full" | "not_closed_yet" | "generic", string>; cats: Record<"friends" | "family" | "work" | "dinner" | "trip" | "sport" | "games" | "home" | "school" | "party" | "music" | "food" | "pets" | "tech" | "money_fun" | "random", string> };
   maker: { open: string; title: string; hint: string; tabs: Record<"weather" | "crypto" | "games" | "culture" | "quake", string>; place: string; metric: string; day: string; today: string; tomorrow: string; hour: string; line: string; now: string; forecastLbl: string; when: string; pickOne: string; in_h: string; midnightToday: string; midnightTomorrow: string; odds: string; chance: string; create: string; creating: string; needAccount: string; errors: Record<"limit" | "too_many_open" | "full" | "too_certain" | "bad_time" | "source_unavailable" | "generic", string>; by: (n: string) => string; trending: string; trendingNear: string; share: string; copied: string; shareText: string };
   chart: { title: string; min: string; max: string; change: string; above: string };
-  quips: Record<"bus" | "train" | "rain" | "temp" | "wind" | "snow" | "uv" | "aqi" | "quake" | "strike" | "traffic" | "price" | "kp" | "wiki" | "game" | "sport" | "storm", string[]>;
+  quips: Record<"bus" | "train" | "rain" | "temp" | "wind" | "snow" | "uv" | "aqi" | "quake" | "strike" | "traffic" | "price" | "kp" | "wiki" | "game" | "sport" | "storm" | "hail", string[]>;
   question: { bus: (q: BusQ) => string; train: (q: BusQ) => string; rain: (q: RainQ) => string; metric: (q: MetricQ) => string; quake: (q: QuakeQ) => string; strike: (q: StrikeQ) => string; traffic: (q: TrafficQ) => string; tick: (q: TickQ) => string; match: (q: MatchQ) => string };
   sheet: { title: string; pick: string; stake: string; potential: string; confirm: string; confirming: string; odds: string; placed: (win: string) => string };
   bets: { title: string; tabs: { open: string; settled: string }; open: string; won: string; lost: string; void: string; empty: { title: string; body: string; cta: string }; yourPick: (yes: boolean) => string; settles: string; voidReason: Record<string, string>; details: string };
@@ -63,6 +66,7 @@ export interface Messages {
     measured: (min: number, sec: number) => string; threshold: (min: number) => string; rainMeasured: (mm: number) => string; tickMeasured: (v: string) => string; matchScore: (home: number, away: number) => string; metricMeasured: (name: string, value: string) => string; strikeOn: string; strikeOff: string; trafficMeasured: (avg: number, thr: number) => string; quakeMeasured: (count: number, max: string) => string;
     stake: string; odds: string; share: string; shareText: string; close: string; more: (n: number) => string; saved: string;
   };
+  rankTabs: { world: string; local: string; friends: string; near: string; country: string; city: string; km: string; needHome: string; radius: string };
   ranking: {
     title: string; season: (d: number) => string; scopes: { global: string; country: string; city: string; friends: string }; you: string; credits: string;
     empty: { title: string; body: string }; gate: { title: string; body: string; cta: string };

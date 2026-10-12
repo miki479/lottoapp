@@ -14,6 +14,9 @@ import { Header } from "./components/Header.tsx";
 import { CROWD_SOURCE } from "./lib/crowding.ts";
 import { QuakeMaker } from "./components/QuakeMaker.tsx";
 import { MarketMaker } from "./components/MarketMaker.tsx";
+import { NearbyBets } from "./components/NearbyBets.tsx";
+import { HomePlaceField } from "./components/HomePlaceField.tsx";
+import { loadHome, saveHome } from "./lib/home.ts";
 import { ChallengeMaker } from "./components/ChallengeMaker.tsx";
 import { ChallengeSheet, type Challenge } from "./components/ChallengeSheet.tsx";
 import { AdminPage } from "./components/AdminPage.tsx";
@@ -28,9 +31,9 @@ import { ensureGuest, guestState, sb } from "./lib/api.ts";
 import { CITIES, cityInfos, cityName, cityOf } from "./lib/cities.ts";
 import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
-import { countdown, currencySymbol, dayIn, isYesNo, money, question, type MarketRow } from "./lib/format.ts";
+import { countdown, currencySymbol, dayIn, isYesNo, money, question, quip, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
-import { NearYou, type NearState } from "./components/NearYou.tsx";
+import type { NearState } from "./components/NearYou.tsx";
 import { PlacePicker } from "./components/PlacePicker.tsx";
 import { FAMOUS_PLACES, FEATURED_CITY_IDS, FEATURED_PLACES, ITALY_CAPITALS, ensurePlace, km, placeById, placeIdOf, recentPlaces, rememberPlace, type Place } from "./lib/places.ts";
 import { RewardsSheet } from "./components/RewardsSheet.tsx";
@@ -87,6 +90,10 @@ export function App() {
   const [placePicker, setPlacePicker] = useState(false);
   const [quakeMaker, setQuakeMaker] = useState(false);
   const [maker, setMaker] = useState(false);
+  const [home, setHome] = useState<Place | null>(() => loadHome());
+  const changeHome = (pl: Place | null) => { setHome(pl); saveHome(pl); };
+  // once there is a profile, the home town chosen on this device is kept in it too (town level, for area statistics)
+  useEffect(() => { if (profile && home) saveHome(home); }, [profile?.id]);
   const [challengeMaker, setChallengeMaker] = useState(false);
   const [challengeCode, setChallengeCode] = useState<string | null>(null);
   const [myChallenges, setMyChallenges] = useState<Challenge[]>([]);
@@ -321,6 +328,9 @@ export function App() {
     for (const p of popular.slice(0, 2)) { const m = open.find((x) => x.id === p.market_id); if (m) out.push({ id: `p${m.id}`, node: <><b>{msg.ticker.crowd(p.bets)}</b> · {q(m)}</> }); }
     open.filter((m) => !m.params.ladderOf && Date.parse(m.closes_at) - now < 8 * 60_000 && Date.parse(m.closes_at) > now).slice(0, 2).forEach((m) => out.push({ id: `c${m.id}`, node: <><b>{msg.ticker.closing}</b> · {q(m)}</> }));
     if (isItalian) { const s = open.filter((m) => m.category === "strike").sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at))[0]; if (s) out.push({ id: `s${s.id}`, node: <>{msg.ticker.strike(new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(new Date(s.target_at)))}</> }); }
+    // The dry one-liners live here, with the other jokes: one per kind of question that is open right now.
+    const seenKinds = new Set<string>();
+    for (const m of open) { const t = quip(m, msg); if (!t || seenKinds.has(t.slice(0, 12))) continue; if (seenKinds.size >= 8) break; seenKinds.add(t.slice(0, 12)); out.push({ id: `j${m.id}`, node: <i>{t}</i> }); }
     msg.home.idle.forEach((s, i) => out.splice(Math.min(out.length, 1 + i * 2), 0, { id: `t${i}`, node: <>{s}</> }));
     return out;
   }, [activity, results, locale, open, live, popular, isItalian, Math.floor(now / 30000)]);
@@ -409,6 +419,11 @@ export function App() {
     const go = () => sb.rpc("popular_in_city", { p_city: near.id, p_limit: 5 }).then(({ data }) => setNearRows(((data ?? []) as { market_id: string; bets: number }[]).map((r) => ({ market_id: r.market_id, bets: +r.bets }))));
     go(); const i = setInterval(go, 60000); return () => clearInterval(i);
   }, [near?.id]);
+  const origin = useMemo(() => {
+    if (home) return { lat: home.lat, lon: home.lon, name: home.name };
+    if (near) { const c = cityOf(near.id); if (c.location && (c.location.lat || c.location.lon)) return { lat: c.location.lat, lon: c.location.lon, name: near.name }; }
+    return null;
+  }, [home?.id, home?.lat, near?.id]);
   const nearItems = useMemo(() => {
     if (!near) return { items: [] as { m: MarketRow; bets: number }[], fallback: false };
     const items = nearRows.map((r) => ({ m: open.find((x) => x.id === r.market_id)!, bets: r.bets })).filter((x) => x.m);
@@ -466,16 +481,16 @@ export function App() {
         <main class="content">
           <div class="satire" role="note">{msg.home.satire}</div>
           {stale && <p class="note warn" style="margin-bottom:12px">{msg.feedWarning}</p>}
-          {screen === "home" && <Home onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} nearNode={<NearYou msg={msg} locale={locale} now={now} near={near} items={nearItems.items} fallback={nearItems.fallback} busy={locating} onLocate={locate} onOpen={(m) => setSheet({ m, pick: "yes" })} />} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
+          {screen === "home" && <Home nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets challenges={myChallenges} onChallenge={(code) => setChallengeCode(code)} parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
-          {screen === "ranking" && <Ranking msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
+          {screen === "ranking" && <Ranking home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
           {screen === "admin" && <AdminPage msg={msg} onBack={() => go("profile")} />}
-          {screen === "profile" && <ProfileView onAdmin={() => go("admin")} giftCard={giftCard} onGiftSeen={() => { store.set("giftcard", "0"); setGiftCard(false); }} push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, setPrefs: async (f: boolean, s: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
+          {screen === "profile" && <ProfileView homeNode={<HomePlaceField msg={msg} locale={locale} value={home} onChange={changeHome} />} onAdmin={() => go("admin")} giftCard={giftCard} onGiftSeen={() => { store.set("giftcard", "0"); setGiftCard(false); }} push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, setPrefs: async (f: boolean, s: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
         </main>
       </div>
       <TabBar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} />
 
-      {maker && <MarketMaker msg={msg} locale={locale} registered={registered} places={[...CITIES.filter((c) => c.categories.weather?.enabled).map((c) => ({ id: c.id, name: cityName(c, locale) })), ...myPlaces.map((pl) => ({ id: pl.id, name: pl.name }))]} onClose={() => setMaker(false)} onQuake={() => { setMaker(false); setQuakeMaker(true); }} onFriends={() => { setMaker(false); setChallengeMaker(true); }} onCreated={(m) => { setMaker(false); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
+      {maker && <MarketMaker origin={origin} msg={msg} locale={locale} registered={registered} places={[...CITIES.filter((c) => c.categories.weather?.enabled).map((c) => ({ id: c.id, name: cityName(c, locale) })), ...myPlaces.map((pl) => ({ id: pl.id, name: pl.name }))]} onClose={() => setMaker(false)} onQuake={() => { setMaker(false); setQuakeMaker(true); }} onFriends={() => { setMaker(false); setChallengeMaker(true); }} onCreated={(m) => { setMaker(false); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
       {challengeMaker && <ChallengeMaker msg={msg} locale={locale} registered={registered} onAuth={() => { setChallengeMaker(false); setAuth(true); }} onClose={() => setChallengeMaker(false)} onCreated={(code) => { setChallengeMaker(false); loadChallenges(); setChallengeCode(code); }} />}
       {challengeCode && <ChallengeSheet code={challengeCode} msg={msg} locale={locale} now={now} registered={registered} onClose={() => { setChallengeCode(null); loadChallenges(); }} onAuth={() => { setChallengeCode(null); setAuth(true); }} onChanged={() => { loadProfile(); loadChallenges(); }} />}
       {quakeMaker && <QuakeMaker msg={msg} locale={locale} onClose={() => setQuakeMaker(false)} onCreated={(m) => { setQuakeMaker(false); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}

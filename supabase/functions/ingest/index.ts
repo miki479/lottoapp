@@ -7,7 +7,7 @@ import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/a
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
 import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
-import { buildMatchMarkets, FINISHED, type Fixture, type TableRow } from "../_shared/shared/sport.ts";
+import { buildMatchMarkets, CLUB_TOWN, FINISHED, LEAGUES, type Fixture, type Geo, type TableRow } from "../_shared/shared/sport.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
 
@@ -174,7 +174,7 @@ async function ingestMetrics(sb: ReturnType<typeof db>, now: number, last: numbe
           const times: string[] | undefined = src?.hourly?.time; const vals: Array<number | null> | undefined = src?.hourly?.[METRICS[m].api];
           if (!times || !vals) continue;
           const map = new Map<number, number>();
-          times.forEach((ts, h) => { const v = vals[h]; if (typeof v !== "number") return; const e = Date.parse(`${ts}:00Z`) / 1000; if (!Number.isFinite(e)) return; map.set(e, v); obsRows.push({ feed_id: `om-${t.id}`, metric: m, hour_start: new Date(e * 1000).toISOString(), value: v, fetched_at: fetchedAt }); });
+          times.forEach((ts, h) => { const raw = vals[h]; if (typeof raw !== "number") return; const v = METRICS[m].transform ? METRICS[m].transform!(raw) : raw; const e = Date.parse(`${ts}:00Z`) / 1000; if (!Number.isFinite(e)) return; map.set(e, v); obsRows.push({ feed_id: `om-${t.id}`, metric: m, hour_start: new Date(e * 1000).toISOString(), value: v, fetched_at: fetchedAt }); });
           series[m] = map;
         }
         markets.push(...buildMetricMarkets({ id: t.id, tz: t.tz, nowEpoch: now, series }));
@@ -483,7 +483,6 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
 
 
 // ---- Football (Serie A) from TheSportsDB. The free test key ("3") is for development: markets made with it are private (testOnly) until a paid key is set. ----
-const SERIE_A = "4332";
 async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
   const key = Deno.env.get("SPORTSDB_KEY") || "3";
   const base = `https://www.thesportsdb.com/api/v1/json/${key}`;
@@ -505,30 +504,52 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
     }
     if (rows.length) { const { error } = await sb.from("match_results").upsert(rows, { onConflict: "event_id" }); if (error) throw new Error(error.message); notes.push(`${rows.length} results`); }
   }
-  // 2. Hourly: the next two rounds become questions.
+  // 2. Hourly: the next two rounds of every league become questions.
   if (now - last >= 3600 - 5) {
     await sb.from("feed_health").upsert({ feed_id: "sportsdb", last_attempt_at: new Date(now * 1000).toISOString() });
-    try {
-      const next = ((await getJson(`${base}/eventsnextleague.php?id=${SERIE_A}`))?.events ?? [])[0];
-      if (!next) throw new Error("no upcoming Serie A match");
-      const round = Number(next.intRound), season = String(next.strSeason);
-      const fixtures: Fixture[] = [];
-      for (const r of [round, round + 1]) {
-        for (const e of ((await getJson(`${base}/eventsround.php?id=${SERIE_A}&r=${r}&s=${season}`))?.events ?? []) as Record<string, string>[]) {
-          const k = Date.parse(`${e.strTimestamp}Z`) / 1000;
-          if (e.idEvent && e.strHomeTeam && e.strAwayTeam && Number.isFinite(k)) fixtures.push({ eventId: e.idEvent, league: "Serie A", home: e.strHomeTeam, away: e.strAwayTeam, kickoff: k });
+    let okLeagues = 0, offered = 0, fixturesN = 0;
+    const geoCache = new Map<string, Geo | null>();
+    const { data: geoRows } = await sb.from("team_geo").select("team,lat,lon");
+    for (const g of geoRows ?? []) geoCache.set(g.team as string, g.lat === null ? null : { lat: Number(g.lat), lon: Number(g.lon) });
+    let geocoded = 0;
+    for (const league of LEAGUES) {
+      try {
+        const next = ((await getJson(`${base}/eventsnextleague.php?id=${league.id}`))?.events ?? [])[0];
+        if (!next) continue;
+        const round = Number(next.intRound), season = String(next.strSeason);
+        const fixtures: Fixture[] = [];
+        for (const r of [round, round + 1]) {
+          for (const e of ((await getJson(`${base}/eventsround.php?id=${league.id}&r=${r}&s=${season}`))?.events ?? []) as Record<string, string>[]) {
+            const k = Date.parse(`${e.strTimestamp}Z`) / 1000;
+            if (e.idEvent && e.strHomeTeam && e.strAwayTeam && Number.isFinite(k)) fixtures.push({ eventId: e.idEvent, league: league.name, home: e.strHomeTeam, away: e.strAwayTeam, kickoff: k });
+          }
         }
-      }
-      let table: TableRow[] = [];
-      try { table = (((await getJson(`${base}/lookuptable.php?l=${SERIE_A}&s=${season}`))?.table ?? []) as Record<string, string>[]).map((r) => ({ team: r.strTeam!, played: Number(r.intPlayed), points: Number(r.intPoints), goalsFor: Number(r.intGoalsFor), goalsAgainst: Number(r.intGoalsAgainst) })); } catch { /* priors fall back to averages */ }
-      const markets = buildMatchMarkets(fixtures, table, now, key === "3");
-      if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
-      await sb.from("feed_health").upsert({ feed_id: "sportsdb", last_ok_at: new Date().toISOString(), last_error: null });
-      notes.push(`${fixtures.length} fixtures, ${markets.length} offered`);
-    } catch (e) {
-      await sb.from("feed_health").upsert({ feed_id: "sportsdb", last_error: String((e as Error).message ?? e).slice(0, 300), last_error_at: new Date().toISOString() });
-      throw e;
+        let table: TableRow[] = [];
+        try { table = (((await getJson(`${base}/lookuptable.php?l=${league.id}&s=${season}`))?.table ?? []) as Record<string, string>[]).map((r) => ({ team: r.strTeam!, played: Number(r.intPlayed), points: Number(r.intPoints), goalsFor: Number(r.intGoalsFor), goalsAgainst: Number(r.intGoalsAgainst) })); } catch { /* priors fall back to averages */ }
+        // town of every home team, geocoded once and remembered
+        const geo = new Map<string, Geo>();
+        for (const f of fixtures) {
+          if (!geoCache.has(f.home) && geocoded < 10) {
+            geocoded++;
+            let g: Geo | null = null;
+            try {
+              const town = CLUB_TOWN[f.home] ?? f.home;
+              const r = (await getJson(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(town)}&count=1&language=it&country_code=IT`))?.results?.[0];
+              if (r && typeof r.latitude === "number") g = { lat: r.latitude, lon: r.longitude };
+            } catch { /* try again next hour */ g = undefined as unknown as null; }
+            if (g !== (undefined as unknown as null)) { geoCache.set(f.home, g); await sb.from("team_geo").upsert({ team: f.home, lat: g?.lat ?? null, lon: g?.lon ?? null, tried_at: new Date().toISOString() }); }
+          }
+          const g = geoCache.get(f.home); if (g) geo.set(f.home, g);
+        }
+        const markets = buildMatchMarkets(fixtures, table, now, key === "3", geo, league.top);
+        if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
+        okLeagues++; fixturesN += fixtures.length; offered += markets.length;
+      } catch (e) { notes.push(`${league.name}: ${String((e as Error).message ?? e).slice(0, 60)}`); }
     }
+    await sb.rpc("backfill_match_geo");
+    if (okLeagues === 0) { await sb.from("feed_health").upsert({ feed_id: "sportsdb", last_error: notes.join("; ").slice(0, 300), last_error_at: new Date().toISOString() }); throw new Error(notes.join("; ")); }
+    await sb.from("feed_health").upsert({ feed_id: "sportsdb", last_ok_at: new Date().toISOString(), last_error: null });
+    notes.push(`${fixturesN} fixtures, ${offered} offered`);
   }
   return notes.join("; ") || "idle";
 }

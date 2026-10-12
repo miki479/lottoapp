@@ -2,6 +2,8 @@
 // Nothing free-form is accepted: every parameter is checked against a list or a range, the question is priced from the
 // current reference value and refused when the answer would be too certain. Resolution uses the same public feeds as the house markets.
 import { FAIR_MAX, FAIR_MIN, CRYPTO, WIKI_ARTICLES, buildCustomTick, isCrypto, isSteam, tickChance, tickStep } from "../_shared/shared/ticks.ts";
+import { computeOdds } from "../_shared/shared/odds.ts";
+import { MATCH_BETS, matchMarket, type MatchBet } from "../_shared/shared/sport.ts";
 import { METRICS, METRIC_IDS, metricOdds, normalCdf, type MetricId } from "../_shared/shared/metrics.ts";
 import { localDayStart } from "../_shared/shared/time.ts";
 import { db, loadCities, safe } from "../_lib/common.ts";
@@ -78,17 +80,21 @@ Deno.serve(safe(async (req) => {
       if (typeof v === "number") forecast = v;
     } catch { /* below */ }
     if (forecast === undefined) return json({ error: "source_unavailable" }, 503);
-    const thr = Math.round(threshold / def.step) * def.step;
-    const chance = Math.round((1 - normalCdf((thr - forecast) / def.sigma)) * 100) / 100;
+    const hail = metric === "hail";
+    const thr = hail ? 1 : Math.round(threshold / def.step) * def.step;
+    // hail comes from the model's weather code (96/99 = thunderstorm with hail): chance by how close the forecast is to it
+    const hailChance = forecast >= 96 ? 0.6 : forecast >= 95 ? 0.3 : forecast >= 80 ? 0.1 : 0.03;
+    const chance = hail ? hailChance : Math.round((1 - normalCdf((thr - forecast) / def.sigma)) * 100) / 100;
     const info = { forecast, step: def.step, unit: def.unit, chance };
-    if (!(thr >= (metric === "temp" ? -90 : 0) && thr <= def.max) || chance < FAIR_MIN || chance > FAIR_MAX) return json({ error: "too_certain", ...info }, 422);
-    const odds = metricOdds(metric, forecast, thr);
+    if (!(thr >= (metric === "temp" ? -90 : 0) && thr <= (hail ? 1 : def.max)) || chance < FAIR_MIN || chance > FAIR_MAX) return json({ error: "too_certain", ...info }, 422);
+    const odds = hail ? computeOdds(chance) : metricOdds(metric, forecast, thr);
     if (preview) return json({ preview: { ...info, odds_yes: odds.yes, odds_no: odds.no, threshold: thr } });
     draft = {
       city_id: placeId, category: "weather", kind: "metric_gt", feed_id: `om-${placeId}`,
       params: { metric, threshold: Math.round(thr * 10) / 10, unit: def.unit, localHour: hour, forecast: Math.round(forecast * 10) / 10, custom: "true", by },
       closes_at: iso(targetAt - 600), target_at: iso(targetAt), deadline_at: iso(Math.floor(targetAt / 3600) * 3600 + 3600 + 5 * 3600),
       odds_yes: odds.yes, odds_no: odds.no, dedupe_key: `c|${placeId}|metric_${metric}|${targetAt}|${thr}`,
+      lat: Math.round(loc.lat * 1e5) / 1e5, lon: Math.round(loc.lon * 1e5) / 1e5,
     };
   } else if (b.type === "tick") {
     const series = String(b.series ?? ""), threshold = Number(b.threshold), at = Number(b.at);
@@ -112,6 +118,19 @@ Deno.serve(safe(async (req) => {
     const m = buildCustomTick(series, ref, thr, target, now);
     if (preview) return json({ preview: { ...info, odds_yes: m.odds_yes, odds_no: m.odds_no, threshold: thr } });
     draft = { ...m, params: { ...m.params, custom: "true", by }, dedupe_key: `c|${series}|${target}|${thr}` };
+  } else if (b.type === "match") {
+    const eventId = String(b.eventId ?? ""), bet = String(b.bet) as MatchBet;
+    if (!(MATCH_BETS as string[]).includes(bet) || !/^\d{3,12}$/.test(eventId)) return json({ error: "bad_request" }, 400);
+    // the match must already be known (house markets are made for every upcoming round); the same bet is never made twice
+    const { data: sib } = await sb.from("markets").select("params,lat,lon").eq("kind", "match_bet").eq("params->>eventId", eventId).limit(1).maybeSingle();
+    if (!sib) return json({ error: "unknown_match" }, 404);
+    const sp = sib.params as { league: string; home: string; away: string; kickoff: number; priors: Record<MatchBet, number>; testOnly?: boolean };
+    if (!(sp.kickoff >= now + 35 * 60)) return json({ error: "bad_time" }, 400);
+    const chance = sp.priors?.[bet];
+    if (typeof chance !== "number" || chance < FAIR_MIN || chance > FAIR_MAX) return json({ error: "too_certain", chance }, 422);
+    const m = matchMarket({ eventId, league: sp.league, home: sp.home, away: sp.away, kickoff: sp.kickoff }, bet, sp.priors, sib.lat === null ? undefined : { lat: Number(sib.lat), lon: Number(sib.lon) }, !!sp.testOnly, { by });
+    if (preview) return json({ preview: { chance, odds_yes: m.odds_yes, odds_no: m.odds_no, threshold: 0 } });
+    draft = m as unknown as Record<string, unknown>;
   } else return json({ error: "bad_request" }, 400);
 
   const have = await sb.from("markets").select("*").eq("dedupe_key", draft.dedupe_key as string).maybeSingle();
