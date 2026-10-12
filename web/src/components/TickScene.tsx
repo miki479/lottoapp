@@ -85,26 +85,47 @@ export function TickScene({ m, hint, msg }: { m: MarketRow; hint: Hint; msg: Mes
     );
   }
   if (kind === "metal") {
-    const k = series.slice(6), pal = ({ xau: ["#ffe08a", "#d9961c"], xag: ["#f2f5fa", "#9aa7bb"], xpt: ["#eef3f9", "#aebccc"], hg: ["#f0a678", "#b45a2e"] } as Record<string, string[]>)[k] ?? ["#ffe08a", "#d9961c"];
-    const bar = (x: number, y: number, w: number) => (
+    const k = series.slice(6);
+    /** Each metal has its own colours and its own stamp; copper is shown as tubes, the others as bars. hi / mid / lo are the light, body and shadow of the metal. */
+    const LOOK: Record<string, { hi: string; mid: string; lo: string; ink: string; stamp: string; spark: string; bg: [string, string] }> = {
+      xau: { hi: "#fff3c0", mid: "#f4c430", lo: "#b87a0b", ink: "#7a4f06", stamp: "Au 999.9", spark: "#fff7d6", bg: ["#1b2136", "#0e1322"] },
+      xag: { hi: "#f6f7f9", mid: "#bfc4cc", lo: "#6f7683", ink: "#434a57", stamp: "Ag 999", spark: "#ffffff", bg: ["#1c212d", "#10141d"] },
+      xpt: { hi: "#eaf5ff", mid: "#9fbbd6", lo: "#4f6a88", ink: "#27405a", stamp: "Pt 950", spark: "#cfeaff", bg: ["#13203a", "#0a1226"] },
+      hg: { hi: "#ffd0a8", mid: "#e2783a", lo: "#8a3414", ink: "#55200a", stamp: "Cu 999", spark: "#ffe2c8", bg: ["#241b1e", "#140f14"] },
+    };
+    const L = LOOK[k] ?? LOOK.xau!;
+    const tube = k === "hg";
+    const bar = (x: number, y: number, w: number, front: boolean) => (
       <g key={`${x}${y}`}>
-        <path d={`M${x + 7} ${y}H${x + w - 7}L${x + w} ${y + 17}H${x}Z`} fill="url(#mt-bar)" /><path d={`M${x + 7} ${y}H${x + w - 7}L${x + w - 10} ${y + 5}H${x + 10}Z`} fill="#fff" opacity=".4" />
-        <path d={`M${x} ${y + 17}H${x + w}`} stroke="#000" opacity=".22" stroke-width="1.500" />
+        {tube
+          ? <>
+              <rect x={x + 4} y={y} width={w - 4} height="17" rx="8.500" fill={`url(#mt-bar-${k})`} />
+              <ellipse cx={x + 6} cy={y + 8.500} rx="5.500" ry="8.500" fill={L.lo} /><ellipse cx={x + 6} cy={y + 8.500} rx="3.200" ry="6" fill="#1a0a06" /><ellipse cx={x + 5.200} cy={y + 7.500} rx="1.400" ry="3" fill={L.mid} opacity=".55" />
+              <rect x={x + 12} y={y + 2.500} width={w - 20} height="3" rx="1.500" fill="#fff" opacity=".42" />
+              {front && <text x={x + w / 2 + 4} y={y + 12.200} font-size="7" font-weight="800" text-anchor="middle" letter-spacing=".6" fill={L.ink} opacity=".6">{L.stamp}</text>}
+            </>
+          : <>
+              <path d={`M${x + 7} ${y}H${x + w - 7}L${x + w} ${y + 17}H${x}Z`} fill={`url(#mt-bar-${k})`} /><path d={`M${x + 7} ${y}H${x + w - 7}L${x + w - 10} ${y + 5}H${x + 10}Z`} fill="#fff" opacity={k === "xag" ? ".5" : ".4"} />
+              <path d={`M${x} ${y + 17}H${x + w}`} stroke="#000" opacity=".22" stroke-width="1.500" />
+              {k === "xag" && [8, 11, 14].map((dy) => <path key={dy} d={`M${x + 12} ${y + dy}H${x + w - 12}`} stroke="#fff" opacity=".16" stroke-width=".7" />)}
+              {k === "xpt" && <path d={`M${x + 9} ${y + 5.500}L${x + 5} ${y + 17}M${x + w - 9} ${y + 5.500}L${x + w - 5} ${y + 17}`} stroke={L.hi} opacity=".5" stroke-width="1" />}
+              {front && <text x={x + w / 2} y={y + 12.800} font-size="7" font-weight="800" text-anchor="middle" letter-spacing=".6" fill={L.ink} opacity=".55">{L.stamp}</text>}
+            </>}
       </g>
     );
-    const spark = (x: number, y: number, d: number) => <path key={`${x}`} class="mtspark" style={`--d:${d}ms`} d={`M${x} ${y - 6}L${x + 1.600} ${y - 1.600}L${x + 6} ${y}L${x + 1.600} ${y + 1.600}L${x} ${y + 6}L${x - 1.600} ${y + 1.600}L${x - 6} ${y}L${x - 1.600} ${y - 1.600}Z`} fill="#fff" />;
+    const spark = (x: number, y: number, d: number) => <path key={`${x}`} class="mtspark" style={`--d:${d}ms`} d={`M${x} ${y - 6}L${x + 1.600} ${y - 1.600}L${x + 6} ${y}L${x + 1.600} ${y + 1.600}L${x} ${y + 6}L${x - 1.600} ${y + 1.600}L${x - 6} ${y}L${x - 1.600} ${y - 1.600}Z`} fill={L.spark} />;
     return (
-      <div class={cls} aria-hidden="true">
+      <div class={`${cls} m-${k}`} aria-hidden="true">
         <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
           <defs>
-            <linearGradient id="mt-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a2035" /><stop offset="1" stop-color="#0e1322" /></linearGradient>
-            <linearGradient id="mt-bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style={`stop-color:${pal[0]}`} /><stop offset="1" style={`stop-color:${pal[1]}`} /></linearGradient>
-            <clipPath id="mt-clip"><path d="M89 62H161L168 79H82Z M165 62H237L244 79H158Z M127 42H199L206 59H120Z" /></clipPath>
+            <linearGradient id={`mt-bg-${k}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color={L.bg[0]} /><stop offset="1" stop-color={L.bg[1]} /></linearGradient>
+            <linearGradient id={`mt-bar-${k}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color={L.hi} /><stop offset=".45" stop-color={L.mid} /><stop offset="1" stop-color={L.lo} /></linearGradient>
+            <clipPath id={`mt-clip-${tube ? "t" : "b"}`}>{tube ? <path d="M86 62H168V79H86Z M162 62H244V79H162Z M124 42H206V59H124Z" /> : <path d="M89 62H161L168 79H82Z M165 62H237L244 79H158Z M127 42H199L206 59H120Z" />}</clipPath>
           </defs>
-          <rect width="320" height="84" fill="url(#mt-bg)" />
+          <rect width="320" height="84" fill={`url(#mt-bg-${k})`} />
           <ellipse cx="163" cy="80" rx="96" ry="4" fill="#000" opacity=".35" />
-          <g class="mtstack">{bar(82, 62, 86)}{bar(158, 62, 86)}{bar(120, 42, 86)}
-            <g clip-path="url(#mt-clip)"><rect class="mtshine" x="-40" y="30" width="26" height="60" fill="#fff" opacity=".55" transform="skewX(-22)" /></g>
+          <g class="mtstack">{bar(82, 62, 86, true)}{bar(158, 62, 86, true)}{bar(120, 42, 86, true)}
+            <g clip-path={`url(#mt-clip-${tube ? "t" : "b"})`}><rect class="mtshine" x="-40" y="30" width="26" height="60" fill="#fff" opacity=".55" transform="skewX(-22)" /></g>
           </g>
           {spark(70, 28, 0)}{spark(258, 22, 700)}{spark(226, 50, 1400)}{spark(104, 14, 2100)}
         </svg>

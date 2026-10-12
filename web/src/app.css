@@ -954,7 +954,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 
 /* metals, fuel, oil scenes */
 .mscene.tick.metal .mtstack { transform-box: fill-box; transform-origin: 50% 100%; transition: transform .8s cubic-bezier(.2,.8,.2,1), filter .8s; animation: mtfloat 3.4s ease-in-out infinite alternate; }
-.mscene.tick.metal.s-yes .mtstack { transform: translateY(-10px) scale(1.06); animation: none; filter: drop-shadow(0 0 8px rgba(255,224,138,.55)); } .mscene.tick.metal.s-no .mtstack { transform: translateY(10px) scale(.95); animation: none; filter: brightness(.7); }
+.mscene.tick.metal.s-yes .mtstack { transform: translateY(-10px) scale(1.06); animation: none; filter: drop-shadow(0 0 8px rgba(var(--mglow, 255, 224, 138), .6)); } .mscene.tick.metal.s-no .mtstack { transform: translateY(10px) scale(.95); animation: none; filter: brightness(.7); }
 .mtshine { animation: mtsweep 3.6s ease-in-out infinite; } .mtspark { transform-box: fill-box; transform-origin: center; animation: mttwink 2.6s ease-in-out infinite; animation-delay: var(--d, 0ms); }
 .mscene.tick.fuel .funeedle { transform-box: fill-box; transform-origin: 50% 86%; transform: rotate(-20deg); animation: fuswing 3s ease-in-out infinite alternate; transition: transform .8s cubic-bezier(.2,.8,.2,1); } .mscene.tick.fuel .fugauge { transform-origin: 74px 58px; }
 .mscene.tick.fuel.s-yes .funeedle { animation: none; transform: rotate(52deg); } .mscene.tick.fuel.s-no .funeedle { animation: none; transform: rotate(-58deg); }
@@ -1125,3 +1125,5 @@ textarea.field { resize: vertical; min-height: 84px; }
 .lbtext { font-size: 12px; font-weight: 700; color: var(--muted); text-align: center; }
 @keyframes lbdrive { from { transform: translateX(0); } to { transform: translateX(calc(100vw + 60px)); } } @keyframes lbroad { to { background-position: -24px 0; } } @keyframes lbfill { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
 @media (prefers-reduced-motion: reduce) { .lbveh, .lbroad, .lbtrack i { animation: none; } .lbveh { left: 20px; } .lbtrack i { width: 60%; } }
+
+.mscene.tick.metal.m-xau { --mglow: 255, 214, 90; } .mscene.tick.metal.m-xag { --mglow: 215, 224, 240; } .mscene.tick.metal.m-xpt { --mglow: 150, 200, 255; } .mscene.tick.metal.m-hg { --mglow: 255, 140, 80; }
