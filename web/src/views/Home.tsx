@@ -7,14 +7,16 @@ import { EventCard } from "../components/EventCard.tsx";
 import { Flag } from "../components/Flag.tsx";
 import { TopCards, type TopItem } from "../components/TopCards.tsx";
 import { Car, Globe, MapPin, SlidersHorizontal, Sparkles, X } from "lucide-preact";
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
-import { Flame, Plus } from "lucide-preact";
+import { ChevronDown, Flame, Plus } from "lucide-preact";
 import { FEATURED_CITY_IDS, FEATURED_PLACES, type Place } from "../lib/places.ts";
 import type { MarketRow } from "../lib/format.ts";
 import type { LiveDelay, Pick, Progress } from "../lib/types.ts";
 
+/** Categories tucked away under "More categories" so the main row stays short. */
+const EXTRA_CATS: CatId[] = ["finance", "culture", "sport", "gov"];
 export interface Trend { id: string; name: string; country: string; place?: Place }
 export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>;
@@ -31,6 +33,9 @@ export function Home(p: HomeProps) {
   const wxKey = (m: MarketRow) => (m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : m.kind === "quake_m" ? String(m.params.region ?? "world") : "");
   const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi"] : p.cat === "nature" ? ["world", "jp", "it", "ca", "tr"] : [];
   const [filterOpen, setFilterOpen] = useState(false);
+  const [catsOpen, setCatsOpen] = useState(() => EXTRA_CATS.includes(p.cat));
+  const extraCount = EXTRA_CATS.reduce((n, c) => n + (p.counts[c] ?? 0), 0);
+  useEffect(() => { if (EXTRA_CATS.includes(p.cat)) setCatsOpen(true); }, [p.cat]);
   const wxKinds = order.filter((k) => p.list.some((m) => wxKey(m) === k));
   const wx = wxKinds.includes(wxSel) ? wxSel : "all";
   const picked = wx !== "all" ? p.list.filter((m) => wxKey(m) === wx) : p.list;
@@ -59,7 +64,8 @@ export function Home(p: HomeProps) {
           {wxKinds.length > 1 && <button class={`filterbtn ${wx !== "all" ? "on" : ""}`} onClick={() => setFilterOpen(true)}><SlidersHorizontal size={16} />{wx === "all" ? msg.wx.filter : filterLabel(msg, wx)}{wx !== "all" && <i role="button" aria-label={msg.common.close} onClick={(e) => { e.stopPropagation(); setWx("all"); }}><X size={14} /></i>}</button>}
         </div>
         {filterOpen && <FilterSheet msg={msg} options={wxKinds.map((k) => ({ key: k, count: p.list.filter((m) => wxKey(m) === k).length }))} value={wx} onPick={setWx} onClose={() => setFilterOpen(false)} />}
-        <CatChips tiles={tiles} value={p.cat} onPick={p.onCat} />
+        <CatChips tiles={tiles.filter((t) => !EXTRA_CATS.includes(t.id) || catsOpen)} value={p.cat} onPick={p.onCat} />
+        <button class={`morecats ${catsOpen ? "open" : ""}`} aria-expanded={catsOpen} onClick={() => setCatsOpen(!catsOpen)}>{catsOpen ? msg.home.lessCats : msg.home.moreCats}{!catsOpen && extraCount > 0 && <em>{extraCount}</em>}<ChevronDown size={16} /></button>
         <div class="chiprow" role="tablist">
           <button class={`chip ${p.filter === "world" ? "on" : ""}`} role="tab" aria-selected={p.filter === "world"} onClick={() => p.onFilter("world")}><Globe size={16} />{msg.world}</button>
           {p.mine && <button class={`chip ${p.filter === "mine" ? "on" : ""}`} role="tab" aria-selected={p.filter === "mine"} onClick={() => p.onFilter("mine")}><Flag cc={p.mine} size={13} />{msg.near.title}</button>}

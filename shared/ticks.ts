@@ -21,13 +21,18 @@ export const isCrypto = (s: string): s is CryptoSeries => s === "btc" || s === "
 export const STEAM = { "730": "Counter-Strike 2", "570": "Dota 2", "271590": "Grand Theft Auto V", "578080": "PUBG", "1245620": "Elden Ring" } as const;
 export const isSteam = (s: string) => s.startsWith("steam:") && s.slice(6) in STEAM;
 /** Numbers that exist only "right now": they must be read within minutes of the instant. */
-export const isSpot = (s: string) => isCrypto(s) || isSteam(s);
+export const isStorm = (s: string) => s.startsWith("storm:");
+export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isStorm(s);
+
+/** Saffir-Simpson scale by sustained wind in knots (1 min average), as NHC reports it. */
+export const STORM_STEPS: { kt: number; label: string }[] = [{ kt: 34, label: "TS" }, { kt: 64, label: "Cat. 1" }, { kt: 83, label: "Cat. 2" }, { kt: 96, label: "Cat. 3" }, { kt: 113, label: "Cat. 4" }, { kt: 137, label: "Cat. 5" }];
 
 /** English Wikipedia articles people follow: entertainment and sport, no politics. */
 export const WIKI_ARTICLES = ["Taylor_Swift", "Cristiano_Ronaldo", "Lionel_Messi", "Rihanna", "Zendaya", "Netflix", "Formula_One", "Eurovision_Song_Contest", "Grand_Theft_Auto_VI", "Fortnite", "Minecraft"] as const;
 
 export function tickDef(series: string): TickDef | null {
   if (isCrypto(series)) return { category: "finance", label: CRYPTO[series].label, unit: "$", min: 1, max: 10_000_000 };
+  if (isStorm(series)) return { category: "nature", label: "Storm", unit: " kt", min: 0, max: 200 };
   if (isSteam(series)) return { category: "culture", label: STEAM[series.slice(6) as keyof typeof STEAM], unit: "", min: 0, max: 100_000_000 };
   if (series === "kp") return { category: "nature", label: "Kp", unit: "", min: 0, max: 9 };
   if (series.startsWith("wiki:")) return { category: "culture", label: series.slice(5).replace(/_/g, " "), unit: "", min: 0, max: 200_000_000 };
@@ -36,16 +41,16 @@ export function tickDef(series: string): TickDef | null {
 
 export interface TickMarketInsert {
   city_id: "world"; category: TickCategory; kind: "tick_gt"; feed_id: string;
-  params: { series: string; label: string; threshold: number; unit: string; forecast: number; at: number };
+  params: { series: string; label: string; threshold: number; unit: string; forecast: number; at: number; note?: string };
   closes_at: string; target_at: string; deadline_at: string; odds_yes: number; odds_no: number; dedupe_key: string;
 }
 
-function tickMarket(series: string, def: TickDef, forecast: number, threshold: number, sigma: number, at: number, closesAt: number, deadlineAt: number): TickMarketInsert {
+function tickMarket(series: string, def: TickDef, forecast: number, threshold: number, sigma: number, at: number, closesAt: number, deadlineAt: number, note?: string): TickMarketInsert {
   const p = 1 - normalCdf((threshold - forecast) / sigma);
   const odds = computeOdds(Math.min(0.9, Math.max(0.1, p)));
   return {
     city_id: "world", category: def.category, kind: "tick_gt", feed_id: `tick-${series}`,
-    params: { series, label: def.label, threshold, unit: def.unit, forecast: Math.round(forecast * 100) / 100, at },
+    params: { series, label: def.label, threshold, unit: def.unit, forecast: Math.round(forecast * 100) / 100, at, ...(note ? { note } : {}) },
     closes_at: new Date(closesAt * 1000).toISOString(), target_at: new Date(at * 1000).toISOString(), deadline_at: new Date(deadlineAt * 1000).toISOString(),
     odds_yes: odds.yes, odds_no: odds.no, dedupe_key: `world|tick_${series}|${at}|${threshold}`,
   };
@@ -120,6 +125,7 @@ export function buildSteamMarkets(counts: Record<string, number>, now: number): 
 
 /** Typical error of "what it is now" as a forecast `hours` ahead, used to price player-made questions. */
 export function tickSigma(series: string, ref: number, hours: number): number {
+  if (isStorm(series)) return Math.max(8, 11 * Math.sqrt(Math.max(1, hours) / 12));
   if (isCrypto(series)) return ref * 0.005 * Math.sqrt(Math.max(1, hours));
   if (isSteam(series)) return ref * 0.07 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4);
   return ref * 0.15;
@@ -142,4 +148,25 @@ export function tickChance(series: string, ref: number, threshold: number, hours
 export function buildCustomTick(series: string, ref: number, threshold: number, at: number, now: number): TickMarketInsert {
   const def = tickDef(series)!, wiki = series.startsWith("wiki:"), hours = Math.max(0.6, (at - now) / H);
   return tickMarket(series, def, ref, threshold, tickSigma(series, ref, hours), at, wiki ? at - 12 * H : at - 600, at + (wiki ? 30 : 3) * H);
+}
+
+export interface StormNow { id: string; name: string; kt: number; cls: string }
+
+/** Active tropical systems (NHC): questions about the sustained wind one and two days ahead, on the nearest Saffir-Simpson steps. */
+export function buildStormMarkets(storms: StormNow[], now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const st of storms) {
+    if (!(st.kt >= 20)) continue;
+    const series = `storm:${st.id}`;
+    for (const minHours of [22, 46]) {
+      const at = Math.ceil((now + minHours * H) / (6 * H)) * 6 * H, hours = (at - now) / H;
+      const options = STORM_STEPS.map((x) => ({ ...x, chance: tickChance(series, st.kt, x.kt, hours) })).filter((x) => x.chance >= 0.15 && x.chance <= 0.85)
+        .sort((a, b) => Math.abs(a.chance - 0.5) - Math.abs(b.chance - 0.5)).slice(0, 2);
+      for (const o of options) {
+        const def: TickDef = { category: "nature", label: st.name, unit: " kt", min: 0, max: 200 };
+        out.push(tickMarket(series, def, st.kt, o.kt, tickSigma(series, st.kt, hours), at, at - 600, at + 3 * H, o.label));
+      }
+    }
+  }
+  return out;
 }

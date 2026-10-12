@@ -11,7 +11,7 @@ interface Pt { at: number; v: number }
 export function TickChart({ m, msg, locale }: { m: MarketRow; msg: Messages; locale: Locale }) {
   const series = String(m.params.series ?? "");
   const key = series === "btc" || series === "eth" ? `px:${series}` : series;  // steam:<id>, kp and wiki:<title> are stored under their own name
-  const kind = series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : "price";
+  const kind = series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : "price";  // storms and games are lines like prices
   const [pts, setPts] = useState<Pt[] | null>(null);
   useEffect(() => {
     let live = true;
@@ -30,7 +30,7 @@ export function TickChart({ m, msg, locale }: { m: MarketRow; msg: Messages; loc
   const nf = new Intl.NumberFormat(INTL_TAG[locale], { maximumFractionDigits: kind === "kp" ? 1 : 0 });
   const above = pts.filter((p) => p.v >= thr).length;
   const change = first.v ? ((last.v - first.v) / first.v) * 100 : 0;
-  const unit = series === "btc" || series === "eth" ? " $" : "";
+  const unit = series === "btc" || series === "eth" ? " $" : series.startsWith("storm:") ? " kt" : "";
   const poly = pts.map((p, i) => `${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
   return (
     <div class={`tickchart ${kind}`} role="img" aria-label={msg.chart.title}>

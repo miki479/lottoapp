@@ -33,7 +33,7 @@ Deno.serve(safe(async (req) => {
   for (const row of (due ?? []) as (MarketRow & { id: string })[]) {
     try {
       const event = marketToEvent(row);
-      const city = cities.get(row.city_id) ?? (placeTz.has(row.city_id) ? ({ id: row.city_id, timezone: placeTz.get(row.city_id)! } as unknown as ReturnType<typeof cities.get> & object) : undefined);
+      const city = cities.get(row.city_id) ?? (row.city_id === "world" ? ({ id: "world", timezone: "UTC" } as unknown as ReturnType<typeof cities.get> & object) : undefined) ?? (placeTz.has(row.city_id) ? ({ id: row.city_id, timezone: placeTz.get(row.city_id)! } as unknown as ReturnType<typeof cities.get> & object) : undefined);
       if (!city) throw new Error(`unknown city ${row.city_id}`);
 
       let delays: DelayObservation[] = [];

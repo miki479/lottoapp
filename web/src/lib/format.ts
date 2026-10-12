@@ -39,6 +39,7 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     const series = String(m.params.series), at = m.target_at, thr = Number(m.params.threshold);
     const nf = new Intl.NumberFormat(INTL_TAG[locale], { maximumFractionDigits: series === "kp" ? 0 : 0 });
     const own = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (series.startsWith("storm:")) return msg.question.tick({ kind: "storm", label: String(m.params.label), value: `${thr} kt${m.params.note ? ` (${m.params.note})` : ""}`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("steam:")) return msg.question.tick({ kind: "players", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series === "kp") return msg.question.tick({ kind: "kp", label: "Kp", value: String(thr), time: "", from: formatWhen(new Date(Date.parse(at) - 3 * 3600_000).toISOString(), locale, own, now), to: formatWhen(at, locale, own, now), day: "" });
     if (series.startsWith("wiki:")) return msg.question.tick({ kind: "wiki", label: String(m.params.label), value: nf.format(thr), time: "", from: "", to: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3600_000)) });
@@ -116,7 +117,7 @@ export function emphasize(text: string, m: MarketRow, cityName: string): Piece[]
   const names = [p.routeName, p.routeId, p.siteName, p.label, p.home, p.away, cityName].map((x) => (x == null ? "" : String(x).trim())).filter((x) => x.length >= 2 && x !== "world");
   const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const parts = [...new Set(names)].sort((a, b) => b.length - a.length).map(esc);
-  const nums = String.raw`\d+(?:[.,]\d+)?\s?(?:min|km\/h|°C|cm|mm|%|\$|M)|\b\d{1,2}:\d{2}\b|M\s?\d(?:[.,]\d)?`;
+  const nums = String.raw`\d+(?:[.,]\d+)?\s?(?:min|kt|km\/h|°C|cm|mm|%|\$|M)|\b\d{1,2}:\d{2}\b|M\s?\d(?:[.,]\d)?`;
   const re = new RegExp([...parts, nums].join("|"), "gi");
   const out: Piece[] = [];
   let last = 0;
@@ -135,7 +136,7 @@ export function quip(m: MarketRow, msg: Messages): string {
   const series = String(m.params.series ?? "");
   const g: keyof Messages["quips"] =
     m.kind === "bus_delay_gt" ? "bus" : m.kind === "train_delay_gt" ? "train" : m.kind === "rain_at" ? "rain" : m.kind === "quake_m" ? "quake" : m.kind === "strike_on" ? "strike" : m.kind === "traffic_speed_lt" ? "traffic"
-    : m.kind === "tick_gt" ? (series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("steam:") ? "game" : "price") : (String(m.params.metric) as keyof Messages["quips"]);
+    : m.kind === "tick_gt" ? (series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("steam:") ? "game" : series.startsWith("storm:") ? "storm" : "price") : (String(m.params.metric) as keyof Messages["quips"]);
   const list = msg.quips[g] ?? [];
   if (!list.length) return "";
   const h = [...m.id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);

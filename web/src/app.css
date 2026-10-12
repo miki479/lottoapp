@@ -809,3 +809,11 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .createbtn { display: inline-flex; align-items: center; gap: 6px; border: 1px dashed var(--border-strong); background: transparent; color: var(--text); border-radius: 999px; padding: 8px 14px; font-weight: 700; font-size: .85rem; }
 .byline { font-size: .76rem; color: var(--muted); font-weight: 700; }
 .shead .grow { flex: 1; }
+.mscene.storm .spiral { transition: transform .9s cubic-bezier(.2,.8,.2,1); transform-box: view-box; }
+.mscene.storm .spin { animation: tkspin 5s linear infinite; transform-origin: 0 0; } .mscene.storm.s-yes .spin { animation-duration: 1.4s; } .mscene.storm.s-no .spin { animation-duration: 12s; opacity: .5; }
+.mscene.storm.s-yes .spiral { transform: translate(160px, 40px) scale(1.25); } .mscene.storm.s-no .spiral { transform: translate(160px, 40px) scale(.7); }
+@keyframes tkspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .mscene.storm .spin { animation: none !important; } }
+.morecats { display: inline-flex; align-items: center; gap: 6px; margin: 2px auto 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-weight: 700; font-size: .85rem; }
+.morecats em { font-style: normal; background: var(--primary, #5b47f0); color: #fff; border-radius: 999px; padding: 1px 8px; font-size: .74rem; }
+.morecats svg { transition: transform .2s; } .morecats.open svg { transform: rotate(180deg); }

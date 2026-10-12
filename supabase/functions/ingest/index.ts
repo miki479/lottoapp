@@ -6,7 +6,7 @@ import { parseTrainTripId } from "../_shared/shared/adapters/viaggiatreno.ts";
 import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
-import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
+import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
 import { buildMatchMarkets, FINISHED, type Fixture, type TableRow } from "../_shared/shared/sport.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
@@ -356,6 +356,13 @@ async function fetchPrices(): Promise<Partial<Record<CryptoSeries, number>>> {
   return out;
 }
 
+const NHC_URL = "https://www.nhc.noaa.gov/CurrentStorms.json";
+async function activeStorms(): Promise<{ id: string; name: string; kt: number; cls: string }[]> {
+  const j = await getJson(NHC_URL);
+  if (!Array.isArray(j?.activeStorms)) throw new Error("NHC list missing");
+  return (j.activeStorms as Record<string, string>[]).map((x) => ({ id: String(x.id), name: String(x.name ?? x.id), kt: Number(x.intensity), cls: String(x.classification ?? "") })).filter((x) => x.id && Number.isFinite(x.kt));
+}
+
 async function steamCounts(): Promise<Record<string, number>> {
   const out: Record<string, number> = {};
   for (const id of Object.keys(STEAM)) {
@@ -406,6 +413,14 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       if (steamDue.length) { const c = await steamCounts(); for (const { x, at } of steamDue) { const v = c[x.slice(6)]; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
     } catch (e) { notes.push(`steam: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
+      const stormDue = [...need.keys()].filter((x) => x.startsWith("storm:")).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (stormDue.length) {
+        // a storm that is no longer on the list has weakened below tracking: its wind counts as 0
+        const list = new Map((await activeStorms()).map((x) => [`storm:${x.id}`, x.kt]));
+        for (const { x, at } of stormDue) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: list.get(x) ?? 0, fetched_at: fetchedAt });
+      }
+    } catch (e) { notes.push(`storms: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
       const kpDue = todo("kp");
       if (kpDue.length) { const { observed } = await kpSeries(); for (const at of kpDue) { const v = observed.get(at - 3 * 3600); if (v !== undefined) rows.push({ series: "kp", at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
     } catch (e) { notes.push(`kp: ${String((e as Error).message ?? e).slice(0, 80)}`); }
@@ -426,6 +441,8 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     const markets: Record<string, unknown>[] = [];
     let ok = 0;
     try { markets.push(...buildCryptoMarkets(await fetchPrices(), now)); ok++; } catch (e) { notes.push(`prices: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    let stormsNow: { id: string; name: string; kt: number; cls: string }[] = [];
+    try { stormsNow = await activeStorms(); markets.push(...buildStormMarkets(stormsNow, now)); ok++; } catch (e) { notes.push(`storms: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     let steamNow: Record<string, number> = {};
     try { steamNow = await steamCounts(); markets.push(...buildSteamMarkets(steamNow, now)); ok++; } catch (e) { notes.push(`steam: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try { markets.push(...buildKpMarkets((await kpSeries()).predicted, now)); ok++; } catch (e) { notes.push(`kp: ${String((e as Error).message ?? e).slice(0, 80)}`); }
@@ -448,6 +465,7 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
         for (const [t, v] of (j?.prices ?? []) as [number, number][]) if (typeof v === "number") byHour.set(Math.floor(t / 3_600_000) * 3600, v);
         for (const [at, value] of byHour) hist.push({ series: `px:${k}`, at: new Date(at * 1000).toISOString(), value: Math.round(value * 100) / 100 });
       }
+      for (const st of stormsNow) hist.push({ series: `storm:${st.id}`, at: new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString(), value: st.kt });
       for (const [id, n] of Object.entries(steamNow)) hist.push({ series: `steam:${id}`, at: new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString(), value: n });
       const { observed } = await kpSeries();
       for (const [at, value] of observed) hist.push({ series: "kp", at: new Date(at * 1000).toISOString(), value });
