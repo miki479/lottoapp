@@ -8,7 +8,7 @@ import { CrowdCard } from "../components/CrowdCard.tsx";
 import { EventCard } from "../components/EventCard.tsx";
 import { Flag } from "../components/Flag.tsx";
 import { TopCards, type TopItem } from "../components/TopCards.tsx";
-import { Car, Globe, MapPin, SlidersHorizontal, Sparkles, X } from "lucide-preact";
+import { Car, Coins, Globe, ListChecks, MapPin, SlidersHorizontal, Sparkles, ThumbsUp, X } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
@@ -74,10 +74,12 @@ export function Home(p: HomeProps) {
         <p class="hero-quip" key={jokeIdx}>{jokes[jokeIdx % jokes.length]}</p>
       </section>
       {howOpen && (
-        <ol class="howto" aria-label={msg.home.how.steps.join(", ")}>
-          {msg.home.how.steps.map((s, i) => <li key={i}><b>{i + 1}</b>{s}</li>)}
-          <button class="howx" aria-label={msg.home.how.close} onClick={() => { safe.set("how", "1"); setHowOpen(false); }}><X size={14} /></button>
-        </ol>
+        <section class="howto" aria-label={msg.home.how.title}>
+          <div class="howhead"><h2>{msg.home.how.title}</h2><button class="howx" onClick={() => { safe.set("how", "1"); setHowOpen(false); }}>{msg.home.how.close}</button></div>
+          <ol class="howgrid">
+            {([ListChecks, ThumbsUp, Coins] as const).map((Icon, i) => <li key={i}><span class="hn">{i + 1}</span><span class="hi"><Icon size={22} /></span><span class="ht">{msg.home.how.steps[i]}</span></li>)}
+          </ol>
+        </section>
       )}
       <div class="aside">
         {p.top.length > 0 && (

@@ -37,7 +37,7 @@ unless `ALLOW_UNVERIFIED_FEEDS=1`. Rome's bus feed stays off: its open data page
 | `cities/*.json` | One file per city: timezone, tone, feeds, attribution. Adding a city needs no code change. |
 | `shared/` | Pure TypeScript (no Node/Deno APIs): odds, resolution, wallet, delay maths, feed adapters. Used by tests, Edge Functions and the PWA. |
 | `shared/adapters/` | One adapter per data format (`gtfs-rt`, `open-meteo`). New formats register in `adapters/index.ts`. |
-| `scripts/` | `generate-markets.mjs` (builds the day's markets from static GTFS), `build-functions.mjs` (copies `shared/` + `cities/` for deploy), `smoke-feed.mjs` (live feed through the real adapters). |
+| `scripts/` | `generate-markets.mjs` (builds the day's markets from static GTFS), `build-functions.mjs` (copies `shared/` + `cities/` for deploy), `smoke-feed.mjs` (live feed through the real adapters), `backfill-form.mjs` (one-off: the season's played football matches, for team strengths). |
 | `web/` | The PWA (Vite + Preact). `web/src/i18n` holds one file per language. |
 | `supabase/functions/` | `ingest` and `resolve`, both called every minute by pg_cron with `x-cron-secret`. |
 | `supabase/migrations/` | Postgres schema, RLS, and the transactional `place_bet` / `settle_market` functions. |

@@ -620,6 +620,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
         // keep the figures of the not-yet-opened bets (and the data-source id) of already open matches current
         const seen = new Set<string>();
         for (const m of markets) { const p = m.params; if (seen.has(p.eventId)) continue; seen.add(p.eventId); await sb.rpc("refresh_match_info", { p_event: p.eventId, p_priors: p.priors, p_api_id: p.apiId ?? null }); }
+        if (markets.length) await sb.rpc("refresh_match_odds", { p: markets.map((m) => ({ dedupe_key: m.dedupe_key, odds_yes: m.odds_yes, odds_no: m.odds_no })) });
         okLeagues++; fixturesN += fixtures.length; offered += markets.length;
       } catch (e) { notes.push(`${league.name}: ${String((e as Error).message ?? e).slice(0, 60)}`); }
     }

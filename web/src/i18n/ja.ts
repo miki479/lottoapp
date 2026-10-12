@@ -9,7 +9,7 @@ const ja: Messages = {
   quakeMaker: { cta: "場所と時間を選ぶ", title: "オリジナル地震予想", body: "場所・半径・マグニチュード・時間を選ぶと、その地域の過去1年の実際の地震からオッズを計算します。", place: "場所", search: "都市を検索…", radius: "半径", mag: "最小マグニチュード", day: "日", today: "今日", tomorrow: "明日", hour: "開始", length: "長さ", hours: (n) => `${n}時間`, km: (n) => `${n} km`, create: "オッズを計算して開く", creating: "計算中…", pickPlace: "先に場所を選んでください", local: (tz) => `その場所の現地時間（${tz}）`, limit: "今日はすでに5件作成しました。明日またお試しください。", full: "オリジナル予想が多すぎます。後でお試しください。", usgs: "地震カタログが応答しません。しばらくしてからお試しください。", time: "未来の時間（今から30分以上先）を選んでください。", credit: "データ：USGS Earthquake Hazards Program。" },
   traffic: { threshold: (k) => `しきい値 ${k} km/h`, jam: "渋滞", flow: "流れる" },
   strikes: { title: "ストライキ", sub: "イタリア運輸省のデータ。はい＝その日も予定通り、いいえ＝中止または延期。", art: "全国ストライキ" },
-  home: { how: { steps: ["イベントを選ぶ", "はい／いいえ", "クレジットを獲得"], close: "わかった" }, whatLabel: "何を予想する？", whereLabel: "どこ？", hereNone: (place) => `${place}にはこのカテゴリーがありません。`, tryInstead: "こちらはどうですか：", hero: { title: "バスが遅れる？ならば予想で楽しもう。", body: "データは本物、クレジットは架空。イベントを選んで予想しよう。" },
+  home: { how: { title: "遊び方", steps: ["イベントを選ぶ", "はい／いいえ", "クレジットを獲得"], close: "わかった" }, whatLabel: "何を予想する？", whereLabel: "どこ？", hereNone: (place) => `${place}にはこのカテゴリーがありません。`, tryInstead: "こちらはどうですか：", hero: { title: "バスが遅れる？ならば予想で楽しもう。", body: "データは本物、クレジットは架空。イベントを選んで予想しよう。" },
     missions: "今日のミッション", missionsLeft: (n) => `あと${n}つ`, missionsDone: "すべて達成", bonusTease: "3つ全部達成でボーナス +150",
     top: "注目", events: "イベント", live: "ライブ",
     idle: ["データは本物、クレジットは架空", "3つのデイリーミッションでボーナス獲得", "1日休んでもフリーズがあれば連続記録は途切れません"],

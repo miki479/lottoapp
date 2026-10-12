@@ -839,13 +839,13 @@ textarea.field { resize: vertical; min-height: 84px; }
 /* chip art for Crypto, Culture, Sport, Traffic and Government: same flat style, one short scene on hover or tap */
 .cc.finance { --cat: #e0a010; --cat-soft: color-mix(in srgb, #f2b01e 14%, var(--surface)); } .cc.culture { --cat: #7b5ad8; --cat-soft: color-mix(in srgb, #8a5ad8 12%, var(--surface)); }
 .cc.sport { --cat: #2e9e6b; --cat-soft: color-mix(in srgb, #2e9e6b 12%, var(--surface)); } .cc.traffic { --cat: #e8743b; --cat-soft: color-mix(in srgb, #e8743b 12%, var(--surface)); } .cc.gov { --cat: #5b6b8a; --cat-soft: color-mix(in srgb, #5b6b8a 12%, var(--surface)); }
-.gh-coin { transform-origin: 50% 50%; } .gh-line, .gh-arrow { stroke-dasharray: 100; stroke-dashoffset: 0; } .gh-clap { transform-origin: 8% 100%; } .gh-ball { transform-origin: 50% 50%; } .gh-brake { opacity: .55; }
+.gh-coin { transform-origin: 50% 50%; } .gh-line, .gh-arrow { stroke-dasharray: 100; stroke-dashoffset: 0; } .gh-clap { transform-origin: 8% 100%; } .gh-ball { transform-box: fill-box; transform-origin: 50% 50%; } .gh-brake { opacity: .55; }
 @media (hover: hover) { .cc.finance:not(:disabled):hover .gh-coin { animation: coinspin 1.4s ease-in-out 1 both; } .cc.finance:not(:disabled):hover .gh-line { animation: drawline 1.2s ease-out 1 both; } .cc.culture:not(:disabled):hover .gh-clap { animation: clap .5s ease-in-out 3 alternate both; } .cc.sport:not(:disabled):hover .gh-ball { animation: kick 1.2s cubic-bezier(.3,.7,.3,1) 1 both; } .cc.traffic:not(:disabled):hover .gh-cars { animation: creep 1.6s ease-in-out 1 both; } .cc.traffic:not(:disabled):hover .gh-brake { animation: blink .4s steps(2) 4 both; } .cc.gov:not(:disabled):hover .gh-flag { animation: flagwave2 .5s ease-in-out 4 alternate both; } }
 .cc.play.finance .gh-coin { animation: coinspin 1.4s ease-in-out 1 both; } .cc.play.finance .gh-line { animation: drawline 1.2s ease-out 1 both; } .cc.play.culture .gh-clap { animation: clap .5s ease-in-out 3 alternate both; } .cc.play.sport .gh-ball { animation: kick 1.2s cubic-bezier(.3,.7,.3,1) 1 both; } .cc.play.traffic .gh-cars { animation: creep 1.6s ease-in-out 1 both; } .cc.play.traffic .gh-brake { animation: blink .4s steps(2) 4 both; } .cc.play.gov .gh-flag { animation: flagwave2 .5s ease-in-out 4 alternate both; }
 @keyframes coinspin { 0% { transform: scaleX(1); } 50% { transform: scaleX(-1); } 100% { transform: scaleX(1); } }
 @keyframes drawline { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
 @keyframes clap { from { transform: rotate(0); } to { transform: rotate(-14deg); } }
-@keyframes kick { 0% { transform: translate(0, 0) rotate(0); } 55% { transform: translate(34px, -26px) rotate(360deg); } 100% { transform: translate(44px, -2px) rotate(540deg); } }
+@keyframes kick { 0% { transform: translate(0, 0) rotate(0); } 55% { transform: translate(29px, -28px) rotate(360deg); } 100% { transform: translate(45px, -7px) rotate(540deg); } }
 @keyframes creep { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(7px); } }
 @keyframes blink { from { opacity: .3; } to { opacity: 1; } }
 .cc.sport .gh-net { opacity: .85; } .cc em.soon { top: 6px; bottom: auto; right: 6px; }
@@ -861,10 +861,6 @@ textarea.field { resize: vertical; min-height: 84px; }
 .mgroup { display: grid; gap: 6px; }
 
 /* home: how it works, step labels, "try instead" */
-.howto { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; list-style: none; margin: 0; padding: 10px 34px 10px 12px; position: relative; border-radius: var(--radius-card); background: var(--surface); border: 1px solid var(--border); font-size: 13.5px; font-weight: 600; color: var(--text); }
-.howto li { display: flex; align-items: center; gap: 6px; line-height: 1.2; font-size: 12.5px; }
-.howto li b { flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); color: #fff; font-size: 12px; }
-.howto .howx { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; border: 0; background: transparent; color: var(--muted); }
 .steplabel { margin: var(--space-2) 0 0; font-size: 15px; font-weight: 800; color: var(--text); }
 .tryalt { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: center; }
 .tryalt span { font-size: 13px; color: var(--muted); width: 100%; text-align: center; }
@@ -881,3 +877,13 @@ textarea.field { resize: vertical; min-height: 84px; }
 
 .sheet .mkchips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .sheet .mkchips::-webkit-scrollbar { display: none; } .sheet .mkchips .mkchip { flex: none; }
 @media (min-width: 1024px) { .home .howto { grid-column: 1 / -1; grid-row: 3; } .home .main, .home .aside { grid-row: 4; } }
+
+/* how to play: three equal squared cards */
+.howto { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: var(--radius-card); background: var(--surface); border: 1px solid var(--border); }
+.howhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; } .howhead h2 { margin: 0; font-size: 15px; font-weight: 800; }
+.howx { border: 0; background: var(--brand-soft); color: var(--brand); font-weight: 700; font-size: 12.5px; padding: 0 12px; min-height: 32px; border-radius: 999px; }
+.howgrid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.howgrid li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 6px 10px; min-height: 108px; border-radius: 12px; background: var(--surface-2); text-align: center; }
+.howgrid .hn { position: absolute; top: 7px; left: 9px; font-size: 11px; font-weight: 800; color: var(--muted); }
+.howgrid .hi { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); flex: none; }
+.howgrid .ht { font-size: 12.5px; font-weight: 700; line-height: 1.25; color: var(--text); text-wrap: balance; }

@@ -193,13 +193,56 @@ export function CultureGhost() {
 }
 
 /** Sport: a pitch corner with a goal and a ball. The ball is kicked into the net on hover or tap. */
+/** A proper football: shaded sphere, black centre patch, spokes, rim patches clipped by the outline, seams, highlight. Centred on 0,0. */
+function SoccerBall({ r }: { r: number }) {
+  const pent = (cx: number, cy: number, pr: number, rot: number) => Array.from({ length: 5 }, (_, i) => { const a = rot + (i * 2 * Math.PI) / 5; return [cx + pr * Math.sin(a), cy - pr * Math.cos(a)] as const; });
+  const pts = (v: readonly (readonly [number, number])[]) => v.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
+  const centre = pent(0, 0, r * 0.37, 0);
+  const rim = Array.from({ length: 5 }, (_, i) => { const a = (i * 2 * Math.PI) / 5; const c: [number, number] = [Math.sin(a) * r * 0.88, -Math.cos(a) * r * 0.88]; return { a, v: pent(c[0], c[1], r * 0.31, a + Math.PI) }; });
+  const seams: string[] = [];
+  rim.forEach(({ a, v }, i) => {
+    seams.push(`M${centre[i]![0].toFixed(2)} ${centre[i]![1].toFixed(2)}L${v[0]![0].toFixed(2)} ${v[0]![1].toFixed(2)}`); // spoke: centre patch to rim patch
+    for (const [k, d] of [[2, -1], [3, 1]] as const) { const ang = a + d * (Math.PI / 5); seams.push(`M${v[k]![0].toFixed(2)} ${v[k]![1].toFixed(2)}L${(Math.sin(ang) * r).toFixed(2)} ${(-Math.cos(ang) * r).toFixed(2)}`); }
+  });
+  return (
+    <g>
+      <defs>
+        <radialGradient id="sg-ball" cx="38%" cy="30%" r="80%"><stop offset="0" stop-color="#ffffff" /><stop offset=".55" stop-color="#eef2f8" /><stop offset="1" stop-color="#b9c3d3" /></radialGradient>
+        <clipPath id="sg-clip"><circle r={r} /></clipPath>
+      </defs>
+      <circle r={r} fill="url(#sg-ball)" />
+      <g clip-path="url(#sg-clip)">
+        <path d={seams.join("")} stroke="#1d2433" stroke-width={r * 0.085} stroke-linecap="round" fill="none" opacity=".8" />
+        {rim.map(({ v }, i) => <polygon key={i} points={pts(v)} fill="#1d2433" stroke="#1d2433" stroke-width=".3" stroke-linejoin="round" />)}
+        <polygon points={pts(centre)} fill="#1d2433" stroke="#1d2433" stroke-width=".3" stroke-linejoin="round" />
+        <ellipse cx={-r * 0.32} cy={-r * 0.4} rx={r * 0.3} ry={r * 0.17} fill="#fff" opacity=".7" transform={`rotate(-35 ${-r * 0.32} ${-r * 0.4})`} />
+      </g>
+      <circle r={r} fill="none" stroke="#1d2433" stroke-width={r * 0.11} />
+    </g>
+  );
+}
+
+/** Calcio: a detailed ball on striped grass in front of a goal with a net in perspective. The ball is kicked into the net on hover or tap. */
 export function SportGhost() {
+  const mesh = [];
+  for (let x = 52.5; x <= 71; x += 3.1) mesh.push(`M${x.toFixed(1)} 26.5V53`);
+  for (let y = 26.5; y <= 53; y += 3.5) mesh.push(`M50.5 ${y.toFixed(1)}H73`);
   return (
     <svg viewBox="0 0 80 70" class="gh gh-sport" aria-hidden="true">
-      <path d="M0 62Q22 54 44 60T80 57V70H0Z" fill="#2e9e6b" opacity=".6" /><path d="M0 67Q30 61 80 66V70H0Z" fill="#1f7a50" opacity=".5" />
-      <g stroke="#f4f7fb" stroke-width="3" fill="none" stroke-linecap="round"><path d="M52 58V26h22v32" /></g><path d="M52 26h22" stroke="#1f7a50" stroke-width="1" opacity=".5" />
-      <path class="gh-net" d="M54 28h18M54 36h18M54 44h18M54 52h18M60 28v30M66 28v30" stroke="#f4f7fb" stroke-width="1.200" opacity=".9" />
-      <g class="gh-ball"><circle cx="22" cy="54" r="9" fill="#fff" stroke="#1d2433" stroke-width="1.800" /><path d="M22 47l5 3.600-2 6h-6l-2-6z" fill="#1d2433" /><path d="M22 47v-3M27 50.600l3-1M25 56.600l2 3M19 56.600l-2 3M17 50.600l-3-1" stroke="#1d2433" stroke-width="1.400" stroke-linecap="round" /></g>
+      <path d="M0 58Q20 54 40 56T80 55V70H0Z" fill="#2e9e6b" opacity=".75" />
+      <path d="M0 62Q22 59 44 61T80 60V70H0Z" fill="#3cb07a" opacity=".75" />
+      <path d="M0 66Q26 64 52 65T80 64.500V70H0Z" fill="#2e9e6b" opacity=".85" />
+      <path d="M6 57Q40 52 74 56" stroke="#f4f7fb" stroke-width="1" fill="none" opacity=".55" />
+      <g class="gh-goal">
+        <path d="M50.500 26.500H73V53H50.500Z" fill="#0f5c3a" opacity=".22" />
+        <path class="gh-net" d={mesh.join("")} stroke="#f4f7fb" stroke-width=".7" opacity=".85" fill="none" />
+        <path class="gh-net" d="M45.500 20L50.500 26.500M77 20L73 26.500M45.500 57L50.500 53M77 57L73 53" stroke="#f4f7fb" stroke-width=".7" opacity=".7" fill="none" />
+        <path d="M45.500 57V20H77V57" stroke="#1d2433" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".18" />
+        <path d="M45.500 57V20H77V57" stroke="#f7f9fc" stroke-width="2.800" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M46.700 22H75.800" stroke="#c4cddb" stroke-width=".8" opacity=".8" />
+      </g>
+      <ellipse cx="17" cy="63" rx="9" ry="2" fill="#000" opacity=".2" />
+      <g class="gh-ball"><g transform="translate(17 54)"><SoccerBall r={9} /></g></g>
     </svg>
   );
 }
