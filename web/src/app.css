@@ -909,3 +909,41 @@ textarea.field { resize: vertical; min-height: 84px; }
 .card.event, .card.matchrow { position: relative; }
 .frbadge { position: absolute; top: 10px; right: 10px; z-index: 2; display: inline-flex; align-items: center; gap: 4px; min-height: 24px; padding: 0 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: 12px; font-weight: 800; border: 1px solid color-mix(in srgb, var(--brand) 35%, transparent); }
 .has-friends { border-color: color-mix(in srgb, var(--brand) 45%, var(--border)); }
+
+/* ---- daily missions ---- */
+.dm { display: flex; flex-direction: column; gap: 10px; padding: 14px; background: linear-gradient(160deg, var(--surface), color-mix(in srgb, var(--brand) 6%, var(--surface))); }
+.dmhead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .dmhead h2 { margin: 0; font-size: 17px; flex: 1 1 auto; }
+.dmstreak { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; background: color-mix(in srgb, #ff8a1f 16%, var(--surface)); color: #d86a00; font-size: 12px; font-weight: 800; } .dmstreak svg { animation: flick 1.4s ease-in-out infinite; transform-origin: 50% 90%; }
+.dmreset { font-size: 12px; color: var(--muted); font-weight: 600; }
+.dmlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.dmrow, .dmchest { position: relative; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px; border-radius: 14px; background: var(--surface-2); border: 1px solid transparent; overflow: hidden; animation: dmin .45s var(--ease, ease) both; }
+.dmrow:nth-child(2) { animation-delay: .07s; } .dmrow:nth-child(3) { animation-delay: .14s; } .dmchest { animation-delay: .22s; }
+.dmico { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); transition: transform .25s; } .dmico.big { background: linear-gradient(135deg, #ffd24a, #ff8a3d); color: #fff; }
+.dmtx { min-width: 0; display: flex; flex-direction: column; gap: 6px; } .dmtx b { font-size: 14px; line-height: 1.2; } .dmtx .hint { margin: 0; font-size: 12px; }
+.dmbar { display: block; height: 8px; border-radius: 999px; background: var(--border); overflow: hidden; } .dmbar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--brand), #b05cff); transform-origin: left; animation: dmfill .9s cubic-bezier(.2,.8,.2,1) both; position: relative; }
+.dmbar i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.55) 50%, transparent 70%); transform: translateX(-100%); animation: dmshine 2.4s ease-in-out 1s infinite; }
+.dmact { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; } .dmact em { font-style: normal; font-weight: 800; color: var(--muted); } .dmrew { font-weight: 800; color: var(--brand); }
+.dmok { display: inline-flex; align-items: center; gap: 4px; color: var(--won-fg); font-weight: 800; animation: dmcheck .45s cubic-bezier(.3,1.6,.5,1) both; }
+.dmbtn { min-height: 38px; padding: 0 12px; font-size: 13px; white-space: nowrap; animation: dmpulse 1.6s ease-in-out infinite; }
+.dmrow.ready { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 9%, var(--surface-2)); } .dmrow.ready .dmico { animation: dmwiggle 1.8s ease-in-out infinite; }
+.dmrow.claimed { opacity: .72; } .dmrow.claimed .dmbar i { background: var(--won-fg); } .dmrow.claimed .dmbar i::after { display: none; }
+.dmdots { display: flex; gap: 6px; } .dmdots i { width: 22px; height: 6px; border-radius: 999px; background: var(--border-strong); transition: background .4s, transform .4s; } .dmdots i.on { background: linear-gradient(90deg, #ffd24a, #ff8a3d); transform: scaleY(1.2); }
+.dmchest { background: color-mix(in srgb, #ffb347 10%, var(--surface-2)); }
+.dmchest.ready { border-color: #ff9d3d; box-shadow: 0 0 0 0 rgba(255, 157, 61, .5); animation: dmin .45s both, dmglow 1.8s ease-out .5s infinite; } .dmchest.ready .dmico.big { animation: dmshake 1.4s ease-in-out infinite; }
+.dmchest.claimed { opacity: .75; }
+/* a burst of coins and sparks when something is collected */
+.dmrow.pop::after, .dmchest.pop::after { content: ""; position: absolute; left: 34px; top: 50%; width: 8px; height: 8px; border-radius: 50%; pointer-events: none; background: #ffd24a;
+  box-shadow: -18px -22px 0 #ffd24a, 20px -26px 0 #ff8a3d, -34px 6px 0 #b05cff, 30px 12px 0 #ffd24a, -8px 26px 0 #ff8a3d, 12px 28px 0 #b05cff, -26px -4px 0 #ffd24a, 36px -8px 0 #ff8a3d; animation: dmburst .9s ease-out both; }
+.dmrow.pop .dmico, .dmchest.pop .dmico { animation: dmjump .6s cubic-bezier(.3,1.6,.5,1) both; }
+@keyframes dmin { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes dmfill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes dmshine { 0%, 55% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+@keyframes dmpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes dmwiggle { 0%, 70%, 100% { transform: rotate(0); } 78% { transform: rotate(-9deg); } 86% { transform: rotate(8deg); } 93% { transform: rotate(-4deg); } }
+@keyframes dmshake { 0%, 60%, 100% { transform: rotate(0) scale(1); } 66% { transform: rotate(-10deg) scale(1.08); } 74% { transform: rotate(10deg) scale(1.08); } 82% { transform: rotate(-6deg); } 90% { transform: rotate(4deg); } }
+@keyframes dmglow { 0% { box-shadow: 0 0 0 0 rgba(255, 157, 61, .55); } 100% { box-shadow: 0 0 0 14px rgba(255, 157, 61, 0); } }
+@keyframes dmcheck { from { transform: scale(.2) rotate(-30deg); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes dmjump { 0% { transform: scale(1); } 40% { transform: scale(1.4) rotate(-12deg); } 100% { transform: scale(1); } }
+@keyframes dmburst { 0% { transform: scale(.2); opacity: 1; } 70% { opacity: 1; } 100% { transform: scale(2.6); opacity: 0; } }
+@keyframes flick { 0%, 100% { transform: scale(1) rotate(-3deg); } 50% { transform: scale(1.18) rotate(3deg); } }
+@media (prefers-reduced-motion: reduce) { .dmrow, .dmchest, .dmbtn, .dmico, .dmbar i, .dmbar i::after, .dmstreak svg, .dmok { animation: none !important; } }

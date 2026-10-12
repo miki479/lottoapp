@@ -150,5 +150,10 @@ const it: Messages = {
     hot: "Gli amici puntano", friendsOn: (n) => (n === 1 ? "1 amico ci ha puntato" : `${n} amici ci hanno puntato`), inboxTitle: "Inviti dagli amici", inboxFrom: (w) => `${w || "Un amico"} ti sfida`, inboxOpen: "Apri", referralNote: "Chi accetta il tuo invito diventa tuo amico e puoi invitarlo alle sfide.",
     errors: { invite_limit: "Hai già invitato molte persone oggi: riprova domani.", too_many_invites: "Puoi invitare al massimo 20 amici alla volta.", not_in_challenge: "Per invitare devi essere dentro la sfida.", generic: "Non è andata: riprova." },
   },
+  dm: {
+    title: "Missioni di oggi", resets: (t) => `Si rinnovano tra ${t}`, claim: "Ritira", done: "Fatto", chest: "Baule del giorno", chestBody: (c) => `Chiudi le tre missioni: ${c} e 1 boost`, chestOpen: "Apri il baule", chestOpened: (c, b) => `Baule aperto: ${c} e ${b} boost`, chestLocked: (n) => (n === 1 ? "Ne manca 1" : `Ne mancano ${n}`), got: (c) => `Missione compiuta: ${c}`,
+    streak: (n) => `${n} giorni di fila`,
+    titles: { m_bets3: "Piazza 3 puntate", m_bets5: "Piazza 5 puntate", m_cats2: "Gioca in 2 categorie diverse", m_sport: "Punta su una partita", m_nature: "Punta su natura, cripto o cultura", m_stake50: "Fai una puntata da almeno 50", m_early: "Punta prima di mezzogiorno", m_odds3: "Punta su una quota da ×3 o più", m_odds5: "Punta su una quota da ×5 o più", m_parlay: "Fai una multipla", m_friend: "Lancia o raggiungi una sfida tra amici", m_win1: "Vinci una puntata" },
+  },
 };
 export default it;

@@ -150,5 +150,10 @@ const enUS: Messages = {
     hot: "Friends are on it", friendsOn: (n) => (n === 1 ? "1 friend bet on this" : `${n} friends bet on this`), inboxTitle: "Invites from friends", inboxFrom: (w) => `${w || "A friend"} challenges you`, inboxOpen: "Open", referralNote: "Whoever accepts your invite becomes your friend and you can invite them to challenges.",
     errors: { invite_limit: "You already invited a lot of people today: try again tomorrow.", too_many_invites: "You can invite at most 20 friends at once.", not_in_challenge: "You have to be in the challenge to invite people.", generic: "That did not work: try again." },
   },
+  dm: {
+    title: "Today's missions", resets: (t) => `Renews in ${t}`, claim: "Collect", done: "Done", chest: "Daily chest", chestBody: (c) => `Finish all three missions: ${c} and 1 boost`, chestOpen: "Open the chest", chestOpened: (c, b) => `Chest opened: ${c} and ${b} boost`, chestLocked: (n) => `${n} to go`, got: (c) => `Mission complete: ${c}`,
+    streak: (n) => `${n}-day streak`,
+    titles: { m_bets3: "Place 3 bets", m_bets5: "Place 5 bets", m_cats2: "Play in 2 different categories", m_sport: "Bet on a match", m_nature: "Bet on nature, crypto or culture", m_stake50: "Place a bet of at least 50", m_early: "Bet before noon", m_odds3: "Bet at odds of ×3 or more", m_odds5: "Bet at odds of ×5 or more", m_parlay: "Make a parlay", m_friend: "Start or join a friend challenge", m_win1: "Win a bet" },
+  },
 };
 export default enUS;

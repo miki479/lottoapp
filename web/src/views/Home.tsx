@@ -27,7 +27,7 @@ export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>;
   cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null;
   onQuakeMaker: () => void; onCreate: () => void; registered: boolean; onAuth: () => void; italian: boolean; nearNode?: preact.ComponentChildren; nearbyNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
-  stale?: boolean; details: boolean; friendBets: Record<string, number>;
+  missionsNode?: preact.ComponentChildren; stale?: boolean; details: boolean; friendBets: Record<string, number>;
   attributions: { name: string; via?: string; license: string; licenseUrl: string; url: string }[]; installEvt: Event | null;
 }
 
@@ -81,6 +81,7 @@ export function Home(p: HomeProps) {
           </ol>
         </section>
       )}
+      {p.missionsNode}
       <div class="aside">
         {p.top.length > 0 && (
           <section class="stack" style="gap:8px">

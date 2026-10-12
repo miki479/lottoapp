@@ -20,3 +20,5 @@ export interface LbRow { rank: number; user_id: string; display_name: string; sc
 export interface GroupRow { code: string; name: string }
 export interface MyStats { total: number; won: number; lost: number; voided: number; best_win: number; net: number; staked: number }
 export interface PopularRow { market_id: string; bets: number; staked: number }
+
+export interface DailyMissionsData { day: string; missions: { id: string; target: number; reward: number; progress: number; claimed: boolean }[]; chest: { reward: number; boosts: number; ready: boolean; claimed: boolean } }

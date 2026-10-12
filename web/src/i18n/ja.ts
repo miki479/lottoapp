@@ -150,5 +150,10 @@ const ja: Messages = {
     hot: "友達が予想中", friendsOn: (n) => `${n}人の友達が予想`, inboxTitle: "友達からの招待", inboxFrom: (w) => `${w || "友達"}からチャレンジ`, inboxOpen: "開く", referralNote: "招待を受けた人は友達になり、チャレンジに招待できます。",
     errors: { invite_limit: "今日はすでに多くの人を招待しました。明日また試してください。", too_many_invites: "一度に招待できるのは20人までです。", not_in_challenge: "招待するにはチャレンジに参加している必要があります。", generic: "うまくいきませんでした。もう一度どうぞ。" },
   },
+  dm: {
+    title: "今日のミッション", resets: (t) => `更新まであと${t}`, claim: "受け取る", done: "完了", chest: "デイリーチェスト", chestBody: (c) => `3つ達成で ${c} とブースト1個`, chestOpen: "チェストを開く", chestOpened: (c, b) => `チェスト開封：${c}とブースト${b}個`, chestLocked: (n) => `あと${n}つ`, got: (c) => `ミッション達成：${c}`,
+    streak: (n) => `${n}日連続`,
+    titles: { m_bets3: "3回予想する", m_bets5: "5回予想する", m_cats2: "2つの違うカテゴリーで遊ぶ", m_sport: "試合に予想する", m_nature: "自然・暗号資産・カルチャーに予想する", m_stake50: "50以上で予想する", m_early: "正午までに予想する", m_odds3: "オッズ×3以上に予想する", m_odds5: "オッズ×5以上に予想する", m_parlay: "複数予想をする", m_friend: "友達チャレンジを作る／参加する", m_win1: "予想を的中させる" },
+  },
 };
 export default ja;

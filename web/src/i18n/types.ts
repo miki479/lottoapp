@@ -96,6 +96,10 @@ export interface Messages {
   disclaimerShort: string; disclaimerFull: string; attributionTitle: string;
   errors: Record<string, string>;
   feedWarning: string;
+  dm: {
+    title: string; resets: (t: string) => string; claim: string; done: string; chest: string; chestBody: (c: string) => string; chestOpen: string; chestOpened: (c: string, b: number) => string; chestLocked: (n: number) => string; got: (c: string) => string;
+    streak: (n: number) => string; titles: Record<"m_bets3" | "m_bets5" | "m_cats2" | "m_sport" | "m_nature" | "m_stake50" | "m_early" | "m_odds3" | "m_odds5" | "m_parlay" | "m_friend" | "m_win1", string>;
+  };
   frd: {
     boardTab: string; groupsTab: string; inviteTitle: string; inviteBody: string; inviteBtn: string; invitedCount: (n: number) => string;
     empty: string; emptyBody: string; anon: string; remove: string; removeAsk: (n: string) => string; removeYes: string; removeNo: string; removed: string; challenge: string; boardHint: string;

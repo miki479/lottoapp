@@ -1,7 +1,8 @@
 import { Check, Gift, Rocket, Share2, Snowflake, X } from "lucide-preact";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { money } from "../lib/format.ts";
-import type { Profile, QuestRow } from "../lib/types.ts";
+import type { DailyMissionsData, Profile, QuestRow } from "../lib/types.ts";
+import { DailyMissions } from "./DailyMissions.tsx";
 import { Sheet } from "./Sheet.tsx";
 
 /** Time left until local midnight in the player's time zone ("5h 12m"), when the daily missions renew. */
@@ -13,12 +14,11 @@ export function untilReset(tz: string, nowMs: number): string {
 
 /** Everything that pays credits: today's missions, one-time quests and invites. Claiming is a button; the server checks every condition. */
 export function RewardsSheet(p: {
-  msg: Messages; locale: Locale; now: number; profile: Profile | null; quests: QuestRow[]; referral: { code: string; invited: number; paid: number } | null; registered: boolean;
+  msg: Messages; locale: Locale; now: number; profile: Profile | null; quests: QuestRow[]; referral: { code: string; invited: number; paid: number } | null; registered: boolean; missions: DailyMissionsData | null; onClaimMission: (id: string) => Promise<void>; onClaimChest: () => Promise<void>;
   onClaim: (id: string) => void; onGo: (id: string) => void; onShare: () => void; onClose: () => void;
 }) {
   const m = p.msg.rewards;
-  const daily = p.quests.filter((q) => q.kind === "daily"), once = p.quests.filter((q) => q.kind === "once");
-  const allDailyClaimed = daily.length > 0 && daily.every((q) => q.claimed);
+  const once = p.quests.filter((q) => q.kind === "once");
   const row = (q: QuestRow) => {
     const t = m.quest[q.id];
     const act = q.claimed ? <span class="qdone"><Check size={16} strokeWidth={2.6} />{m.claimed}</span>
@@ -38,12 +38,7 @@ export function RewardsSheet(p: {
       <div class="rbal"><span class="coin" aria-hidden="true">€</span><b class="num">{money(p.profile?.credits ?? 0, p.locale)}</b>
         <span class="rstock"><Snowflake size={15} />{p.profile?.freezes ?? 0}</span><span class="rstock"><Rocket size={15} />{p.profile?.boosts ?? 0}</span></div>
       <p class="hint">{m.subtitle}</p>
-      {(p.profile?.streak ?? 0) >= 2 && !daily.find((q) => q.id === "d_bet")?.done && <p class="note">{m.streakRisk(p.profile!.streak)}</p>}
-      <section class="stack" style="gap:8px">
-        <div class="sectionhead" style="display:flex;justify-content:space-between;align-items:baseline"><h3>{m.daily}</h3><span class="detail">{m.dailyReset(untilReset(p.profile?.timezone ?? "UTC", p.now))}</span></div>
-        <ul class="quests">{daily.map(row)}</ul>
-        {allDailyClaimed && <p class="hint">{m.allDone}</p>}
-      </section>
+      <DailyMissions data={p.missions} msg={p.msg} locale={p.locale} now={p.now} tz={p.profile?.timezone ?? "UTC"} streak={p.profile?.streak ?? 0} onClaim={p.onClaimMission} onChest={p.onClaimChest} />
       <section class="stack" style="gap:8px">
         <h3>{m.once}</h3>
         <ul class="quests">{once.map(row)}</ul>
