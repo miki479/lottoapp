@@ -1,11 +1,12 @@
 import { computeOdds } from "./odds.ts";
 
 /** Football (soccer): one market = one bet on one match, settled from the final score. One match, many "reasons". */
-export type MatchBet = "home_win" | "draw" | "away_win" | "over_1_5" | "over_2_5" | "over_3_5" | "btts" | "home_clean" | "away_clean";
-export const MATCH_BETS: MatchBet[] = ["home_win", "draw", "away_win", "over_1_5", "over_2_5", "over_3_5", "btts", "home_clean", "away_clean"];
+export type MatchBet = "home_win" | "draw" | "away_win" | "dc_1x" | "dc_x2" | "dc_12" | "over_1_5" | "over_2_5" | "over_3_5" | "btts" | "home_clean" | "away_clean";
+export const MATCH_BETS: MatchBet[] = ["home_win", "draw", "away_win", "dc_1x", "dc_x2", "dc_12", "over_1_5", "over_2_5", "over_3_5", "btts", "home_clean", "away_clean"];
 /** The ones every fixture gets automatically; the rest are created on request, never twice. */
-export const AUTO_BETS: MatchBet[] = ["home_win", "draw", "over_2_5", "btts"];
-export const AUTO_BETS_LOWER: MatchBet[] = ["home_win", "draw", "over_2_5"];
+/** Every fixture gets the base 1-X-2 automatically; every other market (goals, double chance, clean sheets) is made on request, never twice. */
+export const AUTO_BETS: MatchBet[] = ["home_win", "draw", "away_win"];
+export const AUTO_BETS_LOWER: MatchBet[] = AUTO_BETS;
 
 export const LEAGUES: { id: string; name: string; top: boolean }[] = [
   { id: "4332", name: "Serie A", top: true }, { id: "4394", name: "Serie B", top: false },
@@ -44,19 +45,20 @@ function rates(home?: TableRow, away?: TableRow): [number, number] {
 /** Chance of every bet from independent Poisson goals. */
 export function matchPriors(home?: TableRow, away?: TableRow): Record<MatchBet, number> {
   const [lh, la] = rates(home, away);
-  const p = { home_win: 0, draw: 0, away_win: 0, over_1_5: 0, over_2_5: 0, over_3_5: 0, btts: 0, home_clean: 0, away_clean: 0 } as Record<MatchBet, number>;
+  const p = { home_win: 0, draw: 0, away_win: 0, dc_1x: 0, dc_x2: 0, dc_12: 0, over_1_5: 0, over_2_5: 0, over_3_5: 0, btts: 0, home_clean: 0, away_clean: 0 } as Record<MatchBet, number>;
   for (let h = 0; h <= 10; h++) for (let a = 0; a <= 10; a++) {
     const w = pois(h, lh) * pois(a, la);
     if (h > a) p.home_win += w; else if (h === a) p.draw += w; else p.away_win += w;
     if (h + a >= 2) p.over_1_5 += w; if (h + a >= 3) p.over_2_5 += w; if (h + a >= 4) p.over_3_5 += w;
     if (h > 0 && a > 0) p.btts += w; if (a === 0) p.home_clean += w; if (h === 0) p.away_clean += w;
   }
+  p.dc_1x = p.home_win + p.draw; p.dc_x2 = p.draw + p.away_win; p.dc_12 = p.home_win + p.away_win;
   for (const k of MATCH_BETS) p[k] = Math.round(clamp(p[k], 0.04, 0.96) * 1000) / 1000;
   return p;
 }
 
 export const evalBet = (bet: MatchBet, h: number, a: number): boolean =>
-  bet === "home_win" ? h > a : bet === "draw" ? h === a : bet === "away_win" ? a > h : bet === "over_1_5" ? h + a >= 2 : bet === "over_2_5" ? h + a >= 3 : bet === "over_3_5" ? h + a >= 4
+  bet === "home_win" ? h > a : bet === "draw" ? h === a : bet === "away_win" ? a > h : bet === "dc_1x" ? h >= a : bet === "dc_x2" ? a >= h : bet === "dc_12" ? h !== a : bet === "over_1_5" ? h + a >= 2 : bet === "over_2_5" ? h + a >= 3 : bet === "over_3_5" ? h + a >= 4
   : bet === "btts" ? h > 0 && a > 0 : bet === "home_clean" ? a === 0 : h === 0;
 
 export function matchMarket(f: Fixture, bet: MatchBet, priors: Record<MatchBet, number>, geo: Geo | undefined, testOnly: boolean, custom?: { by: string | null }): MatchMarketInsert {

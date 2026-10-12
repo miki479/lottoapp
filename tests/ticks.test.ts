@@ -70,3 +70,21 @@ describe("regional alerts", () => {
     for (const x of m) { expect(Date.parse(x.closes_at) / 1000).toBeGreaterThan(NOW); expect(x.lat).toBeTruthy(); expect(x.params.local).toBe("true"); }
   });
 });
+
+import { evalBet, matchPriors, MATCH_BETS } from "../shared/sport.ts";
+describe("football markets", () => {
+  const pr = matchPriors({ team: "A", played: 6, points: 14, goalsFor: 12, goalsAgainst: 5 }, { team: "B", played: 6, points: 5, goalsFor: 6, goalsAgainst: 11 });
+  it("1X2 chances add up and double chance is their sum", () => {
+    expect(pr.home_win + pr.draw + pr.away_win).toBeGreaterThan(0.97);
+    expect(pr.home_win + pr.draw + pr.away_win).toBeLessThan(1.03);
+    expect(Math.abs(pr.dc_1x - (pr.home_win + pr.draw))).toBeLessThan(0.01);
+    expect(pr.home_win).toBeGreaterThan(pr.away_win);
+  });
+  it("settles every reason from a final score", () => {
+    expect(evalBet("dc_1x", 1, 1)).toBe(true); expect(evalBet("dc_1x", 0, 2)).toBe(false);
+    expect(evalBet("dc_x2", 0, 2)).toBe(true); expect(evalBet("dc_12", 1, 1)).toBe(false); expect(evalBet("dc_12", 2, 1)).toBe(true);
+    expect(evalBet("over_2_5", 2, 1)).toBe(true); expect(evalBet("over_2_5", 1, 1)).toBe(false); expect(evalBet("btts", 1, 1)).toBe(true);
+    expect(evalBet("home_clean", 2, 0)).toBe(true); expect(evalBet("away_clean", 2, 0)).toBe(false);
+    expect(MATCH_BETS).toHaveLength(12);
+  });
+});

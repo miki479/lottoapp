@@ -856,3 +856,6 @@ textarea.field { resize: vertical; min-height: 84px; }
 /* inside a scrolling sheet nothing may shrink: rows keep the height of their content */
 .sheet > * { flex-shrink: 0; }
 .boosttoggle { position: relative; align-items: flex-start; height: auto; } .boosttoggle > span { flex: 1; min-width: 0; line-height: 1.3; } .boosttoggle svg { margin-top: 2px; }
+.matchlist { display: grid; gap: 10px; } .matchrow { display: grid; gap: 8px; padding: 12px 14px; } .matchrow .mhead { display: flex; justify-content: space-between; align-items: center; gap: 8px; } .matchrow .more { display: inline-flex; align-items: center; background: none; border: 0; color: var(--brand); font-weight: 700; font-size: .8rem; padding: 4px 0; } .matchrow .teams { font-size: 1.05rem; }
+.oddsrow { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; } .oddsbtn { display: grid; gap: 2px; justify-items: center; padding: 8px 6px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: .8rem; font-weight: 700; min-height: 52px; } .oddsbtn b { font-size: 1.05rem; } .oddsbtn:disabled { opacity: .5; } .oddsbtn:active { transform: scale(.97); }
+.mgroup { display: grid; gap: 6px; }
