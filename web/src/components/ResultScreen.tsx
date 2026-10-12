@@ -1,3 +1,4 @@
+import { Q } from "./Q.tsx";
 import { Check, RotateCcw, Share2, X } from "lucide-preact";
 import { useEffect } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
@@ -10,6 +11,7 @@ import type { MyBet } from "../lib/types.ts";
 /** What the market measured, in words ("Measured delay: 1 min 44 s"). */
 export function evidenceLines(b: MyBet, msg: Messages): string[] {
   const m = b.markets, ev = m.evidence;
+  if (m.kind === "tick_gt") return typeof ev?.value === "number" ? [msg.result.tickMeasured(String(m.params.series) === "kp" ? ev.value.toFixed(1) : new Intl.NumberFormat().format(Math.round(ev.value)) + (String(m.params.series).startsWith("wiki:") ? "" : " $"))] : [];
   if (m.kind === "traffic_speed_lt") return typeof ev?.avgKmh === "number" ? [msg.result.trafficMeasured(Math.round(ev.avgKmh), Number(m.params.thresholdKmh))] : [];
   if (m.kind === "strike_on") return typeof ev?.present === "number" ? [ev.present ? msg.result.strikeOn : msg.result.strikeOff] : [];
   if (m.kind === "metric_gt") return typeof ev?.value === "number" ? [msg.result.metricMeasured(msg.wx.names[m.params.metric as "temp"], `${ev.value}${String(m.params.unit ?? "")}`)] : [];
@@ -38,7 +40,7 @@ export function ResultScreen({ bet, msg, locale, remaining, onClose, onShare, on
         <div><span class="detail">{msg.result[st]}</span></div>
         <div class="amount num">{amount}</div>
         <p style="color:var(--text-2)">{sub}</p>
-        <p class="q" style="font-weight:600">{question(m, msg, locale, cityName(city, locale), city.timezone)}</p>
+        <p class="q" style="font-weight:600"><Q m={m} msg={msg} locale={locale} city={cityName(city, locale)} tz={city.timezone} /></p>
         {lines.filter(Boolean).map((l) => <p class="hint" key={l}>{l}</p>)}
         <div class="facts"><div><span class="detail">{msg.result.stake}</span><b class="num">{money(bet.stake, locale)}</b></div><div><span class="detail">{msg.result.odds}</span><b class="num">{fmtOdds(Number(bet.odds), locale)}</b></div></div>
       </div>

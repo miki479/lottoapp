@@ -2,7 +2,7 @@
 import { resolveEvent } from "../_shared/shared/resolve.ts";
 import { historyKey, marketToEvent, type MarketRow } from "../_shared/shared/market.ts";
 import { parseStrikeRss } from "../_shared/shared/strikes.ts";
-import type { DelayObservation, MetricObservation, QuakeReading, StrikeReading, TrafficObservation, WeatherObservation } from "../_shared/shared/types.ts";
+import type { DelayObservation, MetricObservation, QuakeReading, StrikeReading, TickObservation, TrafficObservation, WeatherObservation } from "../_shared/shared/types.ts";
 import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
 import { lastNotifyError, notifyFlash, notifyModeration, notifyResults, notifyStreak } from "../_lib/notify.ts";
 
@@ -41,6 +41,7 @@ Deno.serve(safe(async (req) => {
       let quake: QuakeReading | null = null;
       let strike: StrikeReading | null = null;
       let traffic: TrafficObservation[] = [];
+      let ticks: TickObservation[] = [];
       if (event.kind === "traffic_speed_lt") {
         const hour = new Date(Math.floor(event.targetAt / 3600) * 3600 * 1000).toISOString();
         const { data } = await sb.from("traffic_observations").select("feed_id,site_id,direction,hour_start,avg_kmh,vehicles,measured_at").eq("feed_id", event.feedId).eq("site_id", event.siteId).eq("direction", event.direction).eq("hour_start", hour);
@@ -51,6 +52,9 @@ Deno.serve(safe(async (req) => {
       } else if (event.kind === "quake_m") {
         quake = await usgsWindow(event.closesAt, event.targetAt, event.minMag, event.bbox, event.circle);
         if (quake) await sb.from("feed_health").upsert({ feed_id: "usgs", last_ok_at: new Date().toISOString(), last_error: null });
+      } else if (event.kind === "tick_gt") {
+        const { data } = await sb.from("tick_observations").select("series,at,value,fetched_at").eq("series", event.series).eq("at", new Date(event.targetAt * 1000).toISOString());
+        ticks = (data ?? []).map((o) => ({ series: o.series, at: Date.parse(o.at) / 1000, value: Number(o.value), fetchedAt: Date.parse(o.fetched_at) / 1000 }));
       } else if (event.kind === "metric_gt") {
         const hour = new Date(Math.floor(event.targetAt / 3600) * 3600 * 1000).toISOString();
         const { data } = await sb.from("metric_observations").select("feed_id,metric,hour_start,value,fetched_at").eq("feed_id", event.feedId).eq("metric", event.metric).eq("hour_start", hour);
@@ -70,8 +74,8 @@ Deno.serve(safe(async (req) => {
       }
 
       const res = resolveEvent({
-        event, now, feed: { feedId: event.feedId, lastOkAt: lastOk.get(event.kind === "metric_gt" ? "open-meteo-metrics" : event.feedId.startsWith("om-") ? "open-meteo-places" : event.feedId) ?? null },
-        staleAfterSec: feedStale.get(event.feedId) ?? (event.feedId === "usgs" || event.feedId === "mit-scioperi" ? 7200 : event.feedId.startsWith("om-") ? 10800 : 300), delays, weather, metrics, quake, strike, traffic,
+        event, now, feed: { feedId: event.feedId, lastOkAt: lastOk.get(event.kind === "tick_gt" ? "ticks" : event.kind === "metric_gt" ? "open-meteo-metrics" : event.feedId.startsWith("om-") ? "open-meteo-places" : event.feedId) ?? null },
+        staleAfterSec: feedStale.get(event.feedId) ?? (event.feedId === "usgs" || event.feedId === "mit-scioperi" || event.kind === "tick_gt" ? 7200 : event.feedId.startsWith("om-") ? 10800 : 300), delays, weather, metrics, quake, strike, traffic, ticks,
       });
       if (res.status === "pending") { out.pending++; continue; }
 

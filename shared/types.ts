@@ -1,4 +1,4 @@
-export type Category = "bus" | "train" | "weather" | "traffic" | "nature" | "strike";
+export type Category = "bus" | "train" | "weather" | "traffic" | "nature" | "strike" | "finance" | "culture" | "sport";
 export type Outcome = "yes" | "no";
 export type BetStatus = "open" | "won" | "lost" | "void";
 
@@ -9,7 +9,8 @@ export type MarketEvent =
   | MetricEvent
   | QuakeEvent
   | StrikeEvent
-  | TrafficEvent;
+  | TrafficEvent
+  | TickEvent;
 
 interface BaseEvent {
   id: string;
@@ -150,3 +151,18 @@ export type Resolution =
   | { status: "void"; reason: VoidReason };
 
 export type VoidReason = "feed_down" | "no_observation" | "implausible_data";
+
+/** "Will this number be >= threshold at the instant `targetAt`?" (coin price, Kp index, daily page views). */
+export interface TickEvent extends BaseEvent {
+  kind: "tick_gt";
+  category: "finance" | "nature" | "culture";
+  series: string;
+  threshold: number;
+}
+
+export interface TickObservation {
+  series: string;
+  at: number;
+  value: number;
+  fetchedAt: number;
+}

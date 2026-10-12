@@ -3,7 +3,7 @@ import type { Messages } from "./types.ts";
 const enGB: Messages = {
   nav: { home: "Home", bets: "My bets", ranking: "League", profile: "Profile" },
   common: { backOnline: "Back online", close: "Close", cancel: "Cancel", save: "Save", retry: "Try again", soon: "Soon", offline: "You're offline: data may be out of date and bets can't be placed.", install: "Install the app", language: "Language", credits: "credits", copied: "Copied", back: "Back" },
-  tabs: { bus: "Bus", train: "Trains", weather: "Weather", strike: "Strikes", nature: "Nature", traffic: "Traffic" },
+  tabs: { bus: "Bus", train: "Trains", weather: "Weather", strike: "Strikes", nature: "Nature", traffic: "Traffic", finance: "Crypto", culture: "Culture", gov: "Government", soon: "Soon" },
   wx: { filter: "Filter", world: "World", regions: { jp: "Japan", it: "Italy", ca: "California", tr: "Turkey" }, localTime: "local time", all: "All", rain: "Rain", names: { temp: "Temperature", wind: "Wind", snow: "Snow", uv: "UV", aqi: "Air" }, forecast: (v) => `forecast ${v}`, quakeArt: "Earthquakes worldwide" },
   world: "Worldwide",
   quakeMaker: { cta: "Pick a place and time", title: "Custom earthquake", body: "Pick a place, a radius, a magnitude and a time: the odds come from the real earthquakes of the last year in that area.", place: "Place", search: "Search a city…", radius: "Radius", mag: "Minimum magnitude", day: "Day", today: "Today", tomorrow: "Tomorrow", hour: "From", length: "Length", hours: (n) => (n === 1 ? "1 hour" : `${n} hours`), km: (n) => `${n} km`, create: "Get the odds and open", creating: "Working…", pickPlace: "Pick a place first", local: (tz) => `Local time of the place (${tz})`, limit: "You already made 5 today. Try again tomorrow.", full: "Too many custom questions are open: try again later.", usgs: "The earthquake catalogue isn't answering right now. Try again shortly.", time: "Pick a future time (at least 30 minutes from now).", credit: "Data: USGS Earthquake Hazards Program." },
@@ -35,6 +35,22 @@ const enGB: Messages = {
   places: { more: "More cities", title: "Weather for a town", hint: "Search any city or town: its rain questions open straight away.", search: "Search a city…", recent: "Your latest", capitals: "Italian regional capitals", famous: "Famous cities worldwide", withData: "With buses, trains and weather", none: "No results. Try the full name.", searchError: "Can't search at the moment. Try again.", limit: "You've already added 5 new places today. Try again tomorrow or pick an existing one.", full: "Too many active places at the moment. Pick an existing one.", credit: "City search: Open-Meteo.com (CC BY 4.0). Weather only, for now." },
   top: { late: "Most delayed now", popular: "Most played", city: "Most delayed city", closing: "Closing shortly", avg: (m) => `${m} min average delay`, players: (n) => (n === 1 ? "1 bet" : `${n} bets`), ontime: "On time", open: "Open" },
   card: { late: "Late", onTime: "On time", per10: (w) => `10 → ${w}`, closes: "Closes", forecast: "forecast", live: "Live", yes: "Yes", no: "No", topOdds: "Top odds", hot: "Closing soon", over: (m) => `over ${m} min` },
+  quips: {
+    bus: ["The bus is like airport wifi: it exists, just not when you need it.", "Betting on the bus: waiting is already included.", "It shows up the moment you stop looking.", "Timetable: indicative, like most promises."],
+    train: ["Trains are always on time, except when you ride them.", "A delay is just waiting with a promotion.", "A punctual train is an urban legend.", "The conductor knows. You just bet."],
+    rain: ["Only people who won't need it carry an umbrella.", "If it rains, you were right. If not, you got sun.", "A forecast is an opinion, rain is a fact.", "It rains the day you hang the washing out."],
+    temp: ["The thermometer lies, but with style.", "Jacket or short sleeves? Bet first.", "The weather is always right, afterwards.", "Hot and cold: two opinions, one temperature."],
+    wind: ["The wind moves everything except your opinion.", "Hairdo at risk: bet bravely.", "Gust or breeze? Ask the neighbour's wig.", "Wind carries away even excuses."],
+    snow: ["Snow: the city stops, you don't.", "Flakes and flurries: place your bet.", "If it snows, traffic goes on holiday.", "Snowman or muddy shoes?"],
+    uv: ["The sun forgives nothing, neither does sunscreen.", "Tomato or tan? Bet on the sun.", "UV rays don't take names, they take skin.", "Sunglasses: the accessory that always wins."],
+    aqi: ["Air is free, quality isn't.", "Breathe. Or at least bet on it.", "Windows open or shut? Bet meanwhile.", "Clean air: a luxury, but we can still hope."],
+    quake: ["The ground shakes, you don't: it's only a forecast.", "Cold statistics on a restless planet.", "The planet stretches: bet calmly.", "No panic, just numbers."],
+    strike: ["Strike or not, the coffee at the bar is guaranteed.", "The news is on. The train, maybe.", "Social forecasts: less predictable than weather.", "A calendar and plenty of patience."],
+    traffic: ["Traffic is the one queue where nobody wants to be first.", "Rush hour: when everyone is in a hurry together.", "The fast lane is a legend.", "Going slow? At least the playlist gets finished."],
+    price: ["The chart goes up and down, like your diet resolutions.", "Not financial advice: fake credits.", "HODL or not, bet first.", "The market has moods, so do you."],
+    kp: ["Northern lights: free, but the sky has to cooperate.", "The sun sneezes, the Earth glows.", "You need dark skies and luck.", "The aurora is more punctual than trains."],
+    wiki: ["Fame is measured in views, dignity isn't.", "When a page packs the house, the internet has spoken.", "Clicking is a form of cheering.", "Wikipedia: the web's silent fan club."],
+  },
   question: {
     bus: (q) => `Will the ${q.route} towards ${q.headsign} be more than ${q.min} minutes late at ${q.stop} at ${q.time}?`,
     train: (q) => `Will the ${q.route} to ${q.headsign} reach ${q.stop} more than ${q.min} minutes late at ${q.time}?`,
@@ -48,6 +64,7 @@ const enGB: Messages = {
     })[q.metric],
     quake: (q) => `Will an earthquake of magnitude ${q.mag} or more strike ${q.region ? `in ${q.region}` : "anywhere in the world"} between ${q.from} and ${q.to}${q.region ? " (local time)" : ""}?`,
     strike: (q) => `Will the national strike on ${q.day} (${q.who.toLowerCase()}) still be on at the start of the day?`,
+    tick: (q) => (q.kind === "price" ? `Will ${q.label} be above ${q.value} at ${q.time}?` : q.kind === "kp" ? `Will the Kp index (northern lights) reach ${q.value} between ${q.from} and ${q.to}?` : `Will ${q.label}'s Wikipedia page get over ${q.value} views on ${q.day} (UTC)?`),
     traffic: (q) => `Between ${q.from} and ${q.to}, will the average speed at ${q.site} towards ${q.toward} be under ${q.kmh} km/h?`,
   },
   sheet: { title: "Bet slip", pick: "Your pick", stake: "Stake", potential: "Possible win", confirm: "Confirm bet", confirming: "One moment…", odds: "Odds", placed: (w) => `Bet placed. Possible win: ${w}.` },
@@ -60,7 +77,7 @@ const enGB: Messages = {
   result: {
     won: "Won", lost: "Lost", void: "Returned", amountWon: (n) => `+${n}`, amountLost: (n) => `−${n}`, amountVoid: (n) => `${n}`,
     subWon: "Called it. Rather well, too.", subLost: "The data had other ideas this time.", subVoid: "The data wasn't reliable, so your stake came back in full.",
-    measured: (m, s) => (m > 0 ? `Measured delay: ${m} min ${s} s` : `Measured delay: ${s} s`), threshold: (m) => `Line: over ${m} min`, trafficMeasured: (a, t) => `Average speed measured: ${a} km/h (threshold ${t})`, strikeOn: "Strike still on", strikeOff: "Strike revoked or moved", metricMeasured: (n, v) => `${n} measured: ${v}`, quakeMeasured: (c, m) => (c === 0 ? "No earthquakes in that window" : `${c} earthquake${c === 1 ? "" : "s"}, strongest ${m}`), rainMeasured: (mm) => `Measured rain: ${mm} mm`,
+    measured: (m, s) => (m > 0 ? `Measured delay: ${m} min ${s} s` : `Measured delay: ${s} s`), threshold: (m) => `Line: over ${m} min`, tickMeasured: (v) => `Measured value: ${v}`, trafficMeasured: (a, t) => `Average speed measured: ${a} km/h (threshold ${t})`, strikeOn: "Strike still on", strikeOff: "Strike revoked or moved", metricMeasured: (n, v) => `${n} measured: ${v}`, quakeMeasured: (c, m) => (c === 0 ? "No earthquakes in that window" : `${c} earthquake${c === 1 ? "" : "s"}, strongest ${m}`), rainMeasured: (mm) => `Measured rain: ${mm} mm`,
     stake: "Stake", odds: "Odds", share: "Share result", shareText: "My result on LateLotto", close: "Close", more: (n) => `${n} more results to see`, saved: "Image saved",
   },
   ranking: {

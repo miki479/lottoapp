@@ -226,14 +226,14 @@ export function App() {
   /** "Near you" chip: everything from the player's own country (their located town, profile or phone region). */
   const myCountry = near?.country ?? profile?.country ?? region();
   const countryOf = (id: string) => CITIES.find((c) => c.id === id)?.country ?? placeById(id)?.country ?? (near?.id === id ? near.country : undefined);
-  const hasMine = !!myCountry && open.some((m) => m.category !== "nature" && m.category !== "strike" && countryOf(m.city_id) === myCountry);
-  const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter || m.category === "nature" || m.category === "strike" || (filter === "mine" && countryOf(m.city_id) === myCountry)), [open, filter, myCountry, near?.id]);
+  const hasMine = !!myCountry && open.some((m) => m.category !== "nature" && m.category !== "strike" && m.category !== "finance" && m.category !== "culture" && countryOf(m.city_id) === myCountry);
+  const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter || m.category === "nature" || m.category === "strike" || m.category === "finance" || m.category === "culture" || (filter === "mine" && countryOf(m.city_id) === myCountry)), [open, filter, myCountry, near?.id]);
   useEffect(() => { if (hasMine && filter === "world" && !store.get("filter")) setFilter("mine"); }, [hasMine]);
   const byCat = (c: CatId) => inFilter.filter((m) => m.category === c);
   useEffect(() => { if (catChosen || !markets) return; const first = (["bus", "train", "weather"] as CatId[]).find((c) => byCat(c).length > 0); if (first && byCat(cat).length === 0) setCat(first); }, [markets, filter, catChosen]);
   const flashFirst = (a: MarketRow[]) => [...a].sort((x, y) => Number((y.flash_multiplier ?? 1) > 1) - Number((x.flash_multiplier ?? 1) > 1));
   const list = flashFirst(byCat(cat));
-  const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: byCat("nature").length, strike: isItalian ? byCat("strike").length : 0, traffic: byCat("traffic").length };
+  const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: byCat("nature").length, strike: isItalian ? byCat("strike").length : 0, traffic: byCat("traffic").length, finance: byCat("finance").length, culture: byCat("culture").length, gov: 0 };
 
   const top: TopItem[] = useMemo(() => {
     const items: TopItem[] = [];
@@ -288,6 +288,9 @@ export function App() {
     const extra = [
       { name: "Ministero delle Infrastrutture e dei Trasporti — Scioperi", license: "Dati pubblici del MIT (nessuna licenza dichiarata)", licenseUrl: "https://scioperi.mit.gov.it", url: "https://scioperi.mit.gov.it" },
       { name: CROWD_SOURCE.name, via: CROWD_SOURCE.via, license: CROWD_SOURCE.license, licenseUrl: CROWD_SOURCE.licenseUrl, url: CROWD_SOURCE.url },
+      { name: "CoinGecko API", license: "Free API, attribution required", licenseUrl: "https://www.coingecko.com/en/api/documentation", url: "https://www.coingecko.com" },
+      { name: "NOAA Space Weather Prediction Center", license: "Public domain (US Government)", licenseUrl: "https://www.weather.gov/disclaimer", url: "https://www.swpc.noaa.gov" },
+      { name: "Wikimedia Foundation (page views)", license: "CC0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", url: "https://wikimedia.org/api/rest_v1/" },
       { name: "USGS Earthquake Hazards Program", license: "Public domain", licenseUrl: "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits", url: "https://earthquake.usgs.gov" },
       { name: "Copernicus Atmosphere Monitoring Service", via: "Open-Meteo", license: "Copernicus licence", licenseUrl: "https://atmosphere.copernicus.eu/terms-of-use", url: "https://open-meteo.com/en/docs/air-quality-api" },
     ];

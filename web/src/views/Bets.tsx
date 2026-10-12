@@ -1,3 +1,4 @@
+import { Q } from "../components/Q.tsx";
 import { Check, RotateCcw, Ticket, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { Empty } from "../components/Empty.tsx";
@@ -57,7 +58,7 @@ export function Bets({ parlays, bets, msg, locale, now, onOpen, onHome }: { parl
                 {st === "void" && <span class="amt num">{money(b.stake, locale)}</span>}
                 {st === "open" && <span class="detail">{msg.bets.settles} · {countdown(Date.parse(m.target_at) - now)}</span>}
               </div>
-              <p class="q">{question(m, msg, locale, cityName(city, locale), city.timezone, new Date(now))}</p>
+              <p class="q"><Q m={m} msg={msg} locale={locale} city={cityName(city, locale)} tz={city.timezone} now={new Date(now)} /></p>
               <div class="info"><span>{msg.bets.yourPick(b.pick === "yes")}</span><span class="num">{money(b.stake, locale)} × {fmtOdds(Number(b.odds), locale)}</span></div>
             </button>
           );

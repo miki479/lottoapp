@@ -1,4 +1,5 @@
 import { METRICS } from "./metrics.ts";
+import { CRYPTO_GRACE_SEC, isCrypto, tickDef } from "./ticks.ts";
 import { MIN_VEHICLES, MIN_WINDOW_SEC } from "./traffic.ts";
 import type {
   DelayEvent,
@@ -13,6 +14,8 @@ import type {
   Resolution,
   StrikeEvent,
   StrikeReading,
+  TickEvent,
+  TickObservation,
   TrafficEvent,
   TrafficObservation,
   WeatherObservation,
@@ -32,6 +35,7 @@ export interface ResolveInput {
   /** Ministry list result for strike events; null = the list could not be read. */
   strike?: StrikeReading | null;
   traffic?: TrafficObservation[];
+  ticks?: TickObservation[];
 }
 
 /** A bus delay reading counts only if taken within this window around the scheduled time. */
@@ -75,6 +79,7 @@ export function resolveEvent(input: ResolveInput): Resolution {
     event.kind === "quake_m" ? quakeReading(event, input) :
     event.kind === "strike_on" ? strikeReading(event, input) :
     event.kind === "traffic_speed_lt" ? trafficReading(event, input) :
+    event.kind === "tick_gt" ? tickReading(event, input) :
     delayReading(event, input);
 
   if (reading.kind === "none") {
@@ -132,6 +137,15 @@ function metricReading(event: MetricEvent, input: ResolveInput): Reading {
   const def = METRICS[event.metric];
   if (!Number.isFinite(obs.value) || obs.value < def.min || obs.value > def.max) return { kind: "implausible" };
   return { kind: "ok", yes: obs.value >= event.threshold, evidence: { metric: event.metric, value: obs.value, hourStart, threshold: event.threshold } };
+}
+
+function tickReading(event: TickEvent, input: ResolveInput): Reading {
+  const obs = (input.ticks ?? []).find((o) => o.series === event.series && o.at === event.targetAt);
+  // The number only counts if it was read once the instant had passed (and, for a price, still close to it).
+  if (!obs || obs.fetchedAt < event.targetAt || (isCrypto(event.series) && obs.fetchedAt > event.targetAt + CRYPTO_GRACE_SEC)) return { kind: "none" };
+  const def = tickDef(event.series);
+  if (!def || !Number.isFinite(obs.value) || obs.value < def.min || obs.value > def.max) return { kind: "implausible" };
+  return { kind: "ok", yes: obs.value >= event.threshold, evidence: { series: event.series, value: obs.value, threshold: event.threshold } };
 }
 
 function trafficReading(event: TrafficEvent, input: ResolveInput): Reading {

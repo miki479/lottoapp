@@ -1,7 +1,8 @@
+import { Q } from "./Q.tsx";
 import { Layers, Rocket, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
-import { fmtOdds, isYesNo, money, question, type MarketRow } from "../lib/format.ts";
+import { fmtOdds, isYesNo, money, question, quip, type MarketRow } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { Pick } from "../lib/types.ts";
@@ -11,6 +12,7 @@ import { ReportLink } from "./ReportLink.tsx";
 import { Sheet } from "./Sheet.tsx";
 import { MetricArt } from "./MetricArt.tsx";
 import { TrafficScene } from "./TrafficScene.tsx";
+import { TickScene } from "./TickScene.tsx";
 import { Sky } from "./Sky.tsx";
 import { TripScene } from "./TripScene.tsx";
 import { StakeControl } from "./StakeControl.tsx";
@@ -41,8 +43,9 @@ export function BetSheet(p: {
   return (
     <Sheet onClose={p.onClose} label={p.msg.sheet.title}>
       <div class="shead"><h2>{p.msg.sheet.title}</h2><button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>
-      <p class="q" style="font-weight:600">{question(p.m, p.msg, p.locale, cityName(city, p.locale), city.timezone)}</p>
-      {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "traffic_speed_lt" ? <TrafficScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" || p.m.kind === "strike_on" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : <TripScene m={p.m} now={p.now} hint={pick} />}
+      <p class="q" style="font-weight:600"><Q m={p.m} msg={p.msg} locale={p.locale} city={cityName(city, p.locale)} tz={city.timezone} /></p>
+      <p class="quip">{quip(p.m, p.msg)}</p>
+      {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "traffic_speed_lt" ? <TrafficScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "tick_gt" ? <TickScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" || p.m.kind === "strike_on" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : <TripScene m={p.m} now={p.now} hint={pick} big />}
       <div>
         <span class="detail">{p.msg.sheet.pick}</span>
         <div class="actions2" style="margin-top:8px">

@@ -6,6 +6,7 @@ import { parseTrainTripId } from "../_shared/shared/adapters/viaggiatreno.ts";
 import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
+import { CRYPTO, WIKI_ARTICLES, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
 
@@ -66,6 +67,7 @@ Deno.serve(safe(async (req) => {
   if (heavyRun) return Response.json(report);
   report["open-meteo-places"] = await ingestPlaces(sb, now, lastAttempt.get("open-meteo-places") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["open-meteo-metrics"] = await ingestMetrics(sb, now, lastAttempt.get("open-meteo-metrics") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
+  report["ticks"] = await ingestTicks(sb, now, lastAttempt.get("ticks") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["mit-scioperi"] = await ingestStrikes(sb, now, lastAttempt.get("mit-scioperi") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["usgs"] = await pingUsgs(sb, now, lastAttempt.get("usgs") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   return Response.json(report);
@@ -334,4 +336,94 @@ async function ingestPerTrain(sb: ReturnType<typeof db>, city: CityConfig, feed:
   const { error } = await sb.from("delay_observations").upsert(rows, { onConflict: "feed_id,trip_id,stop_id,observed_at", ignoreDuplicates: true });
   if (error) throw new Error(error.message);
   return rows.length;
+}
+
+
+// ---- Global "number at an instant" questions: coin prices (CoinGecko), Kp index (NOAA SWPC), Wikipedia page views (Wikimedia) ----
+const UA = { "User-Agent": "LateLotto/0.1 (satirical fake-credit game; https://latelotto.web.app)" };
+const getJson = async (url: string) => JSON.parse(new TextDecoder().decode(await fetchBytes(url, UA)));
+const KP_URL = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json";
+const COINGECKO = (ids: string) => `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&precision=2`;
+const wikiDay = (e: number) => new Date(e * 1000).toISOString().slice(0, 10).replace(/-/g, "");
+
+async function fetchPrices(): Promise<Partial<Record<CryptoSeries, number>>> {
+  const ids = (Object.keys(CRYPTO) as CryptoSeries[]).map((k) => CRYPTO[k].id).join(",");
+  const json = await getJson(COINGECKO(ids));
+  const out: Partial<Record<CryptoSeries, number>> = {};
+  for (const k of Object.keys(CRYPTO) as CryptoSeries[]) { const v = json?.[CRYPTO[k].id]?.usd; if (typeof v === "number" && v > 0) out[k] = v; }
+  return out;
+}
+
+async function kpSeries(): Promise<{ observed: Map<number, number>; predicted: Map<number, number> }> {
+  const rows = (await getJson(KP_URL)) as { time_tag: string; kp: number; observed: string }[];
+  const observed = new Map<number, number>(), predicted = new Map<number, number>();
+  for (const r of rows) {
+    const e = Date.parse(`${r.time_tag}Z`) / 1000;
+    if (!Number.isFinite(e) || typeof r.kp !== "number") continue;
+    (r.observed === "predicted" ? predicted : observed).set(e, r.kp);
+  }
+  return { observed, predicted };
+}
+
+async function wikiViews(title: string, fromEpoch: number, toEpoch: number): Promise<Map<string, number>> {
+  const url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/${encodeURIComponent(title)}/daily/${wikiDay(fromEpoch)}/${wikiDay(toEpoch)}`;
+  const json = await getJson(url);
+  return new Map(((json?.items ?? []) as { timestamp: string; views: number }[]).map((i) => [i.timestamp.slice(0, 8), i.views]));
+}
+
+async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
+  const notes: string[] = [];
+  // 1. Instants that have just passed: record the number once, as a fact.
+  const { data: waiting } = await sb.from("markets").select("params,target_at").eq("kind", "tick_gt").eq("status", "open").lte("target_at", new Date(now * 1000).toISOString()).limit(300);
+  const need = new Map<string, Set<number>>();
+  for (const m of waiting ?? []) {
+    const p = m.params as { series: string; at: number };
+    if (!need.has(p.series)) need.set(p.series, new Set());
+    need.get(p.series)!.add(p.at);
+  }
+  if (need.size) {
+    const { data: have } = await sb.from("tick_observations").select("series,at").gte("at", new Date((now - 3 * 86400) * 1000).toISOString());
+    const done = new Set((have ?? []).map((r) => `${r.series}|${Date.parse(r.at) / 1000}`));
+    const rows: Record<string, unknown>[] = [];
+    const fetchedAt = new Date().toISOString();
+    const todo = (series: string) => [...(need.get(series) ?? [])].filter((at) => !done.has(`${series}|${at}`));
+    try {
+      const cryptoDue = [...need.keys()].filter(isCrypto).flatMap((s) => todo(s).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ s, at })));
+      if (cryptoDue.length) { const prices = await fetchPrices(); for (const { s, at } of cryptoDue) if (prices[s] !== undefined) rows.push({ series: s, at: new Date(at * 1000).toISOString(), value: prices[s], fetched_at: fetchedAt }); }
+    } catch (e) { notes.push(`crypto: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const kpDue = todo("kp");
+      if (kpDue.length) { const { observed } = await kpSeries(); for (const at of kpDue) { const v = observed.get(at - 3 * 3600); if (v !== undefined) rows.push({ series: "kp", at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
+    } catch (e) { notes.push(`kp: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    for (const series of [...need.keys()].filter((s) => s.startsWith("wiki:"))) {
+      try {
+        for (const at of todo(series)) {
+          const day = wikiDay(at - 86400), v = (await wikiViews(series.slice(5), at - 86400, at - 86400)).get(day);
+          if (v !== undefined) rows.push({ series, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt });
+        }
+      } catch (e) { notes.push(`${series}: ${String((e as Error).message ?? e).slice(0, 60)}`); }
+    }
+    if (rows.length) { const { error } = await sb.from("tick_observations").upsert(rows, { onConflict: "series,at", ignoreDuplicates: true }); if (error) throw new Error(error.message); notes.push(`${rows.length} readings`); }
+  }
+  // 2. Hourly: new questions from the current numbers.
+  if (now - last >= 3600 - 5) {
+    await sb.from("feed_health").upsert({ feed_id: "ticks", last_attempt_at: new Date(now * 1000).toISOString() });
+    const markets: Record<string, unknown>[] = [];
+    let ok = 0;
+    try { markets.push(...buildCryptoMarkets(await fetchPrices(), now)); ok++; } catch (e) { notes.push(`prices: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { markets.push(...buildKpMarkets((await kpSeries()).predicted, now)); ok++; } catch (e) { notes.push(`kp: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const means: Record<string, number> = {};
+      for (const t of WIKI_ARTICLES) {
+        const m = await wikiViews(t, now - 8 * 86400, now - 86400);
+        const v = [...m.values()]; if (v.length >= 5) means[t] = v.reduce((a, b) => a + b, 0) / v.length;
+      }
+      markets.push(...buildWikiMarkets(means, now)); ok++;
+    } catch (e) { notes.push(`wiki: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
+    notes.push(`${markets.length} offered`);
+    if (ok > 0) await sb.from("feed_health").upsert({ feed_id: "ticks", last_ok_at: new Date().toISOString(), last_error: null });
+    else await sb.from("feed_health").upsert({ feed_id: "ticks", last_error: notes.join("; ").slice(0, 300), last_error_at: new Date().toISOString() });
+  }
+  return notes.join("; ") || "idle";
 }

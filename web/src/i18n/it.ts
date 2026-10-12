@@ -3,7 +3,7 @@ import type { Messages } from "./types.ts";
 const it: Messages = {
   nav: { home: "Home", bets: "Le mie puntate", ranking: "Classifica", profile: "Profilo" },
   common: { backOnline: "Di nuovo online", close: "Chiudi", cancel: "Annulla", save: "Salva", retry: "Riprova", soon: "Presto", offline: "Sei offline: non vedi dati aggiornati e non puoi puntare.", install: "Installa l'app", language: "Lingua", credits: "crediti", copied: "Copiato", back: "Indietro" },
-  tabs: { bus: "Bus", train: "Treni", weather: "Meteo", strike: "Scioperi", nature: "Natura", traffic: "Traffico" },
+  tabs: { bus: "Bus", train: "Treni", weather: "Meteo", strike: "Scioperi", nature: "Natura", traffic: "Traffico", finance: "Cripto", culture: "Cultura", gov: "Governo", soon: "Presto" },
   wx: { filter: "Filtra", world: "Mondo", regions: { jp: "Giappone", it: "Italia", ca: "California", tr: "Turchia" }, localTime: "ora locale", all: "Tutto", rain: "Pioggia", names: { temp: "Temperatura", wind: "Vento", snow: "Neve", uv: "UV", aqi: "Aria" }, forecast: (v) => `previsto ${v}`, quakeArt: "Terremoti nel mondo" },
   world: "Tutto il mondo",
   quakeMaker: { cta: "Scegli zona e orario", title: "Terremoto su misura", body: "Scegli un luogo, un raggio, la magnitudo e l'orario: calcoliamo la quota dai terremoti reali dell'ultimo anno in quella zona.", place: "Luogo", search: "Cerca una città…", radius: "Raggio", mag: "Magnitudo minima", day: "Giorno", today: "Oggi", tomorrow: "Domani", hour: "Dalle", length: "Durata", hours: (n) => (n === 1 ? "1 ora" : `${n} ore`), km: (n) => `${n} km`, create: "Calcola la quota e apri", creating: "Calcolo…", pickPlace: "Scegli prima un luogo", local: (tz) => `Orario locale del luogo (${tz})`, limit: "Hai già creato 5 domande oggi. Riprova domani.", full: "Troppe domande personalizzate aperte: riprova più tardi.", usgs: "Il catalogo dei terremoti non risponde ora. Riprova tra poco.", time: "Scegli un orario futuro (almeno 30 minuti da adesso).", credit: "Dati: USGS Earthquake Hazards Program." },
@@ -35,6 +35,22 @@ const it: Messages = {
   places: { more: "Altre città", title: "Meteo di una città", hint: "Cerca qualsiasi città o paese: aprono subito le domande sulla pioggia.", search: "Cerca una città…", recent: "Le tue ultime", capitals: "Capoluoghi di regione", famous: "Città famose nel mondo", withData: "Con bus, treni e meteo", none: "Nessun risultato. Prova a scrivere il nome per intero.", searchError: "Non riesco a cercare adesso. Riprova.", limit: "Hai già aggiunto 5 nuove città oggi. Riprova domani o scegline una già presente.", full: "Troppe città attive in questo momento. Scegline una già presente.", credit: "Ricerca città: Open-Meteo.com (CC BY 4.0). Solo meteo, per ora." },
   top: { late: "Più in ritardo ora", popular: "Più giocato", city: "Città più in ritardo", closing: "Chiude tra poco", avg: (m) => `${m} min di ritardo medio`, players: (n) => (n === 1 ? "1 puntata" : `${n} puntate`), ontime: "In orario", open: "Apri" },
   card: { late: "In ritardo", onTime: "In orario", per10: (w) => `10 → ${w}`, closes: "Chiude", forecast: "previsto", live: "In diretta", yes: "Sì", no: "No", over: (m) => `oltre ${m} min`, topOdds: "Top quota", hot: "Chiude presto" },
+  quips: {
+    bus: ["Il bus è come il wifi dell'aeroporto: c'è, ma non quando serve.", "Scommessa sul bus: l'unico investimento in cui aspettare è già incluso.", "Il bus arriva quando smetti di guardare il telefono. Probabilmente.", "Orario indicativo, come le promesse elettorali."],
+    train: ["I treni sono sempre in orario, tranne quando li prendi tu.", "Il ritardo è solo l'attesa che sale di livello.", "Un treno puntuale è una leggenda metropolitana.", "Il capotreno lo sa. Tu puntaci."],
+    rain: ["L'ombrello si porta dietro solo chi non lo userà.", "Se piove, hai ragione tu. Se non piove, hai comunque il sole.", "Le previsioni sono un parere, la pioggia è un fatto.", "Pioverà il giorno del bucato, è scienza."],
+    temp: ["Il termometro mente, ma con stile.", "Giacchetta o maniche corte? Intanto punta.", "Il meteo ha sempre ragione, almeno dopo.", "Caldo e freddo: due pareri, una sola temperatura."],
+    wind: ["Il vento sposta tutto, tranne la tua opinione.", "Pettinatura a rischio: punta con coraggio.", "Raffica o brezza? Decide il parrucchino del vicino.", "Il vento porta via anche le scuse."],
+    snow: ["Neve: la città si ferma, tu no.", "Fiocchi e fiocchetti: puntaci su.", "Se nevica, il traffico va in vacanza.", "Pupazzo di neve o fango sulle scarpe?"],
+    uv: ["Il sole non perdona, la crema nemmeno.", "Pomodoro o abbronzatura? Punta sul sole.", "Il raggio UV non guarda in faccia nessuno.", "Occhiali scuri: l'accessorio che vince sempre."],
+    aqi: ["L'aria è gratis, la qualità no.", "Respira. O almeno prova a puntarci.", "Finestre aperte o chiuse? Tu intanto punta.", "Aria pulita: un lusso, ma si può ancora sperare."],
+    quake: ["La terra trema, tu non tremare: è solo una previsione.", "Statistica fredda su un pianeta che si muove.", "Il pianeta si stiracchia: tu punta con calma.", "Niente panico, solo numeri."],
+    strike: ["Sciopero o no, il caffè al bar è garantito.", "La notizia c'è. Il treno, forse.", "Previsioni sociali: più imprevedibili del meteo.", "Un'agenda, un calendario e tanta pazienza."],
+    traffic: ["Il traffico è l'unica coda in cui non vuoi essere il primo.", "Ora di punta: il momento in cui tutti hanno fretta insieme.", "Corsia veloce? Una leggenda.", "Se vai piano, almeno ascolti musica."],
+    price: ["Il grafico sale e scende, come i tuoi propositi di dieta.", "Non è un consiglio finanziario: sono crediti finti.", "Hodl o non hodl, intanto punta.", "Il mercato è umorale, tu pure."],
+    kp: ["Aurora boreale: gratis, ma pretende il cielo giusto.", "Il sole starnutisce, la Terra si illumina.", "Per vederla serve cielo scuro e fortuna.", "Le luci del nord sono più puntuali dei treni."],
+    wiki: ["La fama si misura in visite, la dignità no.", "Quando una pagina fa il pienone, internet ha parlato.", "Cliccare è una forma di tifo.", "Wikipedia: la tifoseria silenziosa del web."],
+  },
   question: {
     bus: (q) => `La linea ${q.route} per ${q.headsign} avrà più di ${q.min} min di ritardo a ${q.stop} alle ${q.time}?`,
     train: (q) => `Il treno ${q.route} per ${q.headsign} arriverà con più di ${q.min} min di ritardo a ${q.stop} alle ${q.time}?`,
@@ -48,6 +64,7 @@ const it: Messages = {
     })[q.metric],
     quake: (q) => `Ci sarà un terremoto di magnitudo ${q.mag} o più ${q.region ? `in ${q.region}` : "in qualunque parte del mondo"} tra le ${q.from} e le ${q.to}${q.region ? " (ora locale)" : ""}?`,
     strike: (q) => `Lo sciopero nazionale del ${q.day} (${q.who.toLowerCase()}) sarà ancora confermato a inizio giornata?`,
+    tick: (q) => (q.kind === "price" ? `${q.label} sopra ${q.value} alle ${q.time}?` : q.kind === "kp" ? `L'indice Kp (aurora boreale) raggiungerà ${q.value} tra le ${q.from} e le ${q.to}?` : `La pagina Wikipedia di ${q.label} avrà più di ${q.value} visite il ${q.day} (UTC)?`),
     traffic: (q) => `Tra le ${q.from} e le ${q.to}, la velocità media a ${q.site} verso ${q.toward} sarà inferiore a ${q.kmh} km/h?`,
   },
   sheet: { title: "Schedina", pick: "La tua scelta", stake: "Puntata", potential: "Vincita possibile", confirm: "Conferma puntata", confirming: "Un attimo…", odds: "Quota", placed: (w) => `Puntata registrata. Vincita possibile: ${w}.` },
@@ -60,7 +77,7 @@ const it: Messages = {
   result: {
     won: "Vinta", lost: "Persa", void: "Rimborsata", amountWon: (n) => `+${n}`, amountLost: (n) => `−${n}`, amountVoid: (n) => `${n}`,
     subWon: "Hai azzeccato la previsione.", subLost: "Stavolta il dato ha detto altro.", subVoid: "I dati non erano affidabili: puntata restituita per intero.",
-    measured: (m, s) => (m > 0 ? `Ritardo misurato: ${m} min ${s} s` : `Ritardo misurato: ${s} s`), threshold: (m) => `Soglia: oltre ${m} min`, trafficMeasured: (a, t) => `Velocità media misurata: ${a} km/h (soglia ${t})`, strikeOn: "Sciopero ancora in programma", strikeOff: "Sciopero revocato o spostato", metricMeasured: (n, v) => `${n} misurato: ${v}`, quakeMeasured: (c, m) => (c === 0 ? "Nessun terremoto in quell'intervallo" : `${c} ${c === 1 ? "terremoto" : "terremoti"}, il più forte ${m}`), rainMeasured: (mm) => `Pioggia misurata: ${mm} mm`,
+    measured: (m, s) => (m > 0 ? `Ritardo misurato: ${m} min ${s} s` : `Ritardo misurato: ${s} s`), threshold: (m) => `Soglia: oltre ${m} min`, tickMeasured: (v) => `Valore misurato: ${v}`, trafficMeasured: (a, t) => `Velocità media misurata: ${a} km/h (soglia ${t})`, strikeOn: "Sciopero ancora in programma", strikeOff: "Sciopero revocato o spostato", metricMeasured: (n, v) => `${n} misurato: ${v}`, quakeMeasured: (c, m) => (c === 0 ? "Nessun terremoto in quell'intervallo" : `${c} ${c === 1 ? "terremoto" : "terremoti"}, il più forte ${m}`), rainMeasured: (mm) => `Pioggia misurata: ${mm} mm`,
     stake: "Puntata", odds: "Quota", share: "Condividi risultato", shareText: "Il mio risultato su LateLotto", close: "Chiudi", more: (n) => `Altri ${n} esiti da vedere`, saved: "Immagine salvata",
   },
   ranking: {

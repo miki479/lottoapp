@@ -771,3 +771,22 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 
 .satire{margin:0 0 10px;padding:6px 12px;border-radius:999px;text-align:center;background:#fff4d6;border:1px solid #f0c75a;color:#6b4a00;font-size:.8rem;font-weight:700;line-height:1.2}
 @media (prefers-color-scheme:dark){.satire{background:#3a2d0a;border-color:#8a6a1a;color:#ffe29a}}
+
+/* inside the bet slip the little trip is shown larger so the chosen outcome is easy to see */
+.scene.big { height: 58px; margin: 6px 0 10px; } .scene.big .rider { bottom: 10px; } .scene.big .road { bottom: 8px; height: 3px; } .scene.big .done { bottom: 8px; height: 4px; } .scene.big .dest { bottom: 7px; transform: scale(1.5); transform-origin: 100% 100%; }
+.qb{font-weight:800;color:var(--text)}
+/* tick scenes: coin chart, aurora, page views */
+.mscene.tick .pline { transition: transform .9s cubic-bezier(.2,.8,.2,1); animation: tkbob 3.2s ease-in-out infinite alternate; }
+.mscene.tick.s-yes .pline { transform: translateY(-18px); animation: none; } .mscene.tick.s-no .pline { transform: translateY(20px); animation: none; }
+@keyframes tkbob { to { transform: translateY(-4px); } }
+.mscene.kp .aur { transition: opacity .8s; opacity: .55; } .mscene.kp.s-yes .aur { opacity: 1; } .mscene.kp.s-no .aur { opacity: .12; }
+.mscene.kp .a1 { animation: tkwave 5s ease-in-out infinite alternate; } .mscene.kp .a2 { animation: tkwave 7s ease-in-out infinite alternate-reverse; }
+.mscene.kp.s-yes .a1, .mscene.kp.s-yes .a2 { animation-duration: 2.4s; }
+@keyframes tkwave { from { transform: translateX(-10px) scaleY(.9); } to { transform: translateX(10px) scaleY(1.15); } }
+.mscene.wiki .wb { transform-origin: 50% 100%; transition: transform .7s cubic-bezier(.2,.8,.2,1) var(--d, 0ms); transform: scaleY(1); }
+.mscene.wiki.s-yes .wb { transform: scaleY(1.7); } .mscene.wiki.s-no .wb { transform: scaleY(.45); }
+@media (prefers-reduced-motion: reduce) { .mscene.tick *, .mscene.kp * { animation: none !important; } }
+.quip{margin:-2px 0 10px;font-size:.84rem;font-style:italic;color:var(--muted);line-height:1.3}
+.sheet > :is(.scene, .mscene, .sky, .quakescene, .metricart) { flex-shrink: 0; }
+.cc em.soon { background: var(--surface-2); color: var(--muted); font-style: normal; font-weight: 800; font-size: .66rem; letter-spacing: .04em; text-transform: uppercase; }
+.cc:disabled { opacity: .62; cursor: default; }

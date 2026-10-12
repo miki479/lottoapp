@@ -10,6 +10,7 @@ export interface BusQ { route: string; headsign: string; stop: string; time: str
 export interface RainQ { city: string; time: string }
 export type MetricKey = "temp" | "wind" | "snow" | "uv" | "aqi";
 export interface MetricQ { metric: MetricKey; city: string; time: string; value: number; unit: string }
+export interface TickQ { kind: "price" | "kp" | "wiki"; label: string; value: string; time: string; from: string; to: string; day: string }
 export interface TrafficQ { site: string; toward: string; from: string; to: string; kmh: number }
 export interface StrikeQ { date: string; day: string; who: string; hours: string }
 export interface QuakeQ { mag: string; from: string; to: string; region?: string }
@@ -24,7 +25,7 @@ export const TROPHY_RARITY: Record<TrophyId, "common" | "rare" | "epic"> = {
 export interface Messages {
   nav: { home: string; bets: string; ranking: string; profile: string };
   common: { backOnline: string; close: string; cancel: string; save: string; retry: string; soon: string; offline: string; install: string; language: string; credits: string; copied: string; back: string };
-  tabs: { bus: string; train: string; weather: string; nature: string; strike: string; traffic: string };
+  tabs: { bus: string; train: string; weather: string; nature: string; strike: string; traffic: string; finance: string; culture: string; gov: string; soon: string };
   wx: { filter: string; all: string; rain: string; world: string; regions: Record<string, string>; localTime: string; names: Record<MetricKey, string>; forecast: (v: string) => string; quakeArt: string };
   world: string;
   quakeMaker: { cta: string; title: string; body: string; place: string; search: string; radius: string; mag: string; day: string; today: string; tomorrow: string; hour: string; length: string; hours: (n: number) => string; km: (n: number) => string; create: string; creating: string; pickPlace: string; local: (tz: string) => string; limit: string; full: string; usgs: string; time: string; credit: string };
@@ -48,13 +49,14 @@ export interface Messages {
   places: { more: string; title: string; hint: string; search: string; recent: string; capitals: string; famous: string; withData: string; none: string; searchError: string; limit: string; full: string; credit: string };
   top: { late: string; popular: string; city: string; closing: string; avg: (min: number) => string; players: (n: number) => string; ontime: string; open: string };
   card: { late: string; onTime: string; per10: (win: number) => string; closes: string; forecast: string; live: string; yes: string; no: string; over: (min: number) => string; topOdds: string; hot: string };
-  question: { bus: (q: BusQ) => string; train: (q: BusQ) => string; rain: (q: RainQ) => string; metric: (q: MetricQ) => string; quake: (q: QuakeQ) => string; strike: (q: StrikeQ) => string; traffic: (q: TrafficQ) => string };
+  quips: Record<"bus" | "train" | "rain" | "temp" | "wind" | "snow" | "uv" | "aqi" | "quake" | "strike" | "traffic" | "price" | "kp" | "wiki", string[]>;
+  question: { bus: (q: BusQ) => string; train: (q: BusQ) => string; rain: (q: RainQ) => string; metric: (q: MetricQ) => string; quake: (q: QuakeQ) => string; strike: (q: StrikeQ) => string; traffic: (q: TrafficQ) => string; tick: (q: TickQ) => string };
   sheet: { title: string; pick: string; stake: string; potential: string; confirm: string; confirming: string; odds: string; placed: (win: string) => string };
   bets: { title: string; tabs: { open: string; settled: string }; open: string; won: string; lost: string; void: string; empty: { title: string; body: string; cta: string }; yourPick: (yes: boolean) => string; settles: string; voidReason: Record<string, string>; details: string };
   result: {
     won: string; lost: string; void: string; amountWon: (n: number) => string; amountLost: (n: number) => string; amountVoid: (n: number) => string;
     subWon: string; subLost: string; subVoid: string;
-    measured: (min: number, sec: number) => string; threshold: (min: number) => string; rainMeasured: (mm: number) => string; metricMeasured: (name: string, value: string) => string; strikeOn: string; strikeOff: string; trafficMeasured: (avg: number, thr: number) => string; quakeMeasured: (count: number, max: string) => string;
+    measured: (min: number, sec: number) => string; threshold: (min: number) => string; rainMeasured: (mm: number) => string; tickMeasured: (v: string) => string; metricMeasured: (name: string, value: string) => string; strikeOn: string; strikeOff: string; trafficMeasured: (avg: number, thr: number) => string; quakeMeasured: (count: number, max: string) => string;
     stake: string; odds: string; share: string; shareText: string; close: string; more: (n: number) => string; saved: string;
   };
   ranking: {

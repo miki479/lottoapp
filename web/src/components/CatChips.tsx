@@ -1,9 +1,9 @@
-import { Car } from "lucide-preact";
+import { Car, Clapperboard, Landmark, TrendingUp } from "lucide-preact";
 import { BusGhost, CloudRainGhost, StrikeGhost, TrainGhost, TreeGhost } from "./Vehicles.tsx";
 import { useState } from "preact/hooks";
 
-export type CatId = "bus" | "train" | "weather" | "nature" | "strike" | "traffic";
-export interface CatTile { id: CatId; label: string; count: number; disabled?: boolean }
+export type CatId = "bus" | "train" | "weather" | "nature" | "strike" | "traffic" | "finance" | "culture" | "gov";
+export interface CatTile { id: CatId; label: string; count: number; disabled?: boolean; soon?: string }
 
 /** The chip's picture: big, see-through, filling most of the chip. */
 function Art({ id }: { id: CatId }) {
@@ -12,6 +12,9 @@ function Art({ id }: { id: CatId }) {
   if (id === "weather") return <CloudRainGhost />;
   if (id === "nature") return <TreeGhost />;
   if (id === "strike") return <StrikeGhost />;
+  if (id === "gov") return <Landmark size={44} strokeWidth={1.6} class="gh" />;
+  if (id === "finance") return <TrendingUp size={44} strokeWidth={1.6} class="gh" />;
+  if (id === "culture") return <Clapperboard size={44} strokeWidth={1.6} class="gh" />;
   return <Car size={44} strokeWidth={1.6} class="gh" />;
 }
 
@@ -27,6 +30,7 @@ export function CatChips({ tiles, value, onPick }: { tiles: CatTile[]; value: Ca
             <span class="ghost"><Art id={t.id} /></span>
             <span class="lbl">{t.label}</span>
             {t.count > 0 && <em>{t.count}</em>}
+            {t.soon && <em class="soon">{t.soon}</em>}
           </button>
         );
       })}

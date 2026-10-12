@@ -25,7 +25,7 @@ export interface HomeProps {
 
 export function Home(p: HomeProps) {
   const { msg } = p;
-  const tiles = (["bus", "train", "weather", "nature", ...(p.italian ? ["strike"] : []), "traffic"] as CatId[]).map((id) => ({ id, label: msg.tabs[id], count: p.counts[id], disabled: false }));
+  const tiles = (["bus", "train", "weather", "nature", ...(p.italian ? ["strike"] : []), "traffic", "finance", "culture", "gov"] as CatId[]).map((id) => ({ id, label: msg.tabs[id], count: p.counts[id] ?? 0, disabled: id === "gov", soon: id === "gov" ? msg.tabs.soon : undefined }));
   // Weather has sub-pills (rain, temperature, wind…) so the category row stays short; only the kinds that exist today are shown.
   const [wxSel, setWx] = useState<string>("all");
   const wxKey = (m: MarketRow) => (m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : m.kind === "quake_m" ? String(m.params.region ?? "world") : "");

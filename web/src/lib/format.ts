@@ -3,8 +3,8 @@ import { INTL_TAG, type Locale, type Messages } from "../i18n/index.ts";
 export interface MarketRow {
   id: string;
   city_id: string;
-  category: "bus" | "train" | "weather" | "traffic" | "nature" | "strike";
-  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at" | "metric_gt" | "quake_m" | "strike_on" | "traffic_speed_lt";
+  category: "bus" | "train" | "weather" | "traffic" | "nature" | "strike" | "finance" | "culture";
+  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at" | "metric_gt" | "quake_m" | "strike_on" | "traffic_speed_lt" | "tick_gt";
   params: Record<string, unknown>;
   closes_at: string;
   target_at: string;
@@ -33,6 +33,14 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
   if (m.kind === "traffic_speed_lt") {
     const h0 = new Date(m.target_at).getTime() - 30 * 60_000, hh = (t: number) => new Intl.DateTimeFormat(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(new Date(t));
     return msg.question.traffic({ site: String(m.params.siteName ?? ""), toward: String(m.params.toward ?? ""), from: hh(h0), to: hh(h0 + 3600_000), kmh: Number(m.params.thresholdKmh) });
+  }
+  if (m.kind === "tick_gt") {
+    const series = String(m.params.series), at = m.target_at, thr = Number(m.params.threshold);
+    const nf = new Intl.NumberFormat(INTL_TAG[locale], { maximumFractionDigits: series === "kp" ? 0 : 0 });
+    const own = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (series === "kp") return msg.question.tick({ kind: "kp", label: "Kp", value: String(thr), time: "", from: formatWhen(new Date(Date.parse(at) - 3 * 3600_000).toISOString(), locale, own, now), to: formatWhen(at, locale, own, now), day: "" });
+    if (series.startsWith("wiki:")) return msg.question.tick({ kind: "wiki", label: String(m.params.label), value: nf.format(thr), time: "", from: "", to: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3600_000)) });
+    return msg.question.tick({ kind: "price", label: String(m.params.label), value: `${nf.format(thr)} $`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
   }
   if (m.kind === "strike_on") return msg.question.strike({ date: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone }).format(new Date(m.target_at)), who: [m.params.sector, m.params.unions].filter(Boolean).join(" · "), hours: String(m.params.hours ?? "") });
   if (m.kind === "quake_m") {
@@ -96,3 +104,38 @@ export function resultAmount(st: "won" | "lost" | "void", stake: number, payout:
 /** Delay questions have a "late / on time" answer; everything else (rain, temperature, quakes…) is a plain yes / no. */
 export const isYesNo = (kind: string) => !kind.endsWith("_delay_gt");
 
+
+
+export interface Piece { t: string; b: boolean }
+
+/** Splits a question into plain and bold pieces: the subject (line, city, coin, article), the numbers with their unit and the times. */
+export function emphasize(text: string, m: MarketRow, cityName: string): Piece[] {
+  const p = m.params;
+  const names = [p.routeName, p.routeId, p.siteName, p.label, cityName].map((x) => (x == null ? "" : String(x).trim())).filter((x) => x.length >= 2 && x !== "world");
+  const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const parts = [...new Set(names)].sort((a, b) => b.length - a.length).map(esc);
+  const nums = String.raw`\d+(?:[.,]\d+)?\s?(?:min|km\/h|°C|cm|mm|%|\$|M)|\b\d{1,2}:\d{2}\b|M\s?\d(?:[.,]\d)?`;
+  const re = new RegExp([...parts, nums].join("|"), "gi");
+  const out: Piece[] = [];
+  let last = 0;
+  for (const mt of text.matchAll(re)) {
+    const i = mt.index ?? 0;
+    if (i > last) out.push({ t: text.slice(last, i), b: false });
+    out.push({ t: mt[0], b: true });
+    last = i + mt[0].length;
+  }
+  if (last < text.length) out.push({ t: text.slice(last), b: false });
+  return out;
+}
+
+/** A dry one-liner under the question, picked by what the question is about (stable per market). */
+export function quip(m: MarketRow, msg: Messages): string {
+  const series = String(m.params.series ?? "");
+  const g: keyof Messages["quips"] =
+    m.kind === "bus_delay_gt" ? "bus" : m.kind === "train_delay_gt" ? "train" : m.kind === "rain_at" ? "rain" : m.kind === "quake_m" ? "quake" : m.kind === "strike_on" ? "strike" : m.kind === "traffic_speed_lt" ? "traffic"
+    : m.kind === "tick_gt" ? (series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : "price") : (String(m.params.metric) as keyof Messages["quips"]);
+  const list = msg.quips[g] ?? [];
+  if (!list.length) return "";
+  const h = [...m.id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);
+  return list[h % list.length]!;
+}
