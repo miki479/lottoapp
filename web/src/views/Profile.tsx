@@ -46,14 +46,13 @@ export function ProfileView(p: {
           <section class="card stack">
             <div style="display:flex;align-items:center;gap:14px">
               <span class="rank top" style="width:56px;height:56px;border-radius:18px;font-size:22px"><User size={26} /></span>
-              <div style="min-width:0;flex:1"><b style="font-size:18px;display:block;overflow:hidden;text-overflow:ellipsis">{name}</b><span class="hint">{p.registered ? p.email : m.guest}</span></div>
+              <div style="min-width:0;flex:1"><b style="font-size:18px;display:block;overflow:hidden;text-overflow:ellipsis">{name}</b><span class="hint">{p.registered ? p.email : m.guest}</span>{p.homeNode}</div>
               {p.registered && <button class="iconbtn" onClick={p.onNickname} aria-label={m.nickname.title}><Pencil size={20} /></button>}
             </div>
             {!p.registered && <p class="hint">{m.guestHint}</p>}
             {!p.registered ? <button class="btn primary wide" onClick={p.onAuth}>{m.signIn}</button> : !p.profile?.display_name && <button class="btn secondary wide" onClick={p.onNickname}>{m.nickname.title}</button>}
           </section>
 
-          {p.homeNode && <section class="card stack">{p.homeNode}</section>}
           <StreakCard streak={p.profile?.streak ?? 0} freezes={p.profile?.freezes ?? 0} msg={p.msg} locale={p.locale} />
           <Missions progress={p.progress} msg={p.msg} />
           {p.push && (
