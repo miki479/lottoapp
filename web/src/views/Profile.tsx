@@ -1,4 +1,4 @@
-import { Bell, Gift, Rocket, Calendar, CalendarCheck, ChevronRight, Flame, Gem, Ghost, LogOut, Medal, Pencil, Percent, Share2, Snowflake, Sparkles, Target, Telescope, Trash2, TrainFront, TrendingUp, Trophy, Umbrella, User } from "lucide-preact";
+import { Bell, Gift, Rocket, Calendar, CalendarCheck, ChevronRight, Flame, Gem, Ghost, LogOut, Medal, Pencil, Percent, Share2, Snowflake, Sparkles, Target, Telescope, Trash2, TrainFront, TrendingUp, Trophy, Umbrella, User, Zap } from "lucide-preact";
 import type { LucideIcon } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Sheet } from "../components/Sheet.tsx";
@@ -57,11 +57,11 @@ export function ProfileView(p: {
           {p.missionsNode}
           {p.push && (
             <section class="card stack">
-              <label class="switchrow"><input type="checkbox" checked={p.push.on} disabled={p.push.denied} onChange={p.push.toggle} /><Bell size={18} style="color:var(--brand);flex:none" /><span>{p.msg.push.active}</span></label>
+              <label class="switchrow"><span class="swlabel"><Bell size={18} style="color:var(--brand);flex:none" /><span>{p.msg.push.active}</span></span><input type="checkbox" role="switch" checked={p.push.on} disabled={p.push.denied} onChange={p.push.toggle} /></label>
               {p.push.denied && <p class="hint">{p.msg.push.denied}</p>}
               {p.push.on && (
                 <>
-                  <label class="switchrow"><input type="checkbox" checked={p.push.flash && p.push.streak && p.push.friends} onChange={(e) => { const v = (e.target as HTMLInputElement).checked; p.push!.setPrefs(v, v, v); }} /><span>{p.msg.push.events}</span></label>
+                  <label class="switchrow"><span class="swlabel"><Zap size={18} style="color:var(--brand);flex:none" /><span>{p.msg.push.events}</span></span><input type="checkbox" role="switch" checked={p.push.flash && p.push.streak && p.push.friends} onChange={(e) => { const v = (e.target as HTMLInputElement).checked; p.push!.setPrefs(v, v, v); }} /></label>
                   <p class="hint">{p.msg.push.prefsHint}</p>
                 </>
               )}

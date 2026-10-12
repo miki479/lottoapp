@@ -494,7 +494,12 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 @media (prefers-reduced-motion: reduce) { .cc .gh *, .cc .gh-veh { animation: none !important; } }
 
 .switchrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--touch); font-weight: 600; cursor: pointer; }
-.switchrow input { width: 22px; height: 22px; accent-color: var(--brand); }
+.switchrow .swlabel { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.switchrow input { appearance: none; -webkit-appearance: none; flex: none; width: 46px; height: 28px; border-radius: 999px; background: var(--line, #3a3f4b); position: relative; transition: background .2s; cursor: pointer; margin: 0; }
+.switchrow input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform .2s; }
+.switchrow input:checked { background: var(--brand); }
+.switchrow input:checked::after { transform: translateX(18px); }
+.switchrow input:disabled { opacity: .45; }
 
 /* ---------- the sky on rain cards ---------- */
 .sky { position: relative; height: 62px; margin: -2px 0 -2px; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #3a9bf0 0%, #8cc8fb 100%); transition: background 600ms var(--ease); }
