@@ -4,7 +4,7 @@ export interface MarketRow {
   id: string;
   city_id: string;
   category: "bus" | "train" | "weather" | "traffic" | "nature" | "strike";
-  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at" | "metric_gt" | "quake_m" | "strike_on";
+  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at" | "metric_gt" | "quake_m" | "strike_on" | "traffic_speed_lt";
   params: Record<string, unknown>;
   closes_at: string;
   target_at: string;
@@ -30,6 +30,10 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
   const time = formatWhen(m.target_at, locale, timeZone, now);
   if (m.kind === "rain_at") return msg.question.rain({ city: cityName, time });
   if (m.kind === "metric_gt") return msg.question.metric({ metric: m.params.metric as "temp", city: cityName, time, value: Number(m.params.threshold), unit: String(m.params.unit ?? "") });
+  if (m.kind === "traffic_speed_lt") {
+    const h0 = new Date(m.target_at).getTime() - 30 * 60_000, hh = (t: number) => new Intl.DateTimeFormat(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(new Date(t));
+    return msg.question.traffic({ site: String(m.params.siteName ?? ""), toward: String(m.params.toward ?? ""), from: hh(h0), to: hh(h0 + 3600_000), kmh: Number(m.params.thresholdKmh) });
+  }
   if (m.kind === "strike_on") return msg.question.strike({ date: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone }).format(new Date(m.target_at)), who: [m.params.sector, m.params.unions].filter(Boolean).join(" · "), hours: String(m.params.hours ?? "") });
   if (m.kind === "quake_m") {
     // The window is global, so it is shown in the player's own time zone.
@@ -91,3 +95,4 @@ export function resultAmount(st: "won" | "lost" | "void", stake: number, payout:
 
 /** Delay questions have a "late / on time" answer; everything else (rain, temperature, quakes…) is a plain yes / no. */
 export const isYesNo = (kind: string) => !kind.endsWith("_delay_gt");
+

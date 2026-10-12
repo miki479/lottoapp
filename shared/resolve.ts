@@ -1,4 +1,5 @@
 import { METRICS } from "./metrics.ts";
+import { MIN_VEHICLES, MIN_WINDOW_SEC } from "./traffic.ts";
 import type {
   DelayEvent,
   DelayObservation,
@@ -12,6 +13,8 @@ import type {
   Resolution,
   StrikeEvent,
   StrikeReading,
+  TrafficEvent,
+  TrafficObservation,
   WeatherObservation,
 } from "./types.ts";
 
@@ -28,6 +31,7 @@ export interface ResolveInput {
   quake?: QuakeReading | null;
   /** Ministry list result for strike events; null = the list could not be read. */
   strike?: StrikeReading | null;
+  traffic?: TrafficObservation[];
 }
 
 /** A bus delay reading counts only if taken within this window around the scheduled time. */
@@ -62,7 +66,7 @@ export function resolveEvent(input: ResolveInput): Resolution {
   const { event, now } = input;
   // Rain is measured over the whole hour containing the target, so wait for that hour to end.
   const hourEnd = Math.floor(event.targetAt / HOUR) * HOUR + HOUR;
-  const readyAt = event.kind === "rain_at" || event.kind === "metric_gt" ? hourEnd : event.kind === "quake_m" ? event.targetAt + QUAKE_SETTLE_SEC : event.targetAt;
+  const readyAt = event.kind === "rain_at" || event.kind === "metric_gt" || event.kind === "traffic_speed_lt" ? hourEnd : event.kind === "quake_m" ? event.targetAt + QUAKE_SETTLE_SEC : event.targetAt;
   if (now < readyAt) return { status: "pending" };
 
   const reading =
@@ -70,6 +74,7 @@ export function resolveEvent(input: ResolveInput): Resolution {
     event.kind === "metric_gt" ? metricReading(event, input) :
     event.kind === "quake_m" ? quakeReading(event, input) :
     event.kind === "strike_on" ? strikeReading(event, input) :
+    event.kind === "traffic_speed_lt" ? trafficReading(event, input) :
     delayReading(event, input);
 
   if (reading.kind === "none") {
@@ -127,6 +132,15 @@ function metricReading(event: MetricEvent, input: ResolveInput): Reading {
   const def = METRICS[event.metric];
   if (!Number.isFinite(obs.value) || obs.value < def.min || obs.value > def.max) return { kind: "implausible" };
   return { kind: "ok", yes: obs.value >= event.threshold, evidence: { metric: event.metric, value: obs.value, hourStart, threshold: event.threshold } };
+}
+
+function trafficReading(event: TrafficEvent, input: ResolveInput): Reading {
+  const hourStart = Math.floor(event.targetAt / HOUR) * HOUR;
+  const obs = (input.traffic ?? []).find((o) => o.feedId === event.feedId && o.siteId === event.siteId && o.direction === event.direction && o.hourStart === hourStart);
+  // The hourly average only counts once the hour was almost over when it was read, and with enough vehicles to mean something.
+  if (!obs || obs.measuredAt < hourStart + MIN_WINDOW_SEC || obs.vehicles < MIN_VEHICLES) return { kind: "none" };
+  if (!Number.isFinite(obs.avgKmh) || obs.avgKmh < 0 || obs.avgKmh > 250) return { kind: "implausible" };
+  return { kind: "ok", yes: obs.avgKmh < event.thresholdKmh, evidence: { avgKmh: obs.avgKmh, vehicles: obs.vehicles, thresholdKmh: event.thresholdKmh, hourStart } };
 }
 
 function strikeReading(event: StrikeEvent, input: ResolveInput): Reading {

@@ -754,3 +754,17 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
   .header .brand span { font-size: 19px; }
   .header .wallet { padding-left: 10px; padding-right: 10px; }
 }
+
+/* traffic scene: a queue (YES) or free-flowing cars (NO) */
+.mscene.traffic .car { transform: translateX(var(--x)); transition: transform 1.4s cubic-bezier(.3, .7, .2, 1); }
+.mscene.traffic .brake { opacity: 0; transition: opacity .5s; }
+.mscene.traffic .road-dash { animation: roaddash 2.4s linear infinite; }
+.mscene.traffic .lane.l0 { animation: laneflow 9s linear infinite; } .mscene.traffic .lane.l1 { animation: laneflow 11s linear -3s infinite; }
+.mscene.traffic.s-yes .road-dash { animation-duration: 9s; } .mscene.traffic.s-yes .lane.l0, .mscene.traffic.s-yes .lane.l1 { animation: none; }
+.mscene.traffic.s-yes .car.c0 { transform: translateX(150px); } .mscene.traffic.s-yes .car.c1 { transform: translateX(186px); } .mscene.traffic.s-yes .car.c2 { transform: translateX(222px); } .mscene.traffic.s-yes .car.c3 { transform: translateX(258px); }
+.mscene.traffic.s-yes .lane.l1 .car.c0 { transform: translateX(168px); } .mscene.traffic.s-yes .lane.l1 .car.c1 { transform: translateX(204px); } .mscene.traffic.s-yes .lane.l1 .car.c2 { transform: translateX(240px); } .mscene.traffic.s-yes .lane.l1 .car.c3 { transform: translateX(276px); }
+.mscene.traffic.s-yes .brake { opacity: 1; }
+.mscene.traffic.s-no .road-dash { animation-duration: .6s; } .mscene.traffic.s-no .lane.l0 { animation-duration: 3s; } .mscene.traffic.s-no .lane.l1 { animation-duration: 3.6s; }
+@keyframes roaddash { to { stroke-dashoffset: -44; } }
+@keyframes laneflow { from { transform: translateX(-30px); } to { transform: translateX(340px); } }
+@media (prefers-reduced-motion: reduce) { .mscene.traffic * { animation: none !important; } }

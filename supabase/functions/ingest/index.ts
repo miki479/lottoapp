@@ -4,6 +4,7 @@ import GtfsRt from "npm:gtfs-realtime-bindings@2.2.0";
 import { delayAdapterFor, trainJsonAdapterFor, weatherAdapterFor } from "../_shared/shared/adapters/index.ts";
 import { parseTrainTripId } from "../_shared/shared/adapters/viaggiatreno.ts";
 import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
+import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
@@ -69,6 +70,34 @@ Deno.serve(safe(async (req) => {
   report["usgs"] = await pingUsgs(sb, now, lastAttempt.get("usgs") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   return Response.json(report);
 }));
+
+/** Road traffic stations (Digitraffic, Finland): hourly average speed per direction, kept per hour; rush-hour questions are created from the same list. */
+async function ingestTraffic(sb: ReturnType<typeof db>, city: CityConfig, feed: FeedConfig, now: number): Promise<number> {
+  const stations = feed.trafficStations ?? [];
+  if (stations.length === 0) throw new Error("no stations configured");
+  const rows: Record<string, unknown>[] = [];
+  let failed = 0;
+  for (const st of stations) {
+    try {
+      const json = JSON.parse(new TextDecoder().decode(await fetchBytes(`${feed.url}/${st.id}/data`, { "Digitraffic-User": "LateLotto/0.1" })));
+      for (const r of parseDigitrafficTms(json)) {
+        rows.push({ feed_id: feed.id, site_id: String(st.id), direction: r.direction, hour_start: new Date(r.windowStart * 1000).toISOString(), avg_kmh: r.avgKmh, vehicles: Math.round(r.vehicles), measured_at: new Date(r.measuredAt * 1000).toISOString() });
+      }
+    } catch { failed++; }
+  }
+  if (rows.length === 0) throw new Error(`no readings (${failed}/${stations.length} stations failed)`);
+  const { error } = await sb.from("traffic_observations").upsert(rows, { onConflict: "feed_id,site_id,direction,hour_start" });
+  if (error) throw new Error(error.message);
+  // History makes the odds: how often each station direction really fell under its threshold at that hour.
+  const { data: hist } = await sb.from("odds_history").select("route_id,hour_of_day,threshold,n,yes").eq("city_id", city.id).eq("kind", "traffic_speed_lt");
+  const h = new Map((hist ?? []).map((r) => [`${r.route_id}|${r.hour_of_day}|${r.threshold}`, { n: r.n as number, yes: r.yes as number }]));
+  const markets = buildTrafficMarkets({ cityId: city.id, feedId: feed.id, tz: city.timezone, nowEpoch: now, stations, history: (key, hour, thr) => h.get(`${key}|${hour}|${thr}`) ?? null });
+  if (markets.length) {
+    const { error: e2 } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true });
+    if (e2) throw new Error(e2.message);
+  }
+  return rows.length;
+}
 
 export const STRIKE_RSS = "https://scioperi.mit.gov.it/mit2/public/scioperi/rss";
 
@@ -218,6 +247,8 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
     if (error) throw new Error(error.message);
     return rows.length;
   }
+
+  if (feed.type === "digitraffic-tms") return await ingestTraffic(sb, city, feed, now);
 
   const adapter = delayAdapterFor(feed);
   if (!adapter) throw new Error(`no adapter for ${feed.type}/${feed.kind}`);

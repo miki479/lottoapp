@@ -197,3 +197,49 @@ describe("strikes", () => {
     expect(resolveEvent({ event: ev, now: 200, feed, staleAfterSec: 9999, delays: [], weather: [], strike: null }).status).toBe("pending");
   });
 });
+
+import { buildTrafficMarkets, parseDigitrafficTms, thresholdKmh } from "../shared/traffic.ts";
+describe("road traffic", () => {
+  const sensors = (spd: number, win: string, measured: string) => ({ sensorValues: [
+    { name: "KESKINOPEUS_60MIN_KIINTEA_SUUNTA1", value: spd, timeWindowStart: win, measuredTime: measured },
+    { name: "OHITUKSET_60MIN_KIINTEA_SUUNTA1", value: 420, timeWindowStart: win, measuredTime: measured },
+    { name: "KESKINOPEUS_60MIN_KIINTEA_SUUNTA2", value: null, timeWindowStart: win, measuredTime: measured },
+  ] });
+  it("reads the hourly average per direction and skips empty ones", () => {
+    const r = parseDigitrafficTms(sensors(52, "2026-10-12T14:00:00Z", "2026-10-12T14:58:01Z"));
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ direction: 1, avgKmh: 52, vehicles: 420 });
+    expect(r[0]!.measuredAt - r[0]!.windowStart).toBe(58 * 60 + 1);
+    expect(parseDigitrafficTms({})).toEqual([]);
+  });
+  it("threshold is 75% of free flow, in 5 km/h steps", () => {
+    expect(thresholdKmh(90)).toBe(70);
+    expect(thresholdKmh(44)).toBe(35);
+    expect(thresholdKmh(106)).toBe(80);
+  });
+  const hour = Date.UTC(2026, 9, 12, 14) / 1000;
+  const ev = { id: "t", cityId: "helsinki", feedId: "digitraffic-tms", closesAt: hour, targetAt: hour + 1800, deadlineAt: hour + 3600 + 4 * 3600, kind: "traffic_speed_lt" as const, category: "traffic" as const, siteId: "23117", direction: 1 as const, thresholdKmh: 60 };
+  const base = { event: ev, feed: { feedId: "digitraffic-tms", lastOkAt: hour + 3500 }, staleAfterSec: 900, delays: [], weather: [] };
+  const obs = (avg: number, measuredOffset: number, vehicles = 400) => [{ feedId: "digitraffic-tms", siteId: "23117", direction: 1, hourStart: hour, avgKmh: avg, vehicles, measuredAt: hour + measuredOffset }];
+  it("resolves yes when the hour's average fell under the threshold, no otherwise", () => {
+    expect(resolveEvent({ ...base, now: hour + 3700, traffic: obs(48, 3500) })).toMatchObject({ status: "resolved", outcome: "yes" });
+    expect(resolveEvent({ ...base, now: hour + 3700, traffic: obs(75, 3500) })).toMatchObject({ status: "resolved", outcome: "no" });
+  });
+  it("does not settle on a reading taken early in the hour, or on too few vehicles", () => {
+    expect(resolveEvent({ ...base, now: hour + 3700, traffic: obs(48, 1800) }).status).toBe("pending");
+    expect(resolveEvent({ ...base, now: hour + 3700, traffic: obs(48, 3500, 2) }).status).toBe("pending");
+    expect(resolveEvent({ ...base, now: hour + 3700, traffic: [] }).status).toBe("pending");
+    expect(resolveEvent({ ...base, now: hour + 6 * 3600, traffic: [] })).toMatchObject({ status: "void" });
+  });
+  it("offers rush-hour questions per station direction, only for hours still ahead", () => {
+    const st = [{ id: 23117, name: "Vt 1 · Munkkiniemi", toward: ["Turku", "Helsinki"] as [string, string], freeKmh: [44, 45] as [number, number] }];
+    const now = Date.UTC(2026, 9, 12, 3, 0) / 1000; // 06:00 in Helsinki: today's 8:00 and 17:00 are ahead
+    const m = buildTrafficMarkets({ cityId: "helsinki", feedId: "digitraffic-tms", tz: "Europe/Helsinki", nowEpoch: now, stations: st });
+    expect(m).toHaveLength(8); // 2 directions x 2 rush hours x (today, tomorrow)
+    expect(m[0]).toMatchObject({ kind: "traffic_speed_lt", category: "traffic" });
+    expect(m.every((x) => Date.parse(x.closes_at) < Date.parse(x.target_at))).toBe(true);
+    expect(new Set(m.map((x) => x.dedupe_key)).size).toBe(8);
+    const late = buildTrafficMarkets({ cityId: "helsinki", feedId: "digitraffic-tms", tz: "Europe/Helsinki", nowEpoch: Date.UTC(2026, 9, 12, 20, 0) / 1000, stations: st });
+    expect(late).toHaveLength(4); // only tomorrow
+  });
+});

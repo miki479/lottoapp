@@ -7,13 +7,14 @@ const ja: Messages = {
   wx: { filter: "絞り込み", world: "世界", regions: { jp: "日本", it: "イタリア", ca: "カリフォルニア", tr: "トルコ" }, localTime: "現地時間", all: "すべて", rain: "雨", names: { temp: "気温", wind: "風", snow: "雪", uv: "UV", aqi: "空気" }, forecast: (v) => `予報 ${v}`, quakeArt: "世界の地震" },
   world: "世界中",
   quakeMaker: { cta: "場所と時間を選ぶ", title: "オリジナル地震予想", body: "場所・半径・マグニチュード・時間を選ぶと、その地域の過去1年の実際の地震からオッズを計算します。", place: "場所", search: "都市を検索…", radius: "半径", mag: "最小マグニチュード", day: "日", today: "今日", tomorrow: "明日", hour: "開始", length: "長さ", hours: (n) => `${n}時間`, km: (n) => `${n} km`, create: "オッズを計算して開く", creating: "計算中…", pickPlace: "先に場所を選んでください", local: (tz) => `その場所の現地時間（${tz}）`, limit: "今日はすでに5件作成しました。明日またお試しください。", full: "オリジナル予想が多すぎます。後でお試しください。", usgs: "地震カタログが応答しません。しばらくしてからお試しください。", time: "未来の時間（今から30分以上先）を選んでください。", credit: "データ：USGS Earthquake Hazards Program。" },
+  traffic: { threshold: (k) => `しきい値 ${k} km/h`, jam: "渋滞", flow: "流れる" },
   strikes: { title: "ストライキ", sub: "イタリア運輸省のデータ。はい＝その日も予定通り、いいえ＝中止または延期。", art: "全国ストライキ" },
   home: { hero: { title: "バスが遅れる？ならば予想で楽しもう。", body: "データは本物、クレジットは架空。イベントを選んで予想しよう。" },
     missions: "今日のミッション", missionsLeft: (n) => `あと${n}つ`, missionsDone: "すべて達成", bonusTease: "3つ全部達成でボーナス +150",
     top: "注目", events: "イベント", live: "ライブ",
     idle: ["データは本物、クレジットは架空", "3つのデイリーミッションでボーナス獲得", "1日休んでもフリーズがあれば連続記録は途切れません"],
     empty: { title: "ここには遊べるイベントがありません", body: "バスもたまには休みます。別のカテゴリや世界中のイベントを見てみましょう。", cta: "世界中を表示" },
-    trafficSoon: "渋滞は近日公開。今は窓の外を眺めてみてください。",
+    trafficSoon: "渋滞は公開データがある場所で利用できます。今はヘルシンキのみ。他の都市も準備中です。",
   },
   streak: { title: "連続記録", days: (n) => `${n}日`, next: (d, b) => `${d}日達成で次の報酬：${b}`, max: "すべての報酬を獲得しました。伝説です。", milestone: (n, b) => `${n}日連続！${b}をプレゼント`, flash: "フラッシュ" },
   meter: { threshold: (m) => `${m}分を超えると遅延`, up: (m) => `10分で+${m}分`, down: (m) => `10分で−${m}分`, steady: "横ばい", forecast: "予測", late: "遅れ" },
@@ -47,6 +48,7 @@ const ja: Messages = {
     })[q.metric],
     quake: (q) => `${q.region ?? "世界のどこか"}で、${q.from}から${q.to}の間${q.region ? "（現地時間）" : ""}にマグニチュード${q.mag}以上の地震が起きますか？`,
     strike: (q) => `${q.day}の全国ストライキ（${q.who}）は、その日の始まりにも実施予定のままですか？`,
+    traffic: (q) => `${q.from}〜${q.to}の${q.site}（${q.toward}方面）の平均速度は${q.kmh} km/h未満になりますか？`,
   },
   sheet: { title: "予想シート", pick: "あなたの予想", stake: "賭け額", potential: "見込み配当", confirm: "予想を確定", confirming: "少々お待ちください…", odds: "オッズ", placed: (w) => `予想を登録しました。配当は最大${w}です。` },
   bets: {
@@ -58,7 +60,7 @@ const ja: Messages = {
   result: {
     won: "的中", lost: "外れ", void: "返金", amountWon: (n) => `+${n}`, amountLost: (n) => `−${n}`, amountVoid: (n) => `${n}`,
     subWon: "予想的中です。", subLost: "今回はデータが違いました。", subVoid: "データが信頼できなかったため、賭け額を全額お返ししました。",
-    measured: (m, s) => (m > 0 ? `実測の遅延：${m}分${s}秒` : `実測の遅延：${s}秒`), threshold: (m) => `しきい値：${m}分超`, rainMeasured: (mm) => `実測の降水量：${mm} mm`, strikeOn: "ストライキは予定通り", strikeOff: "ストライキは中止または延期", metricMeasured: (n, v) => `${n}の実測値：${v}`, quakeMeasured: (c, m) => (c === 0 ? "その時間帯に地震はありませんでした" : `地震${c}回、最大${m}`),
+    measured: (m, s) => (m > 0 ? `実測の遅延：${m}分${s}秒` : `実測の遅延：${s}秒`), threshold: (m) => `しきい値：${m}分超`, rainMeasured: (mm) => `実測の降水量：${mm} mm`, trafficMeasured: (a, t) => `実測の平均速度：${a} km/h（しきい値 ${t}）`, strikeOn: "ストライキは予定通り", strikeOff: "ストライキは中止または延期", metricMeasured: (n, v) => `${n}の実測値：${v}`, quakeMeasured: (c, m) => (c === 0 ? "その時間帯に地震はありませんでした" : `地震${c}回、最大${m}`),
     stake: "賭け額", odds: "オッズ", share: "結果をシェア", shareText: "LateLottoでの私の結果", close: "閉じる", more: (n) => `他に${n}件の結果`, saved: "画像を保存しました",
   },
   ranking: {

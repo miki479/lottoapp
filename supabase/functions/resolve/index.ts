@@ -2,7 +2,7 @@
 import { resolveEvent } from "../_shared/shared/resolve.ts";
 import { historyKey, marketToEvent, type MarketRow } from "../_shared/shared/market.ts";
 import { parseStrikeRss } from "../_shared/shared/strikes.ts";
-import type { DelayObservation, MetricObservation, QuakeReading, StrikeReading, WeatherObservation } from "../_shared/shared/types.ts";
+import type { DelayObservation, MetricObservation, QuakeReading, StrikeReading, TrafficObservation, WeatherObservation } from "../_shared/shared/types.ts";
 import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
 import { lastNotifyError, notifyFlash, notifyModeration, notifyResults, notifyStreak } from "../_lib/notify.ts";
 
@@ -40,7 +40,12 @@ Deno.serve(safe(async (req) => {
       let metrics: MetricObservation[] = [];
       let quake: QuakeReading | null = null;
       let strike: StrikeReading | null = null;
-      if (event.kind === "strike_on") {
+      let traffic: TrafficObservation[] = [];
+      if (event.kind === "traffic_speed_lt") {
+        const hour = new Date(Math.floor(event.targetAt / 3600) * 3600 * 1000).toISOString();
+        const { data } = await sb.from("traffic_observations").select("feed_id,site_id,direction,hour_start,avg_kmh,vehicles,measured_at").eq("feed_id", event.feedId).eq("site_id", event.siteId).eq("direction", event.direction).eq("hour_start", hour);
+        traffic = (data ?? []).map((o) => ({ feedId: o.feed_id, siteId: o.site_id, direction: o.direction, hourStart: Date.parse(o.hour_start) / 1000, avgKmh: Number(o.avg_kmh), vehicles: o.vehicles, measuredAt: Date.parse(o.measured_at) / 1000 }));
+      } else if (event.kind === "strike_on") {
         const list = await strikeList();
         if (list) { strike = { present: list.some((s) => s.guid === event.guid && s.date === event.date) }; await sb.from("feed_health").upsert({ feed_id: "mit-scioperi", last_ok_at: new Date().toISOString(), last_error: null }); }
       } else if (event.kind === "quake_m") {
@@ -66,7 +71,7 @@ Deno.serve(safe(async (req) => {
 
       const res = resolveEvent({
         event, now, feed: { feedId: event.feedId, lastOkAt: lastOk.get(event.kind === "metric_gt" ? "open-meteo-metrics" : event.feedId.startsWith("om-") ? "open-meteo-places" : event.feedId) ?? null },
-        staleAfterSec: feedStale.get(event.feedId) ?? (event.feedId === "usgs" || event.feedId === "mit-scioperi" ? 7200 : event.feedId.startsWith("om-") ? 10800 : 300), delays, weather, metrics, quake, strike,
+        staleAfterSec: feedStale.get(event.feedId) ?? (event.feedId === "usgs" || event.feedId === "mit-scioperi" ? 7200 : event.feedId.startsWith("om-") ? 10800 : 300), delays, weather, metrics, quake, strike, traffic,
       });
       if (res.status === "pending") { out.pending++; continue; }
 

@@ -30,6 +30,8 @@ export interface FeedConfig {
   delaySemantics?: "last_passed_stop";
   /** For per-train APIs without a static timetable (ViaggiaTreno): station codes whose departures seed the markets. */
   stations?: string[];
+  /** Road measuring stations of a traffic feed (type "digitraffic-tms"). */
+  trafficStations?: import("./traffic.ts").TrafficStation[];
   /** Only route types to build markets from (GTFS route_type, e.g. 2 = rail, 3 = bus). */
   routeTypes?: number[];
   /** The static calendar does not describe today (Renfe): take the trips that appear in the real-time feed as today's service. */

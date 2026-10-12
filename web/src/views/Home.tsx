@@ -6,7 +6,7 @@ import { CrowdCard } from "../components/CrowdCard.tsx";
 import { EventCard } from "../components/EventCard.tsx";
 import { Flag } from "../components/Flag.tsx";
 import { TopCards, type TopItem } from "../components/TopCards.tsx";
-import { Globe, MapPin, SlidersHorizontal, Sparkles, X } from "lucide-preact";
+import { Car, Globe, MapPin, SlidersHorizontal, Sparkles, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
@@ -25,7 +25,7 @@ export interface HomeProps {
 
 export function Home(p: HomeProps) {
   const { msg } = p;
-  const tiles = (["bus", "train", "weather", "nature", ...(p.italian ? ["strike"] : []), "traffic"] as CatId[]).map((id) => ({ id, label: msg.tabs[id], count: p.counts[id], disabled: id === "traffic" }));
+  const tiles = (["bus", "train", "weather", "nature", ...(p.italian ? ["strike"] : []), "traffic"] as CatId[]).map((id) => ({ id, label: msg.tabs[id], count: p.counts[id], disabled: false }));
   // Weather has sub-pills (rain, temperature, wind…) so the category row stays short; only the kinds that exist today are shown.
   const [wxSel, setWx] = useState<string>("all");
   const wxKey = (m: MarketRow) => (m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : m.kind === "quake_m" ? String(m.params.region ?? "world") : "");
@@ -70,7 +70,7 @@ export function Home(p: HomeProps) {
         {p.cat === "nature" && <button class="btn secondary quakecta" onClick={p.onQuakeMaker}><MapPin size={18} />{msg.quakeMaker.cta}</button>}
         <div class="cardgrid">
           {p.markets === null && [0, 1, 2].map((i) => <div class="sk" key={i} />)}
-          {p.markets !== null && p.cat === "traffic" && <div style="grid-column:1/-1"><Empty icon={CloudRain} title={msg.tabs.traffic} body={msg.home.trafficSoon} /></div>}
+          {p.markets !== null && p.cat === "traffic" && shown.length === 0 && <div style="grid-column:1/-1"><Empty icon={Car} title={msg.tabs.traffic} body={msg.home.trafficSoon} /></div>}
           {p.markets !== null && p.cat === "train" && (p.filter === "tokyo" || (p.filter === "world" && p.locale === "ja")) && <div style="grid-column:1/-1"><CrowdCard msg={msg} locale={p.locale} /></div>}
           {p.markets !== null && p.cat !== "traffic" && shown.length === 0 && !(p.cat === "train" && p.filter === "tokyo") && <div style="grid-column:1/-1"><Empty icon={CloudRain} title={msg.home.empty.title} body={msg.home.empty.body} cta={p.filter !== "world" ? msg.home.empty.cta : undefined} onCta={() => p.onFilter("world")} /></div>}
           {shown.slice(0, 40).map((m, i) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} live={p.live[m.id]} index={i} mm={p.outlook[m.id]} hasLadder={(p.ladders[m.id]?.length ?? 0) > 0} top={m.id === topId && shown.length > 3} showCity={p.filter === "world"} onPick={p.onPick} />)}

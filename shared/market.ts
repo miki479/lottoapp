@@ -1,5 +1,5 @@
 import { tzOffsetSec } from "./time.ts";
-import type { DelayEvent, MarketEvent, MetricEvent, QuakeEvent, RainEvent, StrikeEvent } from "./types.ts";
+import type { DelayEvent, MarketEvent, MetricEvent, QuakeEvent, RainEvent, StrikeEvent, TrafficEvent } from "./types.ts";
 
 /** A row of public.markets as returned by Supabase (timestamps are ISO strings). */
 export interface MarketRow {
@@ -55,6 +55,10 @@ export function marketToEvent(row: MarketRow): MarketEvent {
     const ev: StrikeEvent = { ...base, kind: "strike_on", category: "strike", guid: String(p.guid), date: String(p.date) };
     return ev;
   }
+  if (row.kind === "traffic_speed_lt") {
+    const ev: TrafficEvent = { ...base, kind: "traffic_speed_lt", category: "traffic", siteId: String(p.siteId), direction: Number(p.direction) === 2 ? 2 : 1, thresholdKmh: Number(p.thresholdKmh) };
+    return ev;
+  }
   throw new Error(`Unknown market kind: ${row.kind}`);
 }
 
@@ -64,6 +68,7 @@ export function historyKey(ev: MarketEvent, tz: string): { kind: string; routeId
   const hourOfDay = Math.floor((((local % 86400) + 86400) % 86400) / 3600);
   if (ev.kind === "rain_at") return { kind: ev.kind, routeId: "", hourOfDay, threshold: 0 };
   if (ev.kind === "metric_gt") return { kind: ev.kind, routeId: ev.metric, hourOfDay, threshold: Math.round(ev.threshold * 10) };
+  if (ev.kind === "traffic_speed_lt") return { kind: ev.kind, routeId: `${ev.siteId}|${ev.direction}`, hourOfDay, threshold: ev.thresholdKmh };
   if (ev.kind === "strike_on") return { kind: ev.kind, routeId: "", hourOfDay, threshold: 0 };
   if (ev.kind === "quake_m") return { kind: ev.kind, routeId: "", hourOfDay, threshold: Math.round(ev.minMag * 10) + (ev.bbox || ev.circle ? 1000 : 0) };
   return { kind: ev.kind, routeId: ev.routeId, hourOfDay, threshold: ev.thresholdSec };

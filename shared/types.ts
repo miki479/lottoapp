@@ -8,7 +8,8 @@ export type MarketEvent =
   | RainEvent
   | MetricEvent
   | QuakeEvent
-  | StrikeEvent;
+  | StrikeEvent
+  | TrafficEvent;
 
 interface BaseEvent {
   id: string;
@@ -81,6 +82,27 @@ export interface StrikeEvent extends BaseEvent {
   guid: string;
   /** Announced start day, YYYY-MM-DD. */
   date: string;
+}
+
+/** "Will the average speed at this road station, in this direction, over the hour be below the threshold?" */
+export interface TrafficEvent extends BaseEvent {
+  kind: "traffic_speed_lt";
+  category: "traffic";
+  siteId: string;
+  direction: 1 | 2;
+  thresholdKmh: number;
+}
+
+/** One hour of one station direction, as stored by the ingest job. */
+export interface TrafficObservation {
+  feedId: string;
+  siteId: string;
+  direction: number;
+  hourStart: number;
+  avgKmh: number;
+  vehicles: number;
+  /** When the provider last updated the value. */
+  measuredAt: number;
 }
 
 /** Whether a strike is still listed, with the same start day, on the ministry's list. */

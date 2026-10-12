@@ -227,7 +227,7 @@ export function App() {
   useEffect(() => { if (catChosen || !markets) return; const first = (["bus", "train", "weather"] as CatId[]).find((c) => byCat(c).length > 0); if (first && byCat(cat).length === 0) setCat(first); }, [markets, filter, catChosen]);
   const flashFirst = (a: MarketRow[]) => [...a].sort((x, y) => Number((y.flash_multiplier ?? 1) > 1) - Number((x.flash_multiplier ?? 1) > 1));
   const list = flashFirst(byCat(cat));
-  const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: byCat("nature").length, strike: isItalian ? byCat("strike").length : 0, traffic: 0 };
+  const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: byCat("nature").length, strike: isItalian ? byCat("strike").length : 0, traffic: byCat("traffic").length };
 
   const top: TopItem[] = useMemo(() => {
     const items: TopItem[] = [];

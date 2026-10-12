@@ -7,13 +7,14 @@ const enGB: Messages = {
   wx: { filter: "Filter", world: "World", regions: { jp: "Japan", it: "Italy", ca: "California", tr: "Turkey" }, localTime: "local time", all: "All", rain: "Rain", names: { temp: "Temperature", wind: "Wind", snow: "Snow", uv: "UV", aqi: "Air" }, forecast: (v) => `forecast ${v}`, quakeArt: "Earthquakes worldwide" },
   world: "Worldwide",
   quakeMaker: { cta: "Pick a place and time", title: "Custom earthquake", body: "Pick a place, a radius, a magnitude and a time: the odds come from the real earthquakes of the last year in that area.", place: "Place", search: "Search a city…", radius: "Radius", mag: "Minimum magnitude", day: "Day", today: "Today", tomorrow: "Tomorrow", hour: "From", length: "Length", hours: (n) => (n === 1 ? "1 hour" : `${n} hours`), km: (n) => `${n} km`, create: "Get the odds and open", creating: "Working…", pickPlace: "Pick a place first", local: (tz) => `Local time of the place (${tz})`, limit: "You already made 5 today. Try again tomorrow.", full: "Too many custom questions are open: try again later.", usgs: "The earthquake catalogue isn't answering right now. Try again shortly.", time: "Pick a future time (at least 30 minutes from now).", credit: "Data: USGS Earthquake Hazards Program." },
+  traffic: { threshold: (k) => `Threshold ${k} km/h`, jam: "Jam", flow: "Flowing" },
   strikes: { title: "Strikes", sub: "Italian Ministry of Transport data. Yes = still on that day, No = revoked or moved.", art: "National strike" },
   home: { hero: { title: "Bus late again? Make it count.", body: "Real data, fake credits. Pick an event and have a go." },
     missions: "Today's missions", missionsLeft: (n) => (n === 1 ? "1 to go" : `${n} to go`), missionsDone: "All done", bonusTease: "+150 bonus for closing all three",
     top: "Featured", events: "Events", live: "Live",
     idle: ["Real data, pretend credits", "Close the three daily missions for a bonus", "A missed day won't break your streak: freezes have your back"],
     empty: { title: "Nothing to play here", body: "Even buses are entitled to a tea break. Try another category, or go worldwide.", cta: "Show the whole world" },
-    trafficSoon: "Traffic is coming soon. You may, of course, simply look at the M25.",
+    trafficSoon: "Traffic is available where open data exists: Helsinki for now. More cities are coming.",
   },
   streak: { title: "Streak", days: (n) => (n === 1 ? "1 day" : `${n} days`), next: (d, b) => `Next reward at ${d} days: ${b}`, max: "Every reward claimed. Legend.", milestone: (n, b) => `${n}-day streak! ${b} on the house`, flash: "Flash" },
   meter: { threshold: (m) => `Over ${m} min = late`, up: (m) => `+${m} min in 10 min`, down: (m) => `−${m} min in 10 min`, steady: "steady", forecast: "forecast", late: "late" },
@@ -47,6 +48,7 @@ const enGB: Messages = {
     })[q.metric],
     quake: (q) => `Will an earthquake of magnitude ${q.mag} or more strike ${q.region ? `in ${q.region}` : "anywhere in the world"} between ${q.from} and ${q.to}${q.region ? " (local time)" : ""}?`,
     strike: (q) => `Will the national strike on ${q.day} (${q.who.toLowerCase()}) still be on at the start of the day?`,
+    traffic: (q) => `Between ${q.from} and ${q.to}, will the average speed at ${q.site} towards ${q.toward} be under ${q.kmh} km/h?`,
   },
   sheet: { title: "Bet slip", pick: "Your pick", stake: "Stake", potential: "Possible win", confirm: "Confirm bet", confirming: "One moment…", odds: "Odds", placed: (w) => `Bet placed. Possible win: ${w}.` },
   bets: {
@@ -58,7 +60,7 @@ const enGB: Messages = {
   result: {
     won: "Won", lost: "Lost", void: "Returned", amountWon: (n) => `+${n}`, amountLost: (n) => `−${n}`, amountVoid: (n) => `${n}`,
     subWon: "Called it. Rather well, too.", subLost: "The data had other ideas this time.", subVoid: "The data wasn't reliable, so your stake came back in full.",
-    measured: (m, s) => (m > 0 ? `Measured delay: ${m} min ${s} s` : `Measured delay: ${s} s`), threshold: (m) => `Line: over ${m} min`, strikeOn: "Strike still on", strikeOff: "Strike revoked or moved", metricMeasured: (n, v) => `${n} measured: ${v}`, quakeMeasured: (c, m) => (c === 0 ? "No earthquakes in that window" : `${c} earthquake${c === 1 ? "" : "s"}, strongest ${m}`), rainMeasured: (mm) => `Measured rain: ${mm} mm`,
+    measured: (m, s) => (m > 0 ? `Measured delay: ${m} min ${s} s` : `Measured delay: ${s} s`), threshold: (m) => `Line: over ${m} min`, trafficMeasured: (a, t) => `Average speed measured: ${a} km/h (threshold ${t})`, strikeOn: "Strike still on", strikeOff: "Strike revoked or moved", metricMeasured: (n, v) => `${n} measured: ${v}`, quakeMeasured: (c, m) => (c === 0 ? "No earthquakes in that window" : `${c} earthquake${c === 1 ? "" : "s"}, strongest ${m}`), rainMeasured: (mm) => `Measured rain: ${mm} mm`,
     stake: "Stake", odds: "Odds", share: "Share result", shareText: "My result on LateLotto", close: "Close", more: (n) => `${n} more results to see`, saved: "Image saved",
   },
   ranking: {
