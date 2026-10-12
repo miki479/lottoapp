@@ -368,7 +368,7 @@ export function App() {
   const tickerItems = useMemo(() => {
     const out: { id: string; node: preact.ComponentChildren }[] = [];
     for (const a of activity) {
-      const c = cityOf(a.city_id), what = a.label || cityName(c, locale);
+      const c = cityOf(a.city_id), isDelay = a.market_kind === "bus_delay_gt" || a.market_kind === "train_delay_gt", what = isDelay && a.label ? `${a.market_kind === "bus_delay_gt" ? msg.tabs.bus : msg.tabs.train} ${a.label} · ${cityName(c, locale)}` : a.label || cityName(c, locale);
       const verb = msg.ticker[a.kind];
       out.push({ id: `a${a.at}${a.who}${a.amount}`, node: <><b>{a.who ?? msg.ticker.anon}</b> {verb} <i class={`amt ${a.kind}`}>{a.kind === "won" ? "+" : a.kind === "lost" ? "−" : ""}{money(a.amount, locale)}</i> {msg.ticker.on} {what}</> });
     }
