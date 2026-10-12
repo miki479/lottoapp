@@ -268,7 +268,7 @@ export function App() {
     const go = () => sb.rpc("weather_outlook", { p_markets: rainIds }).then(({ data }) => setOutlook(Object.fromEntries(((data ?? []) as { market_id: string; mm: number }[]).map((r) => [r.market_id, +r.mm]))));
     go(); return every(go, 300_000);
   }, [rainIds.join()]);
-  const trackable = useMemo(() => (markets ?? []).filter((m) => (m.category === "bus" || m.category === "train") && Date.parse(m.target_at) - Date.now() < 3 * 3600_000).slice(0, 80).map((m) => m.id), [markets]);
+  const trackable = useMemo(() => (markets ?? []).filter((m) => (m.category === "bus" || m.category === "train") && Date.parse(m.target_at) - Date.now() < (m.category === "train" ? 10 : 3) * 3600_000).slice(0, 150).map((m) => m.id), [markets]);
   useEffect(() => {
     if (trackable.length === 0) { setLive({}); return; }
     const go = () => sb.rpc("live_delays", { p_markets: trackable }).then(({ data }) => setLive(Object.fromEntries(((data ?? []) as LiveDelay[]).map((d) => [d.market_id, d]))));
@@ -295,7 +295,9 @@ export function App() {
   const byCat = (c: CatId) => inFilter.filter((m) => m.category === c);
   useEffect(() => { if (catChosen || !markets) return; const first = (["bus", "train", "weather"] as CatId[]).find((c) => byCat(c).length > 0); if (first && byCat(cat).length === 0) setCat(first); }, [markets, filter, catChosen]);
   const flashFirst = (a: MarketRow[]) => [...a].sort((x, y) => Number((y.flash_multiplier ?? 1) > 1) - Number((x.flash_multiplier ?? 1) > 1));
-  const list = flashFirst(byCat(cat));
+  // trains and buses: the most delayed right now first, then the rest
+  const byDelay = (x: MarketRow[]) => [...x].sort((m1, m2) => Number(!!live[m2.id] && !live[m2.id]!.is_forecast) - Number(!!live[m1.id] && !live[m1.id]!.is_forecast) || (live[m2.id]?.delay_sec ?? -1e9) - (live[m1.id]?.delay_sec ?? -1e9));
+  const list = cat === "train" || cat === "bus" ? byDelay(byCat(cat)) : flashFirst(byCat(cat));
   const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: byCat("nature").length, strike: isItalian ? byCat("strike").length : 0, traffic: byCat("traffic").length, finance: byCat("finance").length, culture: byCat("culture").length, sport: new Set(byCat("sport").map((m) => String(m.params.eventId))).size, gov: 0 };
 
   const top: TopItem[] = useMemo(() => {

@@ -45,6 +45,7 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
       </div>
       <p class="q"><Q m={m} msg={msg} locale={locale} city={cityName(city, locale)} tz={city.timezone} now={new Date(now)} /></p>
       {typeof m.params.by === "string" && m.params.by && <p class="byline">{msg.maker.by(m.params.by)}</p>}
+      {!live && (m.category === "train" || m.category === "bus") && <p class="nolive">{msg.card.noLive}</p>}
       {live && <DelayMeter sec={live.delay_sec} prev={live.prev_delay_sec} limitSec={Number(m.params.thresholdSec ?? 180)} forecast={live.is_forecast} msg={msg} />}
       <div class="actions2">
         {(["yes", "no"] as const).map((k) => {
