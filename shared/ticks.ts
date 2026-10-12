@@ -24,7 +24,20 @@ export const isSteam = (s: string) => s.startsWith("steam:") && s.slice(6) in ST
 /** Numbers that exist only "right now": they must be read within minutes of the instant. */
 export const isStorm = (s: string) => s.startsWith("storm:");
 export const isAlert = (s: string) => s.startsWith("alert:");
-export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isStorm(s);
+
+/** Metals priced in US dollars (gold, silver, platinum per troy ounce; copper per pound), spot, from gold-api.com. `vol` = typical move per square-root-hour. */
+export const METALS = { xau: { sym: "XAU", label: "Gold", step: 10, vol: 0.0013, digits: 0 }, xag: { sym: "XAG", label: "Silver", step: 0.25, vol: 0.0026, digits: 2 }, xpt: { sym: "XPT", label: "Platinum", step: 10, vol: 0.0021, digits: 0 }, hg: { sym: "HG", label: "Copper", step: 0.05, vol: 0.0016, digits: 2 } } as const;
+export type MetalKey = keyof typeof METALS;
+export const isMetal = (s: string) => s.startsWith("metal:") && s.slice(6) in METALS;
+/** Average self-service price in Italy (euro a litre) from the Ministry's daily list of every station. */
+export const FUELS = { benzina: { label: "Benzina", csv: "Benzina" }, gasolio: { label: "Gasolio", csv: "Gasolio" } } as const;
+export type FuelKey = keyof typeof FUELS;
+export const isFuel = (s: string) => s.startsWith("fuel:") && s.slice(5) in FUELS;
+/** Daily spot price of crude oil, from the US Energy Information Administration (needs its free key). */
+export const OIL = { brent: { label: "Brent", eia: "RBRTE" }, wti: { label: "WTI", eia: "RWTC" } } as const;
+export type OilKey = keyof typeof OIL;
+export const isOil = (s: string) => s.startsWith("oil:") && s.slice(4) in OIL;
+export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isStorm(s) || isMetal(s);
 
 /** Saffir-Simpson scale by sustained wind in knots (1 min average), as NHC reports it. */
 export const STORM_STEPS: { kt: number; label: string }[] = [{ kt: 34, label: "TS" }, { kt: 64, label: "Cat. 1" }, { kt: 83, label: "Cat. 2" }, { kt: 96, label: "Cat. 3" }, { kt: 113, label: "Cat. 4" }, { kt: 137, label: "Cat. 5" }];
@@ -34,6 +47,9 @@ export const WIKI_ARTICLES = ["Taylor_Swift", "Cristiano_Ronaldo", "Lionel_Messi
 
 export function tickDef(series: string): TickDef | null {
   if (isCrypto(series)) return { category: "finance", label: CRYPTO[series].label, unit: "$", min: 1, max: 10_000_000 };
+  if (isMetal(series)) return { category: "finance", label: METALS[series.slice(6) as MetalKey].label, unit: "$", min: 0.1, max: 100_000 };
+  if (isFuel(series)) return { category: "finance", label: FUELS[series.slice(5) as FuelKey].label, unit: "€/l", min: 0.5, max: 5 };
+  if (isOil(series)) return { category: "finance", label: OIL[series.slice(4) as OilKey].label, unit: "$", min: 5, max: 400 };
   if (isAlert(series)) return { category: "nature", label: "Allerta", unit: "", min: 0, max: 3 };
   if (isStorm(series)) return { category: "nature", label: "Storm", unit: " kt", min: 0, max: 200 };
   if (isSteam(series)) return { category: "culture", label: STEAM[series.slice(6) as keyof typeof STEAM], unit: "", min: 0, max: 100_000_000 };
@@ -45,7 +61,7 @@ export function tickDef(series: string): TickDef | null {
 export interface TickMarketInsert {
   city_id: "world"; category: TickCategory; kind: "tick_gt"; feed_id: string;
   lat?: number; lon?: number;
-  params: { series: string; label: string; threshold: number; unit: string; forecast: number; at: number; note?: string; local?: "true" };
+  params: { series: string; label: string; threshold: number; unit: string; forecast: number; at: number; note?: string; digits?: number; local?: "true" };
   closes_at: string; target_at: string; deadline_at: string; odds_yes: number; odds_no: number; dedupe_key: string;
 }
 
@@ -131,6 +147,9 @@ export function buildSteamMarkets(counts: Record<string, number>, now: number): 
 export function tickSigma(series: string, ref: number, hours: number): number {
   if (isStorm(series)) return Math.max(8, 11 * Math.sqrt(Math.max(1, hours) / 12));
   if (isCrypto(series)) return ref * 0.005 * Math.sqrt(Math.max(1, hours));
+  if (isMetal(series)) return ref * METALS[series.slice(6) as MetalKey].vol * Math.sqrt(Math.max(1, hours));
+  if (isFuel(series)) return ref * 0.002 * Math.sqrt(Math.max(1, hours / 24));
+  if (isOil(series)) return ref * 0.0185 * Math.sqrt(Math.max(1, hours / 24));
   if (isSteam(series)) return ref * 0.07 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4);
   return ref * 0.15;
 }
@@ -138,6 +157,9 @@ export function tickSigma(series: string, ref: number, hours: number): number {
 /** Friendly threshold granularity for a reference value. */
 export function tickStep(series: string, ref: number): number {
   if (isCrypto(series)) return CRYPTO[series].step;
+  if (isMetal(series)) return METALS[series.slice(6) as MetalKey].step;
+  if (isFuel(series)) return 0.005;
+  if (isOil(series)) return 0.5;
   if (isSteam(series)) return ref >= 500_000 ? 25_000 : ref >= 100_000 ? 10_000 : ref >= 20_000 ? 1_000 : 500;
   return ref >= 200_000 ? 10_000 : ref >= 50_000 ? 5_000 : ref >= 10_000 ? 1_000 : 500;
 }
@@ -152,6 +174,67 @@ export function tickChance(series: string, ref: number, threshold: number, hours
 export function buildCustomTick(series: string, ref: number, threshold: number, at: number, now: number): TickMarketInsert {
   const def = tickDef(series)!, wiki = series.startsWith("wiki:"), hours = Math.max(0.6, (at - now) / H);
   return tickMarket(series, def, ref, threshold, tickSigma(series, ref, hours), at, wiki ? at - 12 * H : at - 600, at + (wiki ? 30 : 3) * H);
+}
+
+const withDigits = (m: TickMarketInsert, digits: number): TickMarketInsert => ({ ...m, params: { ...m.params, digits } });
+
+/** Metals at 12 and 18 UTC on weekdays for the next 30 hours (the market is shut at weekends): the line is today's price on a friendly step. */
+export function buildMetalMarkets(prices: Partial<Record<MetalKey, number>>, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const [k, price] of Object.entries(prices) as [MetalKey, number][]) {
+    if (!(price > 0)) continue;
+    const series = `metal:${k}`, def = tickDef(series)!, cfg = METALS[k];
+    for (let at = Math.floor(now / (6 * H)) * 6 * H + 6 * H; at <= now + 30 * H; at += 6 * H) {
+      const hourUtc = (at % 86400) / H, dow = new Date(at * 1000).getUTCDay();
+      if ((hourUtc !== 12 && hourUtc !== 18) || dow === 0 || dow === 6 || at - 600 <= now + 300) continue;
+      const hours = Math.max(1, (at - now) / H);
+      out.push(withDigits(tickMarket(series, def, price, Math.round(price / cfg.step) * cfg.step, price * cfg.vol * Math.sqrt(hours), at, at - 600, at + 3 * H), cfg.digits));
+    }
+  }
+  return out;
+}
+
+/** `extraction` = the date (YYYY-MM-DD) the latest published list refers to. The list of day D appears early on D+1; each question is about one such day and closes at 18:00 UTC on D. */
+export function buildFuelMarkets(avgs: Partial<Record<FuelKey, number>>, extraction: string, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  const base = Date.parse(`${extraction}T00:00:00Z`) / 1000;
+  if (!Number.isFinite(base)) return out;
+  for (const [k, avg] of Object.entries(avgs) as [FuelKey, number][]) {
+    if (!(avg > 0.5)) continue;
+    const series = `fuel:${k}`, def = tickDef(series)!;
+    for (let ahead = 1; ahead <= 2; ahead++) {
+      const at = base + (ahead + 1) * 86400, closes = at - 6 * H;
+      if (closes <= now + 600) continue;
+      const sigma = avg * 0.002 * Math.sqrt(ahead);
+      const t0 = Math.round(avg / 0.005) * 0.005;
+      for (const thr of [t0, t0 + 0.01]) {
+        const p = 1 - normalCdf((thr - avg) / sigma);
+        if (p < 0.12 || p > 0.88) continue;
+        out.push(withDigits(tickMarket(series, def, avg, Math.round(thr * 1000) / 1000, sigma, at, closes, at + 36 * H), 3));
+      }
+    }
+  }
+  return out;
+}
+
+/** `latest[k]` = the newest published daily price and its date. Questions about the next two weekdays; they close at 12:00 UTC of that day. */
+export function buildOilMarkets(latest: Partial<Record<OilKey, { date: string; value: number }>>, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const [k, l] of Object.entries(latest) as [OilKey, { date: string; value: number }][]) {
+    const last = Date.parse(`${l.date}T00:00:00Z`) / 1000;
+    if (!(l.value > 5) || !Number.isFinite(last)) continue;
+    const series = `oil:${k}`, def = tickDef(series)!;
+    let made = 0;
+    for (let d = 1; d <= 6 && made < 2; d++) {
+      const day = last + d * 86400, dow = new Date(day * 1000).getUTCDay();
+      if (dow === 0 || dow === 6) continue;
+      const at = day + 86400, closes = day + 12 * H;
+      if (closes <= now + 600) { continue; }
+      made++;
+      out.push(withDigits(tickMarket(series, def, l.value, Math.round(l.value / 0.5) * 0.5, l.value * 0.0185 * Math.sqrt(d + 1), at, closes, at + 4 * 86400), 2));
+    }
+  }
+  return out;
 }
 
 export interface StormNow { id: string; name: string; kt: number; cls: string }

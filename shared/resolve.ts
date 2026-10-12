@@ -150,7 +150,7 @@ function matchReading(event: MatchEvent, input: ResolveInput): Reading {
   if (o.homeGoals < 0 || o.awayGoals < 0 || o.homeGoals > 30 || o.awayGoals > 30) return { kind: "implausible" };
   const bad = (x: number | null | undefined, max: number) => x !== null && x !== undefined && (!Number.isFinite(x) || x < 0 || x > max);
   if (bad(o.htHome, o.homeGoals) || bad(o.htAway, o.awayGoals) || bad(o.corners, 40) || bad(o.cards, 20) || bad(o.reds, 6)) return { kind: "implausible" };
-  const yes = evalMatch(event.bet, { hg: o.homeGoals, ag: o.awayGoals, htHome: o.htHome, htAway: o.htAway, corners: o.corners, cards: o.cards, reds: o.reds });
+  const yes = evalMatch(event.bet, { hg: o.homeGoals, ag: o.awayGoals, htHome: o.htHome, htAway: o.htAway, corners: o.corners, cards: o.cards, reds: o.reds, players: o.players });
   // half-time, corners or cards missing: wait for them, then void and refund at the deadline
   if (yes === null) return { kind: "none" };
   return { kind: "ok", yes, evidence: { home: o.homeGoals, away: o.awayGoals, bet: event.bet, ...(o.htHome !== null && o.htHome !== undefined ? { htHome: o.htHome, htAway: o.htAway ?? 0 } : {}), ...(o.corners !== null && o.corners !== undefined ? { corners: o.corners } : {}), ...(o.cards !== null && o.cards !== undefined ? { cards: o.cards } : {}) } };

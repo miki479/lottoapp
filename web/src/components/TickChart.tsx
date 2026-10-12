@@ -27,10 +27,10 @@ export function TickChart({ m, msg, locale }: { m: MarketRow; msg: Messages; loc
   const x = (i: number) => pad + (i * (W - 2 * pad)) / (pts.length - 1);
   const y = (v: number) => H - pad - ((v - lo) / span) * (H - 2 * pad);
   const last = pts[pts.length - 1]!, first = pts[0]!;
-  const nf = new Intl.NumberFormat(INTL_TAG[locale], { maximumFractionDigits: kind === "kp" ? 1 : 0 });
+  const dg = typeof m.params.digits === "number" ? m.params.digits : 0, nf = new Intl.NumberFormat(INTL_TAG[locale], { minimumFractionDigits: kind === "kp" ? 0 : dg, maximumFractionDigits: kind === "kp" ? 1 : dg });
   const above = pts.filter((p) => p.v >= thr).length;
   const change = first.v ? ((last.v - first.v) / first.v) * 100 : 0;
-  const unit = series === "btc" || series === "eth" ? " $" : series.startsWith("storm:") ? " kt" : "";
+  const unit = series === "btc" || series === "eth" || series.startsWith("metal:") || series.startsWith("oil:") ? " $" : series.startsWith("fuel:") ? " €/l" : series.startsWith("storm:") ? " kt" : "";
   const poly = pts.map((p, i) => `${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
   return (
     <div class={`tickchart ${kind}`} role="img" aria-label={msg.chart.title}>

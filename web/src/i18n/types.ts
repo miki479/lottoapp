@@ -12,7 +12,7 @@ export type MetricKey = "temp" | "wind" | "snow" | "uv" | "aqi" | "hail";
 export interface MetricQ { metric: MetricKey; city: string; time: string; value: number; unit: string }
 export type MatchBetKey = import("../../../shared/sport.ts").MatchBet;
 export interface MatchQ { bet: MatchBetKey; home: string; away: string; time: string }
-export interface TickQ { kind: "price" | "kp" | "wiki" | "players" | "storm" | "alert"; label: string; value: string; time: string; from: string; to: string; day: string }
+export interface TickQ { kind: "price" | "kp" | "wiki" | "players" | "storm" | "alert" | "fuel" | "oil"; label: string; value: string; time: string; from: string; to: string; day: string }
 export interface TrafficQ { site: string; toward: string; from: string; to: string; kmh: number }
 export interface StrikeQ { date: string; day: string; who: string; hours: string }
 export interface QuakeQ { mag: string; from: string; to: string; region?: string }
@@ -28,7 +28,7 @@ export interface Messages {
   nav: { home: string; bets: string; ranking: string; profile: string };
   common: { backOnline: string; close: string; cancel: string; save: string; retry: string; soon: string; offline: string; install: string; language: string; credits: string; copied: string; back: string };
   tabs: { bus: string; train: string; weather: string; nature: string; strike: string; traffic: string; finance: string; culture: string; sport: string; gov: string; soon: string };
-  wx: { filter: string; all: string; rain: string; world: string; regions: Record<string, string>; localTime: string; names: Record<MetricKey, string>; forecast: (v: string) => string; quakeArt: string };
+  wx: { filter: string; all: string; rain: string; world: string; regions: Record<string, string>; localTime: string; names: Record<MetricKey | "crypto" | "metals" | "oil" | "fuel", string>; forecast: (v: string) => string; quakeArt: string };
   world: string;
   quakeMaker: { cta: string; title: string; body: string; place: string; search: string; radius: string; mag: string; day: string; today: string; tomorrow: string; hour: string; length: string; hours: (n: number) => string; km: (n: number) => string; create: string; creating: string; pickPlace: string; local: (tz: string) => string; limit: string; full: string; usgs: string; time: string; credit: string };
   traffic: { threshold: (kmh: number) => string; jam: string; flow: string };
@@ -53,15 +53,15 @@ export interface Messages {
   card: { late: string; onTime: string; per10: (win: number) => string; closes: string; forecast: string; live: string; yes: string; no: string; over: (min: number) => string; topOdds: string; hot: string };
   alertNames: { yellow: string; orange: string; red: string };
   nearby: { title: string; hint: string; radius: string; none: string; home: string; homeHint: string; homeSet: string; homeClear: string; homeSearch: string; homeNone: string; askLocate: string; statsTitle: string; statsIntro: string; towns: string; bands: string; yes: string; notEnough: string; people: string; total: string; km: string };
-  sportui: { all: string; allMarkets: string; result: string; double: string; goals: string; over: string; under: string; goalNo: string; goal: string; noGoal: string; clean: string; cleanHome: string; cleanAway: string; pickOne: string; needAccount: string; busy: string; noMatches: string; firstHalf: string; secondHalf: string; cornersT: string; cardsT: string; redT: string; halfGoal: string; yes: string; no: string; unavailable: string; simple: string; advanced: string; halves: string; finalT: string };
+  sportui: { all: string; allMarkets: string; result: string; double: string; goals: string; over: string; under: string; goalNo: string; goal: string; noGoal: string; clean: string; cleanHome: string; cleanAway: string; pickOne: string; needAccount: string; busy: string; noMatches: string; firstHalf: string; secondHalf: string; cornersT: string; cardsT: string; redT: string; halfGoal: string; yes: string; no: string; unavailable: string; players: string; pgL: string; paL: string; psL: string; noLineup: string; simple: string; advanced: string; halves: string; finalT: string };
   teamSearch: string;
   matchmaker: { tab: string; pick: string; reason: string; exists: string; none: string; open: string; bets: Record<MatchBetKey, string> };
   fx: { visibility: string; vPrivate: string; vPrivateHint: string; vPublic: string; vPublicHint: string; world: string; judgeLabel: string; judgeCreator: string; judgeVote: string; judgeHint: string; needHome: string; voteTitle: string; voteWait: string; voteDone: string; votes: string; judgeCant: string; byVote: string; byJudge: string; publicBadge: string; privateBadge: string; report: string; reported: string; nearTitle: string; players: string; errors: Record<"judge_cannot_bet" | "decided_by_vote" | "decided_by_judge" | "not_a_player" | "home_required" | "account_too_new" | "bad_mode", string> };
   friends: { tab: string; title: string; hint: string; placeholder: string; category: string; moreCats: string; lessCats: string; closes: string; stake: string; noStake: string; stakeNote: string; create: string; creating: string; needAccount: string; judge: string; rules: string; mine: string; none: string; yes: string; no: string; waitJudge: string; decide: string; decideYes: string; decideNo: string; decideVoid: string; pot: string; perHead: string; closesIn: string; closed: string; resolvedYes: string; resolvedNo: string; voided: string; people: string; won: string; share: string; copied: string; join: string; full: string; shareText: string; closeOpts: Record<"h1" | "h3" | "tonight" | "tomorrow" | "d3" | "d7", string>; errors: Record<"bad_title" | "title_not_allowed" | "limit" | "too_many_open" | "bad_time" | "registration_required" | "insufficient_credits" | "already_picked" | "challenge_closed" | "challenge_full" | "not_closed_yet" | "generic", string>; cats: Record<"friends" | "family" | "work" | "dinner" | "trip" | "sport" | "games" | "home" | "school" | "party" | "music" | "food" | "pets" | "tech" | "money_fun" | "random", string> };
   maker: { open: string; title: string; hint: string; tabs: Record<"weather" | "crypto" | "games" | "culture" | "quake", string>; place: string; metric: string; day: string; today: string; tomorrow: string; hour: string; line: string; now: string; forecastLbl: string; when: string; pickOne: string; in_h: string; midnightToday: string; midnightTomorrow: string; odds: string; chance: string; create: string; creating: string; needAccount: string; errors: Record<"limit" | "too_many_open" | "full" | "too_certain" | "bad_time" | "source_unavailable" | "generic", string>; by: (n: string) => string; trending: string; trendingNear: string; share: string; copied: string; shareText: string };
   chart: { title: string; min: string; max: string; change: string; above: string };
-  quips: Record<"bus" | "train" | "rain" | "temp" | "wind" | "snow" | "uv" | "aqi" | "quake" | "strike" | "traffic" | "price" | "kp" | "wiki" | "game" | "sport" | "storm" | "hail" | "alert", string[]>;
-  question: { bus: (q: BusQ) => string; train: (q: BusQ) => string; rain: (q: RainQ) => string; metric: (q: MetricQ) => string; quake: (q: QuakeQ) => string; strike: (q: StrikeQ) => string; traffic: (q: TrafficQ) => string; tick: (q: TickQ) => string; match: (q: MatchQ) => string };
+  quips: Record<"bus" | "train" | "rain" | "temp" | "wind" | "snow" | "uv" | "aqi" | "quake" | "strike" | "traffic" | "price" | "kp" | "wiki" | "game" | "sport" | "storm" | "hail" | "alert" | "metal" | "fuel" | "oil", string[]>;
+  question: { bus: (q: BusQ) => string; train: (q: BusQ) => string; rain: (q: RainQ) => string; metric: (q: MetricQ) => string; quake: (q: QuakeQ) => string; strike: (q: StrikeQ) => string; traffic: (q: TrafficQ) => string; tick: (q: TickQ) => string; match: (q: MatchQ) => string; player: (q: { kind: "pg" | "pa" | "ps"; name: string; home: string; away: string; time: string }) => string };
   sheet: { title: string; pick: string; stake: string; potential: string; confirm: string; confirming: string; odds: string; placed: (win: string) => string };
   bets: { title: string; tabs: { open: string; settled: string }; open: string; won: string; lost: string; void: string; empty: { title: string; body: string; cta: string }; yourPick: (yes: boolean) => string; settles: string; voidReason: Record<string, string>; details: string };
   result: {
@@ -96,9 +96,10 @@ export interface Messages {
   disclaimerShort: string; disclaimerFull: string; attributionTitle: string;
   errors: Record<string, string>;
   feedWarning: string;
+  cm: Record<string, string>;
   dm: {
     title: string; resets: (t: string) => string; claim: string; done: string; chest: string; chestBody: (c: string) => string; chestOpen: string; chestOpened: (c: string, b: number) => string; chestLocked: (n: number) => string; got: (c: string) => string;
-    streak: (n: number) => string; titles: Record<"m_bets3" | "m_bets5" | "m_cats2" | "m_sport" | "m_nature" | "m_stake50" | "m_early" | "m_odds3" | "m_odds5" | "m_parlay" | "m_friend" | "m_win1", string>;
+    streak: (n: number) => string; titles: Record<string, string>; legend: string;
   };
   frd: {
     boardTab: string; groupsTab: string; inviteTitle: string; inviteBody: string; inviteBtn: string; invitedCount: (n: number) => string;

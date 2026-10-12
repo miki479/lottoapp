@@ -1,4 +1,4 @@
-import { Activity, Check, Coins, Flame, Gift, Layers, PackageOpen, Sunrise, Target, Ticket, Trophy, Users } from "lucide-preact";
+import { Activity, Bus, Check, Clapperboard, CloudRain, Coins, Crown, Droplet, Flame, Fuel, Gem, Gift, Globe, Layers, Moon, PackageOpen, Scale, Sparkles, Sunrise, Target, ThumbsDown, ThumbsUp, Ticket, Timer, TrainFront, Trophy, UserRound, Users } from "lucide-preact";
 import type { LucideIcon } from "lucide-preact";
 import { useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -6,7 +6,11 @@ import { money } from "../lib/format.ts";
 import type { DailyMissionsData } from "../lib/types.ts";
 import { untilReset } from "./RewardsSheet.tsx";
 
-const ICON: Record<string, LucideIcon> = { m_bets3: Ticket, m_bets5: Ticket, m_cats2: Layers, m_sport: Trophy, m_nature: Activity, m_stake50: Coins, m_early: Sunrise, m_odds3: Flame, m_odds5: Flame, m_parlay: Layers, m_friend: Users, m_win1: Target };
+const ICON: Record<string, LucideIcon> = {
+  m_bets3: Ticket, m_bets5: Ticket, m_bets8: Ticket, m_leg_bets10: Ticket, m_cat_bus: Bus, m_cat_train: TrainFront, m_cat_weather: CloudRain, m_cat_nature: Activity, m_cat_fin: Coins, m_cat_cult: Clapperboard, m_sport: Trophy,
+  m_stake25: Coins, m_stake100: Coins, m_stake250: Gem, m_early: Sunrise, m_night: Moon, m_last1h: Timer, m_yes2: ThumbsUp, m_no2: ThumbsDown, m_cats2: Layers, m_cats3: Layers, m_leg_cats4: Globe, m_cities3: Globe,
+  m_odds3: Flame, m_odds5: Flame, m_odds8: Flame, m_leg_odds12: Sparkles, m_parlay: Layers, m_parlay3: Layers, m_friend: Users, m_metal: Gem, m_fuel: Fuel, m_oil: Droplet, m_draw: Scale, m_player: UserRound, m_custom: Users,
+  m_win1: Target, m_win2: Target, m_winodds3: Target, m_leg_win3: Crown };
 
 /** Three missions a day with progress bars and rewards, and a chest when all three are done. The server counts and pays; this only shows and presses "collect". */
 export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages; locale: Locale; now: number; tz: string; streak: number; onClaim: (id: string) => Promise<void>; onChest: () => Promise<void>; compact?: boolean }) {
@@ -26,13 +30,13 @@ export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages
         {ms.map((m) => {
           const Icon = ICON[m.id] ?? Target, done = m.progress >= m.target, pct = Math.round((m.progress / m.target) * 100);
           return (
-            <li key={m.id} class={`dmrow ${done ? "ready" : ""} ${m.claimed ? "claimed" : ""} ${pop === m.id ? "pop" : ""}`}>
+            <li key={m.id} class={`dmrow ${m.tier === 4 ? "legend" : ""} ${done ? "ready" : ""} ${m.claimed ? "claimed" : ""} ${pop === m.id ? "pop" : ""}`}>
               <span class="dmico"><Icon size={20} /></span>
-              <div class="dmtx"><b>{t.titles[m.id as keyof typeof t.titles] ?? m.id}</b>
+              <div class="dmtx"><b>{m.tier === 4 && <i class="dmleg">{t.legend}</i>}{t.titles[m.id] ?? m.id}</b>
                 <span class="dmbar" role="progressbar" aria-valuenow={m.progress} aria-valuemax={m.target}><i style={`width:${pct}%`} /></span></div>
               <span class="dmact">
                 {m.claimed ? <span class="dmok"><Check size={16} strokeWidth={3} />{t.done}</span>
-                  : done ? <button class="btn primary dmbtn" onClick={() => burst(m.id, () => p.onClaim(m.id))}>{t.claim} +{money(m.reward, p.locale)}</button>
+                  : done ? <button class="btn primary dmbtn" onClick={() => burst(m.id, () => p.onClaim(m.id))}><span>{t.claim}</span><b>+{money(m.reward, p.locale)}</b></button>
                   : <><em class="num">{m.progress}/{m.target}</em><span class="dmrew">+{money(m.reward, p.locale)}</span></>}
               </span>
             </li>

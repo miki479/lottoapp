@@ -34,6 +34,7 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     const h0 = new Date(m.target_at).getTime() - 30 * 60_000, hh = (t: number) => new Intl.DateTimeFormat(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(new Date(t));
     return msg.question.traffic({ site: String(m.params.siteName ?? ""), toward: String(m.params.toward ?? ""), from: hh(h0), to: hh(h0 + 3600_000), kmh: Number(m.params.thresholdKmh) });
   }
+  if (m.kind === "match_bet" && /^(pg|pa|ps):/.test(String(m.params.bet))) return msg.question.player({ kind: String(m.params.bet).slice(0, 2) as "pg", name: String((m.params.player as { name?: string } | undefined)?.name ?? ""), home: String(m.params.home), away: String(m.params.away), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
   if (m.kind === "match_bet") return msg.question.match({ bet: m.params.bet as "home_win", home: String(m.params.home), away: String(m.params.away), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
   if (m.kind === "tick_gt") {
     const series = String(m.params.series), at = m.target_at, thr = Number(m.params.threshold);
@@ -44,7 +45,11 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     if (series.startsWith("steam:")) return msg.question.tick({ kind: "players", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series === "kp") return msg.question.tick({ kind: "kp", label: "Kp", value: String(thr), time: "", from: formatWhen(new Date(Date.parse(at) - 3 * 3600_000).toISOString(), locale, own, now), to: formatWhen(at, locale, own, now), day: "" });
     if (series.startsWith("wiki:")) return msg.question.tick({ kind: "wiki", label: String(m.params.label), value: nf.format(thr), time: "", from: "", to: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3600_000)) });
-    return msg.question.tick({ kind: "price", label: String(m.params.label), value: `${nf.format(thr)} $`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    const dg = typeof m.params.digits === "number" ? m.params.digits : 0, nd = new Intl.NumberFormat(INTL_TAG[locale], { minimumFractionDigits: dg, maximumFractionDigits: dg }), lab = msg.cm[String(m.params.label)] ?? String(m.params.label);
+    const day = new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3600_000));
+    if (series.startsWith("fuel:")) return msg.question.tick({ kind: "fuel", label: lab, value: `${nd.format(thr)} €`, time: "", from: "", to: "", day });
+    if (series.startsWith("oil:")) return msg.question.tick({ kind: "oil", label: lab, value: `${nd.format(thr)} $`, time: "", from: "", to: "", day });
+    return msg.question.tick({ kind: "price", label: lab, value: `${nd.format(thr)} $`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
   }
   if (m.kind === "strike_on") return msg.question.strike({ date: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone }).format(new Date(m.target_at)), who: [m.params.sector, m.params.unions].filter(Boolean).join(" · "), hours: String(m.params.hours ?? "") });
   if (m.kind === "quake_m") {
@@ -137,7 +142,7 @@ export function quip(m: MarketRow, msg: Messages): string {
   const series = String(m.params.series ?? "");
   const g: keyof Messages["quips"] =
     m.kind === "bus_delay_gt" ? "bus" : m.kind === "train_delay_gt" ? "train" : m.kind === "rain_at" ? "rain" : m.kind === "quake_m" ? "quake" : m.kind === "strike_on" ? "strike" : m.kind === "traffic_speed_lt" ? "traffic"
-    : m.kind === "tick_gt" ? (series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("steam:") ? "game" : series.startsWith("storm:") ? "storm" : series.startsWith("alert:") ? "alert" : "price") : (String(m.params.metric) as keyof Messages["quips"]);
+    : m.kind === "tick_gt" ? (series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("steam:") ? "game" : series.startsWith("storm:") ? "storm" : series.startsWith("alert:") ? "alert" : series.startsWith("metal:") ? "metal" : series.startsWith("fuel:") ? "fuel" : series.startsWith("oil:") ? "oil" : "price") : (String(m.params.metric) as keyof Messages["quips"]);
   const list = msg.quips[g] ?? [];
   if (!list.length) return "";
   const h = [...m.id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);

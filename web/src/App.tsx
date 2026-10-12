@@ -32,6 +32,7 @@ import { ensureGuest, guestState, sb } from "./lib/api.ts";
 import { CITIES, cityInfos, cityName, cityOf } from "./lib/cities.ts";
 import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
+import { every } from "./lib/poll.ts";
 import { computeOdds } from "../../shared/odds.ts";
 import { countdown, currencySymbol, dayIn, fmtOdds, isYesNo, money, question, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
@@ -244,7 +245,7 @@ export function App() {
   }, []);
   useEffect(() => { loadChallenges(); }, [registered]);
   useEffect(() => { if (screen === "bets") loadChallenges(); }, [screen]);
-  useEffect(() => { if (!registered) return; const i = setInterval(loadChallenges, 90_000); return () => clearInterval(i); }, [registered, loadChallenges]);
+  useEffect(() => { if (!registered) return; return every(loadChallenges, 120_000); }, [registered, loadChallenges]);
   /** A shared link (?m=<market id>) opens that question straight away. */
   useEffect(() => {
     const id = new URLSearchParams(location.search).get("m");
@@ -255,20 +256,20 @@ export function App() {
       const u = new URL(location.href); u.searchParams.delete("m"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
     });
   }, []);
-  useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = setInterval(loadMarkets, 30000), b = setInterval(() => { loadResults(); loadActivity(); loadTrending(); }, 60000); return () => { clearInterval(a); clearInterval(b); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
-  useEffect(() => { if (!ready) return; const i = setInterval(() => { loadBets(); loadProfile(); loadQuests(); }, 30000); return () => clearInterval(i); }, [ready]);
+  useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = every(loadMarkets, 45_000), b = every(() => { loadResults(); loadActivity(); loadTrending(); }, 90_000); return () => { a(); b(); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
+  useEffect(() => { if (!ready) return; return every(() => { loadBets(); loadProfile(); loadQuests(); }, 60_000); }, [ready]);
 
   const rainIds = useMemo(() => (markets ?? []).filter((m) => m.kind === "rain_at").map((m) => m.id), [markets]);
   useEffect(() => {
     if (rainIds.length === 0) return;
     const go = () => sb.rpc("weather_outlook", { p_markets: rainIds }).then(({ data }) => setOutlook(Object.fromEntries(((data ?? []) as { market_id: string; mm: number }[]).map((r) => [r.market_id, +r.mm]))));
-    go(); const i = setInterval(go, 300000); return () => clearInterval(i);
+    go(); return every(go, 300_000);
   }, [rainIds.join()]);
   const trackable = useMemo(() => (markets ?? []).filter((m) => (m.category === "bus" || m.category === "train") && Date.parse(m.target_at) - Date.now() < 3 * 3600_000).slice(0, 80).map((m) => m.id), [markets]);
   useEffect(() => {
     if (trackable.length === 0) { setLive({}); return; }
     const go = () => sb.rpc("live_delays", { p_markets: trackable }).then(({ data }) => setLive(Object.fromEntries(((data ?? []) as LiveDelay[]).map((d) => [d.market_id, d]))));
-    go(); const i = setInterval(go, 15000); return () => clearInterval(i);
+    go(); return every(go, 20_000);
   }, [trackable.join()]);
 
   // ---------- derived ----------
@@ -378,6 +379,9 @@ export function App() {
       { name: CROWD_SOURCE.name, via: CROWD_SOURCE.via, license: CROWD_SOURCE.license, licenseUrl: CROWD_SOURCE.licenseUrl, url: CROWD_SOURCE.url },
       { name: "Allerta Meteo Emilia-Romagna", license: "CC BY-NC-SA 4.0 (non commercial use)", licenseUrl: "https://allertameteo.regione.emilia-romagna.it/note-legali", url: "https://allertameteo.regione.emilia-romagna.it/" },
       { name: "TheSportsDB", license: "Free API key (see their terms); data © its contributors", licenseUrl: "https://www.thesportsdb.com/api.php", url: "https://www.thesportsdb.com" },
+      { name: "Gold API (gold-api.com)", license: "Free price API, terms of service", licenseUrl: "https://gold-api.com/terms", url: "https://gold-api.com" },
+      { name: "Ministero delle Imprese e del Made in Italy — Osservatorio prezzi carburanti", license: "IODL 2.0 (open data)", licenseUrl: "https://www.dati.gov.it/content/italian-open-data-license-v20", url: "https://www.mimit.gov.it/it/prezzo-medio-carburanti" },
+      { name: "U.S. Energy Information Administration", license: "Public domain (US Government)", licenseUrl: "https://www.eia.gov/about/copyrights_reuse.php", url: "https://www.eia.gov/opendata/" },
       ...(detailsOn ? [{ name: "API-Football (API-Sports)", license: "Free plan (see their terms)", licenseUrl: "https://www.api-football.com/terms", url: "https://www.api-football.com" }] : []),
       { name: "Steam Web API (Valve)", license: "Steam Web API Terms of Use", licenseUrl: "https://steamcommunity.com/dev/apiterms", url: "https://steamcommunity.com/dev" },
       { name: "CoinGecko API", license: "Free API, attribution required", licenseUrl: "https://www.coingecko.com/en/api/documentation", url: "https://www.coingecko.com" },
@@ -460,7 +464,7 @@ export function App() {
     if (!near) return;
     if (!placeIds.current.includes(near.id) && near.id.startsWith("p-")) { placeIds.current = [near.id, ...placeIds.current].slice(0, 7); }
     const go = () => sb.rpc("popular_in_city", { p_city: near.id, p_limit: 5 }).then(({ data }) => setNearRows(((data ?? []) as { market_id: string; bets: number }[]).map((r) => ({ market_id: r.market_id, bets: +r.bets }))));
-    go(); const i = setInterval(go, 60000); return () => clearInterval(i);
+    go(); return every(go, 120_000);
   }, [near?.id]);
   const origin = useMemo(() => {
     if (home) return { lat: home.lat, lon: home.lon, name: home.name };

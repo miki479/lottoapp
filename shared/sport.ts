@@ -8,6 +8,24 @@ export type MatchBet = BasicBet | DetailBet;
 export const MATCH_BETS: BasicBet[] = ["home_win", "draw", "away_win", "dc_1x", "dc_x2", "dc_12", "over_1_5", "over_2_5", "over_3_5", "btts", "home_clean", "away_clean"];
 export const DETAIL_BETS: DetailBet[] = ["ht_home", "ht_draw", "ht_away", "ht_goal", "st_home", "st_draw", "st_away", "st_goal", "corners_8_5", "corners_9_5", "corners_10_5", "corners_11_5", "cards_3_5", "cards_4_5", "cards_5_5", "red_card"];
 export const ALL_BETS: MatchBet[] = [...MATCH_BETS, ...DETAIL_BETS];
+
+/** A bet on one player of a match: "pg:<id>" scores, "pa:<id>" makes an assist, "ps:<id>" (a starter) is substituted. */
+export type PlayerBet = `pg:${number}` | `pa:${number}` | `ps:${number}`;
+export const PLAYER_BET_RE = /^(pg|pa|ps):(\d{1,9})$/;
+export const isPlayerBet = (b: string): b is PlayerBet => PLAYER_BET_RE.test(b);
+export const playerBetId = (b: string): number => Number(PLAYER_BET_RE.exec(b)?.[2] ?? NaN);
+/** The bets that are settled from the match details (half-time, corners, cards, players). */
+export const needsDetails = (b: string): boolean => isDetailBet(b) || isPlayerBet(b);
+export interface LineupPlayer { id: number; name: string; pos: string; side: "home" | "away" }
+export type PlayerFacts = { goals: number[]; assists: number[]; subs: number[] };
+
+/** Chance of each player bet from the team's expected goals and the player's position (G, D, M, F). Null when the bet is not worth offering. */
+export function playerChance(kind: "pg" | "pa" | "ps", pos: string, teamGoals: number): number | null {
+  const share = ({ pg: { F: 0.3, M: 0.1 }, pa: { F: 0.17, M: 0.15 } } as Record<string, Record<string, number>>)[kind]?.[pos];
+  if (kind === "ps") { const p = ({ F: 0.65, M: 0.58, D: 0.32 } as Record<string, number>)[pos]; return p === undefined ? null : p; }
+  if (share === undefined) return null;
+  return Math.round((1 - Math.exp(-teamGoals * share)) * 1000) / 1000;
+}
 export const isDetailBet = (b: string): b is DetailBet => (DETAIL_BETS as string[]).includes(b);
 /** Leagues whose half-time scores, corners and cards are offered (the others only have the final score). */
 export const DETAIL_LEAGUES = ["Serie A", "Serie B"];
@@ -36,7 +54,7 @@ export interface Geo { lat: number; lon: number }
 
 export interface MatchMarketInsert {
   city_id: "world"; category: "sport"; kind: "match_bet"; feed_id: "sportsdb"; lat?: number; lon?: number;
-  params: { league: string; eventId: string; home: string; away: string; bet: MatchBet; kickoff: number; priors: Record<MatchBet, number>; apiId?: string; local?: "true"; testOnly?: boolean };
+  params: { league: string; eventId: string; home: string; away: string; bet: MatchBet | PlayerBet; kickoff: number; priors: Record<MatchBet, number>; apiId?: string; local?: "true"; testOnly?: boolean; player?: { id: number; name: string; side: "home" | "away"; pos: string } };
   closes_at: string; target_at: string; deadline_at: string; odds_yes: number; odds_no: number; dedupe_key: string;
 }
 
@@ -115,10 +133,15 @@ export function matchPriors(home?: TableRow, away?: TableRow, avg = 1.3, top = t
 }
 
 /** What is known about a finished match. Half-time, corners and cards stay undefined when the source does not have them. */
-export interface MatchStats { hg: number; ag: number; htHome?: number | null; htAway?: number | null; corners?: number | null; cards?: number | null; reds?: number | null }
+export interface MatchStats { players?: PlayerFacts | null; hg: number; ag: number; htHome?: number | null; htAway?: number | null; corners?: number | null; cards?: number | null; reds?: number | null }
 
 /** The result of a bet, or null when the figure it needs is not available (the market is then voided and refunded, never guessed). */
-export function evalMatch(bet: MatchBet, s: MatchStats): boolean | null {
+export function evalMatch(bet: MatchBet | PlayerBet, s: MatchStats): boolean | null {
+  if (isPlayerBet(bet)) {
+    if (!s.players) return null;
+    const id = playerBetId(bet);
+    return bet.startsWith("pg") ? s.players.goals.includes(id) : bet.startsWith("pa") ? s.players.assists.includes(id) : s.players.subs.includes(id);
+  }
   if (!isDetailBet(bet)) return evalBet(bet, s.hg, s.ag);
   if (bet.startsWith("ht_") || bet.startsWith("st_")) {
     if (s.htHome === null || s.htHome === undefined || s.htAway === null || s.htAway === undefined) return null;
@@ -148,6 +171,13 @@ export function matchMarket(f: Fixture, bet: MatchBet, priors: Record<MatchBet, 
   };
 }
 
+/** A bet on one player: priced from the position and the team's expected goals, settled from the match events. */
+export function playerMarket(f: Fixture, bet: PlayerBet, player: LineupPlayer, chance: number, priors: Record<MatchBet, number>, geo: Geo | undefined, custom: { by: string | null }): MatchMarketInsert {
+  const m = matchMarket(f, "home_win", priors, geo, false, custom);
+  const odds = computeOdds(clamp(chance, 0.1, 0.9));
+  return { ...m, params: { ...m.params, bet, player: { id: player.id, name: player.name, side: player.side, pos: player.pos } }, odds_yes: odds.yes, odds_no: odds.no, dedupe_key: `sport|${f.eventId}|${bet}` };
+}
+
 const phi = (z: number) => 1 - upper(z);
 /** Chance that the home side wins a game without draws: normal margin around the difference in strength (points scored and conceded per game, pulled to the average). */
 export function twoWayPriors(home: TableRow | undefined, away: TableRow | undefined, cfg: TwoWayCfg): Record<MatchBet, number> {
@@ -172,5 +202,5 @@ export function buildMatchMarkets(fixtures: Fixture[], table: TableRow[], now: n
   return out;
 }
 
-export interface MatchObservation { eventId: string; homeGoals: number | null; awayGoals: number | null; status: string; fetchedAt: number; htHome?: number | null; htAway?: number | null; corners?: number | null; cards?: number | null; reds?: number | null }
+export interface MatchObservation { players?: PlayerFacts | null; eventId: string; homeGoals: number | null; awayGoals: number | null; status: string; fetchedAt: number; htHome?: number | null; htAway?: number | null; corners?: number | null; cards?: number | null; reds?: number | null }
 export const FINISHED = new Set(["FT", "AET", "PEN", "AOT", "AP", "Match Finished"]);

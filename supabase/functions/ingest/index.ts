@@ -6,9 +6,10 @@ import { parseTrainTripId } from "../_shared/shared/adapters/viaggiatreno.ts";
 import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
+import { FUELS, METALS, OIL, buildFuelMarkets, buildMetalMarkets, buildOilMarkets, isFuel, isMetal, isOil, type FuelKey, type MetalKey, type OilKey } from "../_shared/shared/ticks.ts";
 import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildAlertMarkets, alertLevel, alertQueryDate, ALERT_AREAS, ALERT_HAZARDS, ALERT_URL, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
-import { buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, LEAGUES, type Fixture, type Geo, type TableRow } from "../_shared/shared/sport.ts";
-import { apiFootball, apiKey, fetchDetails, loadTable } from "../_lib/football.ts";
+import { buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, type Fixture, type Geo, type TableRow } from "../_shared/shared/sport.ts";
+import { apiFootball, apiKey, fetchDetails, fetchPlayerFacts, loadTable } from "../_lib/football.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
 
@@ -389,6 +390,47 @@ async function wikiViews(title: string, fromEpoch: number, toEpoch: number): Pro
   return new Map(((json?.items ?? []) as { timestamp: string; views: number }[]).map((i) => [i.timestamp.slice(0, 8), i.views]));
 }
 
+/** Spot metals from gold-api.com (no key). A price older than 20 minutes means the market is shut: it is not used. */
+async function fetchMetals(now: number): Promise<Partial<Record<MetalKey, number>>> {
+  const out: Partial<Record<MetalKey, number>> = {};
+  for (const [k, cfg] of Object.entries(METALS) as [MetalKey, (typeof METALS)[MetalKey]][]) {
+    const j = await getJson(`https://api.gold-api.com/price/${cfg.sym}`);
+    const at = Date.parse(String(j?.updatedAt ?? "")) / 1000;
+    if (typeof j?.price === "number" && Number.isFinite(at) && now - at <= 20 * 60) out[k] = j.price;
+  }
+  return out;
+}
+
+/** The Ministry's daily list of every station's prices: the simple average of the self-service price per fuel, and the date the list refers to. */
+async function fetchFuel(): Promise<{ date: string; avgs: Partial<Record<FuelKey, number>> }> {
+  const text = new TextDecoder().decode(await fetchBytes("https://www.mimit.gov.it/images/exportCSV/prezzo_alle_8.csv", UA));
+  const date = /Estrazione del (\d{4}-\d{2}-\d{2})/.exec(text.slice(0, 80))?.[1];
+  if (!date) throw new Error("fuel: no extraction date");
+  const sums: Record<string, { n: number; t: number }> = {};
+  for (const line of text.split("\n")) {
+    const c = line.split("|");
+    if (c.length < 4 || c[3] !== "1") continue;
+    const price = Number(c[2]);
+    if (!(price > 0.8 && price < 4)) continue;
+    const e = (sums[c[1]!] ??= { n: 0, t: 0 }); e.n++; e.t += price;
+  }
+  const avgs: Partial<Record<FuelKey, number>> = {};
+  for (const [k, cfg] of Object.entries(FUELS) as [FuelKey, (typeof FUELS)[FuelKey]][]) { const e = sums[cfg.csv]; if (e && e.n > 5000) avgs[k] = Math.round((e.t / e.n) * 1000) / 1000; }
+  return { date, avgs };
+}
+
+/** Daily crude oil spot prices (EIA open data; needs the free EIA_API_KEY). Newest first. */
+async function fetchOil(): Promise<Partial<Record<OilKey, { date: string; value: number }[]>>> {
+  const key = Deno.env.get("EIA_API_KEY");
+  if (!key) return {};
+  const out: Partial<Record<OilKey, { date: string; value: number }[]>> = {};
+  for (const [k, cfg] of Object.entries(OIL) as [OilKey, (typeof OIL)[OilKey]][]) {
+    const j = await getJson(`https://api.eia.gov/v2/petroleum/pri/spt/data/?api_key=${encodeURIComponent(key)}&frequency=daily&data[0]=value&facets[series][]=${cfg.eia}&sort[0][column]=period&sort[0][direction]=desc&length=12`);
+    out[k] = ((j?.response?.data ?? []) as { period: string; value: string }[]).map((r) => ({ date: r.period, value: Number(r.value) })).filter((r) => Number.isFinite(r.value));
+  }
+  return out;
+}
+
 async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
   const notes: string[] = [];
   // 1. Instants that have just passed: record the number once, as a fact.
@@ -434,6 +476,21 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       const kpDue = todo("kp");
       if (kpDue.length) { const { observed } = await kpSeries(); for (const at of kpDue) { const v = observed.get(at - 3 * 3600); if (v !== undefined) rows.push({ series: "kp", at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
     } catch (e) { notes.push(`kp: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const metalDue = [...need.keys()].filter(isMetal).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (metalDue.length) { const pr = await fetchMetals(now); for (const { x, at } of metalDue) { const v = pr[x.slice(6) as MetalKey]; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
+    } catch (e) { notes.push(`metals: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    // fuel and oil are published once a day: look every 10 minutes, and the day's file must be the one the question is about
+    if (Math.floor(now / 60) % 10 === 0) {
+      try {
+        const fuelDue = [...need.keys()].filter(isFuel).flatMap((x) => todo(x).map((at) => ({ x, at })));
+        if (fuelDue.length) { const f = await fetchFuel(); for (const { x, at } of fuelDue) { const v = f.avgs[x.slice(5) as FuelKey]; if (v !== undefined && f.date === new Date((at - 86400) * 1000).toISOString().slice(0, 10)) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
+      } catch (e) { notes.push(`fuel: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+      try {
+        const oilDue = [...need.keys()].filter(isOil).flatMap((x) => todo(x).map((at) => ({ x, at })));
+        if (oilDue.length) { const o = await fetchOil(); for (const { x, at } of oilDue) { const day = new Date((at - 86400) * 1000).toISOString().slice(0, 10), v = o[x.slice(4) as OilKey]?.find((r) => r.date === day)?.value; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
+      } catch (e) { notes.push(`oil: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    }
     // Wikimedia publishes a day's count some hours after midnight: look every 10 minutes, not every minute.
     for (const series of Math.floor(now / 60) % 10 === 0 ? [...need.keys()].filter((s) => s.startsWith("wiki:")) : []) {
       try {
@@ -470,8 +527,20 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       }
       markets.push(...buildWikiMarkets(means, now)); ok++;
     } catch (e) { notes.push(`wiki: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    const extraHist: Record<string, unknown>[] = [];
+    const hourIso = new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString();
+    try { const mp = await fetchMetals(now); markets.push(...buildMetalMarkets(mp, now)); for (const [k, v] of Object.entries(mp)) extraHist.push({ series: `metal:${k}`, at: hourIso, value: v }); ok++; } catch (e) { notes.push(`metals: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    if (Math.floor(now / 3600) % 6 === 1) {
+      try { const f = await fetchFuel(); markets.push(...buildFuelMarkets(f.avgs, f.date, now)); for (const [k, v] of Object.entries(f.avgs)) extraHist.push({ series: `fuel:${k}`, at: `${f.date}T00:00:00Z`, value: v }); ok++; } catch (e) { notes.push(`fuel: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+      try {
+        const o = await fetchOil(); const latest: Partial<Record<OilKey, { date: string; value: number }>> = {};
+        for (const [k, rows2] of Object.entries(o) as [OilKey, { date: string; value: number }[]][]) { if (rows2[0]) latest[k] = rows2[0]; for (const r of rows2) extraHist.push({ series: `oil:${k}`, at: `${r.date}T00:00:00Z`, value: r.value }); }
+        markets.push(...buildOilMarkets(latest, now)); ok++;
+      } catch (e) { notes.push(`oil: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    }
     if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
     notes.push(`${markets.length} offered`);
+    if (extraHist.length) await sb.from("tick_history").upsert(extraHist, { onConflict: "series,at" });
     // History for the charts: coin prices by the hour (last ~2 days), Kp by 3-hour window, page views by day.
     try {
       const hist: Record<string, unknown>[] = [];
@@ -523,9 +592,15 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
   // 1b. Half-time score, corners and cards for the matches that are over (needs the API-Football key; at most a few matches per minute, and never past today's free quota).
   if (apiKey()) {
     try {
-      const { data: wait } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").in("params->>bet", DETAIL_BETS as string[]).lte("target_at", new Date(now * 1000).toISOString()).limit(60);
-      const todo = new Map<string, { apiId: string; kickoff: number }>();
-      for (const m of wait ?? []) { const p = m.params as { eventId: string; apiId?: string; kickoff: number }; if (p.apiId) todo.set(String(p.eventId), { apiId: p.apiId, kickoff: p.kickoff }); }
+      const { data: wait } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").lte("target_at", new Date(now * 1000).toISOString()).limit(300);
+      const todo = new Map<string, { apiId: string; kickoff: number; detail: boolean; players: boolean }>();
+      for (const m of wait ?? []) {
+        const p = m.params as { eventId: string; apiId?: string; kickoff: number; bet: string };
+        if (!p.apiId || !(isDetailBet(p.bet) || isPlayerBet(p.bet))) continue;
+        const cur = todo.get(String(p.eventId)) ?? { apiId: p.apiId, kickoff: p.kickoff, detail: false, players: false };
+        if (isPlayerBet(p.bet)) cur.players = true; else cur.detail = true;
+        todo.set(String(p.eventId), cur);
+      }
       if (todo.size) {
         const { data: have } = await sb.from("match_details").select("event_id,fetched_at,attempted_at,corners").in("event_id", [...todo.keys()]);
         const state = new Map((have ?? []).map((r) => [r.event_id as string, r]));
@@ -539,8 +614,10 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
           const d = r.details;
           const final = !!d && FINISHED.has(d.status);
           // statistics can appear a little after the final whistle: look again every 10 minutes for up to 6 hours
-          const complete = final && d!.corners !== null || final && now - t.kickoff > 6 * 3600;
-          await sb.from("match_details").upsert({ event_id: eventId, api_id: t.apiId, kickoff: new Date(t.kickoff * 1000).toISOString(), status: d?.status ?? "", ht_home: d?.htHome ?? null, ht_away: d?.htAway ?? null, corners: d?.corners ?? null, cards: d?.cards ?? null, reds: d?.reds ?? null, attempted_at: new Date().toISOString(), fetched_at: complete ? new Date().toISOString() : null }, { onConflict: "event_id" });
+          let facts = null as Awaited<ReturnType<typeof fetchPlayerFacts>>["facts"];
+          if (final && t.players) facts = (await fetchPlayerFacts(t.apiId)).facts;
+          const complete = final && (!t.detail || d!.corners !== null) && (!t.players || facts !== null) || final && now - t.kickoff > 6 * 3600;
+          await sb.from("match_details").upsert({ event_id: eventId, api_id: t.apiId, kickoff: new Date(t.kickoff * 1000).toISOString(), status: d?.status ?? "", ht_home: d?.htHome ?? null, ht_away: d?.htAway ?? null, corners: d?.corners ?? null, cards: d?.cards ?? null, reds: d?.reds ?? null, players: facts, attempted_at: new Date().toISOString(), fetched_at: complete ? new Date().toISOString() : null }, { onConflict: "event_id" });
           notes.push(`details ${eventId}: ${complete ? "ok" : r.error ?? d?.status ?? "wait"}`);
           if (r.remaining !== null && r.remaining <= 4) break;
         }

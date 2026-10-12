@@ -145,3 +145,64 @@ describe("two-way sports (basketball, hockey…)", () => {
     expect(Date.parse(m[0]!.target_at) / 1000).toBe(NOW + 7200 + 3 * 3600);
   });
 });
+
+import { isPlayerBet, playerBetId, playerChance, playerMarket } from "../shared/sport.ts";
+describe("player bets", () => {
+  it("recognises the bet ids", () => {
+    expect(isPlayerBet("pg:123")).toBe(true); expect(isPlayerBet("ps:9")).toBe(true); expect(isPlayerBet("pg:abc")).toBe(false); expect(isPlayerBet("home_win")).toBe(false); expect(playerBetId("pa:77")).toBe(77);
+  });
+  it("prices by position and team goals, and skips what is not worth offering", () => {
+    const fw = playerChance("pg", "F", 1.4)!, mf = playerChance("pg", "M", 1.4)!;
+    expect(fw).toBeGreaterThan(0.3); expect(fw).toBeLessThan(0.45); expect(mf).toBeGreaterThan(0.08); expect(mf).toBeLessThan(fw);
+    expect(playerChance("pg", "D", 1.4)).toBeNull(); expect(playerChance("pg", "G", 1.4)).toBeNull(); expect(playerChance("pa", "D", 1.4)).toBeNull();
+    expect(playerChance("ps", "F", 1.4)!).toBeGreaterThan(0.5); expect(playerChance("ps", "G", 1.4)).toBeNull();
+    expect(playerChance("pg", "F", 2.2)!).toBeGreaterThan(fw);
+  });
+  it("settles from the match facts and waits (then voids) without them", () => {
+    const facts = { goals: [10, 10, 22], assists: [11], subs: [30, 31] };
+    expect(evalMatch("pg:10", { hg: 3, ag: 0, players: facts })).toBe(true); expect(evalMatch("pg:99", { hg: 3, ag: 0, players: facts })).toBe(false);
+    expect(evalMatch("pa:11", { hg: 3, ag: 0, players: facts })).toBe(true); expect(evalMatch("pa:10", { hg: 3, ag: 0, players: facts })).toBe(false);
+    expect(evalMatch("ps:30", { hg: 3, ag: 0, players: facts })).toBe(true); expect(evalMatch("ps:12", { hg: 3, ag: 0, players: facts })).toBe(false);
+    expect(evalMatch("pg:10", { hg: 3, ag: 0 })).toBeNull();
+    const ev = { kind: "match_bet", category: "sport", eventId: "1", bet: "pg:10", cityId: "world", feedId: "sportsdb", closesAt: 1000, targetAt: 2000, deadlineAt: 5000 } as never;
+    const base = { event: ev, feed: { feedId: "sportsdb", lastOkAt: 3000 }, staleAfterSec: 7200, delays: [], weather: [] } as never;
+    const withFacts = { ...(base as object), now: 3000, match: { eventId: "1", homeGoals: 3, awayGoals: 0, status: "FT", fetchedAt: 2500, players: facts } };
+    expect((resolveEvent(withFacts as never) as { outcome?: string }).outcome).toBe("yes");
+    expect((resolveEvent({ ...(base as object), now: 6000, match: { eventId: "1", homeGoals: 3, awayGoals: 0, status: "FT", fetchedAt: 2500 } } as never) as { status: string }).status).toBe("void");
+  });
+  it("builds a market with the player and a distinct dedupe key", () => {
+    const f = { eventId: "5", league: "Serie A", home: "Napoli", away: "Verona", kickoff: 2_000_000_000, apiId: "77" };
+    const pr = matchPriors(undefined, undefined, 1.3, true);
+    const m = playerMarket(f, "pg:10", { id: 10, name: "Scott McTominay", pos: "M", side: "home" }, 0.14, pr, undefined, { by: null });
+    expect(m.params.bet).toBe("pg:10"); expect(m.params.player?.name).toBe("Scott McTominay"); expect(m.dedupe_key).toBe("sport|5|pg:10"); expect(m.odds_yes).toBeGreaterThan(m.odds_no);
+  });
+});
+
+import { buildFuelMarkets, buildMetalMarkets, buildOilMarkets, tickDef, isSpot } from "../shared/ticks.ts";
+describe("metals, fuel and oil", () => {
+  const MON = Date.UTC(2026, 9, 12, 10, 0, 0) / 1000; // Monday 10:00 UTC
+  it("metals: weekday questions at 12 and 18 UTC on a friendly step, priced from the current price", () => {
+    const m = buildMetalMarkets({ xau: 4172.9, xag: 60.74, hg: 6.64 }, MON);
+    expect(m.length).toBeGreaterThanOrEqual(6);
+    for (const x of m) { expect([12, 18]).toContain((Date.parse(x.target_at) / 1000 % 86400) / 3600); expect(x.params.series.startsWith("metal:")).toBe(true); expect(x.odds_yes).toBeGreaterThan(1.15); expect(x.odds_yes).toBeLessThan(4.5); }
+    const gold = m.find((x) => x.params.series === "metal:xau")!; expect(gold.params.threshold % 10).toBe(0); expect(gold.params.digits).toBe(0);
+    expect(m.find((x) => x.params.series === "metal:xag")!.params.threshold % 0.25).toBeCloseTo(0, 6);
+    expect(isSpot("metal:xau")).toBe(true); expect(tickDef("metal:xau")!.category).toBe("finance");
+  });
+  it("metals: nothing on a weekend", () => {
+    const SAT = Date.UTC(2026, 9, 10, 8, 0, 0) / 1000;
+    expect(buildMetalMarkets({ xau: 4172.9 }, SAT).every((x) => new Date(x.target_at).getUTCDay() !== 6 && new Date(x.target_at).getUTCDay() !== 0)).toBe(true);
+  });
+  it("fuel: questions about the next published days, closing before the day ends, never a near-certain one", () => {
+    const m = buildFuelMarkets({ benzina: 2.035, gasolio: 2.251 }, "2026-10-11", MON);
+    expect(m.length).toBeGreaterThanOrEqual(2);
+    for (const x of m) { expect(Date.parse(x.target_at)).toBeGreaterThan(Date.parse(x.closes_at)); expect(x.odds_yes).toBeGreaterThan(1.25); expect(x.params.digits).toBe(3); expect(x.params.unit).toBe("€/l"); }
+    expect(m.some((x) => x.params.series === "fuel:benzina" && Math.abs(x.params.threshold - 2.035) < 0.011)).toBe(true);
+  });
+  it("oil: only weekdays, closing at noon UTC of the day asked about", () => {
+    const m = buildOilMarkets({ brent: { date: "2026-10-09", value: 82.4 } }, MON); // Friday value
+    expect(m.length).toBe(2);
+    for (const x of m) { const d = new Date(Date.parse(x.target_at) - 86400_000); expect([0, 6]).not.toContain(d.getUTCDay()); expect(new Date(x.closes_at).getUTCHours()).toBe(12); expect(x.params.threshold % 0.5).toBe(0); }
+    expect(buildOilMarkets({}, MON)).toHaveLength(0);
+  });
+});

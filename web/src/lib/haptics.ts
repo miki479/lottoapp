@@ -2,7 +2,7 @@ import { reducedMotion } from "./anim.ts";
 
 /** Light haptic feedback where the device supports it (Android browsers; ignored elsewhere). */
 function buzz(pattern: number | number[]) {
-  try { if (!reducedMotion() && "vibrate" in navigator) navigator.vibrate(pattern); } catch { /* not supported */ }
+  try { if (!reducedMotion() && "vibrate" in navigator && (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive !== false) navigator.vibrate(pattern); } catch { /* not supported */ }
 }
 export const haptic = {
   tap: () => buzz(10),

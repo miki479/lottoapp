@@ -1,5 +1,5 @@
 // Football helpers shared by the Edge Functions: team strengths from played matches, and the match-details source (API-Football).
-import { tableFromResults, type TableRow } from "../_shared/shared/sport.ts";
+import { tableFromResults, type LineupPlayer, type PlayerFacts, type TableRow } from "../_shared/shared/sport.ts";
 import type { db } from "./common.ts";
 
 type Db = ReturnType<typeof db>;
@@ -71,4 +71,32 @@ export async function fetchDetails(apiId: string): Promise<{ details: Details | 
     else if (corners !== null) { out.cards = 0; out.reds = 0; }
   }
   return { details: out, remaining: s.remaining ?? f.remaining, error: s.ok ? undefined : s.error };
+}
+
+interface ApiLineup { startXI?: { player?: { id?: number; name?: string; pos?: string } }[] }
+
+/** The starting elevens of a match (home first). Empty while the lineups are not published yet. */
+export async function fetchLineup(apiId: string): Promise<{ players: LineupPlayer[]; remaining: number | null; error?: string }> {
+  const r = await apiFootball(`/fixtures/lineups?fixture=${encodeURIComponent(apiId)}`);
+  if (!r.ok) return { players: [], remaining: r.remaining, error: r.error };
+  const teams = (r.json?.response ?? []) as ApiLineup[];
+  if (teams.length !== 2) return { players: [], remaining: r.remaining };
+  const players: LineupPlayer[] = [];
+  teams.forEach((t, i) => { for (const x of t.startXI ?? []) { const p = x.player; if (p?.id && p.name && p.pos) players.push({ id: p.id, name: p.name, pos: p.pos, side: i === 0 ? "home" : "away" }); } });
+  return { players, remaining: r.remaining };
+}
+
+interface ApiEvent { type?: string; detail?: string; player?: { id?: number | null }; assist?: { id?: number | null } }
+
+/** Who scored, who made an assist and who took part in a substitution (a starter in a substitution is the one who went off). Null if the source could not answer. */
+export async function fetchPlayerFacts(apiId: string): Promise<{ facts: PlayerFacts | null; remaining: number | null; error?: string }> {
+  const r = await apiFootball(`/fixtures/events?fixture=${encodeURIComponent(apiId)}`);
+  if (!r.ok) return { facts: null, remaining: r.remaining, error: r.error };
+  const ev = (r.json?.response ?? []) as ApiEvent[];
+  const facts: PlayerFacts = { goals: [], assists: [], subs: [] };
+  for (const e of ev) {
+    if (e.type === "Goal" && e.detail !== "Own Goal" && e.detail !== "Missed Penalty") { if (e.player?.id) facts.goals.push(e.player.id); if (e.assist?.id) facts.assists.push(e.assist.id); }
+    if (e.type === "subst") { if (e.player?.id) facts.subs.push(e.player.id); if (e.assist?.id) facts.subs.push(e.assist.id); }
+  }
+  return { facts, remaining: r.remaining };
 }

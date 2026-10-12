@@ -947,3 +947,38 @@ textarea.field { resize: vertical; min-height: 84px; }
 @keyframes dmburst { 0% { transform: scale(.2); opacity: 1; } 70% { opacity: 1; } 100% { transform: scale(2.6); opacity: 0; } }
 @keyframes flick { 0%, 100% { transform: scale(1) rotate(-3deg); } 50% { transform: scale(1.18) rotate(3deg); } }
 @media (prefers-reduced-motion: reduce) { .dmrow, .dmchest, .dmbtn, .dmico, .dmbar i, .dmbar i::after, .dmstreak svg, .dmok { animation: none !important; } }
+
+.plrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.plname { display: flex; flex-direction: column; min-width: 0; } .plname b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .plname em { font-style: normal; font-size: 11px; color: var(--muted); font-weight: 700; }
+.pls { display: grid; grid-template-columns: repeat(3, 64px); gap: 6px; } .oddsbtn.mini { min-height: 44px; padding: 4px 2px; gap: 0; } .oddsbtn.mini span { font-size: 10.5px; } .oddsbtn.mini b { font-size: 14px; }
+
+/* metals, fuel, oil scenes */
+.mscene.tick.metal .mtstack { transform-box: fill-box; transform-origin: 50% 100%; transition: transform .8s cubic-bezier(.2,.8,.2,1), filter .8s; animation: mtfloat 3.4s ease-in-out infinite alternate; }
+.mscene.tick.metal.s-yes .mtstack { transform: translateY(-10px) scale(1.06); animation: none; filter: drop-shadow(0 0 8px rgba(255,224,138,.55)); } .mscene.tick.metal.s-no .mtstack { transform: translateY(10px) scale(.95); animation: none; filter: brightness(.7); }
+.mtshine { animation: mtsweep 3.6s ease-in-out infinite; } .mtspark { transform-box: fill-box; transform-origin: center; animation: mttwink 2.6s ease-in-out infinite; animation-delay: var(--d, 0ms); }
+.mscene.tick.fuel .funeedle { transform-box: fill-box; transform-origin: 50% 86%; transform: rotate(-20deg); animation: fuswing 3s ease-in-out infinite alternate; transition: transform .8s cubic-bezier(.2,.8,.2,1); } .mscene.tick.fuel .fugauge { transform-origin: 74px 58px; }
+.mscene.tick.fuel.s-yes .funeedle { animation: none; transform: rotate(52deg); } .mscene.tick.fuel.s-no .funeedle { animation: none; transform: rotate(-58deg); }
+.mscene.tick.fuel .fudig { animation: fublink 1.8s steps(2) infinite; } .mscene.tick.fuel.s-yes .fudig { fill: #ff8a6b; } .mscene.tick.fuel.s-no .fudig { fill: #46f0a1; }
+.mscene.tick.fuel .fudrop { animation: fudrop 1.5s ease-in infinite; }
+.mscene.tick.oil .oinod { transform-box: view-box; transform-origin: 150px 38px; animation: oinod 2.4s ease-in-out infinite alternate; } .mscene.tick.oil.s-yes .oinod { animation-duration: 1.1s; } .mscene.tick.oil.s-no .oinod { animation-duration: 4.2s; }
+.mscene.tick.oil .oilevel, .mscene.tick.oil .oiwave { transition: transform .9s cubic-bezier(.2,.8,.2,1); } .mscene.tick.oil.s-yes .oilevel, .mscene.tick.oil.s-yes .oiwave { transform: translateY(-14px); } .mscene.tick.oil.s-no .oilevel, .mscene.tick.oil.s-no .oiwave { transform: translateY(12px); }
+.mscene.tick.oil .oiwave { animation: oiwave 2s linear infinite; } .mscene.tick.oil .oidrop { animation: oidrop 1.2s ease-in infinite; }
+@keyframes mtfloat { from { transform: translateY(0); } to { transform: translateY(-4px); } }
+@keyframes mtsweep { 0%, 20% { transform: translateX(0) skewX(-22deg); } 80%, 100% { transform: translateX(380px) skewX(-22deg); } }
+@keyframes mttwink { 0%, 100% { transform: scale(.2); opacity: 0; } 50% { transform: scale(1); opacity: .95; } }
+@keyframes fuswing { from { transform: rotate(-32deg); } to { transform: rotate(34deg); } }
+@keyframes fublink { 0%, 100% { opacity: 1; } 50% { opacity: .65; } }
+@keyframes fudrop { 0% { transform: translateY(-2px); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(8px); opacity: 0; } }
+@keyframes oinod { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+@keyframes oiwave { from { transform: translateX(0); } to { transform: translateX(-20px); } }
+@keyframes oidrop { 0% { transform: translate(0, -2px); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(0, 26px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .mscene.tick.metal *, .mscene.tick.fuel *, .mscene.tick.oil * { animation: none !important; } }
+
+.dmrow.legend { border-color: #ffb100; background: linear-gradient(120deg, color-mix(in srgb, #ffd24a 22%, var(--surface-2)), color-mix(in srgb, #ff8a3d 14%, var(--surface-2))); }
+.dmrow.legend::before { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%); transform: translateX(-100%); animation: dmshine 3.2s ease-in-out infinite; pointer-events: none; }
+.dmrow.legend .dmico { background: linear-gradient(135deg, #ffd24a, #ff8a3d); color: #fff; }
+.dmleg { display: inline-block; margin-right: 6px; padding: 1px 7px; border-radius: 999px; background: #ff9d1f; color: #fff; font-style: normal; font-size: 10.5px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; vertical-align: 1px; }
+
+.evhead { flex-wrap: wrap; row-gap: 8px; } .evhead h2 { white-space: nowrap; } .createbtn, .filterbtn { white-space: nowrap; }
+.dmbtn { flex-direction: column; gap: 0; line-height: 1.15; min-width: 78px; padding: 4px 12px; } .dmbtn b { font-size: 12px; opacity: .92; }
+.dmrow, .dmchest { grid-template-columns: 44px minmax(0, 1fr) auto; }

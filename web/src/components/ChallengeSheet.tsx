@@ -2,6 +2,7 @@ import { Share2, X } from "lucide-preact";
 import { useCallback, useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
+import { every } from "../lib/poll.ts";
 import { countdown, money } from "../lib/format.ts";
 import { FriendPicker } from "./FriendPicker.tsx";
 import { Sheet } from "./Sheet.tsx";
@@ -19,7 +20,7 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
   const [c, setC] = useState<Challenge | null | undefined>(undefined);
   const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null), [copied, setCopied] = useState(false);
   const load = useCallback(async () => { const { data } = await sb.rpc("get_challenge", { p_code: p.code }); setC((data as Challenge | null) ?? null); }, [p.code]);
-  useEffect(() => { load(); const i = setInterval(load, 15000); return () => clearInterval(i); }, [load]);
+  useEffect(() => { load(); return every(load, 20_000); }, [load]);
   const fail = (e: { message?: string } | null) => { const key = Object.keys(f.errors).find((k) => e?.message?.includes(k)) as keyof typeof f.errors | undefined; const k2 = Object.keys(p.msg.fx.errors).find((k) => e?.message?.includes(k)) as keyof typeof p.msg.fx.errors | undefined; setErr(k2 ? p.msg.fx.errors[k2] : f.errors[key ?? "generic"]); };
   const act = async (fn: string, args: Record<string, unknown>) => {
     if (!p.registered) { p.onAuth(); return; }

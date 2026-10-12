@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-preact";
-import { useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { INTL_TAG } from "../i18n/index.ts";
 import { fmtOdds, type MarketRow } from "../lib/format.ts";
@@ -10,6 +10,9 @@ import { sb } from "../lib/api.ts";
 import { Sheet } from "./Sheet.tsx";
 import { Users, X } from "lucide-preact";
 
+interface LinePlayer { id: number; name: string; pos: string; side: "home" | "away"; pg: { yes: number; no: number } | null; pa: { yes: number; no: number } | null; ps: { yes: number; no: number } | null }
+/** Lineups already seen (an hour before a match they do not change): asked once, not at every tap. */
+const LINEUPS = new Map<string, { at: number; v: { players: LinePlayer[]; ready: boolean } }>();
 export interface Match { eventId: string; league: string; home: string; away: string; kickoff: number; priors: Record<string, number>; markets: Map<string, MarketRow> }
 
 /** Groups the open football markets by match. */
@@ -54,7 +57,16 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
   const [open, setOpen] = useState<Match | null>(null), [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null);
   const [adv, setAdv] = useState(() => { try { return localStorage.getItem("sportadv") === "1"; } catch { return false; } });
   const setMode = (v: boolean) => { setAdv(v); try { localStorage.setItem("sportadv", v ? "1" : "0"); } catch { /* */ } };
-  const [tab, setTab] = useState<"main" | "half" | "corners" | "cards">("main");
+  const [tab, setTab] = useState<"main" | "half" | "corners" | "cards" | "players">("main");
+  const [lineup, setLineup] = useState<{ players: LinePlayer[]; ready: boolean } | null | undefined>(undefined);
+  useEffect(() => {
+    if (tab !== "players" || !open) return;
+    const hit = LINEUPS.get(open.eventId);
+    if (hit && Date.now() - hit.at < 5 * 60_000 && hit.v.ready) { setLineup(hit.v); return; }
+    let live = true; setLineup(undefined);
+    sb.functions.invoke("market-offer", { body: { type: "lineup", eventId: open.eventId } }).then(({ data }) => { const v = (data as { players: LinePlayer[]; ready: boolean } | null) ?? null; if (v) LINEUPS.set(open.eventId, { at: Date.now(), v }); if (live) setLineup(v); });
+    return () => { live = false; };
+  }, [tab, open?.eventId]);
   const hasDetails = !!open && p.details && DETAIL_LEAGUES.includes(open.league);
   const line = (l: string) => (p.locale === "it" ? l.replace("_", ",") : l.replace("_", "."));
   const leagues = useMemo(() => [...new Set(p.matches.map((m) => m.league))], [p.matches]);
@@ -114,7 +126,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
           <div class="shead"><h2>{open.home} – {open.away}</h2><button class="iconbtn" onClick={() => setOpen(null)} aria-label={p.msg.common.close}><X size={22} /></button></div>
           <span class="byline">{open.league} · {when(open.kickoff)}</span>
           {err && <p class="formerr" role="alert">{err}</p>}
-          {hasDetails && <div class="mkchips">{([["main", u.finalT], ["half", u.halves], ["corners", u.cornersT], ["cards", u.cardsT]] as const).map(([k, l]) => <button key={k} class={`mkchip ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>}
+          {hasDetails && <div class="mkchips">{([["main", u.finalT], ["half", u.halves], ["corners", u.cornersT], ["cards", u.cardsT], ["players", u.players]] as const).map(([k, l]) => <button key={k} class={`mkchip ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>}
           {(tab === "main" || !hasDetails) && <>
           {group(u.result, <>
             <OddsBtn label="1" odds={oddsOf(open, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "home_win", "yes")} />
@@ -164,6 +176,23 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
               <OddsBtn label={u.over} odds={oddsOf(open, "corners_11_5", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "corners_11_5", "yes")} />
               <OddsBtn label={u.under} odds={oddsOf(open, "corners_11_5", "no")} locale={p.locale} busy={busy} onClick={() => go(open, "corners_11_5", "no")} />
             </>)}
+          </>}
+          {tab === "players" && hasDetails && <>
+            {lineup === undefined && <div class="sk s" />}
+            {lineup !== undefined && !(lineup?.ready) && <p class="hint">{u.noLineup}</p>}
+            {lineup?.ready && (["home", "away"] as const).map((side) => (
+              <section key={side} class="stack plteam" style="gap:6px">
+                <span class="detail">{side === "home" ? open.home : open.away}</span>
+                {lineup.players.filter((x) => x.side === side).map((x) => (
+                  <div class="plrow" key={x.id}>
+                    <span class="plname"><b>{x.name}</b><em>{x.pos}</em></span>
+                    <span class="pls">
+                      {([["pg", u.pgL], ["pa", u.paL], ["ps", u.psL]] as const).map(([k, l]) => x[k] ? <button key={k} class="oddsbtn mini" disabled={busy} onClick={() => go(open, `${k}:${x.id}`, "yes")}><span>{l}</span><b class="num">{fmtOdds(x[k]!.yes, p.locale)}</b></button> : <span key={k} />)}
+                    </span>
+                  </div>
+                ))}
+              </section>
+            ))}
           </>}
           {tab === "cards" && hasDetails && <>
             {group(`${u.cardsT} ${line("3_5")}`, <>

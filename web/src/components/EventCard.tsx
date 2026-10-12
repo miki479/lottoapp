@@ -29,7 +29,7 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
   const { hint, show, clear } = useHint();
   const left = Date.parse(m.closes_at) - now;
   const isRain = isYesNo(m.kind);
-  const who = m.kind === "match_bet" ? String(m.params.league ?? "") : m.kind === "tick_gt" ? String(m.params.label ?? "") : isRain ? cityName(city, locale) : `${String(m.params.routeName ?? "")} · ${cityName(city, locale)}`;
+  const who = m.kind === "match_bet" ? String(m.params.league ?? "") : m.kind === "tick_gt" ? (msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? "")) : isRain ? cityName(city, locale) : `${String(m.params.routeName ?? "")} · ${cityName(city, locale)}`;
   const flashOn = (m.flash_multiplier ?? 1) > 1 && !!m.flash_until && Date.parse(m.flash_until) > now;
   return (
     <article class={`card event ${(p.friends ?? 0) > 0 ? "has-friends" : ""} ${m.category} ${p.top ? "is-top" : ""} ${flashOn ? "is-flash" : ""}`} style={`--i:${Math.min(p.index, 10)}`}>
@@ -39,7 +39,7 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
       <div class="meta">
         <span class="kind"><Kind size={m.category === "train" ? 10 : m.category === "bus" ? 12 : 14} /></span>
         <span class="detail">{who}</span>
-        {p.showCity && <Flag cc={city.country} size={13} />}
+        {p.showCity && m.city_id !== "world" && <Flag cc={city.country} size={13} />}
         <span class={`timer ${left < 300_000 ? "hot" : ""}`}><Clock size={12} style="vertical-align:-1px;margin-right:4px" />{countdown(left)}</span>
       </div>
       <p class="q"><Q m={m} msg={msg} locale={locale} city={cityName(city, locale)} tz={city.timezone} now={new Date(now)} /></p>

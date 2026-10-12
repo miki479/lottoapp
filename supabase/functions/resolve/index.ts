@@ -2,7 +2,7 @@
 import { resolveEvent } from "../_shared/shared/resolve.ts";
 import { historyKey, marketToEvent, type MarketRow } from "../_shared/shared/market.ts";
 import { parseStrikeRss } from "../_shared/shared/strikes.ts";
-import { isDetailBet, type MatchObservation } from "../_shared/shared/sport.ts";
+import { isDetailBet, isPlayerBet, type MatchObservation } from "../_shared/shared/sport.ts";
 import type { DelayObservation, MetricObservation, QuakeReading, StrikeReading, TickObservation, TrafficObservation, WeatherObservation } from "../_shared/shared/types.ts";
 import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
 import { lastNotifyError, notifyFlash, notifyInvites, notifyModeration, notifyResults, notifyStreak } from "../_lib/notify.ts";
@@ -57,9 +57,9 @@ Deno.serve(safe(async (req) => {
       } else if (event.kind === "match_bet") {
         const { data } = await sb.from("match_results").select("event_id,home_goals,away_goals,status,fetched_at").eq("event_id", event.eventId).maybeSingle();
         if (data) match = { eventId: data.event_id, homeGoals: data.home_goals, awayGoals: data.away_goals, status: data.status, fetchedAt: Date.parse(data.fetched_at) / 1000 };
-        if (match && isDetailBet(event.bet)) {
-          const { data: d } = await sb.from("match_details").select("ht_home,ht_away,corners,cards,reds,fetched_at").eq("event_id", event.eventId).maybeSingle();
-          if (d?.fetched_at) match = { ...match, htHome: d.ht_home, htAway: d.ht_away, corners: d.corners, cards: d.cards, reds: d.reds };
+        if (match && (isDetailBet(event.bet) || isPlayerBet(event.bet))) {
+          const { data: d } = await sb.from("match_details").select("ht_home,ht_away,corners,cards,reds,players,fetched_at").eq("event_id", event.eventId).maybeSingle();
+          if (d?.fetched_at) match = { ...match, htHome: d.ht_home, htAway: d.ht_away, corners: d.corners, cards: d.cards, reds: d.reds, players: d.players };
         }
       } else if (event.kind === "tick_gt") {
         const { data } = await sb.from("tick_observations").select("series,at,value,fetched_at").eq("series", event.series).eq("at", new Date(event.targetAt * 1000).toISOString());

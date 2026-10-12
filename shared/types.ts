@@ -173,5 +173,5 @@ export interface MatchEvent extends BaseEvent {
   kind: "match_bet";
   category: "sport";
   eventId: string;
-  bet: import("./sport.ts").MatchBet;
+  bet: import("./sport.ts").MatchBet | import("./sport.ts").PlayerBet;
 }
