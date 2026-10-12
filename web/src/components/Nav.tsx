@@ -5,13 +5,14 @@ export type Screen = "home" | "bets" | "ranking" | "profile" | "admin";
 const ITEMS = [["home", House], ["bets", Ticket], ["ranking", Trophy], ["profile", User]] as const;
 
 /** Bottom tab bar on phones. */
-export function TabBar({ value, onPick, msg, openBets, profileDot }: { value: Screen; onPick: (s: Screen) => void; msg: Messages; openBets: number; profileDot?: boolean }) {
+export function TabBar({ value, onPick, msg, openBets, profileDot, rankBadge }: { value: Screen; onPick: (s: Screen) => void; msg: Messages; openBets: number; profileDot?: boolean; rankBadge?: number }) {
   return (
     <nav class="tabbar" role="tablist" aria-label="Main">
       {ITEMS.map(([id, Icon]) => (
         <button key={id} role="tab" aria-selected={value === id} class={value === id ? "on" : ""} onClick={() => onPick(id)}>
           <Icon size={22} strokeWidth={value === id ? 2.4 : 2} /><span>{msg.nav[id]}</span>
           {id === "bets" && openBets > 0 && <i class="badge">{openBets}</i>}
+          {id === "ranking" && (rankBadge ?? 0) > 0 && <i class="badge">{rankBadge}</i>}
           {id === "profile" && profileDot && <i class="badge dot" aria-label="new" />}
         </button>
       ))}
@@ -20,7 +21,7 @@ export function TabBar({ value, onPick, msg, openBets, profileDot }: { value: Sc
 }
 
 /** Sidebar on desktop. */
-export function Sidebar({ value, onPick, msg, openBets, profileDot }: { value: Screen; onPick: (s: Screen) => void; msg: Messages; openBets: number; profileDot?: boolean }) {
+export function Sidebar({ value, onPick, msg, openBets, profileDot, rankBadge }: { value: Screen; onPick: (s: Screen) => void; msg: Messages; openBets: number; profileDot?: boolean; rankBadge?: number }) {
   return (
     <nav class="side" aria-label="Main">
       <div class="brand"><i><Clock3 size={20} strokeWidth={2.4} /></i><span class="tx"><span class="wm">Late<b>Lotto</b></span><em class="stag">{msg.home.satire}</em></span></div>
@@ -28,6 +29,7 @@ export function Sidebar({ value, onPick, msg, openBets, profileDot }: { value: S
         <button key={id} class={value === id ? "on" : ""} onClick={() => onPick(id)} aria-current={value === id ? "page" : undefined}>
           <Icon size={20} strokeWidth={value === id ? 2.4 : 2} /><span>{msg.nav[id]}</span>
           {id === "bets" && openBets > 0 && <i class="badge">{openBets}</i>}
+          {id === "ranking" && (rankBadge ?? 0) > 0 && <i class="badge">{rankBadge}</i>}
           {id === "profile" && profileDot && <i class="badge dot" aria-label="new" />}
         </button>
       ))}

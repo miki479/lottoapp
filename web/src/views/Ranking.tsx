@@ -15,7 +15,7 @@ type Tab = "world" | "local" | "friends";
 type Local = "near" | "city" | "country";
 const RADII = [10, 30, 50, 100];
 
-export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | null; registered: boolean; onToast: (s: string, kind?: "ok" | "err") => void; onAuth: () => void; onNickname: () => void; home: Place | null; onHome: (pl: Place | null) => void; onRank: (rank: number | null, scope: string) => void; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; onChallenge: () => void; onProfile: (id: string) => void }) {
+export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | null; registered: boolean; onToast: (s: string, kind?: "ok" | "err") => void; onAuth: () => void; onNickname: () => void; home: Place | null; onHome: (pl: Place | null) => void; onRank: (rank: number | null, scope: string) => void; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; onChallenge: () => void; onProfile: (id: string) => void; onReqs?: () => void }) {
   const m = p.msg.ranking;
   const [tab, setTab] = useState<Tab>("world");
   const [local, setLocal] = useState<Local>("near");
@@ -33,8 +33,8 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
   useEffect(() => { if (p.registered && board) refreshFriends(); }, [p.registered, board]);
   const [reqs, setReqs] = useState<{ user_id: string; display_name: string | null }[]>([]);
   const loadReqs = async () => { const { data } = await sb.rpc("friend_requests_in"); setReqs((data ?? []) as { user_id: string; display_name: string | null }[]); };
-  useEffect(() => { if (p.registered && board) loadReqs(); }, [p.registered, board]);
-  const answer = async (id: string, ok: boolean) => { await sb.rpc("respond_friend", { p_user: id, p_accept: ok }); if (ok) p.onToast(p.msg.look.nowFriends); await Promise.all([loadReqs(), refreshFriends()]); };
+  useEffect(() => { if (p.registered) loadReqs(); }, [p.registered]);
+  const answer = async (id: string, ok: boolean) => { await sb.rpc("respond_friend", { p_user: id, p_accept: ok }); if (ok) p.onToast(p.msg.look.nowFriends); await Promise.all([loadReqs(), refreshFriends()]); p.onReqs?.(); };
   const looks = useLooks([...(rows ?? []).map((r) => r.user_id), ...(friends ?? []).map((r) => r.user_id)]);
   const face = (id: string) => { const l = looks[id]; return l ? <Look avatar={l.avatar} decoration={l.decoration} size={36} /> : <span class="lkph" />; };
   const removeFriend = async (id: string) => { await sb.rpc("remove_friend", { p_friend: id }); setAskId(null); p.onToast(p.msg.frd.removed); await refreshFriends(); };
@@ -74,6 +74,11 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
       <h1>{m.title}</h1>
       <p class="detail">{m.season(seasonDaysLeft())}</p>
       {!p.profile?.display_name && <button class="card pressable" style="text-align:left" onClick={p.onNickname}><b>{p.msg.profile.nickname.title}</b><p class="hint">{p.msg.profile.nickname.label}</p></button>}
+      {reqs.length > 0 && (
+            <section class="card stack reqcard"><b>{p.msg.look.requests}</b>
+              {reqs.map((r) => <div class="reqrow" key={r.user_id}>{face(r.user_id)}<button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name || p.msg.frd.anon}</b></button><button class="btn secondary" onClick={() => answer(r.user_id, false)}>{p.msg.look.decline}</button><button class="btn primary" onClick={() => answer(r.user_id, true)}>{p.msg.look.accept}</button></div>)}
+            </section>
+          )}
       <div class="seg" role="tablist">{(["world", "local", "friends"] as Tab[]).map((x) => <button key={x} role="tab" class={tab === x ? "on" : ""} aria-selected={tab === x} onClick={() => setTab(x)}>{p.msg.rankTabs[x]}</button>)}</div>
       {tab === "local" && (
         <section class="card stack">
@@ -87,11 +92,6 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
       )}
       {board && (
         <>
-          {reqs.length > 0 && (
-            <section class="card stack reqcard"><b>{p.msg.look.requests}</b>
-              {reqs.map((r) => <div class="reqrow" key={r.user_id}>{face(r.user_id)}<button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name || p.msg.frd.anon}</b></button><button class="btn secondary" onClick={() => answer(r.user_id, false)}>{p.msg.look.decline}</button><button class="btn primary" onClick={() => answer(r.user_id, true)}>{p.msg.look.accept}</button></div>)}
-            </section>
-          )}
           <p class="detail">{p.msg.frd.boardHint}</p>
           {friends !== null && friends.length <= 1 && INVITE}
           {friends === null && [0, 1, 2].map((i) => <div class="sk s" key={i} />)}

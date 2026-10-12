@@ -18,7 +18,7 @@ function kindOf(routeName: unknown, msg: Messages): { short: string; num: string
  * The Italian trains running now, drawn like a station departures board: black panel, amber lights, how late each one is and what each side pays.
  * Built only from what the app already knows (open questions + live delays). Tapping a row opens the bet.
  */
-export function TrainBoard(p: { markets: MarketRow[]; live: Record<string, LiveDelay>; msg: Messages; locale: Locale; now: number; onPick: (m: MarketRow, pick: Pick) => void }) {
+export function TrainBoard(p: { variant?: "full" | "card"; markets: MarketRow[]; live: Record<string, LiveDelay>; msg: Messages; locale: Locale; now: number; onPick: (m: MarketRow, pick: Pick) => void }) {
   const { msg } = p;
   const [tab, setTab] = useState<"late" | "odds">("late");
   const rows = useMemo(() => {
@@ -38,10 +38,39 @@ export function TrainBoard(p: { markets: MarketRow[]; live: Record<string, LiveD
   if (rows.length < 3) return null;
   const late5 = rows.filter((r) => r.delay > 300).length;
   const avg = Math.max(0, Math.round(rows.reduce((a, r) => a + Math.max(0, r.delay), 0) / rows.length / 60));
-  const sorted = [...rows].sort((a, b) => (tab === "late" ? b.delay - a.delay : Math.max(Number(b.m.odds_yes), Number(b.m.odds_no)) - Math.max(Number(a.m.odds_yes), Number(a.m.odds_no)))).slice(0, typeof matchMedia === "function" && matchMedia("(max-width: 720px)").matches ? MAX_ROWS_PHONE : MAX_ROWS);
+  const sorted = [...rows].sort((a, b) => (tab === "late" ? b.delay - a.delay : Math.max(Number(b.m.odds_yes), Number(b.m.odds_no)) - Math.max(Number(a.m.odds_yes), Number(a.m.odds_no)))).slice(0, p.variant === "card" ? 3 : typeof matchMedia === "function" && matchMedia("(max-width: 720px)").matches ? MAX_ROWS_PHONE : MAX_ROWS);
   const clock = new Intl.DateTimeFormat("it-IT", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Europe/Rome" }).format(new Date(p.now));
+  if (p.variant === "card") {
+    // The small version that sits among the featured cards: same width as they are, just the trains, the time and the share of late ones.
+    return (
+      <>
+        <section class="led ledcard" aria-label={msg.board.title}>
+          <div class="ledbezel">
+            <header class="ledtop"><b>{msg.board.title}</b></header>
+            <span class="ledtabs" role="tablist">{(["late", "odds"] as const).map((k) => <button key={k} role="tab" aria-selected={tab === k} class={tab === k ? "on" : ""} onClick={() => setTab(k)}>{msg.board[k]}</button>)}</span>
+            <ul class="ledrows">
+              {sorted.map(({ m, delay }) => {
+                const k = kindOf(m.params.routeName, msg), dir = (String(m.params.headsign ?? "") || String(m.params.stopName ?? "")).toUpperCase(), min = Math.round(delay / 60);
+                const best = Math.max(Number(m.odds_yes), Number(m.odds_no));
+                return (
+                  <li key={m.id} class={`ledrow ${delay > 300 ? "late" : ""}`}>
+                    <button class="ledmain" onClick={() => p.onPick(m, "yes")} aria-label={`${k.short} ${k.num} ${dir} ${min} min`}>
+                      <span class="ledkind">{k.short}</span><span class="lednum">{k.num}</span><span class="leddest">{dir}</span>
+                      <span class="leddelay">{tab === "late" ? (min > 0 ? `${min}’` : "—") : `×${fmtOdds(best, p.locale)}`}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <footer class="ledfoot slim"><span class="ledclock num" aria-label={clock}>{clock}</span><span class="ledstat">{Math.round((late5 / rows.length) * 100)}% {msg.board.over5}</span></footer>
+          </div>
+        </section>
+        <span class="topdiv" aria-hidden="true" />
+      </>
+    );
+  }
   return (
-    <section class="led" aria-label={msg.board.title}>
+    <section class="led full" aria-label={msg.board.title}>
       <div class="ledbezel">
         <header class="ledtop">
           <b>{msg.board.title}</b>

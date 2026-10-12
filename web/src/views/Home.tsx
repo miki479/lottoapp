@@ -88,13 +88,13 @@ export function Home(p: HomeProps) {
         </section>
       )}
       <div class="aside">
-        {p.top.length > 0 && (
+        {(p.top.length > 0 || p.italian) && (
           <section class="stack" style="gap:8px">
             <div class="sectionhead"><h2>{msg.home.top}</h2></div>
-            <TopCards items={p.top} />
+            <TopCards items={p.top} lead={p.italian ? <TrainBoard variant="card" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} /> : null} />
           </section>
         )}
-        {p.italian && <TrainBoard markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} />}
+        {p.italian && <TrainBoard variant="full" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} />}
       </div>
       <div class="main stack">
         <h2 class="steplabel">{msg.home.whatLabel}</h2>
