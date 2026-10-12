@@ -1,6 +1,6 @@
 import { sb } from "../lib/api.ts";
 import { Q } from "./Q.tsx";
-import { MarketVs, reasonOf } from "./MatchVs.tsx";
+import { MarketVs, noOf, reasonOf } from "./MatchVs.tsx";
 import { Layers, Rocket, Share2, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
@@ -70,7 +70,7 @@ export function BetSheet(p: {
         <div class="actions2" style="margin-top:8px">
           {(["yes", "no"] as const).map((k) => (
             <button key={k} class={`opt ${k} ${pick === k ? "sel" : ""}`} onClick={() => setPick(k)} aria-pressed={pick === k}>
-              <span class="l">{label(k)}</span><b class="num">{fmtOdds(Number(k === "yes" ? p.m.odds_yes : p.m.odds_no), p.locale)}</b>
+              <span class="l">{label(k)}</span><b class="num">{fmtOdds(Number(k === "yes" ? p.m.odds_yes : p.m.odds_no), p.locale)}</b>{p.m.kind === "match_bet" && (k === "yes" ? reasonOf(p.m, p.msg) : noOf(p.m, p.msg)) && <small class="mopt">{k === "yes" ? reasonOf(p.m, p.msg) : noOf(p.m, p.msg)}</small>}
             </button>
           ))}
         </div>

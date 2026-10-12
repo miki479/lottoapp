@@ -1105,3 +1105,5 @@ textarea.field { resize: vertical; min-height: 84px; }
 @media (prefers-reduced-motion: reduce) { .ledmarq > span { animation: none; padding-left: 0; } .leddot { animation: none; } }
 
 @media (min-width: 1024px) { .home .aside { max-height: calc(100vh - 92px); overflow-y: auto; scrollbar-width: thin; padding-right: 2px; } }
+
+.actions2 .opt .mopt { display: block; margin-top: 2px; font-size: 11px; font-weight: 600; line-height: 1.25; color: var(--muted); text-align: left; }

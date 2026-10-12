@@ -29,6 +29,27 @@ export function MarketVs({ m, size }: { m: MarketRow; size?: number }) {
 }
 
 /** The reason of the bet in a few words (what the pick is about), for the highlighted pill. */
+/** What "No" means on a football question: the other side of the bet, in words ("Udinese wins" for "Udinese does not lose"). */
+export function noOf(m: MarketRow, msg: Messages): string | null {
+  if (m.kind !== "match_bet") return null;
+  const bet = String(m.params.bet), h = String(m.params.home), a = String(m.params.away), o = msg.sportui.opp;
+  switch (bet) {
+    case "home_win": return o.notWin(h);
+    case "away_win": return o.notWin(a);
+    case "draw": return o.noDraw;
+    case "dc_1x": return msg.sportui.wins(a);
+    case "dc_x2": return msg.sportui.wins(h);
+    case "dc_12": return msg.matchmaker.bets.draw;
+    case "over_1_5": return o.atMost(1);
+    case "over_2_5": return o.atMost(2);
+    case "over_3_5": return o.atMost(3);
+    case "btts": return o.notBoth;
+    case "home_clean": return o.concede(h);
+    case "away_clean": return o.concede(a);
+    default: return null;
+  }
+}
+
 export function reasonOf(m: MarketRow, msg: Messages): string | null {
   if (m.kind !== "match_bet") return null;
   const bet = String(m.params.bet);
