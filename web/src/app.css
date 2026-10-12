@@ -887,3 +887,16 @@ textarea.field { resize: vertical; min-height: 84px; }
 .howgrid .hn { position: absolute; top: 7px; left: 9px; font-size: 11px; font-weight: 800; color: var(--muted); }
 .howgrid .hi { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); flex: none; }
 .howgrid .ht { font-size: 12.5px; font-weight: 700; line-height: 1.25; color: var(--text); text-wrap: balance; }
+
+/* friends: invite card, board rows, picker, inbox */
+.invitecard .invhead { display: flex; gap: 12px; align-items: center; } .invitecard .invhead p { margin: 2px 0 0; }
+.list .row { position: relative; flex-wrap: wrap; } .frdx { width: 34px; height: 34px; color: var(--muted); flex: none; }
+.frask { flex-basis: 100%; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 0 2px; font-size: 13.5px; font-weight: 600; } .frask span { flex: 1 1 100%; } .frask .btn { min-height: 38px; flex: 1; }
+.friendpick .detail { display: inline-flex; align-items: center; gap: 6px; }
+.frgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.frchip { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-weight: 700; font-size: 13.5px; text-align: left; min-width: 0; }
+.frchip .fav { flex: none; width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); font-size: 13px; font-weight: 800; }
+.frchip .fn { min-width: 0; flex: 1; display: flex; flex-direction: column; line-height: 1.2; } .frchip .fn > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .frchip em { font-style: normal; font-size: 11px; color: var(--muted); font-weight: 600; }
+.frchip.on { border-color: var(--brand); background: var(--brand-soft); } .frchip.on .fav { background: var(--brand); color: #fff; }
+.frchip.done { opacity: .55; }
+.inbox .invite { display: flex; flex-direction: column; gap: 4px; text-align: left; border-color: var(--brand); } .inbox .invopen { align-self: flex-end; color: var(--brand); font-weight: 800; font-size: 13px; }

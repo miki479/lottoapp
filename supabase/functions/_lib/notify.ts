@@ -16,13 +16,13 @@ const TEXT = {
 } as const;
 
 export const lastNotifyError: { msg: string | null } = { msg: null };
-async function send(userIds: string[], heading: string, body: string): Promise<boolean> {
+async function send(userIds: string[], heading: string, body: string, url = "https://latelotto.web.app/?open=bets"): Promise<boolean> {
   const key = Deno.env.get("ONESIGNAL_REST_API_KEY")?.trim().replace(/^(Key|Basic)\s+/i, ""), app = Deno.env.get("ONESIGNAL_APP_ID");
   if (!key || !app || userIds.length === 0) return false;
   const r = await fetch("https://api.onesignal.com/notifications", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `${key.startsWith("os_v2") ? "Key" : "Basic"} ${key}` },
-    body: JSON.stringify({ app_id: app, target_channel: "push", include_aliases: { external_id: userIds }, headings: { en: heading }, contents: { en: body }, url: "https://latelotto.web.app/?open=bets", ttl: 3600 }),
+    body: JSON.stringify({ app_id: app, target_channel: "push", include_aliases: { external_id: userIds }, headings: { en: heading }, contents: { en: body }, url, ttl: 3600 }),
   });
   if (!r.ok) { lastNotifyError.msg = `onesignal ${r.status} ${(await r.text()).slice(0, 160)}`; console.error(lastNotifyError.msg); return false; }
   return true;
@@ -121,4 +121,29 @@ export async function notifyModeration(sb: Db): Promise<number> {
   if (!(await send(ids, "LateLotto · moderazione", body))) return 0; // not marked: retried next minute
   await mark();
   return 1;
+}
+
+const INVITE = {
+  it: (who: string) => `${who} ti sfida a LateLotto: apri e scegli Sì o No`,
+  "en-US": (who: string) => `${who} challenged you on LateLotto: open it and pick Yes or No`,
+  "en-GB": (who: string) => `${who} challenged you on LateLotto: open it and pick Yes or No`,
+  ja: (who: string) => `${who}さんからLateLottoでチャレンジです。開いて「はい」か「いいえ」を選びましょう`,
+} as const;
+const WHO = { it: "Un amico", "en-US": "A friend", "en-GB": "A friend", ja: "友達" } as const;
+
+/** A friend invited me to a challenge: tell them (once). Marked as done only when OneSignal took it, so an outage retries within the hour. */
+export async function notifyInvites(sb: Db): Promise<number> {
+  if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
+  const since = new Date(Date.now() - 60 * 60_000).toISOString();
+  const { data } = await sb.from("challenge_invites").select("challenge_id,user_id,invited_by,friend_challenges(code),me:profiles!challenge_invites_user_id_fkey(locale),by:profiles!challenge_invites_invited_by_fkey(display_name)")
+    .eq("notified", false).gte("created_at", since).limit(100);
+  let n = 0;
+  for (const r of (data ?? []) as unknown as { challenge_id: string; user_id: string; friend_challenges: { code: string } | null; me: { locale: string } | null; by: { display_name: string | null } | null }[]) {
+    const loc = (r.me?.locale && r.me.locale in INVITE ? r.me.locale : "en-US") as keyof typeof INVITE;
+    const who = r.by?.display_name?.trim() || WHO[loc];
+    if (r.friend_challenges?.code && !(await send([r.user_id], "LateLotto", INVITE[loc](who), `https://latelotto.web.app/?c=${r.friend_challenges.code}`))) continue;
+    await sb.from("challenge_invites").update({ notified: true }).eq("challenge_id", r.challenge_id).eq("user_id", r.user_id);
+    n++;
+  }
+  return n;
 }

@@ -143,5 +143,12 @@ const it: Messages = {
     invalid_credentials: "Email o password non corrette.", weak_password: "La password deve avere almeno 8 caratteri.", email_taken: "Esiste già un profilo con questa email: usa Accedi.", email_invalid: "Email non valida.", email_rate: "Troppe email inviate: riprova più tardi.", provider_off: "Questo accesso non è ancora attivo.",
   },
   feedWarning: "Alcuni dati sono in ritardo. Le puntate legate a un feed fermo vengono rimborsate.",
+  frd: {
+    boardTab: "Amici", groupsTab: "Gruppi", inviteTitle: "Invita un amico", inviteBody: "Chi accetta il tuo invito diventa subito tuo amico: lo trovi qui e puoi sfidarlo.", inviteBtn: "Condividi invito", invitedCount: (n) => (n === 1 ? "1 amico invitato" : `${n} amici invitati`),
+    empty: "Ancora nessun amico", emptyBody: "Invita il primo: appena accetta, appare qui con il suo punteggio del mese.", anon: "Giocatore", remove: "Rimuovi", removeAsk: (n) => `Togliere ${n} dagli amici?`, removeYes: "Sì, rimuovi", removeNo: "Annulla", removed: "Amico rimosso", challenge: "Lancia una sfida", boardHint: "Classifica del mese tra te e i tuoi amici.",
+    invTitle: "Invita amici alla sfida", invHint: "Ricevono un avviso e la trovano in Le mie puntate.", invNoFriends: "Non hai ancora amici: invitane uno dalla Classifica, sezione Amici.", invSend: (n) => (n === 0 ? "Scegli chi invitare" : n === 1 ? "Invita 1 amico" : `Invita ${n} amici`), invSent: (n) => (n === 1 ? "Invito inviato" : `${n} inviti inviati`), invNone: "Erano già tutti invitati.", invDone: "Già dentro",
+    inboxTitle: "Inviti dagli amici", inboxFrom: (w) => `${w || "Un amico"} ti sfida`, inboxOpen: "Apri", referralNote: "Chi accetta il tuo invito diventa tuo amico e puoi invitarlo alle sfide.",
+    errors: { invite_limit: "Hai già invitato molte persone oggi: riprova domani.", too_many_invites: "Puoi invitare al massimo 20 amici alla volta.", not_in_challenge: "Per invitare devi essere dentro la sfida.", generic: "Non è andata: riprova." },
+  },
 };
 export default it;

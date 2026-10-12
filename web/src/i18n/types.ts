@@ -96,4 +96,10 @@ export interface Messages {
   disclaimerShort: string; disclaimerFull: string; attributionTitle: string;
   errors: Record<string, string>;
   feedWarning: string;
+  frd: {
+    boardTab: string; groupsTab: string; inviteTitle: string; inviteBody: string; inviteBtn: string; invitedCount: (n: number) => string;
+    empty: string; emptyBody: string; anon: string; remove: string; removeAsk: (n: string) => string; removeYes: string; removeNo: string; removed: string; challenge: string; boardHint: string;
+    invTitle: string; invHint: string; invNoFriends: string; invSend: (n: number) => string; invSent: (n: number) => string; invNone: string; invDone: string;
+    inboxTitle: string; inboxFrom: (who: string) => string; inboxOpen: string; referralNote: string; errors: Record<"invite_limit" | "too_many_invites" | "not_in_challenge" | "generic", string>;
+  };
 }

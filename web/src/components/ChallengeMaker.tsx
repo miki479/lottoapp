@@ -27,7 +27,7 @@ function closeAt(k: CloseKey): Date {
 export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: boolean; hasHome: boolean; onClose: () => void; onCreated: (code: string) => void; onAuth: () => void }) {
   const f = p.msg.friends;
   const [title, setTitle] = useState(""), [cat, setCat] = useState<CatKey>("friends"), [more, setMore] = useState(false), [close, setClose] = useState<CloseKey>("tomorrow"), [stake, setStake] = useState(0);
-  const [vis, setVis] = useState<"private" | "public">("private"), [judge, setJudge] = useState<"creator" | "vote">("creator"), [world, setWorld] = useState(false);
+  const [vis, setVis] = useState<"private" | "public">("private"), [judge, setJudge] = useState<"creator" | "vote">("vote"), [world, setWorld] = useState(false);
   const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null);
   const pub = vis === "public";
   const create = async () => {
@@ -67,8 +67,8 @@ export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: b
       {!pub && <>
         <span class="detail">{p.msg.fx.judgeLabel}</span>
         <div class="mkchips">
-          <button class={`mkchip ${judge === "creator" ? "on" : ""}`} aria-pressed={judge === "creator"} onClick={() => setJudge("creator")}>{p.msg.fx.judgeCreator}</button>
           <button class={`mkchip ${judge === "vote" ? "on" : ""}`} aria-pressed={judge === "vote"} onClick={() => setJudge("vote")}>{p.msg.fx.judgeVote}</button>
+          <button class={`mkchip ${judge === "creator" ? "on" : ""}`} aria-pressed={judge === "creator"} onClick={() => setJudge("creator")}>{p.msg.fx.judgeCreator}</button>
         </div>
         <p class="hint">{p.msg.fx.judgeHint}</p>
       </>}

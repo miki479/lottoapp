@@ -100,6 +100,7 @@ export function App() {
   const [challengeMaker, setChallengeMaker] = useState(false);
   const [challengeCode, setChallengeCode] = useState<string | null>(null);
   const [myChallenges, setMyChallenges] = useState<Challenge[]>([]);
+  const [invites, setInvites] = useState<(Challenge & { invited_by: string })[]>([]);
   const placeIds = useRef<string[]>(myPlaces.map((p) => p.id));
   const [near, setNear] = useState<NearState | null>(() => { try { return JSON.parse(store.get("near") ?? "null"); } catch { return null; } });
   const [nearRows, setNearRows] = useState<{ market_id: string; bets: number }[]>([]);
@@ -143,7 +144,7 @@ export function App() {
   const loadTrophies = useCallback(async () => { const { data } = await sb.from("trophies").select("trophy_id"); const s = new Set((data ?? []).map((r) => r.trophy_id as string)); setTrophies(s); return s; }, []);
   const loadBets = useCallback(async () => { const { data } = await sb.from("bets").select(BET_COLS).order("placed_at", { ascending: false }).limit(60); setBets((data ?? []) as unknown as MyBet[]); }, []);
 
-  const loadChallenges = useCallback(async () => { if (!registered) { setMyChallenges([]); return; } const { data } = await sb.rpc("my_challenges"); setMyChallenges((data ?? []) as Challenge[]); }, [registered]);
+  const loadChallenges = useCallback(async () => { if (!registered) { setMyChallenges([]); setInvites([]); return; } const [{ data }, inv] = await Promise.all([sb.rpc("my_challenges"), sb.rpc("my_invites")]); setMyChallenges((data ?? []) as Challenge[]); setInvites((inv.data ?? []) as (Challenge & { invited_by: string })[]); }, [registered]);
   const loadParlays = useCallback(async () => { const { data } = await sb.from("parlays").select("id,stake,odds,status,payout,placed_at,settled_at,parlay_legs(market_id,pick,odds,status,markets(city_id,kind,params))").order("placed_at", { ascending: false }).limit(40); setParlays((data ?? []) as unknown as ParlayRow[]); }, []);
   const loadQuests = useCallback(async () => { const { data } = await sb.rpc("my_quests"); setQuests(((data ?? []) as QuestRow[]).map((q) => ({ ...q, reward: +q.reward }))); }, []);
   const loadReferral = useCallback(async () => {
@@ -239,6 +240,8 @@ export function App() {
     const u = new URL(location.href); u.searchParams.delete("c"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
   }, []);
   useEffect(() => { loadChallenges(); }, [registered]);
+  useEffect(() => { if (screen === "bets") loadChallenges(); }, [screen]);
+  useEffect(() => { if (!registered) return; const i = setInterval(loadChallenges, 90_000); return () => clearInterval(i); }, [registered, loadChallenges]);
   /** A shared link (?m=<market id>) opens that question straight away. */
   useEffect(() => {
     const id = new URLSearchParams(location.search).get("m");
@@ -500,7 +503,7 @@ export function App() {
   };
   const changeLocale = (l: Locale) => { store.set("locale", l); setLocale(l); };
   const go = (s: Screen) => { if (s === "profile" && giftDot) { store.set("giftdot", "0"); setGiftDot(false); } setScreen(s); scrollTo({ top: 0 }); haptic.tap(); };
-  const openBets = bets.filter((b) => b.status === "open").length;
+  const openBets = bets.filter((b) => b.status === "open").length + invites.length;
 
   return (
     <div class="shell">
@@ -511,8 +514,8 @@ export function App() {
         <Ticker items={tickerItems} />
         <main class="content">
           {screen === "home" && <Home details={detailsOn} stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
-          {screen === "bets" && <Bets challenges={myChallenges} onChallenge={(code) => setChallengeCode(code)} parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
-          {screen === "ranking" && <Ranking home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
+          {screen === "bets" && <Bets invites={invites} challenges={myChallenges} onChallenge={(code) => setChallengeCode(code)} parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
+          {screen === "ranking" && <Ranking referral={referral} onShareReferral={shareReferral} onChallenge={() => (registered ? setChallengeMaker(true) : setAuth(true))} home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
           {screen === "admin" && <AdminPage msg={msg} onBack={() => go("profile")} />}
           {screen === "profile" && <ProfileView homeNode={<CityChip msg={msg} locale={locale} value={home} onChange={changeHome} />} onAdmin={() => go("admin")} giftCard={giftCard} onGiftSeen={() => { store.set("giftcard", "0"); setGiftCard(false); }} push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, setPrefs: async (f: boolean, s: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} sources={sources} />}
         </main>

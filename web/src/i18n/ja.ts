@@ -143,5 +143,12 @@ const ja: Messages = {
     invalid_credentials: "メールアドレスまたはパスワードが正しくありません。", weak_password: "パスワードは8文字以上にしてください。", email_taken: "このメールのプロフィールはすでにあります。ログインしてください。", email_invalid: "メールアドレスが正しくありません。", email_rate: "メールの送信が多すぎます。後でもう一度お試しください。", provider_off: "このログイン方法はまだ有効ではありません。",
   },
   feedWarning: "一部のデータが遅れています。止まっているフィードに紐づく予想は返金されます。",
+  frd: {
+    boardTab: "友達", groupsTab: "グループ", inviteTitle: "友達を招待", inviteBody: "招待を受けた人はすぐ友達になります。ここで見つけてチャレンジできます。", inviteBtn: "招待を共有", invitedCount: (n) => `${n}人の友達を招待`,
+    empty: "まだ友達がいません", emptyBody: "最初の1人を招待しましょう。承認するとここに今月のスコアと一緒に表示されます。", anon: "プレイヤー", remove: "削除", removeAsk: (n) => `${n}さんを友達から外しますか？`, removeYes: "はい、削除", removeNo: "キャンセル", removed: "友達を削除しました", challenge: "チャレンジを作る", boardHint: "あなたと友達の今月のランキングです。",
+    invTitle: "友達をチャレンジに招待", invHint: "通知が届き、「マイ予想」で見つかります。", invNoFriends: "まだ友達がいません。ランキングの友達から招待しましょう。", invSend: (n) => (n === 0 ? "招待する人を選ぶ" : `${n}人を招待`), invSent: (n) => `${n}件の招待を送りました`, invNone: "全員すでに招待済みです。", invDone: "参加済み",
+    inboxTitle: "友達からの招待", inboxFrom: (w) => `${w || "友達"}からチャレンジ`, inboxOpen: "開く", referralNote: "招待を受けた人は友達になり、チャレンジに招待できます。",
+    errors: { invite_limit: "今日はすでに多くの人を招待しました。明日また試してください。", too_many_invites: "一度に招待できるのは20人までです。", not_in_challenge: "招待するにはチャレンジに参加している必要があります。", generic: "うまくいきませんでした。もう一度どうぞ。" },
+  },
 };
 export default ja;

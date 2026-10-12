@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 import { countdown, money } from "../lib/format.ts";
+import { FriendPicker } from "./FriendPicker.tsx";
 import { Sheet } from "./Sheet.tsx";
 
 export interface Challenge {
@@ -62,6 +63,7 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
         </div>
       </>}
       {isOpen && c.my_pick && <p class="hint"><b>{c.my_pick === "yes" ? f.yes : f.no}</b></p>}
+      {isOpen && p.registered && (c.is_creator || c.my_pick) && <FriendPicker code={c.code} msg={p.msg} onSent={() => p.onChanged()} />}
       {awaiting && c.judge_mode === "vote" && c.my_pick && !c.my_vote && <>
         <span class="detail">{p.msg.fx.voteTitle}</span>
         <div class="actions2">

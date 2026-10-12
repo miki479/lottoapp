@@ -8,7 +8,7 @@ import { countdown, fmtOdds, isYesNo, money, question } from "../lib/format.ts";
 import type { Challenge } from "../components/ChallengeSheet.tsx";
 import type { MyBet, ParlayRow } from "../lib/types.ts";
 
-export function Bets({ challenges, onChallenge, parlays, bets, msg, locale, now, onOpen, onHome }: { challenges: Challenge[]; onChallenge: (code: string) => void; parlays: ParlayRow[]; bets: MyBet[]; msg: Messages; locale: Locale; now: number; onOpen: (b: MyBet) => void; onHome: () => void }) {
+export function Bets({ invites, challenges, onChallenge, parlays, bets, msg, locale, now, onOpen, onHome }: { invites: (Challenge & { invited_by: string })[]; challenges: Challenge[]; onChallenge: (code: string) => void; parlays: ParlayRow[]; bets: MyBet[]; msg: Messages; locale: Locale; now: number; onOpen: (b: MyBet) => void; onHome: () => void }) {
   const [tab, setTab] = useState<"open" | "settled">("open");
   const shown = bets.filter((b) => (tab === "open" ? b.status === "open" : b.status !== "open"));
   const shownP = parlays.filter((x) => (tab === "open" ? x.status === "open" : x.status !== "open"));
@@ -21,6 +21,9 @@ export function Bets({ challenges, onChallenge, parlays, bets, msg, locale, now,
         <button role="tab" class={tab === "open" ? "on" : ""} aria-selected={tab === "open"} onClick={() => setTab("open")}>{msg.bets.tabs.open} · {nOpen}</button>
         <button role="tab" class={tab === "settled" ? "on" : ""} aria-selected={tab === "settled"} onClick={() => setTab("settled")}>{msg.bets.tabs.settled} · {nDone}</button>
       </div>
+      {tab === "open" && invites.length > 0 && <section class="stack inbox"><h2>{msg.frd.inboxTitle}</h2>
+        {invites.map((c) => <button key={c.id} class="card pressable chrow invite" onClick={() => onChallenge(c.code)}><span class="byline">{msg.frd.inboxFrom(c.invited_by)} · {countdown(Math.max(0, Date.parse(c.closes_at) - now))}</span><b>{c.title}</b><span class="invopen">{msg.frd.inboxOpen}</span></button>)}
+      </section>}
       {challenges.length > 0 && <section class="stack"><h2>{msg.friends.mine}</h2>
         {challenges.filter((c) => (tab === "open") === (c.status === "open")).map((c) => <button key={c.id} class="card pressable chrow" onClick={() => onChallenge(c.code)}><b>{c.title}</b><span class="byline">{msg.friends.cats[c.category]} · {c.status === "open" ? countdown(Math.max(0, Date.parse(c.closes_at) - now)) : c.status === "void" ? msg.friends.voided : c.outcome === "yes" ? msg.friends.resolvedYes : msg.friends.resolvedNo}</span></button>)}
       </section>}

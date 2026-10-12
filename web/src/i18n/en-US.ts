@@ -143,5 +143,12 @@ const enUS: Messages = {
     invalid_credentials: "Wrong email or password.", weak_password: "Password must be at least 8 characters.", email_taken: "A profile with this email already exists: use Sign in.", email_invalid: "Invalid email.", email_rate: "Too many emails sent: try again later.", provider_off: "This sign-in method isn't active yet.",
   },
   feedWarning: "Some data is running late. Bets tied to a stalled feed get refunded.",
+  frd: {
+    boardTab: "Friends", groupsTab: "Groups", inviteTitle: "Invite a friend", inviteBody: "Whoever accepts your invite becomes your friend right away: you find them here and can challenge them.", inviteBtn: "Share invite", invitedCount: (n) => (n === 1 ? "1 friend invited" : `${n} friends invited`),
+    empty: "No friends yet", emptyBody: "Invite the first one: as soon as they accept they show up here with their score of the month.", anon: "Player", remove: "Remove", removeAsk: (n) => `Remove ${n} from your friends?`, removeYes: "Yes, remove", removeNo: "Cancel", removed: "Friend removed", challenge: "Start a challenge", boardHint: "This month's ranking between you and your friends.",
+    invTitle: "Invite friends to the challenge", invHint: "They get a notification and find it in My bets.", invNoFriends: "You have no friends yet: invite one from Ranking, Friends section.", invSend: (n) => (n === 0 ? "Pick who to invite" : n === 1 ? "Invite 1 friend" : `Invite ${n} friends`), invSent: (n) => (n === 1 ? "Invite sent" : `${n} invites sent`), invNone: "They were all invited already.", invDone: "Already in",
+    inboxTitle: "Invites from friends", inboxFrom: (w) => `${w || "A friend"} challenges you`, inboxOpen: "Open", referralNote: "Whoever accepts your invite becomes your friend and you can invite them to challenges.",
+    errors: { invite_limit: "You already invited a lot of people today: try again tomorrow.", too_many_invites: "You can invite at most 20 friends at once.", not_in_challenge: "You have to be in the challenge to invite people.", generic: "That did not work: try again." },
+  },
 };
 export default enUS;
