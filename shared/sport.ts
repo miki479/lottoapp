@@ -48,13 +48,13 @@ export const LEAGUES: { id: string; name: string; top: boolean; two?: TwoWayCfg 
 ];
 export const TWO_WAY_LEAGUES: string[] = LEAGUES.filter((l) => l.two).map((l) => l.name);
 
-export interface Fixture { eventId: string; league: string; home: string; away: string; kickoff: number; apiId?: string; lenSec?: number }
+export interface Fixture { eventId: string; league: string; home: string; away: string; kickoff: number; apiId?: string; lenSec?: number; homeBadge?: string; awayBadge?: string }
 export interface TableRow { team: string; played: number; points: number; goalsFor: number; goalsAgainst: number }
 export interface Geo { lat: number; lon: number }
 
 export interface MatchMarketInsert {
   city_id: "world"; category: "sport"; kind: "match_bet"; feed_id: "sportsdb"; lat?: number; lon?: number;
-  params: { league: string; eventId: string; home: string; away: string; bet: MatchBet | PlayerBet; kickoff: number; priors: Record<MatchBet, number>; apiId?: string; local?: "true"; testOnly?: boolean; player?: { id: number; name: string; side: "home" | "away"; pos: string } };
+  params: { league: string; eventId: string; home: string; away: string; bet: MatchBet | PlayerBet; kickoff: number; priors: Record<MatchBet, number>; apiId?: string; homeBadge?: string; awayBadge?: string; local?: "true"; testOnly?: boolean; player?: { id: number; name: string; side: "home" | "away"; pos: string } };
   closes_at: string; target_at: string; deadline_at: string; odds_yes: number; odds_no: number; dedupe_key: string;
 }
 
@@ -165,7 +165,7 @@ export function matchMarket(f: Fixture, bet: MatchBet, priors: Record<MatchBet, 
   const odds = computeOdds(clamp(priors[bet], 0.1, 0.9));
   return {
     city_id: "world", category: "sport", kind: "match_bet", feed_id: "sportsdb", ...(geo ? { lat: geo.lat, lon: geo.lon } : {}),
-    params: { league: f.league, eventId: f.eventId, home: f.home, away: f.away, bet, kickoff: f.kickoff, priors, ...(f.apiId ? { apiId: f.apiId } : {}), ...(geo ? { local: "true" as const } : {}), ...(testOnly ? { testOnly: true } : {}), ...(custom ? { custom: "true", by: custom.by } : {}) } as MatchMarketInsert["params"],
+    params: { league: f.league, eventId: f.eventId, home: f.home, away: f.away, bet, kickoff: f.kickoff, priors, ...(f.apiId ? { apiId: f.apiId } : {}), ...(f.homeBadge ? { homeBadge: f.homeBadge } : {}), ...(f.awayBadge ? { awayBadge: f.awayBadge } : {}), ...(geo ? { local: "true" as const } : {}), ...(testOnly ? { testOnly: true } : {}), ...(custom ? { custom: "true", by: custom.by } : {}) } as MatchMarketInsert["params"],
     closes_at: new Date((f.kickoff - 300) * 1000).toISOString(), target_at: new Date((f.kickoff + (f.lenSec ?? MATCH_LENGTH_SEC)) * 1000).toISOString(), deadline_at: new Date((f.kickoff + 12 * 3600) * 1000).toISOString(),
     odds_yes: odds.yes, odds_no: odds.no, dedupe_key: `sport|${f.eventId}|${bet}`,
   };

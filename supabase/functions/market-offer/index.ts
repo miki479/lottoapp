@@ -151,7 +151,7 @@ Deno.serve(safe(async (req) => {
       if (!/^\d{3,12}$/.test(eventId)) return json({ error: "bad_request" }, 400);
       const { data: sib } = await sb.from("markets").select("params,lat,lon").eq("kind", "match_bet").eq("params->>eventId", eventId).limit(1).maybeSingle();
       if (!sib) return json({ error: "unknown_match" }, 404);
-      const sp = sib.params as { league: string; home: string; away: string; kickoff: number; priors: Record<MatchBet, number>; apiId?: string };
+      const sp = sib.params as { league: string; home: string; away: string; kickoff: number; priors: Record<MatchBet, number>; apiId?: string; homeBadge?: string; awayBadge?: string };
       if (!(sp.kickoff >= now + 35 * 60)) return json({ error: "bad_time" }, 400);
       if (!DETAIL_LEAGUES.includes(sp.league) || !sp.apiId || !(await detailsAvailable(sb))) return json({ error: "details_unavailable" }, 503);
       const { data: row } = await sb.from("match_lineups").select("players,fetched_at").eq("event_id", eventId).maybeSingle();
@@ -159,7 +159,7 @@ Deno.serve(safe(async (req) => {
       if (!player) return json({ error: "unknown_player" }, 404);
       const kind = bet.slice(0, 2) as "pg" | "pa" | "ps", chance = playerChance(kind, player.pos, teamGoals(sp.priors, player.side));
       if (chance === null || chance < FAIR_MIN || chance > FAIR_MAX) return json({ error: "too_certain", chance }, 422);
-      const m = playerMarket({ eventId, league: sp.league, home: sp.home, away: sp.away, kickoff: sp.kickoff, apiId: sp.apiId }, bet as PlayerBet, player, chance, sp.priors, sib.lat === null ? undefined : { lat: Number(sib.lat), lon: Number(sib.lon) }, { by });
+      const m = playerMarket({ eventId, league: sp.league, home: sp.home, away: sp.away, kickoff: sp.kickoff, apiId: sp.apiId, homeBadge: sp.homeBadge, awayBadge: sp.awayBadge }, bet as PlayerBet, player, chance, sp.priors, sib.lat === null ? undefined : { lat: Number(sib.lat), lon: Number(sib.lon) }, { by });
       if (preview) return json({ preview: { chance, odds_yes: m.odds_yes, odds_no: m.odds_no, threshold: 0 } });
       draft = m as unknown as Record<string, unknown>;
     } else {
@@ -167,7 +167,7 @@ Deno.serve(safe(async (req) => {
     // the match must already be known (house markets are made for every upcoming round); the same bet is never made twice
     const { data: sib } = await sb.from("markets").select("params,lat,lon").eq("kind", "match_bet").eq("params->>eventId", eventId).limit(1).maybeSingle();
     if (!sib) return json({ error: "unknown_match" }, 404);
-    const sp = sib.params as { league: string; home: string; away: string; kickoff: number; priors: Record<MatchBet, number>; apiId?: string; testOnly?: boolean };
+    const sp = sib.params as { league: string; home: string; away: string; kickoff: number; priors: Record<MatchBet, number>; apiId?: string; testOnly?: boolean; homeBadge?: string; awayBadge?: string };
     if (!(sp.kickoff >= now + 35 * 60)) return json({ error: "bad_time" }, 400);
     // half-time, corners and cards are settled from a second source: only offered where it works right now, and only for the leagues it covers
     let apiId = sp.apiId;
@@ -184,7 +184,7 @@ Deno.serve(safe(async (req) => {
     }
     const chance = priors[bet];
     if (typeof chance !== "number" || chance < FAIR_MIN || chance > FAIR_MAX) return json({ error: "too_certain", chance }, 422);
-    const m = matchMarket({ eventId, league: sp.league, home: sp.home, away: sp.away, kickoff: sp.kickoff, ...(apiId ? { apiId } : {}) }, bet, priors, sib.lat === null ? undefined : { lat: Number(sib.lat), lon: Number(sib.lon) }, !!sp.testOnly, { by });
+    const m = matchMarket({ eventId, league: sp.league, home: sp.home, away: sp.away, kickoff: sp.kickoff, ...(apiId ? { apiId } : {}), ...(sp.homeBadge ? { homeBadge: sp.homeBadge } : {}), ...(sp.awayBadge ? { awayBadge: sp.awayBadge } : {}) }, bet, priors, sib.lat === null ? undefined : { lat: Number(sib.lat), lon: Number(sib.lon) }, !!sp.testOnly, { by });
     if (preview) return json({ preview: { chance, odds_yes: m.odds_yes, odds_no: m.odds_no, threshold: 0 } });
     draft = m as unknown as Record<string, unknown>;
     }

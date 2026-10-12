@@ -1,6 +1,7 @@
 import { Q } from "../components/Q.tsx";
 import { Check, RotateCcw, Ticket, X } from "lucide-preact";
 import { useState } from "preact/hooks";
+import { MarketVs, reasonOf } from "../components/MatchVs.tsx";
 import { Collapse } from "../components/Collapse.tsx";
 import { Empty } from "../components/Empty.tsx";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -74,6 +75,8 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
                 {st === "void" && <span class="amt num">{money(b.stake, locale)}</span>}
                 {st === "open" && <span class="detail">{msg.bets.settles} · {countdown(Date.parse(m.target_at) - now)}</span>}
               </div>
+              {m.kind === "match_bet" && <div class="vscard"><MarketVs m={m} size={28} />{reasonOf(m, msg) && <span class="reason">{reasonOf(m, msg)}</span>}</div>}
+              {m.kind !== "match_bet" && (() => { const sj = m.kind === "tick_gt" ? (msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? "")) : m.kind === "bus_delay_gt" || m.kind === "train_delay_gt" ? `${String(m.params.routeName ?? "")} · ${cityName(city, locale)}` : m.kind === "rain_at" || m.kind === "metric_gt" ? cityName(city, locale) : ""; return sj ? <b class="subject">{sj}</b> : null; })()}
               <p class="q"><Q m={m} msg={msg} locale={locale} city={cityName(city, locale)} tz={city.timezone} now={new Date(now)} /></p>
               <div class="info"><span>{msg.bets.yourPick(b.pick === "yes")}</span><span class="num">{money(b.stake, locale)} × {fmtOdds(Number(b.odds), locale)}</span></div>
             </button>

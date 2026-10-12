@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-preact";
 import type { ComponentChildren } from "preact";
 
-export interface TopItem { id: string; icon: LucideIcon; label: string; big: ComponentChildren; sub: string; extra?: ComponentChildren; onClick: () => void }
+export interface TopItem { mid?: string; id: string; icon: LucideIcon; label: string; big: ComponentChildren; sub: string; extra?: ComponentChildren; onClick: () => void }
 
 /** "Featured": the most delayed now, the most played, the most delayed city, what closes next. */
 export function TopCards({ items }: { items: TopItem[] }) {

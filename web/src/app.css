@@ -1008,3 +1008,16 @@ textarea.field { resize: vertical; min-height: 84px; }
 .dmcount { font-weight: 800; color: #ff4d6a; font-size: 14px; } .dmmiss { font-size: 11px; color: var(--muted); text-align: right; max-width: 110px; }
 @keyframes dmglowr { 0% { box-shadow: 0 0 0 0 rgba(255, 77, 106, .5); } 100% { box-shadow: 0 0 0 12px rgba(255, 77, 106, 0); } }
 .dmflash.pop::after { content: ""; position: absolute; left: 34px; top: 50%; width: 8px; height: 8px; border-radius: 50%; background: #ffd24a; box-shadow: -18px -22px 0 #ff5d73, 20px -26px 0 #ffd24a, -34px 6px 0 #ff9d3d, 30px 12px 0 #ff5d73, -8px 26px 0 #ffd24a, 12px 28px 0 #ff9d3d; animation: dmburst .9s ease-out both; pointer-events: none; }
+.summary .shine[data-moving] { transform: scale(1.08); transition: transform .15s; } .summary .shine { display: inline-block; transition: transform .35s cubic-bezier(.3,1.6,.5,1); }
+
+/* crests and the "vs" card */
+.crest { flex: none; object-fit: contain; border-radius: 8px; } .crest.ph { display: inline-grid; place-items: center; background: var(--brand-soft); color: var(--brand); font-weight: 800; border-radius: 50%; }
+.vs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: center; }
+.vs .side { display: flex; align-items: center; gap: 8px; min-width: 0; } .vs .side.away { justify-content: flex-end; text-align: right; }
+.vs .side b { font-size: 15px; font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; } .vsmark { font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); padding: 2px 7px; border-radius: 999px; background: var(--surface-2); }
+.reason { display: inline-flex; align-items: center; align-self: flex-start; padding: 4px 10px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: 12.5px; font-weight: 800; border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent); }
+.reason.big { font-size: 14px; padding: 6px 12px; }
+.vscard { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--surface-2); }
+.matchrow.simple .vs, .matchrow .vs { margin: 2px 0; }
+.plhead { display: flex; align-items: center; gap: 8px; margin-top: 6px; } .plhead b { font-size: 14px; color: var(--text); }
+.subject { display: block; font-size: 12px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--brand); }

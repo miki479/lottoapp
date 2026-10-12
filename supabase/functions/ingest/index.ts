@@ -657,7 +657,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
           await new Promise((r) => setTimeout(r, 150)); // the free tier is polite-use: about 30 calls a minute
           for (const e of evs) {
             const k = Date.parse(`${e.strTimestamp}Z`) / 1000;
-            if (e.idEvent && e.strHomeTeam && e.strAwayTeam && Number.isFinite(k)) { fixtures.push({ eventId: e.idEvent, league: league.name, home: e.strHomeTeam, away: e.strAwayTeam, kickoff: k, ...(e.idAPIfootball ? { apiId: e.idAPIfootball } : {}) }); season = season || String(e.strSeason ?? ""); }
+            if (e.idEvent && e.strHomeTeam && e.strAwayTeam && Number.isFinite(k)) { fixtures.push({ eventId: e.idEvent, league: league.name, home: e.strHomeTeam, away: e.strAwayTeam, kickoff: k, ...(e.idAPIfootball ? { apiId: e.idAPIfootball } : {}), ...(e.strHomeTeamBadge ? { homeBadge: e.strHomeTeamBadge } : {}), ...(e.strAwayTeamBadge ? { awayBadge: e.strAwayTeamBadge } : {}) }); season = season || String(e.strSeason ?? ""); }
           }
         }
         // the last three days: finished matches feed the team strengths
@@ -697,7 +697,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
         if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
         // keep the figures of the not-yet-opened bets (and the data-source id) of already open matches current
         const seen = new Set<string>();
-        for (const m of markets) { const p = m.params; if (seen.has(p.eventId)) continue; seen.add(p.eventId); await sb.rpc("refresh_match_info", { p_event: p.eventId, p_priors: p.priors, p_api_id: p.apiId ?? null }); }
+        for (const m of markets) { const p = m.params; if (seen.has(p.eventId)) continue; seen.add(p.eventId); await sb.rpc("refresh_match_info", { p_event: p.eventId, p_priors: p.priors, p_api_id: p.apiId ?? null, p_home_badge: p.homeBadge ?? null, p_away_badge: p.awayBadge ?? null }); }
         if (markets.length) await sb.rpc("refresh_match_odds", { p: markets.map((m) => ({ dedupe_key: m.dedupe_key, odds_yes: m.odds_yes, odds_no: m.odds_no })) });
         okLeagues++; fixturesN += fixtures.length; offered += markets.length;
       } catch (e) { notes.push(`${league.name}: ${String((e as Error).message ?? e).slice(0, 60)}`); }

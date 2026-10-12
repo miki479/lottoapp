@@ -1,3 +1,4 @@
+import { MarketVs, reasonOf } from "./MatchVs.tsx";
 import { Q } from "./Q.tsx";
 import { Check, RotateCcw, Share2, X } from "lucide-preact";
 import { useEffect } from "preact/hooks";
@@ -41,6 +42,7 @@ export function ResultScreen({ bet, msg, locale, remaining, onClose, onShare, on
         <div><span class="detail">{msg.result[st]}</span></div>
         <div class="amount num">{amount}</div>
         <p style="color:var(--text-2)">{sub}</p>
+        {m.kind === "match_bet" && <div class="vscard"><MarketVs m={m} size={36} />{reasonOf(m, msg) && <span class="reason big">{reasonOf(m, msg)}</span>}</div>}
         <p class="q" style="font-weight:600"><Q m={m} msg={msg} locale={locale} city={cityName(city, locale)} tz={city.timezone} /></p>
         {lines.filter(Boolean).map((l) => <p class="hint" key={l}>{l}</p>)}
         <div class="facts"><div><span class="detail">{msg.result.stake}</span><b class="num">{money(bet.stake, locale)}</b></div><div><span class="detail">{msg.result.odds}</span><b class="num">{fmtOdds(Number(bet.odds), locale)}</b></div></div>

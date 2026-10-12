@@ -10,7 +10,7 @@ export function StakeControl(p: { value: number; onChange: (n: number) => void; 
   const heat = (p.value - lo) / (hi - lo);
   const hot = `hsl(${(260 + 130 * heat) % 360} 95% 68%)`;
   const gross = p.boost ? boostedPayout(p.value, p.odds) : Math.floor(p.value * p.odds);
-  const win = useCountUp(gross, 250);
+  const win = useCountUp(gross, 450);
   const fill = Math.round(heat * 100);
   return (
     <div class="stakectl">
@@ -20,7 +20,7 @@ export function StakeControl(p: { value: number; onChange: (n: number) => void; 
         style={`--fill:${fill}%;--hot:${hot}`}
         onInput={(e) => { p.onChange(Number((e.target as HTMLInputElement).value)); haptic.tap(); }} />
       <div class="rangelabels"><span>{money(lo, p.locale)}</span><span>{p.msg.stake.max(money(hi, p.locale))}</span></div>
-      <div class="summary"><span>{p.msg.stake.ifRight}</span><b class="num pop shine" key={gross}>{money(win, p.locale)}</b></div>
+      <div class="summary"><span>{p.msg.stake.ifRight}</span><b class="num shine" data-moving={win !== gross ? "1" : undefined}>{money(win, p.locale)}</b></div>
     </div>
   );
 }

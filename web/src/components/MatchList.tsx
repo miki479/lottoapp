@@ -8,12 +8,13 @@ import { computeOdds } from "../../../shared/odds.ts";
 import { DETAIL_LEAGUES, TWO_WAY_LEAGUES } from "../../../shared/sport.ts";
 import { sb } from "../lib/api.ts";
 import { Sheet } from "./Sheet.tsx";
+import { Crest, MatchVs } from "./MatchVs.tsx";
 import { Users, X } from "lucide-preact";
 
 interface LinePlayer { id: number; name: string; pos: string; side: "home" | "away"; pg: { yes: number; no: number } | null; pa: { yes: number; no: number } | null; ps: { yes: number; no: number } | null }
 /** Lineups already seen (an hour before a match they do not change): asked once, not at every tap. */
 const LINEUPS = new Map<string, { at: number; v: { players: LinePlayer[]; ready: boolean } }>();
-export interface Match { eventId: string; league: string; home: string; away: string; kickoff: number; priors: Record<string, number>; markets: Map<string, MarketRow> }
+export interface Match { homeBadge?: string; awayBadge?: string; eventId: string; league: string; home: string; away: string; kickoff: number; priors: Record<string, number>; markets: Map<string, MarketRow> }
 
 /** Groups the open football markets by match. */
 export function groupMatches(list: MarketRow[]): Match[] {
@@ -21,7 +22,7 @@ export function groupMatches(list: MarketRow[]): Match[] {
   for (const m of list) {
     if (m.kind !== "match_bet") continue;
     const id = String(m.params.eventId);
-    const e = by.get(id) ?? { eventId: id, league: String(m.params.league), home: String(m.params.home), away: String(m.params.away), kickoff: Number(m.params.kickoff), priors: (m.params.priors ?? {}) as Record<string, number>, markets: new Map<string, MarketRow>() };
+    const e = by.get(id) ?? { homeBadge: m.params.homeBadge as string | undefined, awayBadge: m.params.awayBadge as string | undefined, eventId: id, league: String(m.params.league), home: String(m.params.home), away: String(m.params.away), kickoff: Number(m.params.kickoff), priors: (m.params.priors ?? {}) as Record<string, number>, markets: new Map<string, MarketRow>() };
     e.markets.set(String(m.params.bet), m); by.set(id, e);
   }
   return [...by.values()].sort((a, b) => a.kickoff - b.kickoff);
@@ -91,8 +92,9 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
     if (!adv) return (
       <article class={`card matchrow simple ${fr(mt) > 0 ? "has-friends" : ""}`} key={mt.eventId}>
         {fr(mt) > 0 && <span class="frbadge" title={p.msg.frd.friendsOn(fr(mt))} aria-label={p.msg.frd.friendsOn(fr(mt))}><Users size={13} />{fr(mt)}</span>}
-        <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span></div>
-        <b class="teams">{p.msg.question.match({ bet: "home_win", home: mt.home, away: mt.away, time: "" }).replace(/\?.*$/, "?")}</b>
+        <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span>{!two && <button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button>}</div>
+        <MatchVs home={mt.home} away={mt.away} homeBadge={mt.homeBadge} awayBadge={mt.awayBadge} />
+        <span class="reason">{u.wins(mt.home)}?</span>
         <div class="oddsrow two">
           <OddsBtn label={u.yes} odds={oddsOf(mt, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(mt, "home_win", "yes")} />
           <OddsBtn label={u.no} odds={oddsOf(mt, "home_win", "no")} locale={p.locale} busy={busy} onClick={() => go(mt, "home_win", "no")} />
@@ -103,7 +105,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
       <article class={`card matchrow ${fr(mt) > 0 ? "has-friends" : ""}`} key={mt.eventId}>
         {fr(mt) > 0 && <span class="frbadge" title={p.msg.frd.friendsOn(fr(mt))} aria-label={p.msg.frd.friendsOn(fr(mt))}><Users size={13} />{fr(mt)}</span>}
         <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span>{!two && <button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button>}</div>
-        <b class="teams">{mt.home} – {mt.away}</b>
+        <MatchVs home={mt.home} away={mt.away} homeBadge={mt.homeBadge} awayBadge={mt.awayBadge} />
         <div class={`oddsrow ${two ? "two" : ""}`}>
           <OddsBtn label="1" odds={oddsOf(mt, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(mt, "home_win", "yes")} />
           {!two && <OddsBtn label="X" odds={oddsOf(mt, "draw", "yes")} locale={p.locale} busy={busy} onClick={() => go(mt, "draw", "yes")} />}
@@ -123,8 +125,9 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
       <div class="matchlist">{shown.slice(0, 60).map(Row)}</div>
       {open && (
         <Sheet onClose={() => setOpen(null)} label={`${open.home} – ${open.away}`}>
-          <div class="shead"><h2>{open.home} – {open.away}</h2><button class="iconbtn" onClick={() => setOpen(null)} aria-label={p.msg.common.close}><X size={22} /></button></div>
+          <div class="shead"><h2>{open.home} vs {open.away}</h2><button class="iconbtn" onClick={() => setOpen(null)} aria-label={p.msg.common.close}><X size={22} /></button></div>
           <span class="byline">{open.league} · {when(open.kickoff)}</span>
+          <MatchVs home={open.home} away={open.away} homeBadge={open.homeBadge} awayBadge={open.awayBadge} size={36} />
           {err && <p class="formerr" role="alert">{err}</p>}
           {hasDetails && <div class="mkchips">{([["main", u.finalT], ["half", u.halves], ["corners", u.cornersT], ["cards", u.cardsT], ["players", u.players]] as const).map(([k, l]) => <button key={k} class={`mkchip ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>}
           {(tab === "main" || !hasDetails) && <>
@@ -182,7 +185,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
             {lineup !== undefined && !(lineup?.ready) && <p class="hint">{u.noLineup}</p>}
             {lineup?.ready && (["home", "away"] as const).map((side) => (
               <section key={side} class="stack plteam" style="gap:6px">
-                <span class="detail">{side === "home" ? open.home : open.away}</span>
+                <span class="detail plhead"><Crest src={side === "home" ? open.homeBadge : open.awayBadge} name={side === "home" ? open.home : open.away} size={22} /><b>{side === "home" ? open.home : open.away}</b></span>
                 {lineup.players.filter((x) => x.side === side).map((x) => (
                   <div class="plrow" key={x.id}>
                     <span class="plname"><b>{x.name}</b><em>{x.pos}</em></span>
