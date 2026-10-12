@@ -1132,3 +1132,12 @@ textarea.field { resize: vertical; min-height: 84px; }
 @media (prefers-reduced-motion: reduce) { .lbveh, .lbroad, .lbtrack i { animation: none; } .lbveh { left: 20px; } .lbtrack i { width: 60%; } }
 
 .mscene.tick.metal.m-xau { --mglow: 255, 214, 90; } .mscene.tick.metal.m-xag { --mglow: 215, 224, 240; } .mscene.tick.metal.m-xpt { --mglow: 150, 200, 255; } .mscene.tick.metal.m-hg { --mglow: 255, 140, 80; }
+
+/* avatar decorations */
+.look { display: block; flex: none; overflow: visible; }
+.lk-sheen { transform-origin: 60px 60px; animation: lkspin 5s linear infinite; }
+.lk-spk { transform-box: fill-box; transform-origin: center; animation: lkspk 2.4s ease-in-out infinite; }
+.lk-d1 { animation-delay: .6s; } .lk-d2 { animation-delay: 1.2s; } .lk-d3 { animation-delay: 1.8s; }
+@keyframes lkspin { to { transform: rotate(360deg); } }
+@keyframes lkspk { 0%, 100% { opacity: 0; transform: scale(.4); } 50% { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .lk-sheen, .lk-spk { animation: none; } .lk-spk { opacity: .8; } }

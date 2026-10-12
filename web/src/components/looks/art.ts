@@ -95,7 +95,7 @@ export function decorationSvg(id: string, shines: boolean, hi: boolean): string 
   out += `<circle cx="${C}" cy="${C}" r="44.2" fill="none" stroke="${ramp(p, 0.05)}" stroke-width=".8" stroke-opacity=".8"/>`;
   out += `<path d="${arc(49.5, 290, 350)}" fill="none" stroke="${p.h}" stroke-opacity=".55" stroke-width="1.1" stroke-linecap="round"/>`;
   if (shines) {
-    out += `<g class="lk-sheen"><path d="${sector(46.8, 55, 0, 16)}" fill="#fff" fill-opacity=".55"/></g>`;
+    out += `<g class="lk-sheen"><path d="${sector(47.5, 54.5, 0, 7)}" fill="#fff" fill-opacity=".38"/></g>`;
     for (const [i, a] of [40, 140, 230, 320].entries()) { const [x, y] = pt(51, a); out += `<path class="lk-spk lk-d${i}" d="${star(x, y, 3.2)}" fill="#fff"/>`; }
   }
   return out;
