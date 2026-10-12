@@ -1,0 +1,98 @@
+{
+  "id": "nantes",
+  "country": "FR",
+  "name": {
+    "it": "Nantes",
+    "en-US": "Nantes",
+    "en-GB": "Nantes",
+    "ja": "ナント"
+  },
+  "timezone": "Europe/Paris",
+  "defaultLocale": "en-GB",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 47.2184,
+    "lon": -1.5536
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": true
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "naolib-bus-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://proxy.transport.data.gouv.fr/resource/naolib-nantes-gtfs-rt-trip-update",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 300,
+      "routeTypes": [
+        3
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Nantes Métropole / Naolib (via transport.data.gouv.fr)",
+        "license": "Licence Ouverte v2.0 / Etalab 2.0 (code 'lov2' on transport.data.gouv.fr)",
+        "licenseUrl": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
+        "url": "https://transport.data.gouv.fr/datasets/reseau-de-transports-collectifs-naolib"
+      },
+      "staticGtfsUrl": "https://www.data.gouv.fr/api/1/datasets/r/65bdd7e4-a8e7-4a54-893a-808e71c34d68",
+      "note": "Naolib buses. The transport.data.gouv.fr proxy answers HTTP 429 'Rate limit exceeded, 1 request per 30 seconds' (seen on repeated tests): poll no faster than every 60 s and DO NOT share the polling IP with other proxy resources. Explicit delay + time, 100% id match; trips carry no start date/time."
+    },
+    {
+      "id": "naolib-tram-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://proxy.transport.data.gouv.fr/resource/naolib-nantes-gtfs-rt-trip-update",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 300,
+      "routeTypes": [
+        0
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Nantes Métropole / Naolib (via transport.data.gouv.fr)",
+        "license": "Licence Ouverte v2.0 / Etalab 2.0 (code 'lov2' on transport.data.gouv.fr)",
+        "licenseUrl": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
+        "url": "https://transport.data.gouv.fr/datasets/reseau-de-transports-collectifs-naolib"
+      },
+      "staticGtfsUrl": "https://www.data.gouv.fr/api/1/datasets/r/65bdd7e4-a8e7-4a54-893a-808e71c34d68",
+      "note": "Nantes tram, same real-time file as the buses."
+    },
+    {
+      "id": "open-meteo-nantes",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

@@ -1,0 +1,76 @@
+{
+  "id": "victoria-bc",
+  "country": "CA",
+  "name": {
+    "it": "Victoria (Canada)",
+    "en-US": "Victoria, BC",
+    "en-GB": "Victoria, BC",
+    "ja": "ビクトリア（カナダ）"
+  },
+  "timezone": "America/Vancouver",
+  "defaultLocale": "en-GB",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 48.4284,
+    "lon": -123.3656
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": false
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "bct-victoria-bus-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://bct.tmix.se/gtfs-realtime/tripupdates.pb?operatorIds=48",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        3
+      ],
+      "licenseVerified": false,
+      "attribution": {
+        "name": "BC Transit (Victoria Regional Transit System)",
+        "license": "BC Transit Open Data Terms of Use: 'limited, revocable and non-exclusive license to use, reproduce, and redistribute the Data'; must state BC Transit as source; BC Transit trade-marks/domain may not be used",
+        "licenseUrl": "https://www.bctransit.com/open-data/terms-of-use",
+        "url": "https://www.bctransit.com/open-data"
+      },
+      "staticGtfsUrl": "https://bct.tmix.se/Tmix.Cap.TdExport.WebApi/gtfs/?operatorIds=48",
+      "note": "BC Transit Victoria (383 trips, 98% id match, explicit delay + time). The static file has only calendar_dates.txt (no calendar.txt): check that the generator copes. The same tmix.se host serves ~30 other BC towns by changing operatorIds=."
+    },
+    {
+      "id": "open-meteo-victoria-bc",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

@@ -7,7 +7,7 @@ import { OCC_WINDOW_SEC } from "../_shared/shared/occupancy.ts";
 import type { DelayObservation, MetricObservation, OccupancyObservation, QuakeReading, StrikeReading, TickObservation, TrafficObservation, WeatherObservation } from "../_shared/shared/types.ts";
 import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
 import { cancelledMarkets } from "../_shared/shared/cancel.ts";
-import { lastNotifyError, notifyFlash, notifyFriendWins, notifyInvites, notifyFriendRequests, notifyReminders, notifySupers, notifyModeration, notifyResults, notifyStreak } from "../_lib/notify.ts";
+import { notifyBroadcast, lastNotifyError, notifyFlash, notifyFriendWins, notifyInvites, notifyFriendRequests, notifyReminders, notifySupers, notifyModeration, notifyResults, notifyStreak } from "../_lib/notify.ts";
 
 Deno.serve(safe(async (req) => {
   const denied = requireCron(req);
@@ -133,7 +133,7 @@ Deno.serve(safe(async (req) => {
     }
   }
   const safeCount = (p: Promise<number>) => p.catch((e) => { console.error("notify failed", e); return 0; });
-  const notified = await safeCount(notifyResults(sb)) + await safeCount(notifyFlash(sb)) + await safeCount(notifyStreak(sb)) + await safeCount(notifyModeration(sb)) + await safeCount(notifyInvites(sb)) + await safeCount(notifySupers(sb)) + await safeCount(notifyFriendWins(sb)) + await safeCount(notifyFriendRequests(sb)) + await safeCount(notifyReminders(sb));
+  const notified = await safeCount(notifyResults(sb)) + await safeCount(notifyFlash(sb)) + await safeCount(notifyStreak(sb)) + await safeCount(notifyModeration(sb)) + await safeCount(notifyInvites(sb)) + await safeCount(notifySupers(sb)) + await safeCount(notifyFriendWins(sb)) + await safeCount(notifyFriendRequests(sb)) + await safeCount(notifyReminders(sb)) + await safeCount(notifyBroadcast(sb));
   return Response.json({ ...out, notified, notifyError: lastNotifyError.msg });
 }));
 

@@ -48,6 +48,16 @@ jobs:
           node scripts/generate-markets.mjs --city helsinki --feed hsl-train-trip-update --max 20 --apply
           node scripts/generate-markets.mjs --city boston --feed mbta-bus-trip-update --max 30 --apply
           node scripts/generate-markets.mjs --city boston --feed mbta-train-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city bordeaux --feed tbm-bus-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city bordeaux --feed tbm-tram-trip-update --max 10 --apply
+          node scripts/generate-markets.mjs --city nantes --feed naolib-bus-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city nantes --feed naolib-tram-trip-update --max 10 --apply
+          node scripts/generate-markets.mjs --city prague --feed pid-bus-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city prague --feed pid-train-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city brisbane --feed translink-seq-bus-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city brisbane --feed translink-seq-train-trip-update --max 10 --apply
+          node scripts/generate-markets.mjs --city germany --feed gtfsde-rv-trip-update --max 30 --apply
+          node scripts/generate-markets.mjs --city germany --feed gtfsde-fv-trip-update --max 20 --apply
       - name: Italian trains (unlicensed feed, needs ALLOW_UNVERIFIED_FEEDS and a reachable IP)
         if: vars.ENABLE_VIAGGIATRENO == '1' && (github.event.schedule != '41 2 * * *')
         continue-on-error: true

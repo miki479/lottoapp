@@ -1,0 +1,99 @@
+{
+  "id": "brisbane",
+  "country": "AU",
+  "name": {
+    "it": "Brisbane",
+    "en-US": "Brisbane",
+    "en-GB": "Brisbane",
+    "ja": "ブリスベン"
+  },
+  "timezone": "Australia/Brisbane",
+  "defaultLocale": "en-GB",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": -27.4698,
+    "lon": 153.0251
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": true
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "translink-seq-bus-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://gtfsrt.api.translink.com.au/api/realtime/SEQ/TripUpdates",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        3
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Translink (Queensland Government), South East Queensland GTFS Realtime",
+        "license": "Creative Commons Attribution 4.0 International (stated on the TransLink open-data GTFS-RT page: 'Our data is licensed under a Creative Commons Attribution 4.0 International License. Authentication is not required to use the feed.')",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://translink.com.au/about-translink/open-data/gtfs-rt"
+      },
+      "staticGtfsUrl": "https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip",
+      "note": "South East Queensland buses. Explicit delay + predicted time + stop_id on every stop_time_update; 98% of trip ids match the static file. DOUBLE-CHECK: the static calendar starts on 2026-10-13 (service period turnover), re-check the file on the day it is used."
+    },
+    {
+      "id": "translink-seq-train-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://gtfsrt.api.translink.com.au/api/realtime/SEQ/TripUpdates",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        2,
+        0
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Translink (Queensland Government), South East Queensland GTFS Realtime",
+        "license": "Creative Commons Attribution 4.0 International (stated on the TransLink open-data GTFS-RT page: 'Our data is licensed under a Creative Commons Attribution 4.0 International License. Authentication is not required to use the feed.')",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://translink.com.au/about-translink/open-data/gtfs-rt"
+      },
+      "staticGtfsUrl": "https://gtfsrt.api.translink.com.au/GTFS/SEQ_GTFS.zip",
+      "note": "Queensland Rail (route_type 2) and the Gold Coast light rail (0), same real-time file as the buses."
+    },
+    {
+      "id": "open-meteo-brisbane",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

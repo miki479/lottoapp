@@ -1,0 +1,101 @@
+{
+  "id": "prague",
+  "country": "CZ",
+  "name": {
+    "it": "Praga",
+    "en-US": "Prague",
+    "en-GB": "Prague",
+    "ja": "プラハ"
+  },
+  "timezone": "Europe/Prague",
+  "defaultLocale": "en-GB",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 50.0755,
+    "lon": 14.4378
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": true
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "pid-bus-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_seq",
+      "url": "https://api.golemio.cz/v2/vehiclepositions/gtfsrt/trip_updates.pb",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 300,
+      "routeTypes": [
+        3,
+        11
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Prazska integrovana doprava (PID) via Golemio data platform",
+        "license": "CC BY 4.0 (stated on pid.cz/o-systemu/opendata: data downloadable from the site are under CC-BY, attribution and indication of changes required)",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://pid.cz/o-systemu/opendata/"
+      },
+      "staticGtfsUrl": "https://data.pid.cz/PID_GTFS.zip",
+      "note": "Prague integrated transport (PID). Explicit delay per stop_sequence, NO predicted time, hence trip_updates_seq. Reached without any key in the test, but the api.golemio.cz host normally hands out a free self-service token, so confirm the open endpoint is meant to be used keyless. The response is CDN-cached ~40 s (cache-control s-maxage=40): polling faster than 60 s is pointless."
+    },
+    {
+      "id": "pid-train-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_seq",
+      "url": "https://api.golemio.cz/v2/vehiclepositions/gtfsrt/trip_updates.pb",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 300,
+      "routeTypes": [
+        0,
+        1,
+        2
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Prazska integrovana doprava (PID) via Golemio data platform",
+        "license": "CC BY 4.0 (stated on pid.cz/o-systemu/opendata: data downloadable from the site are under CC-BY, attribution and indication of changes required)",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://pid.cz/o-systemu/opendata/"
+      },
+      "staticGtfsUrl": "https://data.pid.cz/PID_GTFS.zip",
+      "note": "Trams, metro and PID regional trains, same real-time file as the buses (143 of 401 trips tracked at the test were trams)."
+    },
+    {
+      "id": "open-meteo-prague",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

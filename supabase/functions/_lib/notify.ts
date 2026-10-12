@@ -257,3 +257,34 @@ export async function notifyFriendWins(sb: Db): Promise<number> {
   }
   return n;
 }
+
+/** One announcement to everybody who allowed notifications, sent once: it goes out when app_settings has broadcast_pending = <id> and broadcast_done is not that id yet. */
+const BROADCAST = {
+  looks_v1: {
+    headings: { en: "LateLotto is watching 👀", it: "LateLotto ti sta guardando 👀", ja: "LateLottoは見ています👀" },
+    contents: {
+      en: "New decorations, profile pictures and badges that are much, MUCH harder to get. Yes, even the ones you thought you already had. Go and look. It's not a threat. It's a fact, and facts can be scary.",
+      it: "Nuove decorazioni, immagini profilo e distintivi MOLTO più difficili da ottenere. Sì, anche quelli che pensavi di avere già. Vai a dare un'occhiata. Non è una minaccia. È un fatto, e i fatti a volte fanno paura.",
+      ja: "新しいデコレーション、プロフィール画像、そしてはるかに手に入りにくいバッジが登場。すでに持っていると思っていたものも例外ではありません。見に行ってください。脅しではありません。事実です。事実は時々怖いものです。",
+    },
+    url: "https://latelotto.web.app/?open=profile",
+  },
+} as const;
+export async function notifyBroadcast(sb: Db): Promise<number> {
+  const { data } = await sb.from("app_settings").select("key,value").in("key", ["broadcast_pending", "broadcast_done"]);
+  const v = Object.fromEntries((data ?? []).map((r) => [r.key as string, r.value as string]));
+  const id = v.broadcast_pending as keyof typeof BROADCAST | undefined;
+  if (!id || id === v.broadcast_done || !(id in BROADCAST)) return 0;
+  const key = Deno.env.get("ONESIGNAL_REST_API_KEY")?.trim().replace(/^(Key|Basic)\s+/i, ""), app = Deno.env.get("ONESIGNAL_APP_ID");
+  if (!key || !app) return 0;
+  // mark first: a failure after the send must never repeat the message to everybody
+  await sb.from("app_settings").upsert({ key: "broadcast_done", value: id });
+  const b = BROADCAST[id];
+  const r = await fetch("https://api.onesignal.com/notifications", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `${key.startsWith("os_v2") ? "Key" : "Basic"} ${key}` },
+    body: JSON.stringify({ app_id: app, target_channel: "push", included_segments: ["Subscribed Users"], headings: b.headings, contents: b.contents, url: b.url, ttl: 86400 }),
+  });
+  if (!r.ok) { lastNotifyError.msg = `broadcast ${r.status} ${(await r.text()).slice(0, 160)}`; console.error(lastNotifyError.msg); return 0; }
+  return 1;
+}

@@ -1,0 +1,98 @@
+{
+  "id": "bordeaux",
+  "country": "FR",
+  "name": {
+    "it": "Bordeaux",
+    "en-US": "Bordeaux",
+    "en-GB": "Bordeaux",
+    "ja": "ボルドー"
+  },
+  "timezone": "Europe/Paris",
+  "defaultLocale": "en-GB",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 44.8378,
+    "lon": -0.5792
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": true
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "tbm-bus-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://bdx.mecatran.com/utw/ws/gtfsfeed/realtime/bordeaux?apiKey=opendata-bordeaux-metropole-flux-gtfs-rt",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        3
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Bordeaux Métropole / TBM (via transport.data.gouv.fr)",
+        "license": "Licence Ouverte (code 'fr-lo' on transport.data.gouv.fr; version 1.0 or 2.0 not stated)",
+        "licenseUrl": "https://transport.data.gouv.fr/datasets/offres-de-services-bus-tram-et-scolaire-au-format-gtfs-netex-gtfs-rt-siri-lite",
+        "url": "https://transport.data.gouv.fr/datasets/offres-de-services-bus-tram-et-scolaire-au-format-gtfs-netex-gtfs-rt-siri-lite"
+      },
+      "staticGtfsUrl": "https://bdx.mecatran.com/utw/ws/gtfsfeed/static/bordeaux?apiKey=opendata-bordeaux-metropole-flux-gtfs-rt",
+      "note": "TBM buses. The URL carries a PUBLIC open-data apiKey that the publisher itself lists on the dataset page (no registration), so requiresKey stays null; DOUBLE-CHECK that this key is meant for third-party apps and that the URL is not logged publicly. 99% id match, explicit delay + time; 180 trips at midnight."
+    },
+    {
+      "id": "tbm-tram-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://bdx.mecatran.com/utw/ws/gtfsfeed/realtime/bordeaux?apiKey=opendata-bordeaux-metropole-flux-gtfs-rt",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        0
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Bordeaux Métropole / TBM (via transport.data.gouv.fr)",
+        "license": "Licence Ouverte (code 'fr-lo' on transport.data.gouv.fr; version 1.0 or 2.0 not stated)",
+        "licenseUrl": "https://transport.data.gouv.fr/datasets/offres-de-services-bus-tram-et-scolaire-au-format-gtfs-netex-gtfs-rt-siri-lite",
+        "url": "https://transport.data.gouv.fr/datasets/offres-de-services-bus-tram-et-scolaire-au-format-gtfs-netex-gtfs-rt-siri-lite"
+      },
+      "staticGtfsUrl": "https://bdx.mecatran.com/utw/ws/gtfsfeed/static/bordeaux?apiKey=opendata-bordeaux-metropole-flux-gtfs-rt",
+      "note": "Bordeaux tram (110 of 179 trips tracked at midnight), same real-time file as the buses."
+    },
+    {
+      "id": "open-meteo-bordeaux",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}
