@@ -23,7 +23,7 @@ export function CatChips({ tiles, value, onPick }: { tiles: CatTile[]; value: Ca
       {tiles.map((t) => {
         const on = value === t.id;
         return (
-          <button key={t.id} role="tab" aria-selected={on} disabled={t.disabled} class={`cc ${t.id} ${on ? "on" : ""} ${popId === t.id ? "pop" : ""}`} onClick={() => { setPopId(null); requestAnimationFrame(() => setPopId(t.id)); setTimeout(() => setPopId((x) => (x === t.id ? null : x)), 2600); onPick(t.id); }}>
+          <button key={t.id} role="tab" aria-selected={on} disabled={t.disabled} class={`cc ${t.id} ${on ? "on" : ""} ${popId === t.id ? "play" : ""}`} onClick={() => { setPopId(null); requestAnimationFrame(() => setPopId(t.id)); setTimeout(() => setPopId((x) => (x === t.id ? null : x)), 2600); onPick(t.id); }}>
             <span class="ghost"><Art id={t.id} /></span>
             <span class="lbl">{t.label}</span>
             {t.count > 0 && <em>{t.count}</em>}

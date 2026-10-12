@@ -1,4 +1,5 @@
 import type { ComponentChildren } from "preact";
+import { createPortal } from "preact/compat";
 import { useEffect, useRef } from "preact/hooks";
 
 /** Bottom sheet on phones, centred dialog on larger screens. Closes on Escape and on outside tap. */
@@ -20,12 +21,14 @@ export function Sheet({ onClose, label, children }: { onClose: () => void; label
     el.style.transition = "transform 220ms var(--ease)";
     if (d.dy > 90 || fast) { el.style.transform = "translateY(110%)"; setTimeout(onClose, 200); } else el.style.transform = "";
   };
-  return (
+  // Rendered into <body>: a sheet opened from inside an animated screen would otherwise be positioned relative to that screen, not the window.
+  return createPortal(
     <div class="scrim" onClick={onClose}>
       <div class="sheet" ref={sheet} role="dialog" aria-modal="true" aria-label={label} onClick={(e) => e.stopPropagation()}>
         <div class="grab" role="button" aria-label="Close" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} />
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

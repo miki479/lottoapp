@@ -470,17 +470,18 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .gh * { transform-box: fill-box; }
 .gh-bolt { opacity: 0; } .gh-drops path { opacity: 0; }
 .gh-leaves ellipse { opacity: 0; }
-@media (hover: hover) { .cc.bus:not(:disabled):hover .gh-veh, .cc.train:not(:disabled):hover .gh-veh { animation: drive 1.2s ease-in-out 1 both; } }
-.cc.pop.bus .gh-veh, .cc.pop.train .gh-veh { animation: drive 1.2s ease-in-out 1 both; }
+@media (hover: hover) { .cc.bus:not(:disabled):hover .veh, .cc.train:not(:disabled):hover .veh { animation: drive 1.4s ease-in-out 1 both; } }
+.cc.play.bus .veh, .cc.play.train .veh { animation: drive 1.4s ease-in-out 1 both; }
 @media (hover: hover) { .cc.weather:not(:disabled):hover .gh-drops path { animation: fall 0.9s linear 2 both; } }
-.cc.pop.weather .gh-drops path { animation: fall 0.9s linear 2 both; }
-.cc.pop.weather .gh-bolt { animation: flash .6s ease-out 1 both; }
+.cc.play.weather .gh-drops path { animation: fall 0.9s linear 2 both; }
+.cc.play.weather .gh-bolt { animation: flash .6s ease-out 1 both; }
 .gh-drops path:nth-child(2n) { animation-delay: .15s !important; } .gh-drops path:nth-child(3n) { animation-delay: .3s !important; }
 @media (hover: hover) { .cc.nature:not(:disabled):hover .gh-sway { animation: sway 1.8s ease-in-out 1 both; } .cc.nature:not(:disabled):hover .gh-leaves ellipse { animation: leaf 2s ease-in 1 both; } }
-.cc.pop.nature .gh-sway { animation: sway 1.8s ease-in-out 1 both; } .cc.pop.nature .gh-leaves ellipse { animation: leaf 2s ease-in 1 both; }
+.cc.play.nature .gh-sway { animation: sway 1.8s ease-in-out 1 both; } .cc.play.nature .gh-leaves ellipse { animation: leaf 2s ease-in 1 both; }
 .gh-sway { transform-origin: 30% 100%; } .gh-sway2 { transform-origin: 70% 100%; animation-delay: .2s !important; }
 .gh-leaves .l6 { animation-delay: .75s !important; } .gh-leaves .l7 { animation-delay: .9s !important; } .gh-leaves .l2 { animation-delay: .15s !important; } .gh-leaves .l3 { animation-delay: .3s !important; } .gh-leaves .l4 { animation-delay: .45s !important; } .gh-leaves .l5 { animation-delay: .6s !important; }
-@keyframes drive { 0% { transform: translateX(0); } 30% { transform: translateX(9%) translateY(-1px); } 50% { transform: translateX(9%) translateY(0); } 75% { transform: translateX(-3%); } 100% { transform: translateX(0); } }
+@keyframes drive { 0% { transform: translateX(0) translateY(0); } 15% { transform: translateX(2px) translateY(-.8px); } 55% { transform: translateX(15px) translateY(0); } 70% { transform: translateX(15px) translateY(-.6px); } 100% { transform: translateX(0) translateY(0); } }
+.gh-veh .veh { transform-box: view-box; }
 @keyframes fall { 0% { opacity: 0; transform: translateY(-6px); } 25% { opacity: .95; } 100% { opacity: 0; transform: translateY(12px); } }
 @keyframes flash { 0%, 100% { opacity: 0; } 15% { opacity: .95; } 30% { opacity: .1; } 45% { opacity: .9; } 70% { opacity: 0; } }
 @keyframes sway { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(4deg); } 55% { transform: rotate(-3deg); } 80% { transform: rotate(1.5deg); } }
@@ -696,7 +697,7 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 
 .gh-flag { transform-origin: 0 50%; } .gh-flag2 { transform-origin: 100% 50%; } .gh-sign { transform-origin: 50% 100%; }
 @media (hover: hover) { .cc.strike:not(:disabled):hover .gh-flag { animation: flagwave2 .5s ease-in-out 4 alternate both; } .cc.strike:not(:disabled):hover .gh-sign { animation: signbob .7s ease-in-out 3 alternate both; } .cc.strike:not(:disabled):hover .gh-p1, .cc.strike:not(:disabled):hover .gh-p3 { animation: cheer .7s ease-in-out 3 alternate both; } }
-.cc.pop.strike .gh-flag { animation: flagwave2 .5s ease-in-out 4 alternate both; } .cc.pop.strike .gh-sign { animation: signbob .7s ease-in-out 3 alternate both; } .cc.pop.strike .gh-p1, .cc.pop.strike .gh-p3 { animation: cheer .7s ease-in-out 3 alternate both; }
+.cc.play.strike .gh-flag { animation: flagwave2 .5s ease-in-out 4 alternate both; } .cc.play.strike .gh-sign { animation: signbob .7s ease-in-out 3 alternate both; } .cc.play.strike .gh-p1, .cc.play.strike .gh-p3 { animation: cheer .7s ease-in-out 3 alternate both; }
 .gh-p3 { animation-delay: .15s !important; }
 @keyframes flagwave2 { from { transform: scaleX(1) skewY(-5deg); } to { transform: scaleX(.78) skewY(6deg); } }
 @keyframes signbob { from { transform: translateY(0) rotate(-3deg); } to { transform: translateY(-4px) rotate(4deg); } }
@@ -743,3 +744,4 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .filteropt .fi { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--surface); color: var(--brand); }
 .filteropt em { font-style: normal; font-size: 13px; color: var(--muted); font-weight: 700; }
 .filteropt.on { border-color: var(--brand); background: var(--brand-soft); }
+.filteropt { gap: 8px; padding: 10px 12px; } .filteropt b { min-width: 0; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .filteropt .fi { width: 32px; height: 32px; }

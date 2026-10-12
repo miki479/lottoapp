@@ -53,6 +53,7 @@ export function BusGhost() {
     <svg viewBox="0 0 80 70" class="gh gh-veh" aria-hidden="true">
       <defs><linearGradient id="gb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc94d" /><stop offset="1" stop-color="#f59a00" /></linearGradient></defs>
       <rect x="0" y="57" width="80" height="2.500" rx="1.200" fill="#8a96ad" opacity=".7" /><path d="M4 62h12M26 62h12M48 62h12M68 62h8" stroke="#8a96ad" stroke-width="1.400" stroke-linecap="round" opacity=".6" />
+      <g class="veh">
       <rect x="22" y="14" width="14" height="5" rx="2" fill="#d98200" />
       <path d="M6 24Q6 17 13 17H62Q70 17 73 26L75 40V51Q75 54 72 54H9Q6 54 6 51Z" fill="url(#gb)" />
       <path d="M6 43H75" stroke="#fff" stroke-width="1.800" opacity=".75" /><path d="M6 47H75" stroke="#d98200" stroke-width="1.200" opacity=".6" />
@@ -61,6 +62,7 @@ export function BusGhost() {
       <rect x="55" y="34" width="1.600" height="17" fill="#d98200" opacity=".7" />
       <circle cx="73" cy="46" r="2" fill="#fff6c2" /><rect x="6" y="48" width="3" height="3" rx="1" fill="#e5484d" />
       <g fill="#1c212b"><circle cx="22" cy="54" r="7" /><circle cx="58" cy="54" r="7" /></g><g fill="#c9d3e6"><circle cx="22" cy="54" r="3" /><circle cx="58" cy="54" r="3" /></g>
+      </g>
     </svg>
   );
 }
@@ -71,6 +73,7 @@ export function TrainGhost() {
     <svg viewBox="0 0 80 70" class="gh gh-veh" aria-hidden="true">
       <defs><linearGradient id="gt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0483f" /><stop offset="1" stop-color="#c91f1a" /></linearGradient></defs>
       <rect x="0" y="58" width="80" height="2" fill="#8a96ad" opacity=".75" /><path d="M2 61.500h76" stroke="#8a96ad" stroke-width="1.200" stroke-dasharray="3 3" opacity=".6" />
+      <g class="veh">
       <path d="M2 28Q2 21 9 21H46C60 21 70 29 78 42Q79 44 77 44.500V50Q77 53 74 53H6Q2 53 2 49Z" fill="url(#gt)" />
       <path d="M2 41H77" stroke="#fff" stroke-width="2.200" opacity=".85" />
       <g fill="#1c2a44" opacity=".92"><rect x="8" y="26" width="8" height="9" rx="1.800" /><rect x="18" y="26" width="8" height="9" rx="1.800" /><rect x="28" y="26" width="8" height="9" rx="1.800" /><path d="M42 26h8c7 1 13 5 18 12H42z" /></g>
@@ -78,6 +81,7 @@ export function TrainGhost() {
       <g fill="#fff" opacity=".3"><path d="M9 27h4l-5 8h-0z" /><path d="M19 27h4l-5 8h0z" /></g>
       <rect x="73" y="45" width="3" height="3" rx="1" fill="#fff6c2" />
       <path d="M5 50H75V54Q75 56 73 56H7Q5 56 5 54Z" fill="#2a2f3a" /><g fill="#1c212b"><rect x="9" y="54" width="14" height="3" rx="1" /><rect x="52" y="54" width="14" height="3" rx="1" /></g>
+      </g>
     </svg>
   );
 }
