@@ -9,6 +9,15 @@ export const MATCH_BETS: BasicBet[] = ["home_win", "draw", "away_win", "dc_1x", 
 export const DETAIL_BETS: DetailBet[] = ["ht_home", "ht_draw", "ht_away", "ht_goal", "st_home", "st_draw", "st_away", "st_goal", "corners_8_5", "corners_9_5", "corners_10_5", "corners_11_5", "cards_3_5", "cards_4_5", "cards_5_5", "red_card"];
 export const ALL_BETS: MatchBet[] = [...MATCH_BETS, ...DETAIL_BETS];
 
+/**
+ * Extra bets of the sports without a draw, settled from the final score: "tot:226.5" = more than 226.5 points in total, "mrg:-6.5" = the home side
+ * wins by more than -6.5 (that is, wins or loses by 6 or fewer). Lines always end in .5, so there is never a tie.
+ */
+export type TwoBet = `tot:${number}` | `mrg:${number}`;
+export const TWO_BET_RE = /^(tot|mrg):(-?\d{1,3}\.5)$/;
+export const isTwoBet = (b: string): b is TwoBet => TWO_BET_RE.test(b);
+export const twoBetLine = (b: string): number => Number(TWO_BET_RE.exec(b)?.[2] ?? NaN);
+
 /** A bet on one player of a match: "pg:<id>" scores, "pa:<id>" makes an assist, "ps:<id>" (a starter) is substituted. */
 export type PlayerBet = `pg:${number}` | `pa:${number}` | `ps:${number}`;
 export const PLAYER_BET_RE = /^(pg|pa|ps):(\d{1,9})$/;
@@ -35,16 +44,16 @@ export const AUTO_BETS: MatchBet[] = ["home_win", "draw", "away_win"];
 export const AUTO_BETS_LOWER: MatchBet[] = AUTO_BETS;
 
 /** `two` = no draw (basketball, hockey, American football, baseball): the bets are "home wins" and "away wins" only. */
-export interface TwoWayCfg { sd: number; home: number; avg: number; lenSec: number }
+export interface TwoWayCfg { sd: number; /** spread of the total points of a game */ tsd: number; home: number; avg: number; lenSec: number }
 export const LEAGUES: { id: string; name: string; top: boolean; two?: TwoWayCfg }[] = [
   { id: "4332", name: "Serie A", top: true }, { id: "4394", name: "Serie B", top: false },
   { id: "5340", name: "Serie C - A", top: false }, { id: "5339", name: "Serie C - B", top: false }, { id: "5341", name: "Serie C - C", top: false },
   // sd = spread of the final margin, home = home advantage in points, avg = points per team per game, lenSec = how long until the result is final
-  { id: "4387", name: "NBA", top: true, two: { sd: 12, home: 2.5, avg: 113, lenSec: 3 * 3600 } },
-  { id: "4546", name: "EuroLeague", top: false, two: { sd: 11, home: 3, avg: 82, lenSec: 3 * 3600 } },
-  { id: "4380", name: "NHL", top: true, two: { sd: 2.3, home: 0.25, avg: 3.1, lenSec: 3 * 3600 } },
-  { id: "4391", name: "NFL", top: true, two: { sd: 13, home: 2.3, avg: 22, lenSec: 4 * 3600 } },
-  { id: "4424", name: "MLB", top: true, two: { sd: 4.4, home: 0.3, avg: 4.5, lenSec: 4 * 3600 } },
+  { id: "4387", name: "NBA", top: true, two: { sd: 12, tsd: 18, home: 2.5, avg: 113, lenSec: 3 * 3600 } },
+  { id: "4546", name: "EuroLeague", top: false, two: { sd: 11, tsd: 16, home: 3, avg: 82, lenSec: 3 * 3600 } },
+  { id: "4380", name: "NHL", top: true, two: { sd: 2.3, tsd: 2.4, home: 0.25, avg: 3.1, lenSec: 3 * 3600 } },
+  { id: "4391", name: "NFL", top: true, two: { sd: 13, tsd: 14, home: 2.3, avg: 22, lenSec: 4 * 3600 } },
+  { id: "4424", name: "MLB", top: true, two: { sd: 4.4, tsd: 4.4, home: 0.3, avg: 4.5, lenSec: 4 * 3600 } },
 ];
 export const TWO_WAY_LEAGUES: string[] = LEAGUES.filter((l) => l.two).map((l) => l.name);
 
@@ -136,7 +145,8 @@ export function matchPriors(home?: TableRow, away?: TableRow, avg = 1.3, top = t
 export interface MatchStats { players?: PlayerFacts | null; hg: number; ag: number; htHome?: number | null; htAway?: number | null; corners?: number | null; cards?: number | null; reds?: number | null }
 
 /** The result of a bet, or null when the figure it needs is not available (the market is then voided and refunded, never guessed). */
-export function evalMatch(bet: MatchBet | PlayerBet, s: MatchStats): boolean | null {
+export function evalMatch(bet: MatchBet | PlayerBet | TwoBet, s: MatchStats): boolean | null {
+  if (isTwoBet(bet)) { const line = twoBetLine(bet); return bet.startsWith("tot") ? s.hg + s.ag > line : s.hg - s.ag > line; }
   if (isPlayerBet(bet)) {
     if (!s.players) return null;
     const id = playerBetId(bet);
@@ -186,6 +196,14 @@ export function twoWayPriors(home: TableRow | undefined, away: TableRow | undefi
   const p = clamp(phi(mu / cfg.sd), 0.1, 0.9);
   const out = Object.fromEntries(ALL_BETS.map((b) => [b, 0.5])) as Record<MatchBet, number>;
   out.home_win = Math.round(p * 1000) / 1000; out.away_win = Math.round((1 - p) * 1000) / 1000;
+  // total points: each side scores about the mean of its own attack and the other's defence
+  const rate = (r: TableRow | undefined, k: "goalsFor" | "goalsAgainst") => (r ? (r[k] + K * cfg.avg) / (r.played + K) : cfg.avg);
+  const muT = rate(home, "goalsFor") / 2 + rate(away, "goalsAgainst") / 2 + rate(away, "goalsFor") / 2 + rate(home, "goalsAgainst") / 2;
+  const half = (x: number) => Math.floor(x) + 0.5, line = (x: number) => String(half(x)), extra = out as unknown as Record<string, number>;
+  const put = (key: string, chance: number) => { extra[key] = Math.round(clamp(chance, 0.1, 0.9) * 1000) / 1000; };
+  for (const k of [-0.6, 0, 0.6]) { const l = half(muT + k * cfg.tsd); put(`tot:${l}`, upper((l - muT) / cfg.tsd)); }
+  for (const l of new Set([-half(cfg.sd), -half(cfg.sd * 0.5), half(cfg.sd * 0.5), half(cfg.sd)])) put(`mrg:${l}`, upper((l - mu) / cfg.sd));
+  void line;
   return out;
 }
 

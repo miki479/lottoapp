@@ -8,7 +8,7 @@ import { computeOdds } from "../../../shared/odds.ts";
 import { DETAIL_LEAGUES, TWO_WAY_LEAGUES } from "../../../shared/sport.ts";
 import { sb } from "../lib/api.ts";
 import { Sheet } from "./Sheet.tsx";
-import { Crest, MatchVs } from "./MatchVs.tsx";
+import { Crest, MatchVs, twoSides } from "./MatchVs.tsx";
 import { Users, X } from "lucide-preact";
 
 interface LinePlayer { id: number; name: string; pos: string; side: "home" | "away"; pg: { yes: number; no: number } | null; pa: { yes: number; no: number } | null; ps: { yes: number; no: number } | null }
@@ -27,6 +27,10 @@ export function groupMatches(list: MarketRow[]): Match[] {
   }
   return [...by.values()].sort((a, b) => a.kickoff - b.kickoff);
 }
+
+/** The lines (total points, handicap) a match of a sport without a draw can be bet on. */
+const linesOf = (mt: Match, kind: "tot" | "mrg") => Object.keys(mt.priors).filter((k) => k.startsWith(kind + ":")).sort((a, b) => Number(a.slice(4)) - Number(b.slice(4)));
+const hasLines = (mt: Match) => linesOf(mt, "tot").length + linesOf(mt, "mrg").length > 0;
 
 const sum = (mt: Match, a: string, b: string) => (typeof mt.priors[a] === "number" && typeof mt.priors[b] === "number" ? (mt.priors[a]! + mt.priors[b]!) : undefined);
 
@@ -93,7 +97,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
     if (!adv) return (
       <article class={`card matchrow simple ${fr(mt) > 0 ? "has-friends" : ""}`} key={mt.eventId}>
         {fr(mt) > 0 && <span class="frbadge" title={p.msg.frd.friendsOn(fr(mt))} aria-label={p.msg.frd.friendsOn(fr(mt))}><Users size={13} />{fr(mt)}</span>}
-        <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span>{!two && <button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button>}</div>
+        <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span>{(!two || hasLines(mt)) && <button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button>}</div>
         <MatchVs home={mt.home} away={mt.away} homeBadge={mt.homeBadge} awayBadge={mt.awayBadge} />
         <span class="reason">{u.wins(mt.home)}?</span>
         <div class="oddsrow two">
@@ -105,7 +109,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
     return (
       <article class={`card matchrow ${fr(mt) > 0 ? "has-friends" : ""}`} key={mt.eventId}>
         {fr(mt) > 0 && <span class="frbadge" title={p.msg.frd.friendsOn(fr(mt))} aria-label={p.msg.frd.friendsOn(fr(mt))}><Users size={13} />{fr(mt)}</span>}
-        <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span>{!two && <button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button>}</div>
+        <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span>{(!two || hasLines(mt)) && <button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button>}</div>
         <MatchVs home={mt.home} away={mt.away} homeBadge={mt.homeBadge} awayBadge={mt.awayBadge} />
         <div class={`oddsrow ${two ? "two" : ""}`}>
           <OddsBtn label="1" odds={oddsOf(mt, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(mt, "home_win", "yes")} />
@@ -132,7 +136,21 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
           <MatchVs home={open.home} away={open.away} homeBadge={open.homeBadge} awayBadge={open.awayBadge} size={36} />
           {err && <p class="formerr" role="alert">{err}</p>}
           {hasDetails && <div class="mkchips wrap">{([["main", u.finalT], ["half", u.halves], ["corners", u.cornersT], ["cards", u.cardsT], ["players", u.players]] as const).map(([k, l]) => <button key={k} class={`mkchip ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>}
-          {(tab === "main" || !hasDetails) && <>
+          {TWO_WAY_LEAGUES.includes(open.league) && <>
+            {group(u.result, <>
+              <OddsBtn label={open.home} odds={oddsOf(open, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "home_win", "yes")} />
+              <OddsBtn label={open.away} odds={oddsOf(open, "away_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "away_win", "yes")} />
+            </>)}
+            {linesOf(open, "tot").map((b) => { const sd = twoSides({ kind: "match_bet", params: { bet: b, home: open.home, away: open.away } } as unknown as MarketRow, p.msg)!; return group(`${open.league === "NHL" ? u.totalGoals : u.totalPts} ${sd[0].replace(`${u.over} `, "")}`, <>
+              <OddsBtn label={sd[0]} odds={oddsOf(open, b, "yes")} locale={p.locale} busy={busy} onClick={() => go(open, b, "yes")} />
+              <OddsBtn label={sd[1]} odds={oddsOf(open, b, "no")} locale={p.locale} busy={busy} onClick={() => go(open, b, "no")} />
+            </>); })}
+            {linesOf(open, "mrg").map((b) => { const sd = twoSides({ kind: "match_bet", params: { bet: b, home: open.home, away: open.away } } as unknown as MarketRow, p.msg)!; return group(u.handicap, <>
+              <OddsBtn label={sd[0]} odds={oddsOf(open, b, "yes")} locale={p.locale} busy={busy} onClick={() => go(open, b, "yes")} />
+              <OddsBtn label={sd[1]} odds={oddsOf(open, b, "no")} locale={p.locale} busy={busy} onClick={() => go(open, b, "no")} />
+            </>); })}
+          </>}
+          {!TWO_WAY_LEAGUES.includes(open.league) && (tab === "main" || !hasDetails) && <>
           {group(u.result, <>
             <OddsBtn label="1" odds={oddsOf(open, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "home_win", "yes")} />
             <OddsBtn label="X" odds={oddsOf(open, "draw", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "draw", "yes")} />

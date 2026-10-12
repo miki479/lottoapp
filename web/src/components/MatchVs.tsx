@@ -30,9 +30,20 @@ export function MarketVs({ m, size }: { m: MarketRow; size?: number }) {
 
 /** The reason of the bet in a few words (what the pick is about), for the highlighted pill. */
 /** What "No" means on a football question: the other side of the bet, in words ("Udinese wins" for "Udinese does not lose"). */
+/** The two sides of an extra bet of a sport without a draw: "Over 226,5 / Under 226,5", "Lakers −6,5 / Celtics +6,5". */
+export function twoSides(m: MarketRow, msg: Messages): [string, string] | null {
+  const bet = String(m.params.bet), mt = /^(tot|mrg):(-?\d+(?:\.\d+)?)$/.exec(bet);
+  if (!mt) return null;
+  const raw = Number(mt[2]), n = (x: number) => String(x).replace(".", msg.sportui.dec), u = msg.sportui;
+  if (mt[1] === "tot") return [`${u.over} ${n(raw)}`, `${u.under} ${n(raw)}`];
+  const h = String(m.params.home), a = String(m.params.away);
+  return raw > 0 ? [`${h} −${n(raw)}`, `${a} +${n(raw)}`] : [`${h} +${n(-raw)}`, `${a} −${n(-raw)}`];
+}
+
 export function noOf(m: MarketRow, msg: Messages): string | null {
   if (m.kind !== "match_bet") return null;
   const bet = String(m.params.bet), h = String(m.params.home), a = String(m.params.away), o = msg.sportui.opp;
+  const two = twoSides(m, msg); if (two) return two[1];
   switch (bet) {
     case "home_win": return o.notWin(h);
     case "away_win": return o.notWin(a);
@@ -53,6 +64,7 @@ export function noOf(m: MarketRow, msg: Messages): string | null {
 export function reasonOf(m: MarketRow, msg: Messages): string | null {
   if (m.kind !== "match_bet") return null;
   const bet = String(m.params.bet);
+  const two = twoSides(m, msg); if (two) return two[0];
   if (/^(pg|pa|ps):/.test(bet)) { const n = String((m.params.player as { name?: string } | undefined)?.name ?? ""); return `${n} · ${bet.startsWith("pg") ? msg.sportui.pgL : bet.startsWith("pa") ? msg.sportui.paL : msg.sportui.psL}`; }
   if (bet === "home_win") return msg.sportui.wins(String(m.params.home));
   if (bet === "away_win") return msg.sportui.wins(String(m.params.away));

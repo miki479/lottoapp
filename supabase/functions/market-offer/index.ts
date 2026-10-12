@@ -4,7 +4,7 @@
 import { tvEpisode, tvReference } from "../_lib/tv.ts";
 import { FAIR_MAX, FAIR_MIN, CRYPTO, WIKI_ARTICLES, buildCustomTick, buildTvMarket, isCrypto, isSteam, tickChance, tickStep } from "../_shared/shared/ticks.ts";
 import { computeOdds } from "../_shared/shared/odds.ts";
-import { ALL_BETS, DETAIL_LEAGUES, isDetailBet, isPlayerBet, leagueAverage, matchMarket, matchPriors, playerBetId, playerChance, playerMarket, type LineupPlayer, type MatchBet, type PlayerBet } from "../_shared/shared/sport.ts";
+import { ALL_BETS, DETAIL_LEAGUES, LEAGUES, isDetailBet, isPlayerBet, isTwoBet, twoWayPriors, leagueAverage, matchMarket, matchPriors, playerBetId, playerChance, playerMarket, type LineupPlayer, type MatchBet, type PlayerBet } from "../_shared/shared/sport.ts";
 import { METRICS, METRIC_IDS, metricOdds, normalCdf, type MetricId } from "../_shared/shared/metrics.ts";
 import { localDayStart } from "../_shared/shared/time.ts";
 import { db, loadCities, safe } from "../_lib/common.ts";
@@ -179,7 +179,8 @@ Deno.serve(safe(async (req) => {
       if (preview) return json({ preview: { chance, odds_yes: m.odds_yes, odds_no: m.odds_no, threshold: 0 } });
       draft = m as unknown as Record<string, unknown>;
     } else {
-    if (!(ALL_BETS as string[]).includes(bet) || !/^\d{3,12}$/.test(eventId)) return json({ error: "bad_request" }, 400);
+    const twoBet = isTwoBet(bet);
+    if (!((ALL_BETS as string[]).includes(bet) || twoBet) || !/^\d{3,12}$/.test(eventId)) return json({ error: "bad_request" }, 400);
     // the match must already be known (house markets are made for every upcoming round); the same bet is never made twice
     const { data: sib } = await sb.from("markets").select("params,lat,lon").eq("kind", "match_bet").eq("params->>eventId", eventId).limit(1).maybeSingle();
     if (!sib) return json({ error: "unknown_match" }, 404);
@@ -193,14 +194,16 @@ Deno.serve(safe(async (req) => {
       if (!apiId) return json({ error: "details_unavailable" }, 503);
     }
     // older markets were made before these bets existed: price them from the same strengths
+    const two = LEAGUES.find((l) => l.name === sp.league)?.two;
+    if (twoBet && !two) return json({ error: "bad_request" }, 400);
     let priors = sp.priors ?? ({} as Record<MatchBet, number>);
     if (typeof priors[bet] !== "number") {
       const table = await loadTable(sb, sp.league), by = new Map(table.map((r) => [r.team, r]));
-      priors = matchPriors(by.get(sp.home), by.get(sp.away), leagueAverage(table), sp.league === "Serie A");
+      priors = two ? { ...twoWayPriors(by.get(sp.home), by.get(sp.away), two), ...priors } : matchPriors(by.get(sp.home), by.get(sp.away), leagueAverage(table), sp.league === "Serie A");
     }
     const chance = priors[bet];
     if (typeof chance !== "number" || chance < FAIR_MIN || chance > FAIR_MAX) return json({ error: "too_certain", chance }, 422);
-    const m = matchMarket({ eventId, league: sp.league, home: sp.home, away: sp.away, kickoff: sp.kickoff, ...(apiId ? { apiId } : {}), ...(sp.homeBadge ? { homeBadge: sp.homeBadge } : {}), ...(sp.awayBadge ? { awayBadge: sp.awayBadge } : {}) }, bet, priors, sib.lat === null ? undefined : { lat: Number(sib.lat), lon: Number(sib.lon) }, !!sp.testOnly, { by });
+    const m = matchMarket({ eventId, league: sp.league, home: sp.home, away: sp.away, kickoff: sp.kickoff, ...(two ? { lenSec: two.lenSec } : {}), ...(apiId ? { apiId } : {}), ...(sp.homeBadge ? { homeBadge: sp.homeBadge } : {}), ...(sp.awayBadge ? { awayBadge: sp.awayBadge } : {}) }, bet, priors, sib.lat === null ? undefined : { lat: Number(sib.lat), lon: Number(sib.lon) }, !!sp.testOnly, { by });
     if (preview) return json({ preview: { chance, odds_yes: m.odds_yes, odds_no: m.odds_no, threshold: 0 } });
     draft = m as unknown as Record<string, unknown>;
     }

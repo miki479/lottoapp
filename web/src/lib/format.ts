@@ -41,6 +41,10 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     return msg.question.traffic({ site: String(m.params.siteName ?? ""), toward: String(m.params.toward ?? ""), from: hh(h0), to: hh(h0 + 3600_000), kmh: Number(m.params.thresholdKmh) });
   }
   if (m.kind === "match_bet" && /^(pg|pa|ps):/.test(String(m.params.bet))) return msg.question.player({ kind: String(m.params.bet).slice(0, 2) as "pg", name: String((m.params.player as { name?: string } | undefined)?.name ?? ""), home: String(m.params.home), away: String(m.params.away), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
+  if (m.kind === "match_bet" && /^(tot|mrg):/.test(String(m.params.bet))) {
+    const bet = String(m.params.bet), raw = Number(bet.slice(4)), unit = String(m.params.league) === "NHL" ? msg.sportui.goalsUnit : msg.sportui.ptsUnit;
+    return msg.question.two({ kind: bet.startsWith("tot") ? "tot" : "mrg", line: fmtLine(Math.abs(raw), locale), negative: raw < 0, unit, home: String(m.params.home), away: String(m.params.away), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
+  }
   if (m.kind === "match_bet") return msg.question.match({ bet: m.params.bet as "home_win", home: String(m.params.home), away: String(m.params.away), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
   if (m.kind === "tick_gt" && /^tv:\d+$/.test(String(m.params.series))) {
     const ep = `S${String(m.params.season ?? 0).padStart(2, "0")}E${String(m.params.number ?? 0).padStart(2, "0")}`;
@@ -84,6 +88,9 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
   };
   return m.kind === "train_delay_gt" ? msg.question.train(q) : msg.question.bus(q);
 }
+
+/** A line like 226.5 written with the locale's decimal sign. */
+export const fmtLine = (n: number, locale: Locale) => String(n).replace(".", locale === "it" ? "," : ".");
 
 export const minutesUntil = (iso: string, now = Date.now()) => Math.max(0, Math.floor((Date.parse(iso) - now) / 60000));
 

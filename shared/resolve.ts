@@ -1,6 +1,6 @@
 import { METRICS } from "./metrics.ts";
 import { OCC_LEVELS, OCC_WINDOW_SEC, occupancyYes } from "./occupancy.ts";
-import { evalMatch, FINISHED, type MatchObservation } from "./sport.ts";
+import { evalMatch, FINISHED, TWO_WAY_LEAGUES, type MatchObservation } from "./sport.ts";
 import { CRYPTO_GRACE_SEC, isSpot, tickDef } from "./ticks.ts";
 import { MIN_VEHICLES, MIN_WINDOW_SEC } from "./traffic.ts";
 import type {
@@ -152,7 +152,8 @@ function matchReading(event: MatchEvent, input: ResolveInput): Reading {
   const o = input.match;
   // Only a final score counts: a live or postponed match stays pending, then is voided at the deadline.
   if (!o || !FINISHED.has(o.status) || o.homeGoals === null || o.awayGoals === null) return { kind: "none" };
-  if (o.homeGoals < 0 || o.awayGoals < 0 || o.homeGoals > 30 || o.awayGoals > 30) return { kind: "implausible" };
+  const top = event.league && TWO_WAY_LEAGUES.includes(event.league) ? 250 : 30;
+  if (o.homeGoals < 0 || o.awayGoals < 0 || o.homeGoals > top || o.awayGoals > top) return { kind: "implausible" };
   const bad = (x: number | null | undefined, max: number) => x !== null && x !== undefined && (!Number.isFinite(x) || x < 0 || x > max);
   if (bad(o.htHome, o.homeGoals) || bad(o.htAway, o.awayGoals) || bad(o.corners, 40) || bad(o.cards, 20) || bad(o.reds, 6)) return { kind: "implausible" };
   const yes = evalMatch(event.bet, { hg: o.homeGoals, ag: o.awayGoals, htHome: o.htHome, htAway: o.htAway, corners: o.corners, cards: o.cards, reds: o.reds, players: o.players });
