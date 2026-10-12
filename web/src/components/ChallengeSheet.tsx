@@ -95,7 +95,7 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
         : <button class="btn secondary" onClick={() => setAsking(true)}>{f.deleteBtn}</button>)}
       {c.visibility === "public" && !c.is_creator && <button class="btn secondary" disabled={reported} onClick={report}>{reported ? p.msg.fx.reported : p.msg.fx.report}</button>}
       {c.people.length > 0 && <div class="tickchart"><div class="tchead"><b>{f.people}</b></div>
-        {c.people.map((x, i) => <div key={i} class="tchead" style="padding:4px 0"><span>{x.name === "?" ? p.msg.ticker.anon : x.name}</span><span class="num"><b>{x.pick === null ? "✓" : x.pick === "yes" ? f.yes : f.no}</b>{(x.payout ?? 0) > 0 && c.status === "resolved" ? ` · ${f.won} ${money(x.payout, p.locale)}` : ""}</span></div>)}
+        {c.people.map((x, i) => <div key={i} class="tchead" style="padding:4px 0"><span>{x.name === "?" ? p.msg.ticker.anon : x.name}</span><span class="num"><b>{x.pick === null ? "✓" : x.pick === "yes" ? f.yes : f.no}</b>{(x.payout ?? 0) > 0 && c.status === "resolved" ? ` · ${f.won} ${money(x.payout ?? 0, p.locale)}` : ""}</span></div>)}
       </div>}
       {err && <p class="formerr" role="alert">{err}</p>}
     </Sheet>
