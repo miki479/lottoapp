@@ -15,6 +15,13 @@ function stamp(h: number, r: number): Pt[] {
   return out;
 }
 
+
+/** A badge with n pointed lobes (a star with fat points) and a rosette with n soft scallops. */
+const starOf = (n: number, rOut: number, rIn: number, pow: number): Pt[] => polar((a) => rIn + (rOut - rIn) * Math.pow(0.5 + 0.5 * Math.cos(rad(n * a)), pow), 240);
+const rosetteOf = (n: number, base: number, amp: number): Pt[] => polar((a) => base + amp * Math.cos(rad(n * a)), 240);
+const squircleOf = (a0: number): Pt[] => polar((a) => { const x = Math.abs(Math.sin(rad(a))), y = Math.abs(Math.cos(rad(a))); return a0 / Math.pow(Math.pow(x, 4) + Math.pow(y, 4), 0.25); }, 160);
+const octagonOf = (r: number): Pt[] => smooth(Array.from({ length: 8 }, (_, i) => [r * Math.sin(rad(22.5 + 45 * i)), -r * Math.cos(rad(22.5 + 45 * i)), 5] as [number, number, number]), 5);
+
 interface Spec { shape: Pt[]; metal: Metal; enamel: [string, string]; dy?: number; stars?: boolean }
 /** Each trophy: its own badge shape, the metal of its rarity (silver, gold, then the precious ones), and an enamel colour. */
 const SPEC: Record<string, () => Spec> = {
@@ -26,6 +33,19 @@ const SPEC: Record<string, () => Spec> = {
   train_whisperer: () => ({ shape: smooth([[-36, -52, 6], [36, -52, 6], [54, -30, 6], [54, 18, 8], [28, 50, 10], [-28, 50, 10], [-54, 18, 8], [-54, -30, 6]], 5), metal: M.platinum!, enamel: ["#ffb866", "#cf4a14"] }),
   high_roller: () => ({ shape: smooth([[-26, -50, 4], [26, -50, 4], [56, -18, 4], [0, 57, 4], [-56, -18, 4]], 5), metal: M.diamond!, enamel: ["#b87aff", "#4c14a8"], dy: -5 }),
   streak_30: () => ({ shape: polar((a) => 53 + 4 * Math.cos(rad(14 * a)), 168), metal: ROSE, enamel: ["#ff7388", "#a30f2b"] }),
+  wins_100: () => ({ shape: rosetteOf(12, 52, 4), metal: M.gold!, enamel: ["#3de08f", "#0a6b3d"] }),
+  wins_500: () => ({ shape: starOf(16, 59, 49, 2), metal: M.adamantium!, enamel: ["#ff5ad2", "#3b0a66"], stars: true }),
+  streak_100: () => ({ shape: smooth([[-46, -46, 6], [-24, -57, 4], [0, -46, 4], [24, -57, 4], [46, -46, 6], [48, 2, 10], [30, 38, 16], [0, 56, 8], [-30, 38, 16], [-48, 2, 10]], 5), metal: M.orichalcum!, enamel: ["#ff9a3d", "#8f1500"], dy: 2 }),
+  bets_500: () => ({ shape: smooth([[-28, -48.5, 6], [28, -48.5, 6], [56, 0, 6], [28, 48.5, 6], [-28, 48.5, 6], [-56, 0, 6]], 5), metal: M.platinum!, enamel: ["#7fa8d8", "#223a63"] }),
+  all_categories: () => ({ shape: rosetteOf(24, 54, 2.2), metal: M.diamond!, enamel: ["#37d6ff", "#0a4aa0"] }),
+  win_row_10: () => ({ shape: starOf(8, 60, 46, 1.5), metal: M.gold!, enamel: ["#4b3300", "#140d00"], stars: true }),
+  big_odds: () => ({ shape: smooth([[-26, -50, 4], [26, -50, 4], [56, -18, 4], [0, 57, 4], [-56, -18, 4]], 5), metal: ROSE, enamel: ["#2b2f3a", "#0b0d12"], dy: -5 }),
+  parlay_5: () => ({ shape: stamp(50, 11), metal: M.amethyst!, enamel: ["#a77bff", "#321a7a"] }),
+  friends_10: () => ({ shape: squircleOf(53), metal: M.mithril!, enamel: ["#ff9ec0", "#b0245f"] }),
+  level_25: () => ({ shape: smooth([[-36, -52, 6], [36, -52, 6], [54, -30, 6], [54, 18, 8], [28, 50, 10], [-28, 50, 10], [-54, 18, 8], [-54, -30, 6]], 5), metal: M.platinum!, enamel: ["#2a3350", "#080b18"], stars: true }),
+  level_50: () => ({ shape: starOf(12, 60, 48, 2), metal: M.diamond!, enamel: ["#6a3de8", "#150a40"], stars: true }),
+  chest_30: () => ({ shape: octagonOf(57), metal: M.gold!, enamel: ["#c97b2d", "#4a2200"] }),
+  collector: () => ({ shape: rosetteOf(20, 54, 4), metal: M.opal!, enamel: ["#1b1450", "#05030f"], stars: true }),
   ghost_feed: () => ({ shape: smooth([[-44, -46, 8], [0, -57, 4], [44, -46, 8], [48, 0, 8], [0, 58, 4], [-48, 0, 8]], 5), metal: M.obsidian!, enamel: ["#6a54c4", "#1c1448"], stars: true }),
 };
 const RINGS = ["#ff4f93", "#b9f53c", "#37e3ff"];

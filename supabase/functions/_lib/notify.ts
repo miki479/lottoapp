@@ -148,6 +148,57 @@ export async function notifyInvites(sb: Db): Promise<number> {
   return n;
 }
 
+const FRIEND_REQ = {
+  it: (who: string) => `${who} ti ha chiesto l'amicizia su LateLotto`,
+  "en-US": (who: string) => `${who} sent you a friend request on LateLotto`,
+  "en-GB": (who: string) => `${who} sent you a friend request on LateLotto`,
+  ja: (who: string) => `${who}さんからLateLottoで友だち申請が届きました`,
+} as const;
+
+/** Someone asked to be my friend: tell me (once). Marked as done only when OneSignal took it, so an outage retries within the hour. */
+export async function notifyFriendRequests(sb: Db): Promise<number> {
+  if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
+  const since = new Date(Date.now() - 60 * 60_000).toISOString();
+  const { data } = await sb.from("friend_requests").select("from_id,to_id,me:profiles!friend_requests_to_id_fkey(locale),by:profiles!friend_requests_from_id_fkey(display_name)")
+    .eq("notified", false).gte("created_at", since).limit(100);
+  let n = 0;
+  for (const r of (data ?? []) as unknown as { from_id: string; to_id: string; me: { locale: string } | null; by: { display_name: string | null } | null }[]) {
+    const loc = (r.me?.locale && r.me.locale in FRIEND_REQ ? r.me.locale : "en-US") as keyof typeof FRIEND_REQ;
+    const who = r.by?.display_name?.trim() || WHO[loc];
+    if (!(await send([r.to_id], "LateLotto", FRIEND_REQ[loc](who), "https://latelotto.web.app/?open=ranking"))) continue;
+    await sb.from("friend_requests").update({ notified: true }).eq("from_id", r.from_id).eq("to_id", r.to_id);
+    n++;
+  }
+  return n;
+}
+
+const REMIND = {
+  it: (t: string) => `Domani chiude: ${t}. Hai già puntato?`,
+  "en-US": (t: string) => `Closes tomorrow: ${t}. Have you placed your bet?`,
+  "en-GB": (t: string) => `Closes tomorrow: ${t}. Have you placed your bet?`,
+  ja: (t: string) => `明日締め切り：${t}。もう予想しましたか？`,
+} as const;
+
+/** The reminder a player asked for: the day before a house market closes (between 08:00 and 22:00 local time), once. */
+export async function notifyReminders(sb: Db): Promise<number> {
+  if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
+  const soon = new Date(Date.now() + 30 * 3600_000).toISOString();
+  const { data } = await sb.from("market_reminders").select("user_id,market_id,markets!inner(params,closes_at,status),profiles(locale,timezone)")
+    .eq("sent", false).eq("markets.status", "open").lte("markets.closes_at", soon).gt("markets.closes_at", new Date().toISOString()).limit(200);
+  let n = 0;
+  for (const r of (data ?? []) as unknown as { user_id: string; market_id: string; markets: { params: Record<string, unknown> }; profiles: { locale: string; timezone: string } | null }[]) {
+    const loc = (r.profiles?.locale && r.profiles.locale in REMIND ? r.profiles.locale : "en-US") as keyof typeof REMIND;
+    const hour = localParts(r.profiles?.timezone ?? "UTC").hour;
+    if (hour >= 22 || hour < 8) continue;
+    const q = r.markets.params.q as Record<string, string> | undefined, title = String(r.markets.params.label ?? "");
+    const text = loc === "it" ? q?.it : loc === "ja" ? q?.ja : q?.en;
+    if (!(await send([r.user_id], "LateLotto", REMIND[loc](text ?? title)))) continue;
+    await sb.from("market_reminders").update({ sent: true }).eq("user_id", r.user_id).eq("market_id", r.market_id);
+    n++;
+  }
+  return n;
+}
+
 const SUPER: Record<string, Record<string, (l: string, v: number) => string>> = {
   it: { fuel_move: (l, v) => `Super quota: ${l} ${v < 0 ? "in calo" : "in rialzo"} di ${Math.abs(v)} cent`, price_move: (l, v) => `Super quota: ${l} ${v > 0 ? "vola" : "crolla"} del ${Math.abs(v)}%`, quake: (_l, v) => `Super quota: terremoto di magnitudo ${v}`, storm: (_l, v) => `Super quota: uragano a ${v} nodi` },
   "en-US": { fuel_move: (l, v) => `Super odds: ${l} ${v < 0 ? "down" : "up"} ${Math.abs(v)} cents`, price_move: (l, v) => `Super odds: ${l} ${v > 0 ? "jumps" : "drops"} ${Math.abs(v)}%`, quake: (_l, v) => `Super odds: magnitude ${v} earthquake`, storm: (_l, v) => `Super odds: hurricane at ${v} knots` },

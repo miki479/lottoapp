@@ -1,11 +1,11 @@
 import { useEffect, useState } from "preact/hooks";
 import { sb } from "./api.ts";
 
-export interface MyProgress { xp: number; level: number; avatar: string; decoration: string | null; owned: string[] }
+export interface MyProgress { granted?: string[]; xp: number; level: number; avatar: string; decoration: string | null; owned: string[] }
 export interface LookInfo { avatar: string; decoration: string | null; level: number }
 export interface PublicProfileData {
   id: string; name: string | null; avatar: string; decoration: string | null; level: number; streak: number; best_streak: number; best_win: number; month_wins: number;
-  trophies: string[]; trophy_count: number; balance: number | null; relation: "me" | "friends" | "sent" | "received" | "none";
+  trophies: string[]; trophy_count: number; hidden: number; balance: number | null; relation: "me" | "friends" | "sent" | "received" | "none";
 }
 
 export async function loadMyProgress(): Promise<MyProgress | null> {

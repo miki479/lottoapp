@@ -1,4 +1,4 @@
-import { Flame, UserCheck, UserPlus } from "lucide-preact";
+import { Flame, UserCheck, UserPlus, UserX } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages, TrophyId } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
@@ -20,6 +20,13 @@ export function PublicProfile({ id, msg, locale, onClose, onToast }: { id: strin
     onToast(data === "friends" ? t.nowFriends : t.requestSent);
     setD(await loadPublicProfile(id));
   };
+  const cancel = async () => {
+    setBusy(true);
+    await sb.rpc("cancel_friend_request", { p_user: id });
+    setBusy(false);
+    onToast(t.requestCancelled);
+    setD(await loadPublicProfile(id));
+  };
   return (
     <Sheet onClose={onClose} label={d?.name ?? msg.frd.anon}>
       {!d ? <div class="sk s" /> : (
@@ -29,14 +36,15 @@ export function PublicProfile({ id, msg, locale, onClose, onToast }: { id: strin
             <div class="card"><Flame size={18} /><b class="num">{d.best_streak}</b><small>{t.streak}</small></div>
             <div class="card"><b class="num">+{money(d.best_win, locale)}</b><small>{t.bestWin}</small></div>
             <div class="card"><b class="num">{d.month_wins}</b><small>{t.monthWins}</small></div>
-            {d.balance !== null && <div class="card"><b class="num">{t.balance(money(d.balance, locale))}</b><small>{t.balanceLabel}</small></div>}
+            {d.balance !== null && <div class="card"><b class="num">{money(d.balance, locale)}</b><small>{t.balanceLabel}</small></div>}
           </div>
           <div class="card ptro"><small>{t.trophies}{d.trophy_count > 0 ? ` · ${d.trophy_count}` : ""}</small>
-            {d.trophies.length === 0 ? <span class="hint">{t.noTrophies}</span> : <div class="ptrow">{d.trophies.map((x) => <span key={x} title={msg.profile.trophy[x as TrophyId]?.name}><Trophy3D id={x as TrophyId} have size={44} /></span>)}</div>}
+            {d.trophies.length === 0 ? <span class="hint">{t.noTrophies}</span> : <div class="ptrow">{d.trophies.map((x) => <span key={x} title={msg.profile.trophy[x as TrophyId]?.name}><Trophy3D id={x as TrophyId} have size={44} /></span>)}{d.hidden > 0 && <span class="hint num">+{d.hidden} {t.hiddenWord}</span>}</div>}
           </div>
+          {d.relation !== "friends" && d.relation !== "me" && <p class="hint">{t.friendsOnly}</p>}
           {d.relation === "none" && <button class="btn primary wide" disabled={busy} onClick={add}><UserPlus size={18} />{t.addFriend}</button>}
           {d.relation === "received" && <button class="btn primary wide" disabled={busy} onClick={add}><UserPlus size={18} />{t.accept}</button>}
-          {d.relation === "sent" && <button class="btn secondary wide" disabled><UserCheck size={18} />{t.sent}</button>}
+          {d.relation === "sent" && <button class="btn secondary wide" disabled={busy} onClick={cancel}><UserX size={18} />{t.cancelRequest}</button>}
           {d.relation === "friends" && <button class="btn secondary wide" disabled><UserCheck size={18} />{t.isFriend}</button>}
         </>
       )}

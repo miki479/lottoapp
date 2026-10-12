@@ -32,7 +32,7 @@ import { DECORATIONS } from "../../shared/looks";
 import { ResultScreen } from "./components/ResultScreen.tsx";
 import { Toast } from "./components/Toast.tsx";
 import type { TopItem } from "./components/TopCards.tsx";
-import { INTL_TAG, t, TROPHY_IDS, type Locale } from "./i18n/index.ts";
+import { INTL_TAG, t, TROPHY_IDS, type Locale, type TrophyId } from "./i18n/index.ts";
 import { useCountUp } from "./lib/anim.ts";
 import { ensureGuest, guestState, sb } from "./lib/api.ts";
 import { CITIES, cityInfos, cityName, cityOf } from "./lib/cities.ts";
@@ -154,6 +154,7 @@ export function App() {
   const loadLook = useCallback(async () => {
     const p = await loadMyProgress(); if (!p) return;
     setLook(p);
+    if (p.granted && p.granted.length) { const ids = p.granted.filter((t): t is TrophyId => (TROPHY_IDS as string[]).includes(t)); loadTrophies(); if (ids.length) { setFresh(new Set(ids)); flash(msg.profile.trophy[ids[0]!].name); haptic.success(); } }
     const before = Number(store.get("lvl") ?? 0);
     if (before > 0 && p.level > before) {
       const got = DECORATIONS.filter((d) => d.level !== undefined && d.level > before && d.level <= p.level).sort((a, b) => b.level! - a.level!)[0];
@@ -264,6 +265,8 @@ export function App() {
     setChallengeCode(c.toLowerCase());
     const u = new URL(location.href); u.searchParams.delete("c"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
   }, []);
+  // a push can open the app on a given screen (?open=ranking)
+  useEffect(() => { const o = new URLSearchParams(location.search).get("open"); if (o === "ranking" || o === "bets" || o === "profile") { setScreen(o); const u = new URL(location.href); u.searchParams.delete("open"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash); } }, []);
   useEffect(() => { loadChallenges(); }, [registered]);
   useEffect(() => { if (registered) loadLook(); else setLook(null); }, [registered, profile?.credits]);
   useEffect(() => { if (screen === "bets") loadChallenges(); }, [screen]);

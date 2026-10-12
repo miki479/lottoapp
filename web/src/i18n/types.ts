@@ -19,11 +19,12 @@ export interface FullQ { occ: "empty" | "few" | "standing"; route: string; stop:
 export interface TrafficQ { site: string; toward: string; from: string; to: string; kmh: number }
 export interface StrikeQ { date: string; day: string; who: string; hours: string }
 export interface QuakeQ { mag: string; from: string; to: string; region?: string }
-export type TrophyId = "first_win" | "long_shot" | "rain_man" | "train_whisperer" | "ghost_feed" | "high_roller" | "all_rings" | "streak_7" | "streak_30";
-export const TROPHY_IDS: TrophyId[] = ["first_win", "all_rings", "long_shot", "rain_man", "streak_7", "train_whisperer", "high_roller", "streak_30", "ghost_feed"];
-export const TROPHY_RARITY: Record<TrophyId, "common" | "rare" | "epic"> = {
+export type TrophyId = "first_win" | "long_shot" | "rain_man" | "train_whisperer" | "ghost_feed" | "high_roller" | "all_rings" | "streak_7" | "streak_30" | "wins_100" | "wins_500" | "streak_100" | "bets_500" | "all_categories" | "win_row_10" | "big_odds" | "parlay_5" | "friends_10" | "level_25" | "level_50" | "chest_30" | "collector";
+export const TROPHY_IDS: TrophyId[] = ["first_win", "all_rings", "long_shot", "rain_man", "streak_7", "train_whisperer", "high_roller", "streak_30", "ghost_feed", "wins_100", "wins_500", "streak_100", "bets_500", "all_categories", "win_row_10", "big_odds", "parlay_5", "friends_10", "level_25", "level_50", "chest_30", "collector"];
+export const TROPHY_RARITY: Record<TrophyId, "common" | "rare" | "epic" | "legendary" | "mythic"> = {
   first_win: "common", all_rings: "common", long_shot: "rare", rain_man: "rare", streak_7: "rare",
   train_whisperer: "epic", high_roller: "epic", streak_30: "epic", ghost_feed: "epic",
+  wins_100: "epic", wins_500: "mythic", streak_100: "legendary", bets_500: "legendary", all_categories: "epic", win_row_10: "legendary", big_odds: "epic", parlay_5: "legendary", friends_10: "epic", level_25: "legendary", level_50: "mythic", chest_30: "epic", collector: "mythic",
 };
 
 /** Every locale implements this: add `ja` by creating ja.ts and registering it in index.ts. */
@@ -93,7 +94,7 @@ export interface Messages {
     title: string; guest: string; guestHint: string; signIn: string; account: string;
     stats: { title: string; winRate: string; streak: string; best: string; bets: string; net: string; trophies: string; days: (n: number) => string };
     streakHint: string; freezes: (n: number) => string; freezeHint: string;
-    trophies: string; locked: string; rarity: { common: string; rare: string; epic: string };
+    trophies: string; locked: string; rarity: { common: string; rare: string; epic: string; legendary: string; mythic: string };
     trophy: Record<TrophyId, { name: string; desc: string }>;
     shareCard: string; shareText: string; settings: string; signOut: string; sources: string;
     delete: { action: string; title: string; body: string; confirm: string; done: string };
@@ -117,7 +118,7 @@ export interface Messages {
     streak: (n: number) => string; titles: Record<string, string>; legend: string;
     flash: { title: string; soon: (t: string) => string; live: (left: string) => string; missed: string; prize: (c: string, b: number) => string; claim: string; titles: Record<string, string>; got: (c: string, b: number) => string };
   };
-  look: { title: string; avatars: string; apply: string; saved: string; none: string; level: (n: number) => string; xp: (a: number, b: number) => string; unlockAt: (n: number) => string; dropOnly: string; next: (n: number, name: string) => string; newDrop: (name: string) => string; levelUp: (n: number, name: string | null) => string; change: string; locked: string; view: string; addFriend: string; sent: string; accept: string; decline: string; isFriend: string; streak: string; bestWin: string; monthWins: string; trophies: string; balance: (v: string) => string; balanceLabel: string; requests: string; requestSent: string; nowFriends: string; noTrophies: string; av: Record<string, string>; deco: Record<string, string>; rarity: Record<string, string> };
+  look: { title: string; avatars: string; apply: string; saved: string; none: string; level: (n: number) => string; xp: (a: number, b: number) => string; unlockAt: (n: number) => string; dropOnly: string; next: (n: number, name: string) => string; newDrop: (name: string) => string; levelUp: (n: number, name: string | null) => string; change: string; locked: string; view: string; addFriend: string; sent: string; accept: string; decline: string; isFriend: string; streak: string; bestWin: string; monthWins: string; trophies: string; balance: (v: string) => string; balanceLabel: string; cancelRequest: string; requestCancelled: string; friendsOnly: string; hiddenWord: string; requests: string; requestSent: string; nowFriends: string; noTrophies: string; av: Record<string, string>; deco: Record<string, string>; rarity: Record<string, string> };
   frd: {
     boardTab: string; groupsTab: string; inviteTitle: string; inviteBody: string; inviteBtn: string; invitedCount: (n: number) => string;
     empty: string; emptyBody: string; anon: string; remove: string; removeAsk: (n: string) => string; removeYes: string; removeNo: string; removed: string; challenge: string; boardHint: string;

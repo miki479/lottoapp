@@ -14,7 +14,7 @@ import { Trophy3D } from "../components/looks/Trophy3D.tsx";
 import { levelProgress } from "../../../shared/looks";
 import type { MyProgress } from "../lib/looks.ts";
 
-export const TROPHY_ICON: Record<TrophyId, LucideIcon> = { first_win: Sparkles, all_rings: Target, long_shot: Telescope, rain_man: Umbrella, streak_7: CalendarCheck, train_whisperer: TrainFront, high_roller: Gem, streak_30: Medal, ghost_feed: Ghost };
+export const TROPHY_ICON: Record<TrophyId, LucideIcon> = { first_win: Sparkles, all_rings: Target, long_shot: Telescope, rain_man: Umbrella, streak_7: CalendarCheck, train_whisperer: TrainFront, high_roller: Gem, streak_30: Medal, ghost_feed: Ghost, wins_100: Trophy, wins_500: Trophy, streak_100: Flame, bets_500: Medal, all_categories: Telescope, win_row_10: Zap, big_odds: Target, parlay_5: Gem, friends_10: Gem, level_25: Gem, level_50: Gem, chest_30: Gift, collector: Gem };
 
 export function ProfileView(p: {
   look: MyProgress | null; onLook: () => void;
