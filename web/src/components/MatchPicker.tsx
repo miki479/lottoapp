@@ -17,6 +17,7 @@ const km = (a: { lat: number; lon: number }, b: { lat: number; lon: number }) =>
 export function MatchPicker(p: { msg: Messages; locale: Locale; origin: { lat: number; lon: number } | null; onCreated: (m: MarketRow) => void; registered: boolean }) {
   const t = p.msg.matchmaker, mk = p.msg.maker;
   const [fx, setFx] = useState<Fx[] | null>(null), [sel, setSel] = useState<string | null>(null), [bet, setBet] = useState<MatchBetKey>("home_win");
+  const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null), [odds, setOdds] = useState<{ y: number; n: number } | null>(null);
   useEffect(() => {
     (async () => {
@@ -27,7 +28,7 @@ export function MatchPicker(p: { msg: Messages; locale: Locale; origin: { lat: n
         const f = by.get(id) ?? { eventId: id, league: String(r.params.league), home: String(r.params.home), away: String(r.params.away), kickoff: Number(r.params.kickoff), km: p.origin && r.lat !== null ? km(p.origin, { lat: Number(r.lat), lon: Number(r.lon) }) : null, have: new Set<string>(), priors: (r.params.priors ?? {}) as Record<string, number>, testOnly: !!r.params.testOnly };
         f.have.add(String(r.params.bet)); by.set(id, f);
       }
-      const list = [...by.values()].sort((a, b) => (a.km ?? 1e6) - (b.km ?? 1e6) || a.kickoff - b.kickoff).slice(0, 14);
+      const list = [...by.values()].sort((a, b) => (a.km ?? 1e6) - (b.km ?? 1e6) || a.kickoff - b.kickoff).slice(0, 60);
       setFx(list); if (list[0]) setSel(list[0].eventId);
     })();
   }, []);
@@ -54,10 +55,11 @@ export function MatchPicker(p: { msg: Messages; locale: Locale; origin: { lat: n
   };
   return (
     <>
+      <label class="searchbox"><input class="field" type="search" value={q} placeholder={p.msg.teamSearch} onInput={(e) => setQ((e.target as HTMLInputElement).value)} /></label>
       <span class="detail">{t.pick}</span>
       {fx && fx.length === 0 && <p class="hint">{t.none}</p>}
       <div class="mkchips" style="flex-direction:column;align-items:stretch">
-        {fx?.map((f) => <button key={f.eventId} class={`mkchip ${sel === f.eventId ? "on" : ""}`} style="text-align:left" aria-pressed={sel === f.eventId} onClick={() => setSel(f.eventId)}><b>{f.home} – {f.away}</b><br /><small>{f.league} · {when(f.kickoff)}{f.km !== null ? ` · ${Math.round(f.km)} km` : ""}</small></button>)}
+        {fx?.filter((f) => !q.trim() || `${f.home} ${f.away} ${f.league}`.toLowerCase().includes(q.trim().toLowerCase())).map((f) => <button key={f.eventId} class={`mkchip ${sel === f.eventId ? "on" : ""}`} style="text-align:left" aria-pressed={sel === f.eventId} onClick={() => setSel(f.eventId)}><b>{f.home} – {f.away}</b><br /><small>{f.league} · {when(f.kickoff)}{f.km !== null ? ` · ${Math.round(f.km)} km` : ""}</small></button>)}
       </div>
       {cur && <>
         <span class="detail">{t.reason}</span>

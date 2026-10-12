@@ -4,8 +4,8 @@ import { computeOdds } from "./odds.ts";
 export type MatchBet = "home_win" | "draw" | "away_win" | "over_1_5" | "over_2_5" | "over_3_5" | "btts" | "home_clean" | "away_clean";
 export const MATCH_BETS: MatchBet[] = ["home_win", "draw", "away_win", "over_1_5", "over_2_5", "over_3_5", "btts", "home_clean", "away_clean"];
 /** The ones every fixture gets automatically; the rest are created on request, never twice. */
-export const AUTO_BETS: MatchBet[] = ["home_win", "over_2_5", "btts"];
-export const AUTO_BETS_LOWER: MatchBet[] = ["home_win", "over_2_5"];
+export const AUTO_BETS: MatchBet[] = ["home_win", "draw", "over_2_5", "btts"];
+export const AUTO_BETS_LOWER: MatchBet[] = ["home_win", "draw", "over_2_5"];
 
 export const LEAGUES: { id: string; name: string; top: boolean }[] = [
   { id: "4332", name: "Serie A", top: true }, { id: "4394", name: "Serie B", top: false },

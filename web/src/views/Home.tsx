@@ -11,7 +11,7 @@ import { Car, Globe, MapPin, SlidersHorizontal, Sparkles, X } from "lucide-preac
 import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
-import { ChevronDown, Flame, Plus } from "lucide-preact";
+import { ChevronDown, Flame, Plus, Search } from "lucide-preact";
 import { FEATURED_CITY_IDS, FEATURED_PLACES, type Place } from "../lib/places.ts";
 import type { MarketRow } from "../lib/format.ts";
 import type { LiveDelay, Pick, Progress } from "../lib/types.ts";
@@ -44,7 +44,12 @@ export function Home(p: HomeProps) {
   const wxKinds = order.filter((k) => p.list.some((m) => wxKey(m) === k));
   const wx = wxKinds.includes(wxSel) ? wxSel : "all";
   const picked = wx !== "all" ? p.list.filter((m) => wxKey(m) === wx) : p.list;
-  const shown = p.cat === "nature" ? [...picked].sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at) || Number(a.params.minMag) - Number(b.params.minMag)) : picked;
+  const [teamQ, setTeamQ] = useState("");
+  const norm = (x: string) => x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const sportQ = p.cat === "sport" ? norm(teamQ.trim()) : "";
+  const picked2 = sportQ ? picked.filter((m) => norm(`${m.params.home ?? ""} ${m.params.away ?? ""} ${m.params.league ?? ""}`).includes(sportQ)) : picked;
+  const shown0 = picked2;
+  const shown = p.cat === "nature" ? [...shown0].sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at) || Number(a.params.minMag) - Number(b.params.minMag)) : shown0;
   const topId = shown.reduce<MarketRow | null>((b, m) => (!b || Number(m.odds_yes) > Number(b.odds_yes) ? m : b), null)?.id;
   const cities = CITIES.filter((c) => enabledCategories(c).length > 0);
   return (
@@ -81,6 +86,7 @@ export function Home(p: HomeProps) {
           <button class="chip more" onClick={p.onMorePlaces}><Plus size={16} />{msg.places.more}</button>
         </div>
         {p.cat === "nature" && <button class="btn secondary quakecta" onClick={p.onQuakeMaker}><MapPin size={18} />{msg.quakeMaker.cta}</button>}
+        {p.cat === "sport" && <label class="searchbox"><Search size={18} /><input class="field" type="search" value={teamQ} placeholder={msg.teamSearch} onInput={(e) => setTeamQ((e.target as HTMLInputElement).value)} /></label>}
         <div class="cardgrid">
           {p.markets === null && [0, 1, 2].map((i) => <div class="sk" key={i} />)}
           {p.markets !== null && p.cat === "traffic" && shown.length === 0 && <div style="grid-column:1/-1"><Empty icon={Car} title={msg.tabs.traffic} body={msg.home.trafficSoon} /></div>}
