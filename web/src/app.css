@@ -746,3 +746,11 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .filteropt em { font-style: normal; font-size: 13px; color: var(--muted); font-weight: 700; }
 .filteropt.on { border-color: var(--brand); background: var(--brand-soft); }
 .filteropt { gap: 8px; padding: 10px 12px; } .filteropt b { min-width: 0; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .filteropt .fi { width: 32px; height: 32px; }
+
+/* narrow phones (360 px): the header never overflows and its buttons keep a proper touch size */
+.header .iconbtn { flex: none; min-width: var(--touch); }
+@media (max-width: 400px) {
+  .header-in { gap: 4px; }
+  .header .brand span { font-size: 19px; }
+  .header .wallet { padding-left: 10px; padding-right: 10px; }
+}
