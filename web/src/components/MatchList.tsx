@@ -5,10 +5,10 @@ import { INTL_TAG } from "../i18n/index.ts";
 import { fmtOdds, type MarketRow } from "../lib/format.ts";
 import type { Pick } from "../lib/types.ts";
 import { computeOdds } from "../../../shared/odds.ts";
-import { DETAIL_LEAGUES } from "../../../shared/sport.ts";
+import { DETAIL_LEAGUES, TWO_WAY_LEAGUES } from "../../../shared/sport.ts";
 import { sb } from "../lib/api.ts";
 import { Sheet } from "./Sheet.tsx";
-import { X } from "lucide-preact";
+import { Users, X } from "lucide-preact";
 
 export interface Match { eventId: string; league: string; home: string; away: string; kickoff: number; priors: Record<string, number>; markets: Map<string, MarketRow> }
 
@@ -49,7 +49,7 @@ function OddsBtn(p: { label: string; odds: number | null; locale: Locale; onClic
 }
 
 /** Football the way betting sites show it: one row per match with 1-X-2, and "all markets" for goals, double chance, clean sheets. */
-export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; onPick: (m: MarketRow, pick: Pick) => void; registered: boolean; onAuth: () => void; details: boolean }) {
+export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; onPick: (m: MarketRow, pick: Pick) => void; registered: boolean; onAuth: () => void; details: boolean; friendBets?: Record<string, number> }) {
   const u = p.msg.sportui;
   const [open, setOpen] = useState<Match | null>(null), [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null);
   const [tab, setTab] = useState<"main" | "half" | "corners" | "cards">("main");
@@ -71,17 +71,22 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
     p.onPick(m, pick);
   };
   const shown = p.matches.filter((m) => !league || m.league === league);
-  const Row = (mt: Match) => (
-    <article class="card matchrow" key={mt.eventId}>
-      <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span><button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button></div>
-      <b class="teams">{mt.home} – {mt.away}</b>
-      <div class="oddsrow">
-        <OddsBtn label="1" odds={oddsOf(mt, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(mt, "home_win", "yes")} />
-        <OddsBtn label="X" odds={oddsOf(mt, "draw", "yes")} locale={p.locale} busy={busy} onClick={() => go(mt, "draw", "yes")} />
-        <OddsBtn label="2" odds={oddsOf(mt, "away_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(mt, "away_win", "yes")} />
-      </div>
-    </article>
-  );
+  const fr = (mt: Match) => Math.max(0, ...[...mt.markets.values()].map((x) => p.friendBets?.[x.id] ?? 0));
+  const Row = (mt: Match) => {
+    const two = TWO_WAY_LEAGUES.includes(mt.league);
+    return (
+      <article class={`card matchrow ${fr(mt) > 0 ? "has-friends" : ""}`} key={mt.eventId}>
+        {fr(mt) > 0 && <span class="frbadge" title={p.msg.frd.friendsOn(fr(mt))} aria-label={p.msg.frd.friendsOn(fr(mt))}><Users size={13} />{fr(mt)}</span>}
+        <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span>{!two && <button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button>}</div>
+        <b class="teams">{mt.home} – {mt.away}</b>
+        <div class={`oddsrow ${two ? "two" : ""}`}>
+          <OddsBtn label="1" odds={oddsOf(mt, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(mt, "home_win", "yes")} />
+          {!two && <OddsBtn label="X" odds={oddsOf(mt, "draw", "yes")} locale={p.locale} busy={busy} onClick={() => go(mt, "draw", "yes")} />}
+          <OddsBtn label="2" odds={oddsOf(mt, "away_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(mt, "away_win", "yes")} />
+        </div>
+      </article>
+    );
+  };
   const group = (title: string, children: preact.ComponentChildren) => <section class="mgroup"><span class="detail">{title}</span><div class="oddsrow">{children}</div></section>;
   const t = p.msg.matchmaker.bets;
   return (

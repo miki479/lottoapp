@@ -16,12 +16,21 @@ export const DETAIL_LEAGUES = ["Serie A", "Serie B"];
 export const AUTO_BETS: MatchBet[] = ["home_win", "draw", "away_win"];
 export const AUTO_BETS_LOWER: MatchBet[] = AUTO_BETS;
 
-export const LEAGUES: { id: string; name: string; top: boolean }[] = [
+/** `two` = no draw (basketball, hockey, American football, baseball): the bets are "home wins" and "away wins" only. */
+export interface TwoWayCfg { sd: number; home: number; avg: number; lenSec: number }
+export const LEAGUES: { id: string; name: string; top: boolean; two?: TwoWayCfg }[] = [
   { id: "4332", name: "Serie A", top: true }, { id: "4394", name: "Serie B", top: false },
   { id: "5340", name: "Serie C - A", top: false }, { id: "5339", name: "Serie C - B", top: false }, { id: "5341", name: "Serie C - C", top: false },
+  // sd = spread of the final margin, home = home advantage in points, avg = points per team per game, lenSec = how long until the result is final
+  { id: "4387", name: "NBA", top: true, two: { sd: 12, home: 2.5, avg: 113, lenSec: 3 * 3600 } },
+  { id: "4546", name: "EuroLeague", top: false, two: { sd: 11, home: 3, avg: 82, lenSec: 3 * 3600 } },
+  { id: "4380", name: "NHL", top: true, two: { sd: 2.3, home: 0.25, avg: 3.1, lenSec: 3 * 3600 } },
+  { id: "4391", name: "NFL", top: true, two: { sd: 13, home: 2.3, avg: 22, lenSec: 4 * 3600 } },
+  { id: "4424", name: "MLB", top: true, two: { sd: 4.4, home: 0.3, avg: 4.5, lenSec: 4 * 3600 } },
 ];
+export const TWO_WAY_LEAGUES: string[] = LEAGUES.filter((l) => l.two).map((l) => l.name);
 
-export interface Fixture { eventId: string; league: string; home: string; away: string; kickoff: number; apiId?: string }
+export interface Fixture { eventId: string; league: string; home: string; away: string; kickoff: number; apiId?: string; lenSec?: number }
 export interface TableRow { team: string; played: number; points: number; goalsFor: number; goalsAgainst: number }
 export interface Geo { lat: number; lon: number }
 
@@ -134,22 +143,34 @@ export function matchMarket(f: Fixture, bet: MatchBet, priors: Record<MatchBet, 
   return {
     city_id: "world", category: "sport", kind: "match_bet", feed_id: "sportsdb", ...(geo ? { lat: geo.lat, lon: geo.lon } : {}),
     params: { league: f.league, eventId: f.eventId, home: f.home, away: f.away, bet, kickoff: f.kickoff, priors, ...(f.apiId ? { apiId: f.apiId } : {}), ...(geo ? { local: "true" as const } : {}), ...(testOnly ? { testOnly: true } : {}), ...(custom ? { custom: "true", by: custom.by } : {}) } as MatchMarketInsert["params"],
-    closes_at: new Date((f.kickoff - 300) * 1000).toISOString(), target_at: new Date((f.kickoff + MATCH_LENGTH_SEC) * 1000).toISOString(), deadline_at: new Date((f.kickoff + 12 * 3600) * 1000).toISOString(),
+    closes_at: new Date((f.kickoff - 300) * 1000).toISOString(), target_at: new Date((f.kickoff + (f.lenSec ?? MATCH_LENGTH_SEC)) * 1000).toISOString(), deadline_at: new Date((f.kickoff + 12 * 3600) * 1000).toISOString(),
     odds_yes: odds.yes, odds_no: odds.no, dedupe_key: `sport|${f.eventId}|${bet}`,
   };
 }
 
-export function buildMatchMarkets(fixtures: Fixture[], table: TableRow[], now: number, testOnly: boolean, geo: Map<string, Geo>, top: boolean): MatchMarketInsert[] {
+const phi = (z: number) => 1 - upper(z);
+/** Chance that the home side wins a game without draws: normal margin around the difference in strength (points scored and conceded per game, pulled to the average). */
+export function twoWayPriors(home: TableRow | undefined, away: TableRow | undefined, cfg: TwoWayCfg): Record<MatchBet, number> {
+  const K = 4, net = (r?: TableRow) => (r ? (r.goalsFor - r.goalsAgainst) / (r.played + K) : 0);
+  const mu = net(home) - net(away) + cfg.home;
+  const p = clamp(phi(mu / cfg.sd), 0.1, 0.9);
+  const out = Object.fromEntries(ALL_BETS.map((b) => [b, 0.5])) as Record<MatchBet, number>;
+  out.home_win = Math.round(p * 1000) / 1000; out.away_win = Math.round((1 - p) * 1000) / 1000;
+  return out;
+}
+
+export function buildMatchMarkets(fixtures: Fixture[], table: TableRow[], now: number, testOnly: boolean, geo: Map<string, Geo>, top: boolean, two?: TwoWayCfg): MatchMarketInsert[] {
   const by = new Map(table.map((r) => [r.team, r]));
   const avg = leagueAverage(table);
   const out: MatchMarketInsert[] = [];
   for (const f of fixtures) {
     if (f.kickoff - 600 <= now + 300 || f.kickoff > now + 7 * 86400) continue;
-    const pri = matchPriors(by.get(f.home), by.get(f.away), avg, top);
-    for (const bet of top ? AUTO_BETS : AUTO_BETS_LOWER) out.push(matchMarket(f, bet, pri, geo.get(f.home), testOnly));
+    const pri = two ? twoWayPriors(by.get(f.home), by.get(f.away), two) : matchPriors(by.get(f.home), by.get(f.away), avg, top);
+    const fx = two ? { ...f, lenSec: two.lenSec } : f;
+    for (const bet of two ? (["home_win", "away_win"] as MatchBet[]) : top ? AUTO_BETS : AUTO_BETS_LOWER) out.push(matchMarket(fx, bet, pri, geo.get(f.home), testOnly));
   }
   return out;
 }
 
 export interface MatchObservation { eventId: string; homeGoals: number | null; awayGoals: number | null; status: string; fetchedAt: number; htHome?: number | null; htAway?: number | null; corners?: number | null; cards?: number | null; reds?: number | null }
-export const FINISHED = new Set(["FT", "AET", "PEN", "Match Finished"]);
+export const FINISHED = new Set(["FT", "AET", "PEN", "AOT", "AP", "Match Finished"]);

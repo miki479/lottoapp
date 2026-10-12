@@ -128,3 +128,20 @@ describe("football details (half-time, corners, cards)", () => {
     expect(p.home_win).toBeGreaterThan(0.6); expect(p.home_win).toBeLessThan(0.9);
   });
 });
+
+import { LEAGUES, twoWayPriors, buildMatchMarkets as bmm } from "../shared/sport.ts";
+describe("two-way sports (basketball, hockey…)", () => {
+  const nba = LEAGUES.find((l) => l.name === "NBA")!.two!;
+  it("no draw: the two chances add up, home advantage and strength both count", () => {
+    const even = twoWayPriors(undefined, undefined, nba);
+    expect(even.home_win + even.away_win).toBeGreaterThan(0.99); expect(even.home_win).toBeGreaterThan(0.5); expect(even.home_win).toBeLessThan(0.65);
+    const strong = twoWayPriors({ team: "S", played: 10, points: 0, goalsFor: 1200, goalsAgainst: 1050 }, { team: "W", played: 10, points: 0, goalsFor: 1050, goalsAgainst: 1200 }, nba);
+    expect(strong.home_win).toBeGreaterThan(0.8);
+  });
+  it("only home and away markets are made, with the sport's own duration", () => {
+    const NOW = 1_800_000_000;
+    const m = bmm([{ eventId: "9", league: "NBA", home: "A", away: "B", kickoff: NOW + 7200 }], [], NOW, false, new Map(), true, nba);
+    expect(m.map((x) => x.params.bet).sort()).toEqual(["away_win", "home_win"]);
+    expect(Date.parse(m[0]!.target_at) / 1000).toBe(NOW + 7200 + 3 * 3600);
+  });
+});

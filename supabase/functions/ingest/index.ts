@@ -560,15 +560,16 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
       }
     }
   }
-  // 2. Hourly: the next two rounds of every league become questions.
-  if (now - last >= 3600 - 5) {
+  // 2. Every 5 minutes, two leagues in turn (the free tier allows about 30 calls a minute): their next days become questions.
+  if (now - last >= 300 - 5) {
     await sb.from("feed_health").upsert({ feed_id: "sportsdb", last_attempt_at: new Date(now * 1000).toISOString() });
     let okLeagues = 0, offered = 0, fixturesN = 0;
     const geoCache = new Map<string, Geo | null>();
     const { data: geoRows } = await sb.from("team_geo").select("team,lat,lon");
     for (const g of geoRows ?? []) geoCache.set(g.team as string, g.lat === null ? null : { lat: Number(g.lat), lon: Number(g.lon) });
     let geocoded = 0;
-    for (const league of LEAGUES) {
+    const slot = Math.floor(now / 300) % Math.ceil(LEAGUES.length / 2);
+    for (const league of LEAGUES.filter((_, i) => Math.floor(i / 2) === slot)) {
       try {
         // every match of the next 7 days, day by day (the "round" calls of the free tier are capped at 5)
         const fixtures: Fixture[] = [];
@@ -603,7 +604,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
         // town of every home team, geocoded once and remembered
         const geo = new Map<string, Geo>();
         for (const f of fixtures) {
-          if (!geoCache.has(f.home) && geocoded < 10) {
+          if (!league.two && !geoCache.has(f.home) && geocoded < 10) {
             geocoded++;
             let g: Geo | null = null;
             try {
@@ -615,7 +616,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
           }
           const g = geoCache.get(f.home); if (g) geo.set(f.home, g);
         }
-        const markets = buildMatchMarkets(fixtures, table, now, false, geo, league.top);
+        const markets = buildMatchMarkets(fixtures, table, now, false, geo, league.top, league.two);
         if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
         // keep the figures of the not-yet-opened bets (and the data-source id) of already open matches current
         const seen = new Set<string>();
@@ -625,7 +626,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
       } catch (e) { notes.push(`${league.name}: ${String((e as Error).message ?? e).slice(0, 60)}`); }
     }
     await sb.rpc("backfill_match_geo");
-    if (okLeagues === 0) { await sb.from("feed_health").upsert({ feed_id: "sportsdb", last_error: notes.join("; ").slice(0, 300), last_error_at: new Date().toISOString() }); throw new Error(notes.join("; ")); }
+    if (okLeagues === 0 && fixturesN === 0 && notes.length > 0) { await sb.from("feed_health").upsert({ feed_id: "sportsdb", last_error: notes.join("; ").slice(0, 300), last_error_at: new Date().toISOString() }); throw new Error(notes.join("; ")); }
     await sb.from("feed_health").upsert({ feed_id: "sportsdb", last_ok_at: new Date().toISOString(), last_error: null });
     notes.push(`${fixturesN} fixtures, ${offered} offered`);
   }

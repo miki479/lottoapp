@@ -18,6 +18,7 @@ async function user(tag) {
 const rpc = (u, n, b) => j(`/rest/v1/rpc/${n}`, { method: "POST", body: JSON.stringify(b ?? {}) }, u?.tok);
 try {
   const A = await user("a"), B = await user("b"), C = await user("c");
+  const D0 = await user("s");
   const g = await j("/auth/v1/signup", { method: "POST", body: "{}" }); const G = { tok: g.body.access_token };
   const ref = (await rpc(A, "my_referral")).body?.[0]; ok(!!ref?.code, `inviter has a code (${ref?.code})`);
   ok((await rpc(G, "redeem_referral", { p_code: ref.code })).status >= 400, "a guest cannot accept an invite (needs an account)");
@@ -33,6 +34,16 @@ try {
   ok((await j("/rest/v1/friendships?select=*", {}, A.tok)).status >= 400 || (await j("/rest/v1/friendships?select=*", {}, A.tok)).body?.length === 0, "the table is not readable directly");
   ok((await rpc(null, "friends_board")).status >= 400 || (await rpc(G, "friends_board")).body?.length === 0, "anonymous callers get nothing");
 
+  const mk = (await j("/rest/v1/markets?status=eq.open&kind=eq.rain_at&select=id&limit=1")).body?.[0]?.id ?? (await j("/rest/v1/markets?status=eq.open&select=id&limit=1")).body?.[0]?.id;
+  if (mk) {
+    const pb = await rpc(B, "place_bet", { p_market: mk, p_pick: "yes", p_stake: 10 });
+    ok(pb.status === 200, `B places a bet (${pb.status})`);
+    ok((await rpc(A, "friend_bets")).body?.some((r) => r.market_id === mk && Number(r.friends) === 1), "A sees that a friend bet on it");
+    ok(!(await rpc(D0, "friend_bets")).body?.some((r) => r.market_id === mk), "a stranger does not");
+  }
+  await j("/rest/v1/trophies", { method: "POST", body: JSON.stringify({ user_id: A.id, trophy_id: "first_win" }) }, SRV, SRV);
+  ok((await j("/rest/v1/trophies?select=trophy_id", {}, A.tok)).body?.length === 1, "A sees their own trophy");
+  ok((await j("/rest/v1/trophies?select=trophy_id", {}, B.tok)).body?.length === 0, "a friend (or anyone) does NOT see it: trophies are private");
   // challenge invites
   const closes = new Date(Date.now() + 20 * 60_000).toISOString();
   const ch = await rpc(A, "create_challenge", { p_title: "Marco arriva in ritardo alla cena?", p_category: "dinner", p_stake: 0, p_closes_at: closes });

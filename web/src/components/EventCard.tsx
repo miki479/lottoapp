@@ -1,5 +1,5 @@
 import { Q } from "./Q.tsx";
-import { Activity, Car, Clapperboard, Trophy, TrendingUp, Megaphone, Clock, Star, Zap } from "lucide-preact";
+import { Activity, Car, Clapperboard, Trophy, TrendingUp, Megaphone, Clock, Star, Zap, Users } from "lucide-preact";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { countdown, fmtOdds, isYesNo, money, per10, question, type MarketRow } from "../lib/format.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -23,7 +23,7 @@ export function liveLabel(msg: Messages, l: LiveDelay) {
 }
 
 /** One event: what it is (detail row), the question (title), then two big, equal choices. */
-export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now: number; live?: LiveDelay; index: number; top?: boolean; hasLadder?: boolean; mm?: number; showCity: boolean; onPick: (m: MarketRow, pick: Pick) => void }) {
+export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now: number; live?: LiveDelay; index: number; top?: boolean; hasLadder?: boolean; mm?: number; friends?: number; showCity: boolean; onPick: (m: MarketRow, pick: Pick) => void }) {
   const { m, msg, locale, now, live } = p;
   const city = cityOf(m.city_id), Kind = m.category === "train" && isMetroLine(m.params.routeName) ? MetroSide : KIND[m.category];
   const { hint, show, clear } = useHint();
@@ -32,7 +32,8 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
   const who = m.kind === "match_bet" ? String(m.params.league ?? "") : m.kind === "tick_gt" ? String(m.params.label ?? "") : isRain ? cityName(city, locale) : `${String(m.params.routeName ?? "")} · ${cityName(city, locale)}`;
   const flashOn = (m.flash_multiplier ?? 1) > 1 && !!m.flash_until && Date.parse(m.flash_until) > now;
   return (
-    <article class={`card event ${m.category} ${p.top ? "is-top" : ""} ${flashOn ? "is-flash" : ""}`} style={`--i:${Math.min(p.index, 10)}`}>
+    <article class={`card event ${(p.friends ?? 0) > 0 ? "has-friends" : ""} ${m.category} ${p.top ? "is-top" : ""} ${flashOn ? "is-flash" : ""}`} style={`--i:${Math.min(p.index, 10)}`}>
+      {(p.friends ?? 0) > 0 && <span class="frbadge" title={msg.frd.friendsOn(p.friends!)} aria-label={msg.frd.friendsOn(p.friends!)}><Users size={13} />{p.friends}</span>}
       {(p.top || flashOn || p.hasLadder || left < 300_000) && <div class="badges">{p.hasLadder && <span class="badge-sorry"><Megaphone size={13} />{msg.ladder.chip}</span>}{flashOn && <span class="badge-flash"><Zap size={13} fill="currentColor" />FLASH ×{m.flash_multiplier} · {countdown(Date.parse(m.flash_until!) - now)}</span>}{p.top && <span class="badge-top"><Star size={13} fill="currentColor" />{msg.card.topOdds}</span>}{left < 300_000 && <span class="badge-hot"><Zap size={13} fill="currentColor" />{msg.card.hot}</span>}</div>}
       {m.kind === "rain_at" ? <Sky mm={p.mm} hint={hint} msg={msg} /> : m.kind === "traffic_speed_lt" ? <TrafficScene m={m} hint={hint} msg={msg} /> : m.kind === "match_bet" ? <SportScene m={m} hint={hint} msg={msg} /> : m.kind === "tick_gt" ? <TickScene m={m} hint={hint} msg={msg} /> : m.kind === "metric_gt" || m.kind === "quake_m" || m.kind === "strike_on" ? <MetricArt m={m} msg={msg} hint={hint} /> : <TripScene m={m} now={now} hint={hint} />}
       <div class="meta">

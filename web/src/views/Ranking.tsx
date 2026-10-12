@@ -1,4 +1,4 @@
-import { Share2, Swords, Trophy, TrendingDown, TrendingUp, UserMinus, Users } from "lucide-preact";
+import { ArrowDown, ArrowUp, Share2, Swords, Trophy, TrendingDown, TrendingUp, UserMinus, Users } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Empty } from "../components/Empty.tsx";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -51,6 +51,13 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
   const create = async () => { const { data, error } = await sb.rpc("create_group", { p_name: gname }); if (error) return p.onToast(p.msg.errors[error.message.includes("nickname_not_allowed") ? "nickname_not_allowed" : error.message.includes("bad_nickname") ? "bad_nickname" : "registration_required"]!, "err"); await loadGroups(); setGroup(String(data)); setGname(""); };
   const join = async () => { const { data, error } = await sb.rpc("join_group", { p_code: code }); if (error) return p.onToast(p.msg.errors[error.message.includes("unknown_group") ? "unknown_group" : "generic"]!, "err"); await loadGroups(); setGroup(String(data)); setCode(""); setTab("friends"); setFsub("groups"); };
 
+  const INVITE = (
+          <section class="card stack invitecard">
+            <div class="invhead"><span class="refico"><Users size={22} /></span><div><b>{p.msg.frd.inviteTitle}</b><p class="hint">{p.msg.frd.inviteBody}</p></div></div>
+            {p.referral && <p class="detail">{p.msg.frd.invitedCount(p.referral.invited)}</p>}
+            <button class="btn primary wide" disabled={!p.referral} onClick={p.onShareReferral}><Share2 size={18} />{p.msg.frd.inviteBtn}</button>
+          </section>
+  );
   if (!p.registered) return (
     <div class="screen stack"><h1>{m.title}</h1><div class="card"><Empty icon={Trophy} title={m.gate.title} body={m.gate.body} cta={m.gate.cta} onCta={p.onAuth} /></div></div>
   );
@@ -72,12 +79,8 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
       )}
       {board && (
         <>
-          <section class="card stack invitecard">
-            <div class="invhead"><span class="refico"><Users size={22} /></span><div><b>{p.msg.frd.inviteTitle}</b><p class="hint">{p.msg.frd.inviteBody}</p></div></div>
-            {p.referral && <p class="detail">{p.msg.frd.invitedCount(p.referral.invited)}</p>}
-            <button class="btn primary wide" disabled={!p.referral} onClick={p.onShareReferral}><Share2 size={18} />{p.msg.frd.inviteBtn}</button>
-          </section>
           <p class="detail">{p.msg.frd.boardHint}</p>
+          {friends !== null && friends.length <= 1 && INVITE}
           {friends === null && [0, 1, 2].map((i) => <div class="sk s" key={i} />)}
           {friends && friends.length <= 1 && <div class="card"><Empty icon={Users} title={p.msg.frd.empty} body={p.msg.frd.emptyBody} /></div>}
           {friends && friends.length > 1 && (
@@ -86,7 +89,8 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
                 <div class={`row ${r.is_me ? "me" : ""}`} key={r.user_id}>
                   <span class={`rank ${r.rank <= 3 ? "top" : ""}`}>{r.rank}</span>
                   <span class="grow"><b>{r.display_name || p.msg.frd.anon}</b>{r.is_me && <span class="detail"> · {m.you}</span>}</span>
-                  <span class={`score num ${r.score > 0 ? "pos" : r.score < 0 ? "neg" : "zero"}`}>{r.score > 0 ? <TrendingUp size={14} /> : r.score < 0 ? <TrendingDown size={14} /> : null}{r.score > 0 ? "+" : r.score < 0 ? "−" : ""}{Math.abs(r.score)}</span>
+                  {r.prev_rank !== r.rank && <span class={`mv ${r.rank < r.prev_rank ? "up" : "down"}`} aria-label={r.rank < r.prev_rank ? "up" : "down"}>{r.rank < r.prev_rank ? <ArrowUp size={13} strokeWidth={3} /> : <ArrowDown size={13} strokeWidth={3} />}{Math.abs(r.prev_rank - r.rank)}</span>}
+                  <span class={`score big num ${r.score > 0 ? "pos" : r.score < 0 ? "neg" : "zero"}`}>{r.score > 0 ? <ArrowUp size={15} strokeWidth={3} /> : r.score < 0 ? <ArrowDown size={15} strokeWidth={3} /> : null}{r.score > 0 ? "+" : r.score < 0 ? "−" : ""}{Math.abs(r.score)}</span>
                   {!r.is_me && <button class="iconbtn frdx" aria-label={`${p.msg.frd.remove} ${r.display_name ?? ""}`} onClick={() => setAskId(askId === r.user_id ? null : r.user_id)}><UserMinus size={16} /></button>}
                   {askId === r.user_id && (
                     <div class="frask" role="alert"><span>{p.msg.frd.removeAsk(r.display_name || p.msg.frd.anon)}</span><button class="btn secondary" onClick={() => setAskId(null)}>{p.msg.frd.removeNo}</button><button class="btn primary" onClick={() => removeFriend(r.user_id)}>{p.msg.frd.removeYes}</button></div>
@@ -95,7 +99,8 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
               ))}
             </div>
           )}
-          <button class="btn secondary wide" onClick={p.onChallenge}><Swords size={18} />{p.msg.frd.challenge}</button>
+          {friends && friends.length > 1 && <button class="btn secondary wide" onClick={p.onChallenge}><Swords size={18} />{p.msg.frd.challenge}</button>}
+          {friends && friends.length > 1 && INVITE}
         </>
       )}
       {tab === "friends" && fsub === "groups" && (

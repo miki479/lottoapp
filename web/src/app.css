@@ -900,3 +900,12 @@ textarea.field { resize: vertical; min-height: 84px; }
 .frchip.on { border-color: var(--brand); background: var(--brand-soft); } .frchip.on .fav { background: var(--brand); color: #fff; }
 .frchip.done { opacity: .55; }
 .inbox .invite { display: flex; flex-direction: column; gap: 4px; text-align: left; border-color: var(--brand); } .inbox .invopen { align-self: flex-end; color: var(--brand); font-weight: 800; font-size: 13px; }
+
+.mv { display: inline-flex; align-items: center; gap: 1px; font-size: 12px; font-weight: 800; flex: none; } .mv.up { color: var(--won-fg); } .mv.down { color: var(--lost-fg); }
+.score.big { font-size: 15px; font-weight: 800; }
+
+.mkchips:not(.sheet *) { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .mkchips::-webkit-scrollbar { display: none; } .mkchips .mkchip { flex: none; }
+
+.card.event, .card.matchrow { position: relative; }
+.frbadge { position: absolute; top: 10px; right: 10px; z-index: 2; display: inline-flex; align-items: center; gap: 4px; min-height: 24px; padding: 0 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: 12px; font-weight: 800; border: 1px solid color-mix(in srgb, var(--brand) 35%, transparent); }
+.has-friends { border-color: color-mix(in srgb, var(--brand) 45%, var(--border)); }

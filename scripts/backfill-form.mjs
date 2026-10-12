@@ -3,7 +3,8 @@
 //   SUPABASE_ACCESS_TOKEN=... SUPABASE_URL=<ref> node scripts/backfill-form.mjs [fromDate] [toDate]
 import { projectRef } from "./lib-env.mjs";
 
-const LEAGUES = [["4332", "Serie A"], ["4394", "Serie B"], ["5340", "Serie C - A"], ["5339", "Serie C - B"], ["5341", "Serie C - C"]];
+const LEAGUES = [["4332", "Serie A"], ["4394", "Serie B"], ["5340", "Serie C - A"], ["5339", "Serie C - B"], ["5341", "Serie C - C"], ["4387", "NBA"], ["4546", "EuroLeague"], ["4380", "NHL"], ["4391", "NFL"], ["4424", "MLB"]];
+const ONLY = process.env.ONLY?.split(",");
 const from = new Date(`${process.argv[2] ?? "2026-08-15"}T00:00:00Z`), to = new Date(`${process.argv[3] ?? new Date().toISOString().slice(0, 10)}T00:00:00Z`);
 const FINISHED = new Set(["FT", "AET", "PEN", "Match Finished"]);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -12,7 +13,7 @@ const sql = async (query) => {
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
 };
 let rows = [], calls = 0;
-for (const [id, name] of LEAGUES) {
+for (const [id, name] of LEAGUES.filter(([, n]) => !ONLY || ONLY.includes(n))) {
   for (let d = new Date(from); d <= to; d = new Date(d.getTime() + 86400_000)) {
     const day = d.toISOString().slice(0, 10);
     let evs = [];

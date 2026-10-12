@@ -100,6 +100,7 @@ export function App() {
   const [challengeMaker, setChallengeMaker] = useState(false);
   const [challengeCode, setChallengeCode] = useState<string | null>(null);
   const [myChallenges, setMyChallenges] = useState<Challenge[]>([]);
+  const [friendBets, setFriendBets] = useState<Record<string, number>>({});
   const [invites, setInvites] = useState<(Challenge & { invited_by: string })[]>([]);
   const placeIds = useRef<string[]>(myPlaces.map((p) => p.id));
   const [near, setNear] = useState<NearState | null>(() => { try { return JSON.parse(store.get("near") ?? "null"); } catch { return null; } });
@@ -144,7 +145,7 @@ export function App() {
   const loadTrophies = useCallback(async () => { const { data } = await sb.from("trophies").select("trophy_id"); const s = new Set((data ?? []).map((r) => r.trophy_id as string)); setTrophies(s); return s; }, []);
   const loadBets = useCallback(async () => { const { data } = await sb.from("bets").select(BET_COLS).order("placed_at", { ascending: false }).limit(60); setBets((data ?? []) as unknown as MyBet[]); }, []);
 
-  const loadChallenges = useCallback(async () => { if (!registered) { setMyChallenges([]); setInvites([]); return; } const [{ data }, inv] = await Promise.all([sb.rpc("my_challenges"), sb.rpc("my_invites")]); setMyChallenges((data ?? []) as Challenge[]); setInvites((inv.data ?? []) as (Challenge & { invited_by: string })[]); }, [registered]);
+  const loadChallenges = useCallback(async () => { if (!registered) { setMyChallenges([]); setInvites([]); setFriendBets({}); return; } const [{ data }, inv, fb] = await Promise.all([sb.rpc("my_challenges"), sb.rpc("my_invites"), sb.rpc("friend_bets")]); setFriendBets(Object.fromEntries(((fb.data ?? []) as { market_id: string; friends: number }[]).map((x) => [x.market_id, Number(x.friends)]))); setMyChallenges((data ?? []) as Challenge[]); setInvites((inv.data ?? []) as (Challenge & { invited_by: string })[]); }, [registered]);
   const loadParlays = useCallback(async () => { const { data } = await sb.from("parlays").select("id,stake,odds,status,payout,placed_at,settled_at,parlay_legs(market_id,pick,odds,status,markets(city_id,kind,params))").order("placed_at", { ascending: false }).limit(40); setParlays((data ?? []) as unknown as ParlayRow[]); }, []);
   const loadQuests = useCallback(async () => { const { data } = await sb.rpc("my_quests"); setQuests(((data ?? []) as QuestRow[]).map((q) => ({ ...q, reward: +q.reward }))); }, []);
   const loadReferral = useCallback(async () => {
@@ -326,10 +327,16 @@ export function App() {
     feat("wild", Activity, msg.top.wild, wild, wild ? <>×{fmtOdds(Number(wild.odds_yes), locale)}</> : null);
     const sky = open1("weather", 24).sort((x, y) => Number(y.odds_yes) - Number(x.odds_yes))[0];
     feat("sky", CloudLightning, msg.top.sky, sky, sky ? <>×{fmtOdds(Number(sky.odds_yes), locale)}</> : null);
+    const hotId = Object.entries(friendBets).sort((x, y) => y[1] - x[1]).find(([id]) => inFilter.some((m) => m.id === id));
+    const hotM = hotId && inFilter.find((m) => m.id === hotId[0]);
+    if (hotM && hotId) items.unshift({ id: "friends", icon: Users, label: msg.frd.hot, big: <>{hotId[1]}<small>{msg.frd.friendsOn(hotId[1]).replace(/^\d+\s*/, "")}</small></>, sub: sub(hotM), onClick: () => setSheet({ m: hotM, pick: "yes" }) });
+    const best = open1("", 48);
+    const bestM = inFilter.filter((m) => Date.parse(m.closes_at) > now && Date.parse(m.closes_at) - now < 48 * 3600_000 && !(m.params as { testOnly?: boolean }).testOnly && !m.params.ladderOf && Number(m.odds_yes) < 20).sort((x, y) => Number(y.odds_yes) - Number(x.odds_yes))[0];
+    void best; feat("best", TrendingUp, msg.top.best, bestM, bestM ? <>×{fmtOdds(Number(bestM.odds_yes), locale)}</> : null);
     const soon = inFilter[0];
     if (soon) items.push({ id: "soon", icon: Clock, label: msg.top.closing, big: <span class="num">{countdown(Date.parse(soon.closes_at) - now)}</span>, sub: question(soon, msg, locale, cityName(cityOf(soon.city_id), locale), cityOf(soon.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: soon, pick: "no" }) });
     return items;
-  }, [inFilter, live, popular, trendRows, locale, Math.floor(now / 1000)]);
+  }, [inFilter, live, popular, trendRows, friendBets, locale, Math.floor(now / 1000)]);
 
   const flashId = open.find((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now)?.id;
   useEffect(() => { if (flashId) announce(`flash-${flashId}`, msg.voice.flash, locale); }, [flashId]);
@@ -513,7 +520,7 @@ export function App() {
         <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
         <Ticker items={tickerItems} />
         <main class="content">
-          {screen === "home" && <Home details={detailsOn} stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
+          {screen === "home" && <Home friendBets={friendBets} details={detailsOn} stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets invites={invites} challenges={myChallenges} onChallenge={(code) => setChallengeCode(code)} parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "ranking" && <Ranking referral={referral} onShareReferral={shareReferral} onChallenge={() => (registered ? setChallengeMaker(true) : setAuth(true))} home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
           {screen === "admin" && <AdminPage msg={msg} onBack={() => go("profile")} />}
