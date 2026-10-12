@@ -556,7 +556,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
           }
           const g = geoCache.get(f.home); if (g) geo.set(f.home, g);
         }
-        const markets = buildMatchMarkets(fixtures, table, now, key === "3", geo, league.top);
+        const markets = buildMatchMarkets(fixtures, table, now, false, geo, league.top);
         if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
         okLeagues++; fixturesN += fixtures.length; offered += markets.length;
       } catch (e) { notes.push(`${league.name}: ${String((e as Error).message ?? e).slice(0, 60)}`); }
