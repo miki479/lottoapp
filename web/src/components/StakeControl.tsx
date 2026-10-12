@@ -5,17 +5,19 @@ import { money } from "../lib/format.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 
 /** Big glowing stake number + slider. The number warms up (violet -> magenta -> orange) and pops as the stake grows. */
-export function StakeControl(p: { value: number; onChange: (n: number) => void; cap: number; odds: number; boost?: boolean; locale: Locale; msg: Messages }) {
+export function StakeControl(p: { value: number; onChange: (n: number) => void; cap: number; odds: number; boost?: boolean; vice?: number; fancy?: boolean; locale: Locale; msg: Messages }) {
   const lo = 10, hi = Math.max(lo + 10, p.cap);
   const heat = (p.value - lo) / (hi - lo);
   const hot = `hsl(${(260 + 130 * heat) % 360} 95% 68%)`;
-  const gross = p.boost ? boostedPayout(p.value, p.odds) : Math.floor(p.value * p.odds);
+  const base = p.boost ? boostedPayout(p.value, p.odds) : Math.floor(p.value * p.odds);
+  // the optional Bonus Vice adds a share of the total paid out, on top of the boost
+  const gross = base + (p.vice ? Math.floor(Math.floor(p.value * p.odds) * p.vice / 100) : 0);
   const win = useCountUp(gross, 450);
   const fill = Math.round(heat * 100);
   return (
     <div class="stakectl">
       <span class="detail">{p.msg.stake.label}</span>
-      <output class="glow pop" key={p.value} aria-live="polite" style={`--hot:${hot};--halo:${Math.round(10 + 26 * heat)}px`}>{money(p.value, p.locale)}</output>
+      <output class={`glow pop ${p.fancy && p.value >= hi ? "vicemax" : ""}`} key={p.value} aria-live="polite" style={`--hot:${hot};--halo:${Math.round(10 + 26 * heat)}px`}>{money(p.value, p.locale)}</output>
       <input class="range" type="range" min={lo} max={hi} step={10} value={p.value} aria-label={p.msg.stake.label}
         style={`--fill:${fill}%;--hot:${hot}`}
         onInput={(e) => { p.onChange(Number((e.target as HTMLInputElement).value)); haptic.tap(); }} />

@@ -62,7 +62,7 @@ const store = {
 };
 const region = () => { try { return new Intl.Locale(navigator.language).maximize().region ?? null; } catch { return null; } };
 const PROFILE_COLS = "id,credits,city_id,locale,timezone,country,streak,best_streak,freezes,boosts,push_flash,push_streak,push_friends,display_name,last_play_date";
-const BET_COLS = "id,pick,stake,odds,boosted,status,payout,bonus,bonus_hit,markets(id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,void_reason,outcome,evidence)";
+const BET_COLS = "id,pick,stake,odds,boosted,vice_pct,status,payout,bonus,bonus_hit,markets(id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,void_reason,outcome,evidence)";
 
 export function App() {
   const now = useNow();
@@ -460,10 +460,10 @@ export function App() {
   const closeResult = () => { if (resultBet) markSeen(resultBet.id); setResultBet(null); };
 
   // ---------- actions ----------
-  const place = async (m: MarketRow, pick: Pick, stake: number, boost = false, bonus: string | null = null) => {
+  const place = async (m: MarketRow, pick: Pick, stake: number, boost = false, bonus: string | null = null, vice = false) => {
     if (offline) return msg.common.offline;
     const before = { bonus: progress?.bonus_claimed ?? false, trophies: new Set(trophies), streak: profile?.streak ?? 0 };
-    const { error } = await sb.rpc("place_bet", { p_market: m.id, p_pick: pick, p_stake: stake, p_boost: boost, ...(bonus ? { p_bonus: bonus } : {}) });
+    const { error } = await sb.rpc("place_bet", { p_market: m.id, p_pick: pick, p_stake: stake, p_boost: boost, ...(bonus ? { p_bonus: bonus } : {}), ...(vice ? { p_vice: true } : {}) });
     if (error) return msg.errors[Object.keys(msg.errors).find((k) => error.message.includes(k)) ?? "generic"]!;
     setSheet(null);
     const [pf] = await Promise.all([loadProfile(), loadBets(), loadQuests()]);

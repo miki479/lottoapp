@@ -5,11 +5,12 @@ import type { Messages } from "../i18n/index.ts";
 import { forgetLook, loadMyProgress, saveLook, type MyProgress } from "../lib/looks.ts";
 import { Look } from "./looks/Look.tsx";
 import { Sheet } from "./Sheet.tsx";
+import { XpInfo } from "./XpInfo.tsx";
 
 /** The "Decorations" sheet: preview on top, the character row, then the grid of rings with their padlocks. */
 export function LookSheet({ progress, msg, myId, onClose, onSaved }: { progress: MyProgress; msg: Messages; myId: string; onClose: () => void; onSaved: (p: MyProgress) => void }) {
   const t = msg.look;
-  const [av, setAv] = useState(progress.avatar), [deco, setDeco] = useState<string | null>(progress.decoration), [busy, setBusy] = useState(false);
+  const [xpOpen, setXpOpen] = useState(false), [av, setAv] = useState(progress.avatar), [deco, setDeco] = useState<string | null>(progress.decoration), [busy, setBusy] = useState(false);
   const open = (d: (typeof DECORATIONS)[number]) => (d.level !== undefined && d.level <= progress.level) || progress.owned.includes(d.id);
   const changed = av !== progress.avatar || deco !== progress.decoration;
   const lp = levelProgress(progress.xp);
@@ -21,7 +22,8 @@ export function LookSheet({ progress, msg, myId, onClose, onSaved }: { progress:
     <Sheet onClose={onClose} label={t.title}>
       <div class="lkprev"><Look avatar={av} decoration={deco} size={150} label={t.title} /><b>{t.level(progress.level)}</b>
         <div class="xpbar" role="progressbar" aria-valuenow={Math.round(lp.ratio * 100)} aria-valuemin={0} aria-valuemax={100}><i style={`width:${Math.round(lp.ratio * 100)}%`} /></div>
-        <span class="hint num">{t.xp(lp.into, lp.need)}</span></div>
+        <span class="hint num">{t.xp(lp.into, lp.need)}</span><button class="linkbtn" onClick={() => setXpOpen(true)}>{t.xpHow}</button></div>
+      {xpOpen && <XpInfo msg={msg} onClose={() => setXpOpen(false)} />}
       <h3 class="lkh">{t.avatars}</h3>
       <div class="lkavs">{AVATARS.map((a) => <button key={a} class={`lkav ${av === a ? "on" : ""}`} aria-pressed={av === a} aria-label={t.av[a]} onClick={() => setAv(a)}><Look avatar={a} size={52} /></button>)}</div>
       <h3 class="lkh">{t.title}</h3>

@@ -194,6 +194,7 @@ const it: Messages = {
     monthWins: "Vittorie del mese",
     trophies: "Trofei",
     declineAll: "Rifiuta tutte", showMore: (n) => `Mostra le altre ${n}`, showLess: "Mostra meno",
+    xpHow: "Come si guadagna esperienza", xpIntro: "L'esperienza (XP) cresce con quello che fai davvero nell'app. Non si compra e non si perde.", xpRows: ["+10 per ogni puntata chiusa, vinta o persa", "+15 in più per ogni puntata vinta", "+30 per ogni multipla vinta", "+80 per ogni trofeo sbloccato", "+12 per ogni giorno della tua serie migliore", "+5 per ogni amico"], xpNote: "Ogni livello è un po' più lungo del precedente. Dal livello 2 si sbloccano gli anelli di metallo (rame, bronzo, argento, oro…), gli altri si trovano nei bauli e nelle missioni lampo. Non danno nessun vantaggio sulle quote: sono solo estetica.",
     cancelRequest: "Annulla richiesta", requestCancelled: "Richiesta annullata", friendsOnly: "Gli altri trofei e il saldo li vedono solo gli amici", hiddenWord: "nascosti",
     balanceLabel: "Saldo",
     balance: (v) => `Oltre ${v}`,
@@ -205,7 +206,7 @@ const it: Messages = {
     deco: {"copper": "Rame", "bronze": "Bronzo", "silver": "Argento", "gold": "Oro", "diamond": "Diamante", "amethyst": "Ametista", "platinum": "Platino", "mithril": "Mithril", "orichalcum": "Oricalco", "adamantium": "Adamantio", "jade": "Giada", "ruby": "Rubino", "sapphire": "Zaffiro", "obsidian": "Ossidiana", "opal": "Opale"},
     rarity: {"common": "Comune", "uncommon": "Non comune", "rare": "Rara", "epic": "Epica", "legendary": "Leggendaria", "mythic": "Mitica"},
   },
-  house: { excl: "Esclusiva LateLotto", inDays: (n) => (n <= 0 ? "Oggi" : n === 1 ? "Domani" : `Tra ${n} giorni`), daysWord: (n) => (n === 1 ? "giorno" : "giorni"), remind: "Ricordamelo", reminding: "Ti avviso il giorno prima", needPush: "Per ricevere l'avviso attiva le notifiche dal Profilo" },
+  house: { viceTitle: "Bonus Vice", viceBody: (n) => `Se esce davvero il 19 novembre, +${n}% sul totale incassato. Solo sul Sì, si somma agli altri bonus.`, excl: "Esclusiva LateLotto", inDays: (n) => (n <= 0 ? "Oggi" : n === 1 ? "Domani" : `Tra ${n} giorni`), daysWord: (n) => (n === 1 ? "giorno" : "giorni"), remind: "Ricordamelo", reminding: "Ti avviso il giorno prima", needPush: "Per ricevere l'avviso attiva le notifiche dal Profilo" },
   frd: {
     boardTab: "Amici", groupsTab: "Gruppi", inviteTitle: "Invita un amico", inviteBody: "Chi accetta il tuo invito diventa subito tuo amico: lo trovi qui e puoi sfidarlo.", inviteBtn: "Condividi invito", invitedCount: (n) => (n === 1 ? "1 amico invitato" : `${n} amici invitati`),
     empty: "Ancora nessun amico", emptyBody: "Invita il primo: appena accetta, appare qui con il suo punteggio del mese.", anon: "Giocatore", remove: "Rimuovi", removeAsk: (n) => `Togliere ${n} dagli amici?`, removeYes: "Sì, rimuovi", removeNo: "Annulla", removed: "Amico rimosso", challenge: "Lancia una sfida", boardHint: "Classifica del mese tra te e i tuoi amici.",

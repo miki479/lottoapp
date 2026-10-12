@@ -1205,3 +1205,34 @@ textarea.field { resize: vertical; min-height: 84px; }
 .mscene.house.gta b { text-shadow: 0 1px 6px rgba(40, 8, 90, .6); }
 .remind { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .remind .btn.on { border-color: var(--brand); color: var(--brand); }
+
+/* the biggest stake on the GTA VI question: the number takes the colours of the game's logo and shimmers */
+.stakectl .glow.vicemax { background: linear-gradient(100deg, #1db4ff, #6a5bff, #ff4fa3, #ffb35c, #1db4ff); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; text-shadow: none; filter: drop-shadow(0 0 14px rgba(255, 79, 163, .65)); animation: vicesheen 2.4s linear infinite; }
+@keyframes vicesheen { to { background-position: 300% 0; } }
+@media (prefers-reduced-motion: reduce) { .stakectl .glow.vicemax { animation: none; } }
+.vicetoggle.on { border-color: #ff4fa3; box-shadow: 0 0 0 1px #ff4fa3 inset, 0 0 18px rgba(255, 79, 163, .35); }
+.vicetoggle svg { color: #ff4fa3; }
+
+.xplist { margin: 0; padding: 0 0 0 20px; display: flex; flex-direction: column; gap: 8px; } .xplist li { font-weight: 600; }
+.xphow { align-self: flex-start; }
+
+/* "Legalità": a green field of leaves that glows, with glints like trichomes; the three big leaves wiggle when tapped */
+.mscene.law svg { cursor: pointer; }
+.lw-glow { animation: lwglow 4.5s ease-in-out infinite; }
+@keyframes lwglow { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+.lw-spark { animation: lwtwinkle 2.4s ease-in-out infinite; animation-delay: var(--d, 0s); opacity: 0; }
+@keyframes lwtwinkle { 0%, 100% { opacity: 0; transform: scale(.4); } 50% { opacity: .95; transform: scale(1); } }
+.lw-spark { transform-box: fill-box; transform-origin: center; }
+.lw-back { animation: lwsway 6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes lwsway { from { transform: rotate(-2.5deg); } to { transform: rotate(2.5deg); } }
+.lw-front.go .lw-leaf { animation: lwwiggle .9s ease-in-out both; transform-box: fill-box; transform-origin: 50% 100%; }
+.lw-front.go .lw-leaf.l2 { animation-delay: .08s; } .lw-front.go .lw-leaf.l3 { animation-delay: .16s; }
+@keyframes lwwiggle { 0% { transform: rotate(0); } 25% { transform: rotate(-14deg); } 55% { transform: rotate(11deg); } 80% { transform: rotate(-5deg); } 100% { transform: rotate(0); } }
+@media (prefers-reduced-motion: reduce) { .lw-glow, .lw-spark, .lw-back { animation: none; } .lw-spark { opacity: .7; } }
+.cn-pos, .cn-b { transform-box: view-box !important; transform-origin: 0 0 !important; }
+.cn-in { transform-box: fill-box; transform-origin: 50% 100%; }
+.gh-lawsway { transform-box: fill-box; transform-origin: 50% 100%; }
+@media (hover: hover) { .cc.law:not(:disabled):hover .gh-lawsway { animation: lawsway 1.6s ease-in-out 1 both; } }
+.cc.play.law .gh-lawsway { animation: lawsway 1.6s ease-in-out 1 both; }
+@keyframes lawsway { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-7deg); } 65% { transform: rotate(6deg); } }
+.cc.law { --cat: #2fa04f; --cat-soft: color-mix(in srgb, #2fa04f 12%, var(--surface)); }

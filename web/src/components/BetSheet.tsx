@@ -1,7 +1,7 @@
 import { sb } from "../lib/api.ts";
 import { Q } from "./Q.tsx";
 import { MarketVs, noOf, reasonOf } from "./MatchVs.tsx";
-import { Layers, Rocket, Share2, X } from "lucide-preact";
+import { Layers, Rocket, Share2, Sparkles, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { fmtOdds, isYesNo, money, question, type MarketRow } from "../lib/format.ts";
@@ -27,7 +27,7 @@ import { Remind } from "./Remind.tsx";
 /** Bet slip for one event: pick, stake, then place it (guests do the "last step" sign-up right here when it is required). */
 export function BetSheet(p: {
   m: MarketRow; initial: Pick; msg: Messages; locale: Locale; credits: number; ready: boolean; needJoin: boolean; googleOn: boolean; inSlip: boolean; boosts: number; now: number; mm?: number; occ?: { level: number }; ladder: MarketRow[]; onSwitch: (m: MarketRow) => void;
-  onClose: () => void; onAddSlip: (m: MarketRow, pick: Pick) => void; onJoined: () => Promise<void>; onPlace: (m: MarketRow, pick: Pick, stake: number, boost: boolean, bonus?: string | null) => Promise<string | null>;
+  onClose: () => void; onAddSlip: (m: MarketRow, pick: Pick) => void; onJoined: () => Promise<void>; onPlace: (m: MarketRow, pick: Pick, stake: number, boost: boolean, bonus?: string | null, vice?: boolean) => Promise<string | null>;
 }) {
   const [pick, setPick] = useState<Pick>(p.initial);
   const [stake, setStake] = useState(50);
@@ -42,7 +42,8 @@ export function BetSheet(p: {
     try { if (navigator.share) { await navigator.share({ title: "LateLotto", text, url }); return; } } catch { return; }
     try { await navigator.clipboard.writeText(`${text} ${url}`); setCopied(true); setTimeout(() => setCopied(false), 2500); } catch { /* nothing to do */ }
   };
-  const [boost, setBoost] = useState(false);
+  const [boost, setBoost] = useState(false), [vice, setVice] = useState(false);
+  const vicePct = Number((p.m.params as { viceBonus?: number }).viceBonus ?? 0), exclusive = (p.m.params as { art?: string }).art === "gta6";
   const [bonus, setBonus] = useState<"free" | "few" | "standing" | null>(null);
   const city = cityOf(p.m.city_id), isRain = isYesNo(p.m.kind);
   const odds = Number(pick === "yes" ? p.m.odds_yes : p.m.odds_no);
@@ -51,7 +52,7 @@ export function BetSheet(p: {
   const amount = Math.min(stake, cap);
   const place = async () => {
     setBusy(true); setErr(null); haptic.tap();
-    const out = await p.onPlace(p.m, pick, amount, boost && p.boosts > 0, p.m.params.occBonus ? bonus : null);
+    const out = await p.onPlace(p.m, pick, amount, boost && p.boosts > 0, p.m.params.occBonus ? bonus : null, vice && vicePct > 0 && pick === "yes");
     if (out) { setErr(out); setBusy(false); haptic.error(); } else haptic.success();
   };
   const label = (k: Pick) => (k === "yes" ? (isRain ? p.msg.card.yes : p.msg.card.late) : (isRain ? p.msg.card.no : p.msg.card.onTime));
@@ -97,7 +98,8 @@ export function BetSheet(p: {
           <div class="mkchips wrap">{([null, "free", "few", "standing"] as const).map((k) => <button key={String(k)} type="button" class={`mkchip ${bonus === k ? "on" : ""}`} aria-pressed={bonus === k} onClick={() => setBonus(k)}>{k === null ? p.msg.bonus.none : p.msg.bonus[k]}</button>)}</div>
         </div>
       )}
-      <StakeControl value={amount} onChange={setStake} cap={cap} odds={odds} boost={boost && p.boosts > 0} locale={p.locale} msg={p.msg} />
+      {vicePct > 0 && pick === "yes" && <label class={`boosttoggle vicetoggle ${vice ? "on" : ""}`}><input type="checkbox" checked={vice} onChange={(e) => setVice((e.target as HTMLInputElement).checked)} /><Sparkles size={20} /><span><b>{p.msg.house.viceTitle}</b> · +{vicePct}%<small>{p.msg.house.viceBody(vicePct)}</small></span></label>}
+      <StakeControl value={amount} onChange={setStake} cap={cap} odds={odds} boost={boost && p.boosts > 0} vice={vice && pick === "yes" ? vicePct : 0} fancy={exclusive} locale={p.locale} msg={p.msg} />
       {p.boosts > 0 && <label class={`boosttoggle ${boost ? "on" : ""}`}><input type="checkbox" checked={boost} onChange={(e) => setBoost((e.target as HTMLInputElement).checked)} /><Rocket size={20} /><span><b>{p.msg.boost.toggle}</b> · {p.msg.boost.have(p.boosts)}<small>{p.msg.boost.gain("+" + money(Math.floor(amount * odds) - amount, p.locale), "+" + money(boostedPayout(amount, odds) - amount, p.locale))} · {p.msg.boost.hint}</small></span></label>}
       {err && <p class="formerr" role="alert">{err}</p>}
       <button class="btn primary wide" disabled={busy || !p.ready} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? p.msg.sheet.confirming : `${p.msg.sheet.confirm} · ${money(amount, p.locale)}`}</button>

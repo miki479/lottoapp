@@ -110,7 +110,7 @@ export function countdown(ms: number): string {
 }
 
 /** What a winning bet pays out: the stake times the odds, plus the boost's extra when one was used. */
-export const potentialWin = (stake: number, odds: number, boosted = false) => { const g = Math.floor(stake * odds); return g + (boosted ? Math.min(1000, g - stake) : 0); };
+export const potentialWin = (stake: number, odds: number, boosted = false, vicePct = 0) => { const g = Math.floor(stake * odds); return g + (boosted ? Math.min(1000, g - stake) : 0) + Math.floor((g * vicePct) / 100); };
 
 /** Credits returned by a winning 10-credit bet. */
 export const per10 = (odds: number) => Math.floor(10 * odds);

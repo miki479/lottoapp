@@ -9,7 +9,7 @@ const row = {
   city_id: "world", category: "culture", kind: "tick_gt", feed_id: "tick-house:gta6",
   params: {
     series: "house:gta6", at, unit: "", label: "Grand Theft Auto VI", threshold: 0.5, house: true, art: "gta6", releaseAt: closes / 1000,
-    q: { it: "Grand Theft Auto VI uscirà il 19 novembre?", en: "Will Grand Theft Auto VI be released on November 19?", ja: "『グランド・セフト・オートVI』は11月19日に発売される？" },
+    viceBonus: 8, q: { it: "Grand Theft Auto VI uscirà il 19 novembre?", en: "Will Grand Theft Auto VI be released on November 19?", ja: "『グランド・セフト・オートVI』は11月19日に発売される？" },
   },
   closes_at: new Date(closes).toISOString(), target_at: new Date(at * 1000).toISOString(), deadline_at: "2026-12-20T00:00:00Z",
   odds_yes: odds.yes, odds_no: odds.no, dedupe_key: `world|tick_house:gta6|${at}|0.5`,
