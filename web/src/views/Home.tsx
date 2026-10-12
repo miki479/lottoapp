@@ -28,7 +28,7 @@ export function Home(p: HomeProps) {
   // Weather has sub-pills (rain, temperature, wind…) so the category row stays short; only the kinds that exist today are shown.
   const [wxSel, setWx] = useState<string>("all");
   const wxKey = (m: MarketRow) => (m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : m.kind === "quake_m" ? String(m.params.region ?? "world") : "");
-  const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi"] : p.cat === "nature" ? ["world", "jp", "it", "ca", "tr"] : [];
+  const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi"] : [];
   const wxKinds = order.filter((k) => p.list.some((m) => wxKey(m) === k));
   const wx = wxKinds.includes(wxSel) ? wxSel : "all";
   const picked = wx !== "all" ? p.list.filter((m) => wxKey(m) === wx) : p.list;

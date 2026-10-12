@@ -722,3 +722,13 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .mscene.uv b { left: auto; right: 10px; }
 
 .adminpage { padding-bottom: 24px; } .adminbar { display: flex; align-items: center; gap: 8px; } .adminbar h1 { flex: 1; margin: 0; }
+
+/* bigger category chips: one row on wide screens, a tidy 3-column grid on phones */
+.catchips .cc { min-height: 104px; font-size: 14px; }
+.catchips .cc .lbl { font-size: 14px; }
+.catchips .cc em { font-size: 12px; top: 8px; right: 10px; }
+@media (max-width: 560px) {
+  .catchips, .catchips.many { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .catchips .cc { min-height: 112px; }
+  .catchips.many .cc .lbl { font-size: 14px; letter-spacing: 0; }
+}
