@@ -11,7 +11,8 @@ export type MarketEvent =
   | StrikeEvent
   | TrafficEvent
   | TickEvent
-  | MatchEvent;
+  | MatchEvent
+  | OccupancyEvent;
 
 interface BaseEvent {
   id: string;
@@ -41,6 +42,26 @@ export interface DelayEvent extends BaseEvent {
 }
 
 export type BusDelayEvent = DelayEvent;
+
+/** "Will this bus be this full (or this empty) when it reaches this stop?" From the vehicle's occupancy_status. */
+export interface OccupancyEvent extends BaseEvent {
+  kind: "bus_full";
+  category: "bus";
+  tripId: string;
+  stopId: string;
+  /** "lte": the level must be at most `level` (empty); "gte": at least `level` (few seats, standing). Levels: see shared/occupancy.ts. */
+  cmp: "lte" | "gte";
+  level: number;
+}
+
+/** What a vehicle reported about how full it was, as stored by the ingest job. */
+export interface OccupancyObservation {
+  feedId: string;
+  tripId: string;
+  /** When the vehicle reported it (epoch seconds). */
+  at: number;
+  level: number;
+}
 
 export interface RainEvent extends BaseEvent {
   kind: "rain_at";

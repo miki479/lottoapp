@@ -17,6 +17,7 @@ import { unzipSync } from "fflate";
 import { validateCity } from "../shared/cities.ts";
 import { activeServiceIds, buildDelayMarket, buildWeatherMarkets, localYmd, pickTargetStop, seededRandom } from "../shared/generator.ts";
 import { localDayStart, tzOffsetSec } from "../shared/time.ts";
+import { buildOccupancyMarket } from "../shared/occupancy.ts";
 import { trainTripId } from "../shared/adapters/viaggiatreno.ts";
 import { historyKey } from "../shared/market.ts";
 import { marketToEvent } from "../shared/market.ts";
@@ -42,10 +43,17 @@ async function historyLookup() {
   return (k) => m.get(`${k.kind}|${k.routeId}|${k.hourOfDay}|${k.threshold}`) ?? null;
 }
 
+/** Request headers of a feed; BusOne wants the client to say how to reach it (the contact comes from the environment). */
+function hdrs(feed) {
+  const h = { ...(feed.headers ?? {}) };
+  if (h["X-BusOne-Client"] && process.env.CONTACT_EMAIL) h["X-BusOne-Client"] += `; contact: ${process.env.CONTACT_EMAIL}`;
+  return h;
+}
+
 async function gtfsDir(feed) {
   if (args["gtfs-dir"]) return args["gtfs-dir"];
   if (!feed.staticGtfsUrl) throw new Error(`feed ${feed.id} has no staticGtfsUrl: pass --gtfs-dir`);
-  const res = await fetch(feed.staticGtfsUrl, { redirect: "follow", headers: { "User-Agent": "LateLotto/0.1 (play-money game)", ...(feed.headers ?? {}) }, signal: AbortSignal.timeout(600000) });
+  const res = await fetch(feed.staticGtfsUrl, { redirect: "follow", headers: { "User-Agent": "LateLotto/0.1 (play-money game)", ...hdrs(feed) }, signal: AbortSignal.timeout(600000) });
   if (!res.ok) throw new Error(`GTFS download failed: ${res.status}`);
   const dir = mkdtempSync(join(tmpdir(), "gtfs-"));
   // The archive goes to disk and the big table is streamed out of it with `unzip -p`: national feeds (Switzerland: ~300 MB zipped)
@@ -92,7 +100,7 @@ async function delayMarkets(feed) {
 /** Trip ids currently present in the real-time feed (used when the static calendar is not reliable for today). */
 async function realtimeTripIds(feed) {
   const GtfsRt = (await import("gtfs-realtime-bindings")).default;
-  const res = await fetch(feed.url, { headers: { "User-Agent": "LateLotto/0.1 (play-money game)", ...(feed.headers ?? {}) } });
+  const res = await fetch(feed.url, { headers: { "User-Agent": "LateLotto/0.1 (play-money game)", ...hdrs(feed) } });
   if (!res.ok) throw new Error(`real-time feed ${res.status}`);
   const m = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(new Uint8Array(await res.arrayBuffer())));
   return new Set(m.entity.filter((e) => e.tripUpdate?.trip?.tripId).map((e) => e.tripUpdate.trip.tripId));
@@ -101,7 +109,7 @@ async function realtimeTripIds(feed) {
 /** Route ids with at least one trip in the real-time feed right now: other routes have no tracked buses, a question on them would end void. */
 async function realtimeRouteIds(feed) {
   const GtfsRt = (await import("gtfs-realtime-bindings")).default;
-  const res = await fetch(feed.url, { headers: { "User-Agent": "LateLotto/0.1 (play-money game)", ...(feed.headers ?? {}) } });
+  const res = await fetch(feed.url, { headers: { "User-Agent": "LateLotto/0.1 (play-money game)", ...hdrs(feed) } });
   if (!res.ok) throw new Error(`real-time feed ${res.status}`);
   const m = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(new Uint8Array(await res.arrayBuffer())));
   return new Set(m.entity.filter((e) => e.tripUpdate?.trip?.routeId).map((e) => e.tripUpdate.trip.routeId));
@@ -152,6 +160,13 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
     const key = historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone);
     const priced = buildDelayMarket({ ...{ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold }, history: hist(key) });
     markets.push(priced);
+    // Buses that report how full they are: one more question on the same trip (empty / few seats left / standing room), a third of the time or so.
+    if (feed.occupancyUrl && rand() < 0.5) {
+      const r = rand(), occ = r < 0.4 ? "empty" : r < 0.75 ? "few" : "standing";
+      const oargs = { cityId: city.id, tz: city.timezone, feedId: feed.id, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, kind: occ };
+      const od = buildOccupancyMarket({ ...oargs, history: null });
+      markets.push(buildOccupancyMarket({ ...oargs, history: hist(historyKey(marketToEvent({ ...od, id: "x" }), city.timezone)) }));
+    }
     if (feed.kind === "vehicle_positions" || feed.kind === "trip_updates_times" || feed.kind === "trip_updates_seq") {
       const sd = `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
       for (const s of stops) schedule.push({ feed_id: feed.id, trip_id: tid, stop_sequence: s.seq, stop_id: s.stopId, scheduled_time: s.time, service_date: sd });

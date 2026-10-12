@@ -15,7 +15,7 @@ import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
 import { ChevronDown, Flame, Plus, Search } from "lucide-preact";
 import { FEATURED_CITY_IDS, FEATURED_PLACES, type Place } from "../lib/places.ts";
 import type { MarketRow } from "../lib/format.ts";
-import type { LiveDelay, Pick, Progress } from "../lib/types.ts";
+import type { LiveDelay, LiveOcc, Pick, Progress } from "../lib/types.ts";
 
 /** Categories tucked away under "More categories" so the main row stays short. */
 const EXTRA_CATS: CatId[] = ["finance", "culture", "sport", "gov"];
@@ -24,7 +24,7 @@ const LOCAL_CATS: CatId[] = ["bus", "train", "weather", "traffic"];
 const safe = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
 export interface Trend { id: string; name: string; country: string; place?: Place }
 export interface HomeProps {
-  msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>;
+  msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>; occ: Record<string, LiveOcc>;
   cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null;
   onQuakeMaker: () => void; onCreate: () => void; registered: boolean; onAuth: () => void; italian: boolean; nearNode?: preact.ComponentChildren; nearbyNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
   stale?: boolean; details: boolean; friendBets: Record<string, number>;
@@ -133,7 +133,7 @@ export function Home(p: HomeProps) {
               {alt.length > 0 && <div class="tryalt"><span>{msg.home.tryInstead}</span>{alt.map((t) => <button key={t.id} class="chip" onClick={() => p.onCat(t.id)}>{t.label}<em>{t.count}</em></button>)}</div>}
             </div>
           )}
-          {shown.slice(0, 40).map((m, i) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} live={p.live[m.id]} index={i} mm={p.outlook[m.id]} friends={p.friendBets[m.id]} hasLadder={(p.ladders[m.id]?.length ?? 0) > 0} top={m.id === topId && shown.length > 3} showCity={p.filter === "world" || p.filter === "mine"} onPick={p.onPick} />)}
+          {shown.slice(0, 40).map((m, i) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} live={p.live[m.id]} occ={p.occ[m.id]} index={i} mm={p.outlook[m.id]} friends={p.friendBets[m.id]} hasLadder={(p.ladders[m.id]?.length ?? 0) > 0} top={m.id === topId && shown.length > 3} showCity={p.filter === "world" || p.filter === "mine"} onPick={p.onPick} />)}
         </div>
         <div class="nearwrap stack">{p.nearbyNode}{p.nearNode}</div>
         <footer class="legal">

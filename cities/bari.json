@@ -1,0 +1,85 @@
+{
+  "id": "bari",
+  "country": "IT",
+  "name": {
+    "it": "Bari",
+    "en-US": "Bari",
+    "en-GB": "Bari",
+    "ja": "バーリ"
+  },
+  "timezone": "Europe/Rome",
+  "defaultLocale": "it",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 41.1171,
+    "lon": 16.8719
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": false
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "amtab-trip-updates",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_seq",
+      "url": "https://proxy.busone.app/amtab/gtfs-rt/trip-updates.pb",
+      "headers": {
+        "X-BusOne-Client": "LateLotto (play-money game; https://latelotto.web.app)",
+        "X-BusOne-Use": "personal"
+      },
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 300,
+      "routeTypes": [
+        3
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "BusOne (https://busone.app) and AMTAB",
+        "license": "BusOne free non-commercial licence (individuals and nonprofits; attribution \"BusOne (https://busone.app) and the original data source\"), read 2026-10-12; the operator publishes open data (see https://www.amtab.it/it/openmobilitydata); its licence applies",
+        "licenseUrl": "https://proxy.busone.app/#data-terms",
+        "url": "https://proxy.busone.app/amtab/readme"
+      },
+      "staticGtfsUrl": "https://proxy.busone.app/amtab/gtfs.zip",
+      "note": "NON-COMMERCIAL ONLY: the BusOne terms allow individuals and nonprofits; any other organisation, or any commercial use, needs prior written permission (info@busone.app). Ask BusOne and AMTAB before a public or commercial launch. Trip updates carry a delay per stop_sequence; the stop and its scheduled time come from the static timetable.",
+      "realtimeRoutesOnly": true,
+      "questionsHours": [
+        5,
+        23
+      ]
+    },
+    {
+      "id": "open-meteo-bari",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

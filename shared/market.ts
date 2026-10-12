@@ -1,6 +1,6 @@
 import { ALL_BETS, isPlayerBet } from "./sport.ts";
 import { tzOffsetSec } from "./time.ts";
-import type { DelayEvent, MarketEvent, MetricEvent, QuakeEvent, RainEvent, MatchEvent, StrikeEvent, TickEvent, TrafficEvent } from "./types.ts";
+import type { DelayEvent, MarketEvent, MetricEvent, OccupancyEvent, QuakeEvent, RainEvent, MatchEvent, StrikeEvent, TickEvent, TrafficEvent } from "./types.ts";
 
 /** A row of public.markets as returned by Supabase (timestamps are ISO strings). */
 export interface MarketRow {
@@ -70,6 +70,10 @@ export function marketToEvent(row: MarketRow): MarketEvent {
     const ev: MatchEvent = { ...base, kind: "match_bet", category: "sport", eventId: String(p.eventId), bet };
     return ev;
   }
+  if (row.kind === "bus_full") {
+    const ev: OccupancyEvent = { ...base, kind: "bus_full", category: "bus", tripId: String(p.tripId), stopId: String(p.stopId), cmp: p.cmp === "lte" ? "lte" : "gte", level: Number(p.level) };
+    return ev;
+  }
   throw new Error(`Unknown market kind: ${row.kind}`);
 }
 
@@ -83,6 +87,7 @@ export function historyKey(ev: MarketEvent, tz: string): { kind: string; routeId
   if (ev.kind === "tick_gt") return { kind: ev.kind, routeId: ev.series, hourOfDay, threshold: Math.round(ev.threshold) };
   if (ev.kind === "match_bet") return { kind: ev.kind, routeId: ev.bet, hourOfDay, threshold: 0 };
   if (ev.kind === "strike_on") return { kind: ev.kind, routeId: "", hourOfDay, threshold: 0 };
+  if (ev.kind === "bus_full") return { kind: ev.kind, routeId: ev.cmp, hourOfDay, threshold: ev.level };
   if (ev.kind === "quake_m") return { kind: ev.kind, routeId: "", hourOfDay, threshold: Math.round(ev.minMag * 10) + (ev.bbox || ev.circle ? 1000 : 0) };
   return { kind: ev.kind, routeId: ev.routeId, hourOfDay, threshold: ev.thresholdSec };
 }

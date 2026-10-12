@@ -1,6 +1,7 @@
 import type { MarketRow } from "./format.ts";
 
 export type Pick = "yes" | "no";
+export interface LiveOcc { market_id: string; level: number; at: string }
 export interface LiveDelay { market_id: string; delay_sec: number; observed_at: string; is_forecast: boolean; prev_delay_sec: number | null }
 export interface SlipLeg { m: import("./format.ts").MarketRow; pick: Pick }
 export interface ParlayRow { id: string; stake: number; odds: number; status: "open" | "won" | "lost" | "void"; payout: number; placed_at: string; settled_at: string | null; parlay_legs: { market_id: string; pick: Pick; odds: number; status: string; markets: { city_id: string; kind: string; params: Record<string, unknown> } }[] }
@@ -14,7 +15,7 @@ export interface Profile {
 export interface Progress { day: string; bus: number; train: number; weather: number; traffic: number; bonus_claimed: boolean }
 export interface MyBet {
   id: string; pick: Pick; stake: number; odds: number; status: "open" | "won" | "lost" | "void"; payout: number;
-  markets: MarketRow & { void_reason: string | null; outcome: string | null; evidence: { delaySec?: number; precipitationMm?: number; value?: number; count?: number; maxMag?: number; present?: number; avgKmh?: number; home?: number; away?: number } | null };
+  markets: MarketRow & { void_reason: string | null; outcome: string | null; evidence: { level?: number; delaySec?: number; precipitationMm?: number; value?: number; count?: number; maxMag?: number; present?: number; avgKmh?: number; home?: number; away?: number } | null };
 }
 export interface LbRow { rank: number; user_id: string; display_name: string; score: number; bets: number; streak: number; is_me: boolean }
 export interface GroupRow { code: string; name: string }

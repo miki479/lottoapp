@@ -3,7 +3,8 @@ import { resolveEvent } from "../_shared/shared/resolve.ts";
 import { historyKey, marketToEvent, type MarketRow } from "../_shared/shared/market.ts";
 import { parseStrikeRss } from "../_shared/shared/strikes.ts";
 import { isDetailBet, isPlayerBet, type MatchObservation } from "../_shared/shared/sport.ts";
-import type { DelayObservation, MetricObservation, QuakeReading, StrikeReading, TickObservation, TrafficObservation, WeatherObservation } from "../_shared/shared/types.ts";
+import { OCC_WINDOW_SEC } from "../_shared/shared/occupancy.ts";
+import type { DelayObservation, MetricObservation, OccupancyObservation, QuakeReading, StrikeReading, TickObservation, TrafficObservation, WeatherObservation } from "../_shared/shared/types.ts";
 import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
 import { lastNotifyError, notifyFlash, notifyInvites, notifySupers, notifyModeration, notifyResults, notifyStreak } from "../_lib/notify.ts";
 
@@ -44,6 +45,7 @@ Deno.serve(safe(async (req) => {
       let traffic: TrafficObservation[] = [];
       let ticks: TickObservation[] = [];
       let match: MatchObservation | null = null;
+      let occupancy: OccupancyObservation[] = [];
       if (event.kind === "traffic_speed_lt") {
         const hour = new Date(Math.floor(event.targetAt / 3600) * 3600 * 1000).toISOString();
         const { data } = await sb.from("traffic_observations").select("feed_id,site_id,direction,hour_start,avg_kmh,vehicles,measured_at").eq("feed_id", event.feedId).eq("site_id", event.siteId).eq("direction", event.direction).eq("hour_start", hour);
@@ -61,6 +63,10 @@ Deno.serve(safe(async (req) => {
           const { data: d } = await sb.from("match_details").select("ht_home,ht_away,corners,cards,reds,players,fetched_at").eq("event_id", event.eventId).maybeSingle();
           if (d?.fetched_at) match = { ...match, htHome: d.ht_home, htAway: d.ht_away, corners: d.corners, cards: d.cards, reds: d.reds, players: d.players };
         }
+      } else if (event.kind === "bus_full") {
+        const lo = new Date((event.targetAt - OCC_WINDOW_SEC) * 1000).toISOString(), hi = new Date((event.targetAt + OCC_WINDOW_SEC) * 1000).toISOString();
+        const { data } = await sb.from("occupancy_observations").select("feed_id,trip_id,at,level").eq("feed_id", event.feedId).eq("trip_id", event.tripId).gte("at", lo).lte("at", hi);
+        occupancy = (data ?? []).map((o) => ({ feedId: o.feed_id, tripId: o.trip_id, at: Date.parse(o.at) / 1000, level: o.level }));
       } else if (event.kind === "tick_gt") {
         const { data } = await sb.from("tick_observations").select("series,at,value,fetched_at").eq("series", event.series).eq("at", new Date(event.targetAt * 1000).toISOString());
         ticks = (data ?? []).map((o) => ({ series: o.series, at: Date.parse(o.at) / 1000, value: Number(o.value), fetchedAt: Date.parse(o.fetched_at) / 1000 }));
@@ -84,7 +90,7 @@ Deno.serve(safe(async (req) => {
 
       const res = resolveEvent({
         event, now, feed: { feedId: event.feedId, lastOkAt: lastOk.get(event.kind === "match_bet" ? "sportsdb" : event.kind === "tick_gt" ? "ticks" : event.kind === "metric_gt" ? "open-meteo-metrics" : event.feedId.startsWith("om-") ? "open-meteo-places" : event.feedId) ?? null },
-        staleAfterSec: feedStale.get(event.feedId) ?? (event.feedId === "usgs" || event.feedId === "mit-scioperi" || event.kind === "tick_gt" || event.kind === "match_bet" ? 7200 : event.feedId.startsWith("om-") ? 10800 : 300), delays, weather, metrics, quake, strike, traffic, ticks, match,
+        staleAfterSec: feedStale.get(event.feedId) ?? (event.feedId === "usgs" || event.feedId === "mit-scioperi" || event.kind === "tick_gt" || event.kind === "match_bet" ? 7200 : event.feedId.startsWith("om-") ? 10800 : 300), delays, weather, metrics, quake, strike, traffic, ticks, match, occupancy,
       });
       if (res.status === "pending") { out.pending++; continue; }
 

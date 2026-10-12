@@ -13,6 +13,7 @@ export interface MetricQ { metric: MetricKey; city: string; time: string; value:
 export type MatchBetKey = import("../../../shared/sport.ts").MatchBet;
 export interface MatchQ { bet: MatchBetKey; home: string; away: string; time: string }
 export interface TickQ { kind: "price" | "kp" | "wiki" | "players" | "storm" | "alert" | "fuel" | "oil"; label: string; value: string; time: string; from: string; to: string; day: string }
+export interface FullQ { occ: "empty" | "few" | "standing"; route: string; stop: string; time: string }
 export interface TrafficQ { site: string; toward: string; from: string; to: string; kmh: number }
 export interface StrikeQ { date: string; day: string; who: string; hours: string }
 export interface QuakeQ { mag: string; from: string; to: string; region?: string }
@@ -32,6 +33,8 @@ export interface Messages {
   world: string;
   quakeMaker: { cta: string; title: string; body: string; place: string; search: string; radius: string; mag: string; day: string; today: string; tomorrow: string; hour: string; length: string; hours: (n: number) => string; km: (n: number) => string; create: string; creating: string; pickPlace: string; local: (tz: string) => string; limit: string; full: string; usgs: string; time: string; credit: string };
   traffic: { threshold: (kmh: number) => string; jam: string; flow: string };
+  /** How full a bus is (GTFS-RT occupancy levels 0..5). */
+  occ: { title: string; levels: string[] };
   strikes: { title: string; sub: string; art: string };
   home: { typeLabel: string; hero: { title: string; body: string }; how: { title: string; steps: [string, string, string]; close: string }; whatLabel: string; whereLabel: string; hereNone: (place: string) => string; tryInstead: string;  missions: string; missionsLeft: (n: number) => string; missionsDone: string; bonusTease: string; top: string; events: string; live: string; idle: string[]; emptyCat: Record<"bus" | "train" | "weather" | "nature" | "strike" | "traffic" | "finance" | "culture" | "sport" | "gov", string>; empty: { title: string; body: string; cta: string }; trafficSoon: string; satire: string; moreCats: string; lessCats: string };
   streak: { title: string; days: (n: number) => string; next: (day: number, bonus: string) => string; max: string; milestone: (n: number, bonus: string) => string; flash: string };
@@ -61,13 +64,13 @@ export interface Messages {
   maker: { open: string; title: string; hint: string; tabs: Record<"weather" | "crypto" | "games" | "culture" | "quake", string>; place: string; metric: string; day: string; today: string; tomorrow: string; hour: string; line: string; now: string; forecastLbl: string; when: string; pickOne: string; in_h: string; midnightToday: string; midnightTomorrow: string; odds: string; chance: string; create: string; creating: string; needAccount: string; errors: Record<"limit" | "too_many_open" | "full" | "too_certain" | "bad_time" | "source_unavailable" | "generic", string>; by: (n: string) => string; trending: string; trendingNear: string; share: string; copied: string; shareText: string };
   chart: { title: string; min: string; max: string; change: string; above: string };
   quips: Record<"bus" | "train" | "rain" | "temp" | "wind" | "snow" | "uv" | "aqi" | "quake" | "strike" | "traffic" | "price" | "kp" | "wiki" | "game" | "sport" | "storm" | "hail" | "alert" | "metal" | "fuel" | "oil", string[]>;
-  question: { bus: (q: BusQ) => string; train: (q: BusQ) => string; rain: (q: RainQ) => string; metric: (q: MetricQ) => string; quake: (q: QuakeQ) => string; strike: (q: StrikeQ) => string; traffic: (q: TrafficQ) => string; tick: (q: TickQ) => string; match: (q: MatchQ) => string; player: (q: { kind: "pg" | "pa" | "ps"; name: string; home: string; away: string; time: string }) => string };
+  question: { full: (q: FullQ) => string; bus: (q: BusQ) => string; train: (q: BusQ) => string; rain: (q: RainQ) => string; metric: (q: MetricQ) => string; quake: (q: QuakeQ) => string; strike: (q: StrikeQ) => string; traffic: (q: TrafficQ) => string; tick: (q: TickQ) => string; match: (q: MatchQ) => string; player: (q: { kind: "pg" | "pa" | "ps"; name: string; home: string; away: string; time: string }) => string };
   sheet: { title: string; pick: string; stake: string; potential: string; confirm: string; confirming: string; odds: string; placed: (win: string) => string };
   bets: { title: string; tabs: { open: string; settled: string }; open: string; won: string; lost: string; void: string; empty: { title: string; body: string; cta: string }; yourPick: (yes: boolean) => string; settles: string; voidReason: Record<string, string>; details: string };
   result: {
     won: string; lost: string; void: string; amountWon: (n: number) => string; amountLost: (n: number) => string; amountVoid: (n: number) => string;
     subWon: string; subLost: string; subVoid: string;
-    measured: (min: number, sec: number) => string; threshold: (min: number) => string; rainMeasured: (mm: number) => string; tickMeasured: (v: string) => string; matchScore: (home: number, away: number) => string; metricMeasured: (name: string, value: string) => string; strikeOn: string; strikeOff: string; trafficMeasured: (avg: number, thr: number) => string; quakeMeasured: (count: number, max: string) => string;
+    fullMeasured: (level: string) => string; measured: (min: number, sec: number) => string; threshold: (min: number) => string; rainMeasured: (mm: number) => string; tickMeasured: (v: string) => string; matchScore: (home: number, away: number) => string; metricMeasured: (name: string, value: string) => string; strikeOn: string; strikeOff: string; trafficMeasured: (avg: number, thr: number) => string; quakeMeasured: (count: number, max: string) => string;
     stake: string; odds: string; share: string; shareText: string; close: string; more: (n: number) => string; saved: string;
   };
   rankTabs: { world: string; local: string; friends: string; near: string; country: string; city: string; km: string; needHome: string; radius: string };

@@ -62,7 +62,8 @@
       "questionsHours": [
         5,
         23
-      ]
+      ],
+      "occupancyUrl": "https://proxy.busone.app/start/gtfs-rt/vehicle-positions.pb"
     },
     {
       "id": "open-meteo-romagna",

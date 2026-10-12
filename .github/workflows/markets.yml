@@ -23,7 +23,7 @@ jobs:
       - name: Weather (all cities)
         if: github.event.schedule != '41 2 * * *'
         run: |
-          for c in tokyo rome amsterdam sanfrancisco oslo torino zurich paris madrid berlin helsinki boston romagna; do node scripts/generate-markets.mjs --city $c --weather --apply; done
+          for c in tokyo rome amsterdam sanfrancisco oslo torino zurich paris madrid berlin helsinki boston romagna modena reggio-emilia piacenza friuli-venezia-giulia venezia bari mantova vicenza lazio cuneo alto-adige parma toscana trentino; do node scripts/generate-markets.mjs --city $c --weather --apply; done
       - name: Tokyo buses
         if: github.event.schedule != '41 2 * * *'
         run: node scripts/generate-markets.mjs --city tokyo --feed toei-bus-vehicle --max 30 --apply
@@ -36,9 +36,6 @@ jobs:
       - name: Turin buses
         if: github.event.schedule != '41 2 * * *'
         run: node scripts/generate-markets.mjs --city torino --feed gtt-trip-update --max 30 --apply
-      - name: Romagna buses (START via BusOne)
-        if: github.event.schedule != '41 2 * * *'
-        run: node scripts/generate-markets.mjs --city romagna --feed start-trip-updates --max 30 --apply
       - name: Dutch trains
         if: github.event.schedule == '41 2 * * *' || github.event_name == 'workflow_dispatch'
         run: |
@@ -58,3 +55,44 @@ jobs:
           VIAGGIATRENO_BASE_URL: ${{ secrets.VIAGGIATRENO_BASE_URL }}
           RELAY_SECRET: ${{ secrets.RELAY_SECRET }}
         run: node scripts/generate-markets.mjs --city italia --feed it-train-viaggiatreno --max 30 --apply
+
+  # Bus and train questions from the BusOne GTFS / GTFS-Realtime feeds (non-commercial licence, see cities/*.json).
+  # Run every 6 hours: only routes with a tracked vehicle at that moment get questions.
+  busone:
+    if: github.event.schedule != '41 2 * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { city: romagna, feed: start-trip-updates, max: 30 }
+          - { city: modena, feed: seta-mo-trip-updates, max: 20 }
+          - { city: reggio-emilia, feed: seta-re-trip-updates, max: 20 }
+          - { city: piacenza, feed: seta-pc-trip-updates, max: 20 }
+          - { city: friuli-venezia-giulia, feed: tplfvg-trip-updates, max: 30 }
+          - { city: friuli-venezia-giulia, feed: arriva-trip-updates, max: 10 }
+          - { city: venezia, feed: actv-aut-trip-updates, max: 30 }
+          - { city: venezia, feed: actv-nav-trip-updates, max: 15 }
+          - { city: bari, feed: amtab-trip-updates, max: 20 }
+          - { city: mantova, feed: apam-trip-updates, max: 20 }
+          - { city: vicenza, feed: biv-trip-updates, max: 20 }
+          - { city: lazio, feed: cotral-trip-updates, max: 30 }
+          - { city: cuneo, feed: grandabus-trip-updates, max: 15 }
+          - { city: alto-adige, feed: sta-trip-updates, max: 30 }
+          - { city: parma, feed: tep-trip-updates, max: 15 }
+          - { city: toscana, feed: toscana-trip-updates, max: 30 }
+          - { city: trentino, feed: trentino-trip-updates, max: 20 }
+          - { city: italia, feed: trenitalia-trip-updates, max: 30 }
+          - { city: italia, feed: italo-trip-updates, max: 10 }
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: node scripts/generate-markets.mjs --city ${{ matrix.city }} --feed ${{ matrix.feed }} --max ${{ matrix.max }} --apply

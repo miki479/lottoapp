@@ -14,6 +14,7 @@ export interface RtEntity {
     stopId?: string | null;
     currentStopSequence?: number | null;
     timestamp?: number | string | null;
+    occupancyStatus?: number | string | null;
   } | null;
   tripUpdate?: {
     trip?: RtTrip | null;

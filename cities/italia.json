@@ -23,7 +23,7 @@
       "enabled": false
     },
     "train": {
-      "enabled": false
+      "enabled": true
     },
     "weather": {
       "enabled": false
@@ -33,6 +33,70 @@
     }
   },
   "feeds": [
+    {
+      "id": "trenitalia-trip-updates",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_seq",
+      "url": "https://proxy.busone.app/trenitalia/gtfs-rt/trip-updates.pb",
+      "headers": {
+        "X-BusOne-Client": "LateLotto (play-money game; https://latelotto.web.app)",
+        "X-BusOne-Use": "personal"
+      },
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 300,
+      "routeTypes": [
+        2
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "BusOne (https://busone.app) and Trenitalia",
+        "license": "BusOne free non-commercial licence (individuals and nonprofits; attribution \"BusOne (https://busone.app) and the original data source\"), read 2026-10-12; Trenitalia's open GTFS reprocessed by BusOne (the original licence applies); only the TripUpdates are accurate",
+        "licenseUrl": "https://proxy.busone.app/#data-terms",
+        "url": "https://proxy.busone.app/trenitalia/readme"
+      },
+      "staticGtfsUrl": "https://proxy.busone.app/trenitalia/gtfs.zip",
+      "note": "NON-COMMERCIAL ONLY: the BusOne terms allow individuals and nonprofits; any other organisation, or any commercial use, needs prior written permission (info@busone.app). Ask BusOne and Trenitalia before a public or commercial launch. Trip updates carry a delay per stop_sequence; the stop and its scheduled time come from the static timetable. Replaces the unofficial ViaggiaTreno poller for the same trains.",
+      "realtimeRoutesOnly": true,
+      "questionsHours": [
+        5,
+        23
+      ],
+      "heavy": true
+    },
+    {
+      "id": "italo-trip-updates",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_seq",
+      "url": "https://proxy.busone.app/italo/gtfs-rt/trip-updates.pb",
+      "headers": {
+        "X-BusOne-Client": "LateLotto (play-money game; https://latelotto.web.app)",
+        "X-BusOne-Use": "personal"
+      },
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 300,
+      "routeTypes": [
+        101
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "BusOne (https://busone.app) and Italo (NTV)",
+        "license": "BusOne free non-commercial licence (individuals and nonprofits; attribution \"BusOne (https://busone.app) and the original data source\"), read 2026-10-12; Italo timetable and realtime relayed by BusOne (the original licence applies)",
+        "licenseUrl": "https://proxy.busone.app/#data-terms",
+        "url": "https://proxy.busone.app/italo/readme"
+      },
+      "staticGtfsUrl": "https://proxy.busone.app/italo/gtfs.zip",
+      "note": "NON-COMMERCIAL ONLY: the BusOne terms allow individuals and nonprofits; any other organisation, or any commercial use, needs prior written permission (info@busone.app). Ask BusOne and Italo (NTV) before a public or commercial launch. Trip updates carry a delay per stop_sequence; the stop and its scheduled time come from the static timetable. Replaces the unofficial ViaggiaTreno poller for the same trains.",
+      "realtimeRoutesOnly": true,
+      "questionsHours": [
+        5,
+        23
+      ],
+      "heavy": false
+    },
     {
       "id": "it-train-viaggiatreno",
       "category": "train",

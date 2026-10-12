@@ -56,7 +56,7 @@ export function pickTargetStop(stops: StopTimeRow[], rand: () => number): StopTi
 export interface MarketInsert {
   city_id: string;
   category: "bus" | "train" | "weather";
-  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at";
+  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at" | "bus_full";
   feed_id: string;
   params: Record<string, unknown>;
   closes_at: string;

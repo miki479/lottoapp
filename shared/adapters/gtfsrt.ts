@@ -1,7 +1,8 @@
 import { delayFromPosition, delayFromTripUpdate, MAX_EARLY_SEC, MAX_LATE_SEC } from "../delay.ts";
+import { occupancyLevel } from "../occupancy.ts";
 import { localDayStart, parseGtfsTime } from "../time.ts";
 import type { DelayObservation } from "../types.ts";
-import type { DelayAdapter, RtTrip } from "./types.ts";
+import type { DelayAdapter, RtFeed, RtTrip } from "./types.ts";
 
 const num = (v: number | string | null | undefined): number | null => {
   if (v === null || v === undefined) return null;
@@ -122,3 +123,16 @@ export const tripUpdatesSeqAdapter: DelayAdapter = (feed, ctx) => {
   }
   return out;
 };
+
+/** Occupancy reported by the vehicles of a VehiclePositions feed, one reading per trip (vehicles without a reading are skipped). */
+export function parseOccupancy(feed: RtFeed, fetchedAt: number): { tripId: string; at: number; level: number }[] {
+  const out: { tripId: string; at: number; level: number }[] = [];
+  for (const e of feed.entity ?? []) {
+    const v = e.vehicle as (NonNullable<RtFeed["entity"]>[number]["vehicle"] & { occupancyStatus?: unknown }) | null | undefined;
+    const tripId = v?.trip?.tripId;
+    const level = occupancyLevel(v?.occupancyStatus);
+    if (!tripId || level === null) continue;
+    out.push({ tripId, at: num(v?.timestamp) ?? fetchedAt, level });
+  }
+  return out;
+}

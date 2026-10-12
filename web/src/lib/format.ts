@@ -4,7 +4,7 @@ export interface MarketRow {
   id: string;
   city_id: string;
   category: "bus" | "train" | "weather" | "traffic" | "nature" | "strike" | "finance" | "culture" | "sport";
-  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at" | "metric_gt" | "quake_m" | "strike_on" | "traffic_speed_lt" | "tick_gt" | "match_bet";
+  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at" | "metric_gt" | "quake_m" | "strike_on" | "traffic_speed_lt" | "tick_gt" | "match_bet" | "bus_full";
   params: Record<string, unknown>;
   closes_at: string;
   target_at: string;
@@ -28,6 +28,7 @@ export function formatWhen(iso: string, locale: Locale, timeZone: string, now = 
 
 export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: string, timeZone: string, now = new Date()): string {
   const time = formatWhen(m.target_at, locale, timeZone, now);
+  if (m.kind === "bus_full") return msg.question.full({ occ: m.params.occ as "empty", route: String(m.params.routeName ?? ""), stop: String(m.params.stopName ?? ""), time });
   if (m.kind === "rain_at") return msg.question.rain({ city: cityName, time });
   if (m.kind === "metric_gt") return msg.question.metric({ metric: m.params.metric as "temp", city: cityName, time, value: Number(m.params.threshold), unit: String(m.params.unit ?? "") });
   if (m.kind === "traffic_speed_lt") {
@@ -141,7 +142,7 @@ export function emphasize(text: string, m: MarketRow, cityName: string): Piece[]
 export function quip(m: MarketRow, msg: Messages): string {
   const series = String(m.params.series ?? "");
   const g: keyof Messages["quips"] =
-    m.kind === "bus_delay_gt" ? "bus" : m.kind === "train_delay_gt" ? "train" : m.kind === "rain_at" ? "rain" : m.kind === "quake_m" ? "quake" : m.kind === "strike_on" ? "strike" : m.kind === "traffic_speed_lt" ? "traffic"
+    m.kind === "bus_delay_gt" || m.kind === "bus_full" ? "bus" : m.kind === "train_delay_gt" ? "train" : m.kind === "rain_at" ? "rain" : m.kind === "quake_m" ? "quake" : m.kind === "strike_on" ? "strike" : m.kind === "traffic_speed_lt" ? "traffic"
     : m.kind === "tick_gt" ? (series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("steam:") ? "game" : series.startsWith("storm:") ? "storm" : series.startsWith("alert:") ? "alert" : series.startsWith("metal:") ? "metal" : series.startsWith("fuel:") ? "fuel" : series.startsWith("oil:") ? "oil" : "price") : (String(m.params.metric) as keyof Messages["quips"]);
   const list = msg.quips[g] ?? [];
   if (!list.length) return "";

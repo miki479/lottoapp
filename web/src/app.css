@@ -1025,3 +1025,11 @@ textarea.field { resize: vertical; min-height: 84px; }
 .nolive { margin: 2px 0 6px; font-size: 12px; color: var(--muted); font-weight: 600; }
 
 .sheet .mkchips.wrap { flex-wrap: wrap; overflow: visible; } .sheet .mkchips.wrap .mkchip { flex: 0 1 auto; }
+
+.occ { display: flex; align-items: center; gap: 8px; margin: 2px 0 6px; font-size: 12px; color: var(--muted); font-weight: 600; }
+.occ .occbars { display: inline-flex; gap: 3px; align-items: flex-end; }
+.occ .occbars i { width: 6px; height: 10px; border-radius: 2px; background: var(--line, #d9dbe6); opacity: .7; }
+.occ .occbars i:nth-child(2) { height: 12px; } .occ .occbars i:nth-child(3) { height: 14px; } .occ .occbars i:nth-child(4) { height: 16px; } .occ .occbars i:nth-child(5) { height: 18px; }
+.occ .occbars i.on { background: #2fb36d; opacity: 1; }
+.occ.lv3 .occbars i.on, .occ.lv2 .occbars i.on { background: #e8a317; } .occ.lv4 .occbars i.on, .occ.lv5 .occbars i.on { background: #d6334f; }
+.occ b { color: var(--text); }

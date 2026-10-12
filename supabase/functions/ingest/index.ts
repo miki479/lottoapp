@@ -2,6 +2,7 @@
 // record feed health. A failing feed is recorded as failing; its markets get voided by `resolve`.
 import GtfsRt from "npm:gtfs-realtime-bindings@2.2.0";
 import { delayAdapterFor, trainJsonAdapterFor, weatherAdapterFor } from "../_shared/shared/adapters/index.ts";
+import { parseOccupancy } from "../_shared/shared/adapters/gtfsrt.ts";
 import { parseTrainTripId } from "../_shared/shared/adapters/viaggiatreno.ts";
 import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
@@ -33,15 +34,19 @@ Deno.serve(safe(async (req) => {
   // Only markets inside their active window (15 min before the target until the deadline) need readings.
   // Markets for tomorrow must not make an idle feed look broken at night.
   const since = new Date((now - 3600) * 1000).toISOString();
-  const { data: live } = await sb.from("markets").select("feed_id,params,target_at,deadline_at").gte("deadline_at", since).lte("target_at", new Date((now + 15 * 60) * 1000).toISOString()).in("kind", ["bus_delay_gt", "train_delay_gt"]).eq("status", "open").limit(5000); // only delay questions, only the ones inside their window (the default page of 1000 rows hid some)
+  const { data: live } = await sb.from("markets").select("feed_id,kind,params,target_at,deadline_at").gte("deadline_at", since).lte("target_at", new Date((now + 15 * 60) * 1000).toISOString()).in("kind", ["bus_delay_gt", "train_delay_gt", "bus_full"]).eq("status", "open").limit(5000); // only delay questions, only the ones inside their window (the default page of 1000 rows hid some)
   // feed -> trip -> stops the markets ask about
   const tracked = new Map<string, Map<string, Set<string>>>();
+  // feed -> trips whose vehicle's occupancy is wanted (the "will it be full?" questions, and the live indicator on any open bus question)
+  const trackedOcc = new Map<string, Set<string>>();
   for (const m of live ?? []) {
     const p = m.params as { tripId?: string; stopId?: string };
     if (!p.tripId) continue;
     const from = Date.parse(m.target_at) / 1000 - 15 * 60;
     const to = Date.parse(m.deadline_at) / 1000;
     if (now < from || now > to) continue;
+    if (m.kind !== "train_delay_gt") { if (!trackedOcc.has(m.feed_id)) trackedOcc.set(m.feed_id, new Set()); trackedOcc.get(m.feed_id)!.add(p.tripId); }
+    if (m.kind === "bus_full") continue; // not a delay question: the delay feed has nothing to say about it
     if (!tracked.has(m.feed_id)) tracked.set(m.feed_id, new Map());
     const trips = tracked.get(m.feed_id)!;
     if (!trips.has(p.tripId)) trips.set(p.tripId, new Set());
@@ -61,6 +66,7 @@ Deno.serve(safe(async (req) => {
         const n = await ingestFeed(sb, city, feed, now, tracked.get(feed.id) ?? new Map(), rtCache);
         await sb.from("feed_health").upsert({ feed_id: feed.id, last_ok_at: new Date().toISOString(), last_error: null });
         report[feed.id] = `ok ${n}`;
+        if (feed.occupancyUrl) report[`${feed.id}-occupancy`] = await ingestOccupancy(sb, feed, now, trackedOcc.get(feed.id) ?? new Set()).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
       } catch (e) {
         const msg = String((e as Error).message ?? e).slice(0, 300);
         await sb.from("feed_health").upsert({ feed_id: feed.id, last_error: msg, last_error_at: new Date().toISOString() });
@@ -78,6 +84,21 @@ Deno.serve(safe(async (req) => {
   report["usgs"] = await pingUsgs(sb, now, lastAttempt.get("usgs") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   return Response.json(report);
 }));
+
+/** How full the buses of the open questions are, from the operator's VehiclePositions feed. A failure here never fails the delay feed. */
+async function ingestOccupancy(sb: ReturnType<typeof db>, feed: FeedConfig, now: number, trips: Set<string>): Promise<string> {
+  if (trips.size === 0) return "idle";
+  const headers = { ...(feed.headers ?? {}) };
+  if (headers["X-BusOne-Client"] && Deno.env.get("CONTACT_EMAIL")) headers["X-BusOne-Client"] += `; contact: ${Deno.env.get("CONTACT_EMAIL")}`;
+  const bytes = await fetchBytes(feed.occupancyUrl!, headers);
+  const msg = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(bytes), { longs: Number }) as RtFeed;
+  const rows = parseOccupancy(msg, now).filter((o) => trips.has(o.tripId) && o.at <= now + 60 && o.at > now - 600)
+    .map((o) => ({ feed_id: feed.id, trip_id: o.tripId, at: new Date(o.at * 1000).toISOString(), level: o.level }));
+  if (rows.length === 0) return "ok 0";
+  const { error } = await sb.from("occupancy_observations").upsert(rows, { onConflict: "feed_id,trip_id,at", ignoreDuplicates: true });
+  if (error) throw new Error(error.message);
+  return `ok ${rows.length}`;
+}
 
 /** A bus or train already running late is likely to still be late at the question's stop: the open delay markets follow the real delay (bets placed keep their odds). */
 async function repriceDelays(sb: ReturnType<typeof db>): Promise<string> {
@@ -292,6 +313,8 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
     if (!key) throw new Error(`missing env ${feed.requiresKey}`);
     headers[feed.keyHeader ?? "Authorization"] = `${feed.keyPrefix ?? ""}${key}`;
   }
+  // Nothing to resolve right now (no open question inside its window, or no service at night): healthy, and no need to download the feed.
+  if (tracked.size === 0) return 0;
   // Two feeds (e.g. Berlin buses and trains) can read the same file: fetch and decode it once per run.
   let msg = rtCache.get(url);
   if (!msg) {
@@ -300,7 +323,6 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
     rtCache.set(url, msg);
   }
   const trips = new Set(tracked.keys());
-  if (trips.size === 0) return 0; // nothing to resolve right now (e.g. no service at night): healthy, nothing stored
   // With markets waiting for data, an empty feed is an outage, not "no delays".
   if (!msg.entity?.length) throw new Error("empty feed");
 

@@ -44,7 +44,7 @@ import { PushAsk } from "./components/PushAsk.tsx";
 import { disablePush, enablePush, pushAsked, pushAvailable, pushDenied, pushEnabled, rememberPush } from "./lib/push.ts";
 import { announce, setVoice, voiceEnabled, voiceSupported } from "./lib/voice.ts";
 import { makeProfileCard, makeResultCard, shareImage } from "./lib/share.ts";
-import type { FlashData, DailyMissionsData, QuestRow, ActivityRow, ParlayRow, SlipLeg, LiveDelay, MyBet, MyStats, Pick, PopularRow, Profile, Progress, ResultRow } from "./lib/types.ts";
+import type { FlashData, DailyMissionsData, QuestRow, ActivityRow, ParlayRow, SlipLeg, LiveDelay, LiveOcc, MyBet, MyStats, Pick, PopularRow, Profile, Progress, ResultRow } from "./lib/types.ts";
 import { Bets } from "./views/Bets.tsx";
 import { Home, type Trend } from "./views/Home.tsx";
 import { ProfileView } from "./views/Profile.tsx";
@@ -67,6 +67,7 @@ export function App() {
   const [screen, setScreen] = useState<Screen>("home");
   const [markets, setMarkets] = useState<MarketRow[] | null>(null);
   const [live, setLive] = useState<Record<string, LiveDelay>>({});
+  const [occ, setOcc] = useState<Record<string, LiveOcc>>({});
   const [popular, setPopular] = useState<PopularRow[]>([]);
   const [trendRows, setTrendRows] = useState<{ m: MarketRow; bettors: number; near: boolean }[]>([]);
   const [results, setResults] = useState<ResultRow[]>([]);
@@ -273,6 +274,13 @@ export function App() {
     const go = () => sb.rpc("live_delays", { p_markets: trackable }).then(({ data }) => setLive(Object.fromEntries(((data ?? []) as LiveDelay[]).map((d) => [d.market_id, d]))));
     go(); return every(go, 20_000);
   }, [trackable.join()]);
+  // how full the buses are (only some operators report it: the answer lists just those)
+  const busIds = useMemo(() => (markets ?? []).filter((m) => m.category === "bus" && Date.parse(m.target_at) - Date.now() < 3 * 3600_000).slice(0, 150).map((m) => m.id), [markets]);
+  useEffect(() => {
+    if (busIds.length === 0) { setOcc({}); return; }
+    const go = () => sb.rpc("live_occupancy", { p_markets: busIds }).then(({ data }) => setOcc(Object.fromEntries(((data ?? []) as LiveOcc[]).map((d) => [d.market_id, d]))));
+    go(); return every(go, 30_000);
+  }, [busIds.join()]);
 
   // ---------- derived ----------
   const open = useMemo(() => (markets ?? []).filter((m) => Date.parse(m.closes_at) > now && !m.params.ladderOf), [markets, Math.floor(now / 1000)]);
@@ -555,7 +563,7 @@ export function App() {
         <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
         <Ticker items={tickerItems} />
         <main class="content">
-          {screen === "home" && <Home friendBets={friendBets} details={detailsOn} stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
+          {screen === "home" && <Home occ={occ} friendBets={friendBets} details={detailsOn} stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets canMore={bets.length >= betsLimit} onMore={() => setBetsLimit((n) => n + 60)} invites={invites} challenges={myChallenges} onChallenge={(code) => setChallengeCode(code)} parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "ranking" && <Ranking referral={referral} onShareReferral={shareReferral} onChallenge={() => (registered ? setChallengeMaker(true) : setAuth(true))} home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
           {screen === "admin" && <AdminPage msg={msg} onBack={() => go("profile")} />}

@@ -1,4 +1,5 @@
 import { METRICS } from "./metrics.ts";
+import { OCC_LEVELS, OCC_WINDOW_SEC, occupancyYes } from "./occupancy.ts";
 import { evalMatch, FINISHED, type MatchObservation } from "./sport.ts";
 import { CRYPTO_GRACE_SEC, isSpot, tickDef } from "./ticks.ts";
 import { MIN_VEHICLES, MIN_WINDOW_SEC } from "./traffic.ts";
@@ -10,6 +11,8 @@ import type {
   MatchEvent,
   MetricEvent,
   MetricObservation,
+  OccupancyEvent,
+  OccupancyObservation,
   QuakeEvent,
   QuakeReading,
   RainEvent,
@@ -38,6 +41,7 @@ export interface ResolveInput {
   strike?: StrikeReading | null;
   traffic?: TrafficObservation[];
   ticks?: TickObservation[];
+  occupancy?: OccupancyObservation[];
   match?: MatchObservation | null;
 }
 
@@ -73,7 +77,7 @@ export function resolveEvent(input: ResolveInput): Resolution {
   const { event, now } = input;
   // Rain is measured over the whole hour containing the target, so wait for that hour to end.
   const hourEnd = Math.floor(event.targetAt / HOUR) * HOUR + HOUR;
-  const readyAt = event.kind === "rain_at" || event.kind === "metric_gt" || event.kind === "traffic_speed_lt" ? hourEnd : event.kind === "quake_m" ? event.targetAt + QUAKE_SETTLE_SEC : event.targetAt;
+  const readyAt = event.kind === "rain_at" || event.kind === "metric_gt" || event.kind === "traffic_speed_lt" ? hourEnd : event.kind === "quake_m" ? event.targetAt + QUAKE_SETTLE_SEC : event.kind === "bus_full" ? event.targetAt + OCC_WINDOW_SEC : event.targetAt;
   if (now < readyAt) return { status: "pending" };
 
   const reading =
@@ -84,6 +88,7 @@ export function resolveEvent(input: ResolveInput): Resolution {
     event.kind === "traffic_speed_lt" ? trafficReading(event, input) :
     event.kind === "tick_gt" ? tickReading(event, input) :
     event.kind === "match_bet" ? matchReading(event, input) :
+    event.kind === "bus_full" ? occupancyReading(event, input) :
     delayReading(event, input);
 
   if (reading.kind === "none") {
@@ -154,6 +159,15 @@ function matchReading(event: MatchEvent, input: ResolveInput): Reading {
   // half-time, corners or cards missing: wait for them, then void and refund at the deadline
   if (yes === null) return { kind: "none" };
   return { kind: "ok", yes, evidence: { home: o.homeGoals, away: o.awayGoals, bet: event.bet, ...(o.htHome !== null && o.htHome !== undefined ? { htHome: o.htHome, htAway: o.htAway ?? 0 } : {}), ...(o.corners !== null && o.corners !== undefined ? { corners: o.corners } : {}), ...(o.cards !== null && o.cards !== undefined ? { cards: o.cards } : {}) } };
+}
+
+/** The vehicle's own report closest to the moment of the question, within a few minutes of it. */
+function occupancyReading(event: OccupancyEvent, input: ResolveInput): Reading {
+  const near = (input.occupancy ?? []).filter((o) => o.tripId === event.tripId && o.feedId === event.feedId && Math.abs(o.at - event.targetAt) <= OCC_WINDOW_SEC && o.at <= input.now)
+    .sort((a, b) => Math.abs(a.at - event.targetAt) - Math.abs(b.at - event.targetAt))[0];
+  if (!near) return { kind: "none" };
+  if (!Number.isInteger(near.level) || near.level < 0 || near.level >= OCC_LEVELS.length) return { kind: "implausible" };
+  return { kind: "ok", yes: occupancyYes(event.cmp, event.level, near.level), evidence: { level: near.level, status: OCC_LEVELS[near.level]!, threshold: event.level, at: near.at } };
 }
 
 function tickReading(event: TickEvent, input: ResolveInput): Reading {

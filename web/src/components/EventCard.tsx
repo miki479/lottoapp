@@ -3,7 +3,7 @@ import { Activity, Car, Clapperboard, Trophy, TrendingUp, Megaphone, Clock, Star
 import { cityName, cityOf } from "../lib/cities.ts";
 import { countdown, fmtOdds, isYesNo, money, per10, question, superText, type MarketRow } from "../lib/format.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
-import type { LiveDelay, Pick } from "../lib/types.ts";
+import type { LiveDelay, LiveOcc, Pick } from "../lib/types.ts";
 import { BusSide, CloudRainSide, isMetroLine, MetroSide, TrainSide } from "./Vehicles.tsx";
 import { Sky, useHint } from "./Sky.tsx";
 import { TripScene } from "./TripScene.tsx";
@@ -23,13 +23,19 @@ export function liveLabel(msg: Messages, l: LiveDelay) {
 }
 
 /** One event: what it is (detail row), the question (title), then two big, equal choices. */
-export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now: number; live?: LiveDelay; index: number; top?: boolean; hasLadder?: boolean; mm?: number; friends?: number; showCity: boolean; onPick: (m: MarketRow, pick: Pick) => void }) {
+/** How full the bus is right now: five bars and a word. */
+export function OccMeter(p: { level: number; msg: Messages }) {
+  const lv = Math.max(0, Math.min(5, p.level));
+  return <div class={`occ lv${lv}`} role="img" aria-label={`${p.msg.occ.title}: ${p.msg.occ.levels[lv]}`}><span class="occbars">{[0, 1, 2, 3, 4].map((i) => <i key={i} class={i < lv ? "on" : ""} />)}</span><span class="occt">{p.msg.occ.title}: <b>{p.msg.occ.levels[lv]}</b></span></div>;
+}
+
+export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now: number; live?: LiveDelay; occ?: LiveOcc; index: number; top?: boolean; hasLadder?: boolean; mm?: number; friends?: number; showCity: boolean; onPick: (m: MarketRow, pick: Pick) => void }) {
   const { m, msg, locale, now, live } = p;
   const city = cityOf(m.city_id), Kind = m.category === "train" && isMetroLine(m.params.routeName) ? MetroSide : KIND[m.category];
   const { hint, show, clear } = useHint();
   const left = Date.parse(m.closes_at) - now;
   const isRain = isYesNo(m.kind);
-  const who = m.kind === "match_bet" ? String(m.params.league ?? "") : m.kind === "tick_gt" ? (msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? "")) : isRain ? cityName(city, locale) : `${String(m.params.routeName ?? "")} · ${cityName(city, locale)}`;
+  const who = m.kind === "match_bet" ? String(m.params.league ?? "") : m.kind === "tick_gt" ? (msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? "")) : isRain && m.kind !== "bus_full" ? cityName(city, locale) : `${String(m.params.routeName ?? "")} · ${cityName(city, locale)}`;
   const flashOn = (m.flash_multiplier ?? 1) > 1 && !!m.flash_until && Date.parse(m.flash_until) > now;
   return (
     <article class={`card event ${(p.friends ?? 0) > 0 ? "has-friends" : ""} ${m.category} ${p.top ? "is-top" : ""} ${flashOn ? "is-flash" : ""}`} style={`--i:${Math.min(p.index, 10)}`}>
@@ -45,8 +51,9 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
       </div>
       <p class="q"><Q m={m} msg={msg} locale={locale} city={cityName(city, locale)} tz={city.timezone} now={new Date(now)} /></p>
       {typeof m.params.by === "string" && m.params.by && <p class="byline">{msg.maker.by(m.params.by)}</p>}
-      {!live && (m.category === "train" || m.category === "bus") && <p class="nolive">{msg.card.noLive}</p>}
-      {live && <DelayMeter sec={live.delay_sec} prev={live.prev_delay_sec} limitSec={Number(m.params.thresholdSec ?? 180)} forecast={live.is_forecast} msg={msg} />}
+      {p.occ && <OccMeter level={p.occ.level} msg={msg} />}
+      {m.kind !== "bus_full" && !live && (m.category === "train" || m.category === "bus") && <p class="nolive">{msg.card.noLive}</p>}
+      {m.kind !== "bus_full" && live && <DelayMeter sec={live.delay_sec} prev={live.prev_delay_sec} limitSec={Number(m.params.thresholdSec ?? 180)} forecast={live.is_forecast} msg={msg} />}
       <div class="actions2">
         {(["yes", "no"] as const).map((k) => {
           const o = Number(k === "yes" ? m.odds_yes : m.odds_no), boosted = k === "yes" && flashOn;
