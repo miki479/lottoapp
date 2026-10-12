@@ -206,3 +206,14 @@ describe("metals, fuel and oil", () => {
     expect(buildOilMarkets({}, MON)).toHaveLength(0);
   });
 });
+
+import { liveYesProbability } from "../shared/odds.ts";
+describe("live delay odds", () => {
+  it("a train already 10 min late is far likelier to exceed 5 min than history says", () => {
+    expect(liveYesProbability(0.06, 600, 300, 9, true)).toBeGreaterThan(0.35);
+    expect(liveYesProbability(0.06, 600, 300, 1, true)).toBeGreaterThan(0.9);
+  });
+  it("an on-time train keeps the historical chance", () => {
+    expect(liveYesProbability(0.06, 0, 300, 9, true)).toBeLessThan(0.1);
+  });
+});

@@ -11,6 +11,7 @@ import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, bui
 import { buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, type Fixture, type Geo, type TableRow } from "../_shared/shared/sport.ts";
 import { apiFootball, apiKey, fetchDetails, fetchPlayerFacts, loadTable } from "../_lib/football.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
+import { HOUSE_MARGIN, computeOdds, liveYesProbability } from "../_shared/shared/odds.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
 
 const FETCH_TIMEOUT_MS = 25_000;
@@ -67,6 +68,7 @@ Deno.serve(safe(async (req) => {
       }
     }
   }
+  report["live-odds"] = await repriceDelays(sb).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   if (heavyRun) return Response.json(report);
   report["open-meteo-places"] = await ingestPlaces(sb, now, lastAttempt.get("open-meteo-places") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["open-meteo-metrics"] = await ingestMetrics(sb, now, lastAttempt.get("open-meteo-metrics") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
@@ -76,6 +78,25 @@ Deno.serve(safe(async (req) => {
   report["usgs"] = await pingUsgs(sb, now, lastAttempt.get("usgs") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   return Response.json(report);
 }));
+
+/** A bus or train already running late is likely to still be late at the question's stop: the open delay markets follow the real delay (bets placed keep their odds). */
+async function repriceDelays(sb: ReturnType<typeof db>): Promise<string> {
+  const { data, error } = await sb.rpc("live_pricing_inputs");
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as { market_id: string; kind: string; threshold_sec: number; target_seq: number; obs_seq: number; delay_sec: number; odds_yes: number; odds_no: number; flash_multiplier: number; p_prior: number | null }[];
+  const out: { id: string; prior: number; yes: number; no: number }[] = [];
+  for (const r of rows) {
+    // the starting quote (before any live move, without a flash multiplier) is what history said
+    const prior = r.p_prior ?? Math.min(0.97, Math.max(0.03, (1 - HOUSE_MARGIN) / (Number(r.odds_yes) / Math.max(1, Number(r.flash_multiplier)))));
+    const p = liveYesProbability(prior, r.delay_sec, r.threshold_sec, r.target_seq - r.obs_seq, r.kind === "train_delay_gt");
+    const o = computeOdds(p);
+    const cur = Number(r.odds_yes) / Math.max(1, Number(r.flash_multiplier));
+    if (Math.abs(o.yes - cur) / cur < 0.03 && Math.abs(o.no - Number(r.odds_no)) < 0.03) continue;
+    out.push({ id: r.market_id, prior, yes: o.yes, no: o.no });
+  }
+  if (out.length) { const { error: e2 } = await sb.rpc("apply_live_odds", { p: out }); if (e2) throw new Error(e2.message); }
+  return `ok ${out.length}/${rows.length}`;
+}
 
 /** Road traffic stations (Digitraffic, Finland): hourly average speed per direction, kept per hour; rush-hour questions are created from the same list. */
 async function ingestTraffic(sb: ReturnType<typeof db>, city: CityConfig, feed: FeedConfig, now: number): Promise<number> {

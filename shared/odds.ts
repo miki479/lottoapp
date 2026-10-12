@@ -44,3 +44,26 @@ export function computeOdds(pYes: number, flashMultiplier = 1): Odds {
   };
   return { yes: price(pYes), no: price(1 - pYes), pYes };
 }
+
+/**
+ * A delay market is priced from history when it opens, but a bus or train already running late is far more
+ * likely to still be late at the question's stop. From a live reading of the delay a few stops earlier,
+ * estimate the chance that the delay at the target stop exceeds the threshold: the delay recovers a little per stop
+ * and the uncertainty grows with the stops left. Close to the stop the live reading dominates; far away history still counts.
+ */
+export function liveYesProbability(pHist: number, delaySec: number, thresholdSec: number, stopsLeft: number, train: boolean): number {
+  const n = Math.max(0, stopsLeft);
+  const recover = train ? 20 : 10, sd = (train ? 60 : 45) + (train ? 30 : 25) * Math.sqrt(n);
+  const mean = delaySec > 0 ? Math.max(0, delaySec - recover * n) : delaySec;
+  const z = (thresholdSec + 0.5 - mean) / sd;
+  const pLive = 1 - normalCdf(z);
+  const w = 10 / (10 + n);
+  return Math.min(0.97, Math.max(0.03, w * pLive + (1 - w) * pHist));
+}
+
+function normalCdf(z: number): number {
+  const t = 1 / (1 + 0.2316419 * Math.abs(z));
+  const d = 0.3989423 * Math.exp((-z * z) / 2);
+  const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+  return z > 0 ? 1 - p : p;
+}
