@@ -2,6 +2,7 @@ import { Check, Users } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
+import { Collapse } from "./Collapse.tsx";
 import { loadFriends, type FriendRow } from "../lib/friends.ts";
 
 /** Invite some of my friends to one friend challenge. They get a notification and find it in "My bets". */
@@ -27,8 +28,7 @@ export function FriendPicker(p: { code: string; msg: Messages; onSent: (n: numbe
     setNote(n > 0 ? t.invSent(n) : t.invNone); setSel(new Set()); await load(); if (n > 0) p.onSent(n);
   };
   return (
-    <section class="stack friendpick" style="gap:8px">
-      <span class="detail"><Users size={14} /> {t.invTitle}</span>
+    <Collapse id="friendpick" class="friendpick" title={t.invTitle} open={false}>
       <p class="hint">{t.invHint}</p>
       <div class="frgrid">
         {friends.map((f) => {
@@ -44,6 +44,6 @@ export function FriendPicker(p: { code: string; msg: Messages; onSent: (n: numbe
       <button class="btn primary wide" disabled={sel.size === 0 || busy} onClick={send}>{t.invSend(sel.size)}</button>
       {note && <p class="hint" role="status">{note}</p>}
       {err && <p class="formerr" role="alert">{err}</p>}
-    </section>
+    </Collapse>
   );
 }

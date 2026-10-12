@@ -217,7 +217,7 @@ export function buildFuelMarkets(avgs: Partial<Record<FuelKey, number>>, extract
   return out;
 }
 
-/** `latest[k]` = the newest published daily price and its date. Questions about the next two weekdays; they close at 12:00 UTC of that day. */
+/** `latest[k]` = the newest published daily price and its date (the source lags by days). Questions about the next two weekdays from now; they close at 12:00 UTC of that day, and the wider the gap since the last published price, the wider the spread. */
 export function buildOilMarkets(latest: Partial<Record<OilKey, { date: string; value: number }>>, now: number): TickMarketInsert[] {
   const out: TickMarketInsert[] = [];
   for (const [k, l] of Object.entries(latest) as [OilKey, { date: string; value: number }][]) {
@@ -225,13 +225,14 @@ export function buildOilMarkets(latest: Partial<Record<OilKey, { date: string; v
     if (!(l.value > 5) || !Number.isFinite(last)) continue;
     const series = `oil:${k}`, def = tickDef(series)!;
     let made = 0;
-    for (let d = 1; d <= 6 && made < 2; d++) {
-      const day = last + d * 86400, dow = new Date(day * 1000).getUTCDay();
+    for (let d = 0; d <= 8 && made < 2; d++) {
+      const day = Math.floor(now / 86400) * 86400 + d * 86400, dow = new Date(day * 1000).getUTCDay();
       if (dow === 0 || dow === 6) continue;
       const at = day + 86400, closes = day + 12 * H;
-      if (closes <= now + 600) { continue; }
+      if (closes <= now + 600) continue;
       made++;
-      out.push(withDigits(tickMarket(series, def, l.value, Math.round(l.value / 0.5) * 0.5, l.value * 0.0185 * Math.sqrt(d + 1), at, closes, at + 4 * 86400), 2));
+      const gap = Math.max(1, Math.round((day - last) / 86400));
+      out.push(withDigits(tickMarket(series, def, l.value, Math.round(l.value / 0.5) * 0.5, l.value * 0.0185 * Math.sqrt(gap), at, closes, at + 10 * 86400), 2));
     }
   }
   return out;

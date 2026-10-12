@@ -200,7 +200,7 @@ describe("metals, fuel and oil", () => {
     expect(m.some((x) => x.params.series === "fuel:benzina" && Math.abs(x.params.threshold - 2.035) < 0.011)).toBe(true);
   });
   it("oil: only weekdays, closing at noon UTC of the day asked about", () => {
-    const m = buildOilMarkets({ brent: { date: "2026-10-09", value: 82.4 } }, MON); // Friday value
+    const m = buildOilMarkets({ brent: { date: "2026-10-06", value: 82.4 } }, MON); // the source lags by days
     expect(m.length).toBe(2);
     for (const x of m) { const d = new Date(Date.parse(x.target_at) - 86400_000); expect([0, 6]).not.toContain(d.getUTCDay()); expect(new Date(x.closes_at).getUTCHours()).toBe(12); expect(x.params.threshold % 0.5).toBe(0); }
     expect(buildOilMarkets({}, MON)).toHaveLength(0);

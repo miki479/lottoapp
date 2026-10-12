@@ -983,3 +983,8 @@ textarea.field { resize: vertical; min-height: 84px; }
 .dmbtn { flex-direction: column; gap: 0; line-height: 1.15; min-width: 78px; padding: 4px 12px; } .dmbtn b { font-size: 12px; opacity: .92; }
 .dmrow, .dmchest { grid-template-columns: 44px minmax(0, 1fr) auto; }
 .evacts { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+
+.colhead { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 0; background: none; border: 0; color: var(--text); text-align: left; } .colhead h2 { margin: 0; flex: 1; font-size: 17px; }
+.colhead em { font-style: normal; font-size: 12px; font-weight: 800; padding: 2px 9px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); } .colhead svg { transition: transform .2s; color: var(--muted); } .collapse.open > .colhead svg { transform: rotate(180deg); }
+.collapse { gap: 0; border-bottom: 1px solid var(--border); } .colbody { padding-bottom: 12px; animation: dmin .3s ease both; }
+.friendpick .colhead h2 { font-size: 14px; font-weight: 800; }

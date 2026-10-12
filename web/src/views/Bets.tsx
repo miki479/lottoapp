@@ -1,6 +1,7 @@
 import { Q } from "../components/Q.tsx";
 import { Check, RotateCcw, Ticket, X } from "lucide-preact";
 import { useState } from "preact/hooks";
+import { Collapse } from "../components/Collapse.tsx";
 import { Empty } from "../components/Empty.tsx";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, cityOf } from "../lib/cities.ts";
@@ -21,12 +22,12 @@ export function Bets({ invites, challenges, onChallenge, parlays, bets, msg, loc
         <button role="tab" class={tab === "open" ? "on" : ""} aria-selected={tab === "open"} onClick={() => setTab("open")}>{msg.bets.tabs.open} · {nOpen}</button>
         <button role="tab" class={tab === "settled" ? "on" : ""} aria-selected={tab === "settled"} onClick={() => setTab("settled")}>{msg.bets.tabs.settled} · {nDone}</button>
       </div>
-      {tab === "open" && invites.length > 0 && <section class="stack inbox"><h2>{msg.frd.inboxTitle}</h2>
+      {tab === "open" && invites.length > 0 && <Collapse id="inbox" class="inbox" title={msg.frd.inboxTitle} count={invites.length}>
         {invites.map((c) => <button key={c.id} class="card pressable chrow invite" onClick={() => onChallenge(c.code)}><span class="byline">{msg.frd.inboxFrom(c.invited_by)} · {countdown(Math.max(0, Date.parse(c.closes_at) - now))}</span><b>{c.title}</b><span class="invopen">{msg.frd.inboxOpen}</span></button>)}
-      </section>}
-      {challenges.length > 0 && <section class="stack"><h2>{msg.friends.mine}</h2>
+      </Collapse>}
+      {challenges.filter((c) => (tab === "open") === (c.status === "open")).length > 0 && <Collapse id="mychallenges" title={msg.friends.mine} count={challenges.filter((c) => (tab === "open") === (c.status === "open")).length} open={challenges.length <= 3}>
         {challenges.filter((c) => (tab === "open") === (c.status === "open")).map((c) => <button key={c.id} class="card pressable chrow" onClick={() => onChallenge(c.code)}><b>{c.title}</b><span class="byline">{msg.friends.cats[c.category]} · {c.status === "open" ? countdown(Math.max(0, Date.parse(c.closes_at) - now)) : c.status === "void" ? msg.friends.voided : c.outcome === "yes" ? msg.friends.resolvedYes : msg.friends.resolvedNo}</span></button>)}
-      </section>}
+      </Collapse>}
       {shown.length + shownP.length === 0 && <Empty icon={Ticket} title={msg.bets.empty.title} body={msg.bets.empty.body} cta={msg.bets.empty.cta} onCta={onHome} />}
       <div class="betlist">
         {shownP.map((x, i) => {

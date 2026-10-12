@@ -54,7 +54,9 @@ try {
   await pa.getByRole("button", { name: /Lancia una sfida/ }).click(); await pa.waitForTimeout(600);
   await pa.fill("textarea", "Marco arriva in ritardo alla cena?"); await pa.getByRole("button", { name: /Crea e condividi/ }).click();
   await pa.waitForSelector(".friendpick", { timeout: 10000 });
-  check("after creating the challenge the friend picker is right there", (await pa.locator(".frchip").count()) === 1);
+  check("after creating the challenge the friend picker is there, folded", (await pa.locator(".friendpick .colhead").count()) === 1 && (await pa.locator(".frchip").count()) === 0);
+  await pa.locator(".friendpick .colhead").click(); await pa.waitForTimeout(300);
+  check("and opens on tap", (await pa.locator(".frchip").count()) === 1);
   await pa.locator(".frchip").first().click();
   await pa.getByRole("button", { name: /Invita 1 amico/ }).click(); await pa.waitForTimeout(1500);
   check("invite sent", /Invito inviato/.test(await pa.locator(".friendpick").innerText()), (await pa.locator(".friendpick").innerText()).slice(-60));

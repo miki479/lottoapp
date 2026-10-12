@@ -338,7 +338,11 @@ export function App() {
     void best; feat("best", TrendingUp, msg.top.best, bestM, bestM ? <>×{fmtOdds(Number(bestM.odds_yes), locale)}</> : null);
     const soon = inFilter[0];
     if (soon) items.push({ id: "soon", icon: Clock, label: msg.top.closing, big: <span class="num">{countdown(Date.parse(soon.closes_at) - now)}</span>, sub: question(soon, msg, locale, cityName(cityOf(soon.city_id), locale), cityOf(soon.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: soon, pick: "no" }) });
-    return items;
+    // Not everything at once: what matters now stays (friends, trend, flash, the most delayed), the rest rotates every few hours, five cards at most.
+    const PIN = ["friends", "trend", "flash", "late"], pinned = items.filter((x) => PIN.includes(x.id)).sort((x, y) => PIN.indexOf(x.id) - PIN.indexOf(y.id)).slice(0, 3);
+    const seed = Math.floor(now / (3 * 3600_000)), h = (id: string) => { let n = seed; for (let i = 0; i < id.length; i++) n = (n * 31 + id.charCodeAt(i)) >>> 0; return n; };
+    const rest = items.filter((x) => !PIN.includes(x.id) || !pinned.includes(x)).sort((x, y) => h(x.id) - h(y.id));
+    return [...pinned, ...rest].slice(0, 5);
   }, [inFilter, live, popular, trendRows, friendBets, locale, Math.floor(now / 1000)]);
 
   const flashId = open.find((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now)?.id;
