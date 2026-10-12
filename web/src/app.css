@@ -1033,3 +1033,18 @@ textarea.field { resize: vertical; min-height: 84px; }
 .occ .occbars i.on { background: #2fb36d; opacity: 1; }
 .occ.lv3 .occbars i.on, .occ.lv2 .occbars i.on { background: #e8a317; } .occ.lv4 .occbars i.on, .occ.lv5 .occbars i.on { background: #d6334f; }
 .occ b { color: var(--text); }
+
+.occscene { position: relative; height: 84px; margin: 4px 0 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 14px; background: linear-gradient(180deg, #eaf3ff 0%, #f6f9ff 100%); }
+:root[data-theme="dark"] .occscene { background: linear-gradient(180deg, #1d2740 0%, #172033 100%); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .occscene { background: linear-gradient(180deg, #1d2740 0%, #172033 100%); } }
+.occscene .occbus { width: min(78%, 300px); height: auto; animation: occbob 2.4s ease-in-out infinite; }
+.occscene.crowded .occbus { animation: occshake .5s ease-in-out infinite; }
+.occscene.empty .occbus { animation: occglide 3.2s ease-in-out infinite; }
+.occscene .hd { transform: scale(0); transform-box: fill-box; transform-origin: 50% 100%; transition: transform .45s cubic-bezier(.3, 1.6, .5, 1) calc(var(--k) * 55ms); }
+.occscene .hd.on { transform: scale(1); }
+.occscene .occroad { position: absolute; left: 0; right: 0; bottom: 10px; height: 2px; background: repeating-linear-gradient(90deg, #98a2b8 0 14px, transparent 14px 28px); opacity: .55; animation: occroad 1.2s linear infinite; }
+@keyframes occbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes occshake { 0%, 100% { transform: translateX(0) rotate(0); } 25% { transform: translateX(-1px) rotate(-.4deg); } 75% { transform: translateX(1px) rotate(.4deg); } }
+@keyframes occglide { 0%, 100% { transform: translateX(-3px); } 50% { transform: translateX(3px); } }
+@keyframes occroad { to { background-position: -28px 0; } }
+@media (prefers-reduced-motion: reduce) { .occscene .occbus, .occscene .occroad { animation: none; } .occscene .hd { transition: none; } }

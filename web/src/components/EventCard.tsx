@@ -6,6 +6,7 @@ import type { Locale, Messages } from "../i18n/index.ts";
 import type { LiveDelay, LiveOcc, Pick } from "../lib/types.ts";
 import { BusSide, CloudRainSide, isMetroLine, MetroSide, TrainSide } from "./Vehicles.tsx";
 import { Sky, useHint } from "./Sky.tsx";
+import { OccScene } from "./OccScene.tsx";
 import { TripScene } from "./TripScene.tsx";
 import { DelayMeter } from "./DelayMeter.tsx";
 import { Flag } from "./Flag.tsx";
@@ -42,7 +43,7 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
       {(p.friends ?? 0) > 0 && <span class="frbadge" title={msg.frd.friendsOn(p.friends!)} aria-label={msg.frd.friendsOn(p.friends!)}><Users size={13} />{p.friends}</span>}
       {(p.top || flashOn || p.hasLadder || left < 300_000) && <div class="badges">{p.hasLadder && <span class="badge-sorry"><Megaphone size={13} />{msg.ladder.chip}</span>}{flashOn && <span class={`badge-flash ${superText(m, msg) ? "super" : ""}`}><Zap size={13} fill="currentColor" />{superText(m, msg) ? msg.sup.badge : "FLASH"} ×{m.flash_multiplier} · {countdown(Date.parse(m.flash_until!) - now)}</span>}{p.top && <span class="badge-top"><Star size={13} fill="currentColor" />{msg.card.topOdds}</span>}{left < 300_000 && <span class="badge-hot"><Zap size={13} fill="currentColor" />{msg.card.hot}</span>}</div>}
       {flashOn && superText(m, msg) && <p class="supernote">{superText(m, msg)}</p>}
-      {m.kind === "rain_at" ? <Sky mm={p.mm} hint={hint} msg={msg} /> : m.kind === "traffic_speed_lt" ? <TrafficScene m={m} hint={hint} msg={msg} /> : m.kind === "match_bet" ? <SportScene m={m} hint={hint} msg={msg} /> : m.kind === "tick_gt" ? <TickScene m={m} hint={hint} msg={msg} /> : m.kind === "metric_gt" || m.kind === "quake_m" || m.kind === "strike_on" ? <MetricArt m={m} msg={msg} hint={hint} /> : <TripScene m={m} now={now} hint={hint} />}
+      {m.kind === "rain_at" ? <Sky mm={p.mm} hint={hint} msg={msg} /> : m.kind === "traffic_speed_lt" ? <TrafficScene m={m} hint={hint} msg={msg} /> : m.kind === "match_bet" ? <SportScene m={m} hint={hint} msg={msg} /> : m.kind === "tick_gt" ? <TickScene m={m} hint={hint} msg={msg} /> : m.kind === "metric_gt" || m.kind === "quake_m" || m.kind === "strike_on" ? <MetricArt m={m} msg={msg} hint={hint} /> : m.kind === "bus_full" ? <OccScene m={m} hint={hint} level={p.occ?.level} msg={msg} /> : <TripScene m={m} now={now} hint={hint} />}
       <div class="meta">
         <span class="kind"><Kind size={m.category === "train" ? 10 : m.category === "bus" ? 12 : 14} /></span>
         <span class="detail">{who}</span>

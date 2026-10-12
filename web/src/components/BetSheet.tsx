@@ -19,12 +19,13 @@ import { SportScene } from "./SportScene.tsx";
 import { TickChart } from "./TickChart.tsx";
 import { AreaStats } from "./AreaStats.tsx";
 import { Sky } from "./Sky.tsx";
+import { OccScene } from "./OccScene.tsx";
 import { TripScene } from "./TripScene.tsx";
 import { StakeControl } from "./StakeControl.tsx";
 
 /** Bet slip for one event: pick, stake, then place it (guests do the "last step" sign-up right here when it is required). */
 export function BetSheet(p: {
-  m: MarketRow; initial: Pick; msg: Messages; locale: Locale; credits: number; ready: boolean; needJoin: boolean; googleOn: boolean; inSlip: boolean; boosts: number; now: number; mm?: number; ladder: MarketRow[]; onSwitch: (m: MarketRow) => void;
+  m: MarketRow; initial: Pick; msg: Messages; locale: Locale; credits: number; ready: boolean; needJoin: boolean; googleOn: boolean; inSlip: boolean; boosts: number; now: number; mm?: number; occ?: { level: number }; ladder: MarketRow[]; onSwitch: (m: MarketRow) => void;
   onClose: () => void; onAddSlip: (m: MarketRow, pick: Pick) => void; onJoined: () => Promise<void>; onPlace: (m: MarketRow, pick: Pick, stake: number, boost: boolean) => Promise<string | null>;
 }) {
   const [pick, setPick] = useState<Pick>(p.initial);
@@ -60,7 +61,7 @@ export function BetSheet(p: {
       {p.m.kind === "match_bet" && <div class="vscard"><MarketVs m={p.m} size={38} />{reasonOf(p.m, p.msg) && <span class="reason big">{reasonOf(p.m, p.msg)}</span>}</div>}
       <p class="q" style="font-weight:600"><Q m={p.m} msg={p.msg} locale={p.locale} city={cityName(city, p.locale)} tz={city.timezone} /></p>
       {typeof p.m.params.by === "string" && p.m.params.by && <p class="byline">{p.msg.maker.by(p.m.params.by)}</p>}
-      {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "traffic_speed_lt" ? <TrafficScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "match_bet" ? <SportScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "tick_gt" ? <TickScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" || p.m.kind === "strike_on" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : <TripScene m={p.m} now={p.now} hint={pick} big />}
+      {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "traffic_speed_lt" ? <TrafficScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "match_bet" ? <SportScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "tick_gt" ? <TickScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" || p.m.kind === "strike_on" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : p.m.kind === "bus_full" ? <OccScene m={p.m} hint={pick} level={p.occ?.level} msg={p.msg} /> : <TripScene m={p.m} now={p.now} hint={pick} big />}
       {(p.m.params.custom === "true" || p.m.params.local === "true") && <AreaStats marketId={p.m.id} msg={p.msg} />}
       {p.m.kind === "tick_gt" && <TickChart m={p.m} msg={p.msg} locale={p.locale} />}
       <div>
