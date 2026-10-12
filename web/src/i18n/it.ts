@@ -14,7 +14,7 @@ const it: Messages = {
     top: "In evidenza", events: "Eventi", live: "Dal vivo",
     idle: ["Dati veri, crediti finti", "Chiudi le tre missioni del giorno per il bonus", "Un giorno saltato non spezza la serie: c'è il congelamento"],
     empty: { title: "Niente da giocare qui", body: "Anche i bus ogni tanto riposano. Prova un'altra categoria o guarda tutto il mondo.", cta: "Mostra tutto il mondo" },
-    trafficSoon: "Il traffico è disponibile dove ci sono dati aperti: per ora Helsinki. Altre città arrivano.",
+    trafficSoon: "Il traffico è disponibile dove ci sono dati aperti: per ora Helsinki. Altre città arrivano.", satire: "Questo è un gioco satirico con crediti finti: nessun denaro, nessuna scommessa vera. Non è un servizio di Trenitalia né di RFI.",
   },
   streak: { title: "Serie", days: (n) => (n === 1 ? "1 giorno" : `${n} giorni`), next: (d, b) => `Prossimo premio a ${d} giorni: ${b}`, max: "Tutti i premi presi. Leggenda.", milestone: (n, b) => `Serie di ${n} giorni! ${b} in regalo`, flash: "Flash" },
   meter: { threshold: (m) => `Oltre ${m} min = in ritardo`, up: (m) => `+${m} min in 10 min`, down: (m) => `−${m} min in 10 min`, steady: "stabile", forecast: "previsto", late: "di ritardo" },

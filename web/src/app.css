@@ -768,3 +768,6 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 @keyframes roaddash { to { stroke-dashoffset: -44; } }
 @keyframes laneflow { from { transform: translateX(-30px); } to { transform: translateX(340px); } }
 @media (prefers-reduced-motion: reduce) { .mscene.traffic * { animation: none !important; } }
+
+.satire{margin:0 0 12px;padding:10px 14px;border-radius:14px;background:#fff4d6;border:1px solid #f0c75a;color:#6b4a00;font-size:.88rem;font-weight:600;line-height:1.35}
+@media (prefers-color-scheme:dark){.satire{background:#3a2d0a;border-color:#8a6a1a;color:#ffe29a}}
