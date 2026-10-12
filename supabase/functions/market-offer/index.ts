@@ -1,7 +1,8 @@
 // A player creates a question from a fixed template (weather metric at a place, coin price, game players, page views).
 // Nothing free-form is accepted: every parameter is checked against a list or a range, the question is priced from the
 // current reference value and refused when the answer would be too certain. Resolution uses the same public feeds as the house markets.
-import { FAIR_MAX, FAIR_MIN, CRYPTO, WIKI_ARTICLES, buildCustomTick, isCrypto, isSteam, tickChance, tickStep } from "../_shared/shared/ticks.ts";
+import { tvEpisode, tvReference } from "../_lib/tv.ts";
+import { FAIR_MAX, FAIR_MIN, CRYPTO, WIKI_ARTICLES, buildCustomTick, buildTvMarket, isCrypto, isSteam, tickChance, tickStep } from "../_shared/shared/ticks.ts";
 import { computeOdds } from "../_shared/shared/odds.ts";
 import { ALL_BETS, DETAIL_LEAGUES, isDetailBet, isPlayerBet, leagueAverage, matchMarket, matchPriors, playerBetId, playerChance, playerMarket, type LineupPlayer, type MatchBet, type PlayerBet } from "../_shared/shared/sport.ts";
 import { METRICS, METRIC_IDS, metricOdds, normalCdf, type MetricId } from "../_shared/shared/metrics.ts";
@@ -126,6 +127,21 @@ Deno.serve(safe(async (req) => {
     const m = buildCustomTick(series, ref, thr, target, now);
     if (preview) return json({ preview: { ...info, odds_yes: m.odds_yes, odds_no: m.odds_no, threshold: thr } });
     draft = { ...m, params: { ...m.params, custom: "true", by }, dedupe_key: `c|${series}|${target}|${thr}` };
+  } else if (b.type === "episode") {
+    // A bet on the TVmaze rating of one episode, three days after it airs (the show and the episode are checked at the source).
+    const episodeId = Number(b.episodeId), threshold = Math.round(Number(b.threshold) * 10) / 10;
+    if (!Number.isInteger(episodeId) || episodeId <= 0 || !(threshold > 0 && threshold <= 10)) return json({ error: "bad_request" }, 400);
+    const info = await tvEpisode(episodeId);
+    if (!info || !info.episode.airstamp) return json({ error: "unknown_episode" }, 404);
+    const air = Date.parse(info.episode.airstamp) / 1000;
+    if (air < now - 2 * 86400 || air > now + 21 * 86400) return json({ error: "bad_time" }, 400);
+    const ref = await tvReference(info.showId, info.episode.airstamp);
+    if (ref === null) return json({ error: "source_unavailable" }, 503);
+    const chance = Math.round(tickChance(`tv:${episodeId}`, ref, threshold, 72) * 100) / 100, res = { reference: Math.round(ref * 100) / 100, step: 0.1, chance };
+    if (chance < FAIR_MIN || chance > FAIR_MAX) return json({ error: "too_certain", ...res }, 422);
+    const m = buildTvMarket({ showId: info.showId, showName: info.showName, episodeId, season: info.episode.season, number: info.episode.number, airstamp: air, reference: ref, threshold, now });
+    if (preview) return json({ preview: { ...res, odds_yes: m.odds_yes, odds_no: m.odds_no, threshold } });
+    draft = { ...m, params: { ...m.params, custom: "true", by } };
   } else if (b.type === "lineup") {
     // The starting elevens of a match with what each player bet would pay (read once, kept; lineups appear about an hour before kick-off).
     const eventId = String(b.eventId ?? "");

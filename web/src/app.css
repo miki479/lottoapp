@@ -1072,20 +1072,36 @@ textarea.field { resize: vertical; min-height: 84px; }
 @keyframes cnbop { from { transform: translateY(0); } to { transform: translateY(-3px); } }
 @media (prefers-reduced-motion: reduce) { .mscene.tick.concert * { animation: none !important; } }
 
-.tboard { display: flex; flex-direction: column; gap: 8px; padding: 12px; }
-.tbhead { display: flex; align-items: center; gap: 8px; color: var(--brand); } .tbhead h2 { margin: 0; font-size: 16px; color: var(--text); } .tbsub { margin-left: auto; font-size: 12px; color: var(--muted); font-weight: 600; }
-.tbmeter { display: flex; gap: 10px; } .tbmeter span { flex: 1; display: flex; flex-direction: column; padding: 8px 10px; border-radius: 12px; background: color-mix(in srgb, var(--brand) 8%, transparent); font-size: 11px; color: var(--muted); font-weight: 600; }
-.tbmeter b { font-size: 18px; color: var(--text); }
-.tbrows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.tbrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "main delay" "main odds"; gap: 4px 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line, #e3e6ef); }
-.tbrow:first-child { border-top: 0; }
-.tbmain { grid-area: main; display: grid; grid-template-columns: auto 1fr; grid-template-areas: "kind num" "dir dir"; gap: 2px 8px; align-items: baseline; text-align: left; border: 0; background: transparent; padding: 0; font: inherit; color: inherit; cursor: pointer; min-width: 0; }
-.tbkind { grid-area: kind; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; padding: 2px 6px; border-radius: 6px; color: #fff; background: #6c5ce7; } .tbkind.hs { background: #d6334f; } .tbkind.ic { background: #2a7de1; }
-.tbnum { grid-area: num; font-size: 16px; } .tbdir { grid-area: dir; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tbdelay { grid-area: delay; justify-self: end; display: inline-flex; align-items: center; gap: 2px; font-weight: 800; font-size: 16px; color: var(--muted); } .tbdelay.late { color: #d6334f; } .tbdelay.ok { color: #1f9d5a; }
-.tbodds { grid-area: odds; justify-self: end; display: inline-flex; gap: 6px; }
-.tbq { display: inline-flex; flex-direction: column; align-items: center; min-width: 62px; padding: 3px 8px; border-radius: 10px; border: 1px solid transparent; font: inherit; cursor: pointer; } .tbq small { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
-.tbq.late { background: color-mix(in srgb, #6c5ce7 14%, transparent); color: #5a49d6; } .tbq.ok { background: color-mix(in srgb, #ffb020 20%, transparent); color: #a86a00; }
-.tbq b { font-size: 14px; }
 
-.tboard .tbsub { margin: 0; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-weight: 600; }
+
+.mscene.tick.tv .tv-glow { animation: tvflick 2.6s ease-in-out infinite alternate; }
+.mscene.tick.tv .tv-star { transform-box: fill-box; transform-origin: 50% 50%; opacity: .25; transition: opacity .3s, transform .45s cubic-bezier(.3, 1.6, .5, 1) calc(var(--k) * 60ms); }
+.mscene.tick.tv .tv-star.on { opacity: 1; animation: tvstar 1.6s ease-in-out infinite alternate; animation-delay: calc(var(--k) * -200ms); }
+@keyframes tvflick { from { opacity: .1; } to { opacity: .3; } } @keyframes tvstar { from { filter: brightness(1); } to { filter: brightness(1.35); } }
+@media (prefers-reduced-motion: reduce) { .mscene.tick.tv * { animation: none !important; } }
+.seplist { display: flex; flex-direction: column; gap: 6px; } .seplist .placerow.sel { outline: 2px solid var(--brand); }
+.serating { display: flex; flex-direction: column; gap: 6px; margin: 4px 0; } .serating .stepper { display: flex; align-items: center; gap: 14px; } .serating .stepper b { font-size: 26px; min-width: 52px; text-align: center; }
+
+/* Train board: a station departures panel (black, amber lights, dotted glass). Always dark, in every theme. */
+.led { margin: 0; }
+.ledbezel { position: relative; background: #070707; color: #ffb000; border-radius: 14px; padding: 10px 10px 8px; border: 3px solid #3b3f48; box-shadow: inset 0 0 0 1px #14161a, 0 6px 18px rgba(0,0,0,.28); font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace; overflow: hidden; }
+.ledbezel::after { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(0,0,0,.55) 0.9px, transparent 1.1px); background-size: 3px 3px; mix-blend-mode: multiply; opacity: .55; }
+.ledbezel * { text-shadow: 0 0 5px rgba(255, 176, 0, .55); }
+.ledtop { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; } .ledtop > b { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+.ledtabs { margin-left: auto; display: inline-flex; gap: 4px; } .ledtabs button { white-space: nowrap; font: inherit; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: #a86f00; background: transparent; border: 1px solid #4a3a10; border-radius: 4px; padding: 3px 6px; cursor: pointer; } .ledtabs button.on { color: #ffb000; border-color: #ffb000; background: rgba(255,176,0,.1); }
+.ledcols { display: grid; grid-template-columns: 88px minmax(0, 1fr) 54px; gap: 6px; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: #8a5d00; padding: 0 2px 3px; border-bottom: 1px solid #2a2208; } .ledcols span:last-child { text-align: right; }
+.ledrows { list-style: none; margin: 0; padding: 0; } .ledrow { padding: 5px 0 6px; border-bottom: 1px dashed #231c06; } .ledrow:last-child { border-bottom: 0; }
+.ledmain { display: grid; grid-template-columns: 24px 64px minmax(0, 1fr) 54px; gap: 6px; align-items: baseline; width: 100%; background: transparent; border: 0; padding: 0 2px; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ledkind { font-size: 9px; letter-spacing: .04em; border: 1px solid #6b4a00; border-radius: 3px; padding: 0 2px; text-align: center; color: #d99200; } .lednum { font-size: 15px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
+.leddest { font-size: 13px; letter-spacing: .06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.leddelay { font-size: 15px; font-weight: 700; text-align: right; display: inline-flex; justify-content: flex-end; align-items: center; gap: 4px; }
+.ledrow.late .leddelay { color: #ffd24a; text-shadow: 0 0 8px rgba(255, 210, 74, .8); }
+.leddot { width: 7px; height: 7px; border-radius: 50%; background: #ff9a1f; box-shadow: 0 0 6px #ff9a1f; animation: ledblink 1s steps(2, jump-none) infinite; }
+.ledq { display: flex; justify-content: flex-end; gap: 8px; padding: 3px 2px 0 94px; } .ledq button { font: inherit; font-size: 11px; font-weight: 700; color: #ffb000; background: transparent; border: 1px solid #4a3a10; border-radius: 4px; padding: 2px 6px; cursor: pointer; } .ledq button:hover, .ledq button:focus-visible { border-color: #ffb000; background: rgba(255,176,0,.1); } .ledq button { display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; } .ledq small { display: inline; font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: #a86f00; font-weight: 600; }
+.ledfoot { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "clock stat" "marq marq"; gap: 2px 10px; align-items: center; margin-top: 6px; padding-top: 6px; border-top: 1px solid #2a2208; }
+.ledclock { grid-area: clock; font-size: 22px; font-weight: 700; letter-spacing: .06em; color: #ffd24a; } .ledstat { grid-area: stat; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: #a86f00; text-align: right; }
+.ledmarq { grid-area: marq; overflow: hidden; white-space: nowrap; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; } .ledmarq > span { display: inline-block; padding-left: 100%; animation: ledscroll 34s linear infinite; }
+@keyframes ledscroll { to { transform: translateX(-100%); } } @keyframes ledblink { 50% { opacity: .15; } }
+@media (prefers-reduced-motion: reduce) { .ledmarq > span { animation: none; padding-left: 0; } .leddot { animation: none; } }
+
+@media (min-width: 1024px) { .home .aside { max-height: calc(100vh - 92px); overflow-y: auto; scrollbar-width: thin; padding-right: 2px; } }

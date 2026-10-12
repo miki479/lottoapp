@@ -7,13 +7,14 @@ import { parseTrainTripId } from "../_shared/shared/adapters/viaggiatreno.ts";
 import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
-import { TM_PLACES, buildTicketMarkets, isTicket, tmWindow, type TmPlace } from "../_shared/shared/ticks.ts";
+import { tvReference, tvRating, tvUpcoming } from "../_lib/tv.ts";
+import { TM_PLACES, buildTicketMarkets, buildTvMarket, isTicket, isTv, tmWindow, type TmPlace } from "../_shared/shared/ticks.ts";
 import { FUELS, METALS, OIL, buildFuelMarkets, buildMetalMarkets, buildOilMarkets, isFuel, isMetal, isOil, type FuelKey, type MetalKey, type OilKey } from "../_shared/shared/ticks.ts";
 import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildAlertMarkets, alertLevel, alertQueryDate, ALERT_AREAS, ALERT_HAZARDS, ALERT_URL, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
 import { buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, type Fixture, type Geo, type TableRow } from "../_shared/shared/sport.ts";
 import { apiFootball, apiKey, fetchDetails, fetchPlayerFacts, loadTable } from "../_lib/football.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
-import { HOUSE_MARGIN, computeOdds, liveYesProbability } from "../_shared/shared/odds.ts";
+import { DEFAULT_YES_PROBABILITY, computeOdds, learnedPrior, liveYesProbability } from "../_shared/shared/odds.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
 
 const FETCH_TIMEOUT_MS = 25_000;
@@ -112,23 +113,57 @@ async function ingestVehicles(sb: ReturnType<typeof db>, feed: FeedConfig, now: 
   return `ok ${pos.length} pos, ${occ} occ`;
 }
 
-/** A bus or train already running late is likely to still be late at the question's stop: the open delay markets follow the real delay (bets placed keep their odds). */
+/** The chance of "late" learned from settled questions of the same country and category (kept for half an hour). */
+let priorCache: { at: number; map: Map<string, number> } | null = null;
+async function learnedPriors(sb: ReturnType<typeof db>, now: number): Promise<(cityId: string, kind: string) => number> {
+  if (!priorCache || now - priorCache.at > 1800) {
+    const cities = await loadCities();
+    const country = new Map(cities.map((c) => [c.id, c.country]));
+    const byCountry = new Map<string, string[]>();
+    for (const c of cities) byCountry.set(c.country, [...(byCountry.get(c.country) ?? []), c.id]);
+    const map = new Map<string, number>();
+    for (const [cc, ids] of byCountry) for (const kind of ["bus_delay_gt", "train_delay_gt"] as const) {
+      const { data } = await sb.from("markets").select("outcome").eq("kind", kind).eq("status", "resolved").is("params->>ladderOf", null).in("city_id", ids).limit(1000);
+      const n = data?.length ?? 0, yes = (data ?? []).filter((r) => r.outcome === "yes").length;
+      map.set(`${cc}|${kind}`, learnedPrior(yes, n, DEFAULT_YES_PROBABILITY[kind]));
+    }
+    priorCache = { at: now, map };
+    (priorCache as unknown as { country: Map<string, string> }).country = country;
+  }
+  const country = (priorCache as unknown as { country: Map<string, string> }).country;
+  return (cityId, kind) => priorCache!.map.get(`${country.get(cityId) ?? ""}|${kind}`) ?? DEFAULT_YES_PROBABILITY[kind as "bus_delay_gt"] ?? 0.3;
+}
+
+/**
+ * A bus or train already running late is likely to still be late at the question's stop: the open delay markets follow the real delay
+ * (bets placed keep their odds). Questions with no reading yet get the starting chance learned for their country, if they still carry an old price.
+ */
 async function repriceDelays(sb: ReturnType<typeof db>): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  const priorOf = await learnedPriors(sb, now);
   const { data, error } = await sb.rpc("live_pricing_inputs");
   if (error) throw new Error(error.message);
-  const rows = (data ?? []) as { market_id: string; kind: string; threshold_sec: number; target_seq: number; obs_seq: number; delay_sec: number; odds_yes: number; odds_no: number; flash_multiplier: number; p_prior: number | null }[];
+  const rows = (data ?? []) as { market_id: string; city_id: string; kind: string; threshold_sec: number; target_seq: number; obs_seq: number; delay_sec: number; odds_yes: number; odds_no: number; flash_multiplier: number }[];
   const out: { id: string; prior: number; yes: number; no: number }[] = [];
+  const live = new Set<string>();
   for (const r of rows) {
-    // the starting quote (before any live move, without a flash multiplier) is what history said
-    const prior = r.p_prior ?? Math.min(0.97, Math.max(0.03, (1 - HOUSE_MARGIN) / (Number(r.odds_yes) / Math.max(1, Number(r.flash_multiplier)))));
+    live.add(r.market_id);
+    const prior = priorOf(r.city_id, r.kind);
     const p = liveYesProbability(prior, r.delay_sec, r.threshold_sec, r.target_seq - r.obs_seq, r.kind === "train_delay_gt");
     const o = computeOdds(p);
     const cur = Number(r.odds_yes) / Math.max(1, Number(r.flash_multiplier));
     if (Math.abs(o.yes - cur) / cur < 0.03 && Math.abs(o.no - Number(r.odds_no)) < 0.03) continue;
     out.push({ id: r.market_id, prior, yes: o.yes, no: o.no });
   }
+  let stale = 0;
+  const { data: old } = await sb.rpc("stale_prior_markets");
+  for (const r of (old ?? []) as { market_id: string; city_id: string; kind: string; odds_yes: number }[]) {
+    if (live.has(r.market_id)) continue;
+    const prior = priorOf(r.city_id, r.kind), o = computeOdds(prior);
+    out.push({ id: r.market_id, prior, yes: o.yes, no: o.no }); stale++;
+  }
   if (out.length) { const { error: e2 } = await sb.rpc("apply_live_odds", { p: out }); if (e2) throw new Error(e2.message); }
-  return `ok ${out.length}/${rows.length}`;
+  return `ok ${out.length}/${rows.length} (${stale} restarted)`;
 }
 
 /** Road traffic stations (Digitraffic, Finland): hourly average speed per direction, kept per hour; rush-hour questions are created from the same list. */
@@ -574,6 +609,11 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       const tmDue = [...need.keys()].filter(isTicket).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
       for (const { x, at } of tmDue.slice(0, 8)) { const w = tmWindow(at), v = await tmCount(x.slice(3) as TmPlace, w.from, w.to); if (v !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); await new Promise((r) => setTimeout(r, 250)); }
     } catch (e) { notes.push(`tm: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      // TV episode ratings: asked three days after the episode aired (a rating changes slowly, so any minute of the window will do)
+      const tvDue = [...need.keys()].filter(isTv).flatMap((x) => todo(x).filter((at) => now - at <= 5 * 3600).map((at) => ({ x, at })));
+      for (const { x, at } of tvDue.slice(0, 10)) { const v = await tvRating(Number(x.slice(3))); if (v !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); await new Promise((r) => setTimeout(r, 250)); }
+    } catch (e) { notes.push(`tv: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     // fuel and oil are published once a day: look every 10 minutes, and the day's file must be the one the question is about
     if (Math.floor(now / 60) % 10 === 0) {
       try {
@@ -643,6 +683,24 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
         for (const id of Object.keys(TM_PLACES) as TmPlace[]) { const n = await tmCount(id, w.from, w.to); if (n !== null) counts[id] = n; await new Promise((r) => setTimeout(r, 250)); }
         markets.push(...buildTicketMarkets(counts, now)); ok++;
       } catch (e) { notes.push(`tm: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    }
+    // Once a day (07:00 UTC), or when none is open: new episodes of well-known shows airing in the next three days, asked "will its TVmaze rating be at least ...?"
+    {
+      const tvOpen = (await sb.from("markets").select("id", { count: "exact", head: true }).like("feed_id", "tick-tv:%").eq("status", "open").gt("closes_at", new Date(now * 1000).toISOString())).count ?? 0;
+      if (tvOpen === 0 || Math.floor(now / 3600) % 24 === 7) {
+        try {
+          let made = 0;
+          for (const s of (await tvUpcoming(3, now)).slice(0, 14)) {
+            if (made >= 8) break;
+            const air = Date.parse(s.episode.airstamp!) / 1000, ref = await tvReference(s.showId, s.episode.airstamp!);
+            if (ref === null) continue;
+            for (const thr of [Math.round(ref * 10) / 10, Math.round((ref + 0.5) * 10) / 10]) markets.push(buildTvMarket({ showId: s.showId, showName: s.showName, episodeId: s.episode.id, season: s.episode.season, number: s.episode.number, airstamp: air, reference: ref, threshold: thr, now }));
+            made++;
+            await new Promise((r) => setTimeout(r, 250));
+          }
+          notes.push(`tv ${made} episodes`); ok++;
+        } catch (e) { notes.push(`tv: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+      }
     }
     if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
     notes.push(`${markets.length} offered`);

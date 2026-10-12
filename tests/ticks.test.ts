@@ -232,3 +232,16 @@ describe("concert counts (Ticketmaster)", () => {
     for (const m of ms) { expect(m.params.threshold).toBeGreaterThan(m.params.now as number); expect(m.params.from).toBe(tmWindow(Date.parse(m.target_at) / 1000).from); expect(m.odds_yes).toBeGreaterThanOrEqual(1.1); expect(m.category).toBe("culture"); }
   });
 });
+
+import { buildTvMarket, isTv } from "../shared/ticks.ts";
+describe("TV episode ratings", () => {
+  it("is asked three days after the episode airs, priced around the recent score", () => {
+    expect(isTv("tv:3767919")).toBe(true); expect(isTv("tv:abc")).toBe(false);
+    const air = Date.UTC(2026, 9, 14, 1) / 1000, now = Date.UTC(2026, 9, 12, 12) / 1000;
+    const m = buildTvMarket({ showId: 1, showName: "Show", episodeId: 99, season: 5, number: 8, airstamp: air, reference: 7.8, threshold: 7.8, now });
+    expect(Date.parse(m.target_at) / 1000).toBe(air + 72 * 3600);
+    expect(m.category).toBe("culture"); expect(m.params).toMatchObject({ series: "tv:99", showId: 1, season: 5, number: 8, digits: 1 });
+    expect(Math.abs(m.odds_yes - m.odds_no)).toBeLessThan(0.6);
+    expect(Date.parse(m.closes_at)).toBeLessThanOrEqual(Date.parse(m.target_at));
+  });
+});

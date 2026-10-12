@@ -13,6 +13,7 @@ export interface MetricQ { metric: MetricKey; city: string; time: string; value:
 export type MatchBetKey = import("../../../shared/sport.ts").MatchBet;
 export interface MatchQ { bet: MatchBetKey; home: string; away: string; time: string }
 export interface ConcertsQ { place: string; from: string; to: string; value: string; time: string }
+export interface EpisodeQ { show: string; ep: string; value: string; date: string }
 export interface TickQ { kind: "price" | "kp" | "wiki" | "players" | "storm" | "alert" | "fuel" | "oil"; label: string; value: string; time: string; from: string; to: string; day: string }
 export interface FullQ { occ: "empty" | "few" | "standing"; route: string; stop: string; time: string }
 export interface TrafficQ { site: string; toward: string; from: string; to: string; kmh: number }
@@ -36,8 +37,10 @@ export interface Messages {
   traffic: { threshold: (kmh: number) => string; jam: string; flow: string };
   /** How full a bus is (GTFS-RT occupancy levels 0..5). */
   occ: { title: string; levels: string[] };
+  /** TV series: bets on the rating of an episode. */
+  series: { cta: string; title: string; body: string; search: string; followed: string; follow: string; unfollow: string; noEpisodes: string; pickEpisode: string; threshold: string; priced: (ref: string, chance: number, yes: string, no: string) => string; create: string; creating: string; credit: string; certain: string; register: string; noRatings: string; time: string; limit: string; mine: string; all: string };
   /** The board of Italian trains running now (Home). */
-  board: { title: string; following: (n: number) => string; meter: string; over5: string; avg: string; late: string; odds: string; worse: string; better: string; steady: string; kinds: { hs: string; ic: string; rg: string } };
+  board: { title: string; following: (n: number) => string; meter: string; over5: string; avg: string; late: string; odds: string; worse: string; better: string; steady: string; kinds: { hs: string; ic: string; rg: string }; heads: { train: string; to: string; delay: string }; marquee: string; short: { hs: string; ic: string; rg: string } };
   /** Map of the vehicle behind an open bet. */
   map: { title: string; show: string; hide: string; none: string; estimated: string; stop: string; vehicle: string; updated: (sec: number) => string; credit: string };
   /** The "how full will it be?" bonus on a delay bet. */
@@ -71,7 +74,7 @@ export interface Messages {
   maker: { open: string; title: string; hint: string; tabs: Record<"weather" | "crypto" | "games" | "culture" | "quake", string>; place: string; metric: string; day: string; today: string; tomorrow: string; hour: string; line: string; now: string; forecastLbl: string; when: string; pickOne: string; in_h: string; midnightToday: string; midnightTomorrow: string; odds: string; chance: string; create: string; creating: string; needAccount: string; errors: Record<"limit" | "too_many_open" | "full" | "too_certain" | "bad_time" | "source_unavailable" | "generic", string>; by: (n: string) => string; trending: string; trendingNear: string; share: string; copied: string; shareText: string };
   chart: { title: string; min: string; max: string; change: string; above: string };
   quips: Record<"bus" | "train" | "rain" | "temp" | "wind" | "snow" | "uv" | "aqi" | "quake" | "strike" | "traffic" | "price" | "kp" | "wiki" | "game" | "sport" | "storm" | "hail" | "alert" | "metal" | "fuel" | "oil", string[]>;
-  question: { concerts: (q: ConcertsQ) => string; full: (q: FullQ) => string; bus: (q: BusQ) => string; train: (q: BusQ) => string; rain: (q: RainQ) => string; metric: (q: MetricQ) => string; quake: (q: QuakeQ) => string; strike: (q: StrikeQ) => string; traffic: (q: TrafficQ) => string; tick: (q: TickQ) => string; match: (q: MatchQ) => string; player: (q: { kind: "pg" | "pa" | "ps"; name: string; home: string; away: string; time: string }) => string };
+  question: { episode: (q: EpisodeQ) => string; concerts: (q: ConcertsQ) => string; full: (q: FullQ) => string; bus: (q: BusQ) => string; train: (q: BusQ) => string; rain: (q: RainQ) => string; metric: (q: MetricQ) => string; quake: (q: QuakeQ) => string; strike: (q: StrikeQ) => string; traffic: (q: TrafficQ) => string; tick: (q: TickQ) => string; match: (q: MatchQ) => string; player: (q: { kind: "pg" | "pa" | "ps"; name: string; home: string; away: string; time: string }) => string };
   sheet: { title: string; pick: string; stake: string; potential: string; confirm: string; confirming: string; odds: string; placed: (win: string) => string };
   bets: { title: string; tabs: { open: string; settled: string }; open: string; won: string; lost: string; void: string; empty: { title: string; body: string; cta: string }; yourPick: (yes: boolean) => string; settles: string; voidReason: Record<string, string>; details: string };
   result: {

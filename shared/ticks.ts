@@ -46,6 +46,8 @@ export function tmWindow(at: number): { from: string; to: string } {
   const start = Math.floor(at / 86400) * 86400 + 2 * 86400, iso = (e: number) => new Date(e * 1000).toISOString().replace(/\.\d+Z$/, "Z");
   return { from: iso(start), to: iso(start + 28 * 86400 - 1) };
 }
+/** The rating TVmaze shows for one episode (series "tv:<episode id>"): asked again three days after it airs. */
+export const isTv = (s: string) => /^tv:\d+$/.test(s);
 export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isStorm(s) || isMetal(s) || isTicket(s);
 
 /** Saffir-Simpson scale by sustained wind in knots (1 min average), as NHC reports it. */
@@ -62,6 +64,7 @@ export function tickDef(series: string): TickDef | null {
   if (isAlert(series)) return { category: "nature", label: "Allerta", unit: "", min: 0, max: 3 };
   if (isStorm(series)) return { category: "nature", label: "Storm", unit: " kt", min: 0, max: 200 };
   if (isSteam(series)) return { category: "culture", label: STEAM[series.slice(6) as keyof typeof STEAM], unit: "", min: 0, max: 100_000_000 };
+  if (isTv(series)) return { category: "culture", label: "Voto episodio", unit: "", min: 0.5, max: 10 };
   if (isTicket(series)) return { category: "culture", label: `Concerti ${TM_PLACES[series.slice(3) as TmPlace].label}`, unit: "", min: 0, max: 100_000 };
   if (series === "kp") return { category: "nature", label: "Kp", unit: "", min: 0, max: 9 };
   if (series.startsWith("wiki:")) return { category: "culture", label: series.slice(5).replace(/_/g, " "), unit: "", min: 0, max: 200_000_000 };
@@ -71,7 +74,7 @@ export function tickDef(series: string): TickDef | null {
 export interface TickMarketInsert {
   city_id: "world"; category: TickCategory; kind: "tick_gt"; feed_id: string;
   lat?: number; lon?: number;
-  params: { series: string; label: string; threshold: number; unit: string; forecast: number; at: number; note?: string; digits?: number; local?: "true"; from?: string; to?: string; now?: number };
+  params: { series: string; label: string; threshold: number; unit: string; forecast: number; at: number; note?: string; digits?: number; local?: "true"; from?: string; to?: string; now?: number; showId?: number; season?: number; number?: number; epId?: number; aired?: number };
   closes_at: string; target_at: string; deadline_at: string; odds_yes: number; odds_no: number; dedupe_key: string;
 }
 
@@ -161,6 +164,7 @@ export function tickSigma(series: string, ref: number, hours: number): number {
   if (isFuel(series)) return ref * 0.002 * Math.sqrt(Math.max(1, hours / 24));
   if (isOil(series)) return ref * 0.0185 * Math.sqrt(Math.max(1, hours / 24));
   if (isSteam(series)) return ref * 0.07 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4);
+  if (isTv(series)) return 0.45;
   if (isTicket(series)) return Math.max(1.2, ref * 0.02 * Math.sqrt(Math.max(1, hours) / 24));
   return ref * 0.15;
 }
@@ -171,6 +175,7 @@ export function tickStep(series: string, ref: number): number {
   if (isMetal(series)) return METALS[series.slice(6) as MetalKey].step;
   if (isFuel(series)) return 0.005;
   if (isOil(series)) return 0.5;
+  if (isTv(series)) return 0.1;
   if (isTicket(series)) return 1;
   if (isSteam(series)) return ref >= 500_000 ? 25_000 : ref >= 100_000 ? 10_000 : ref >= 20_000 ? 1_000 : 500;
   return ref >= 200_000 ? 10_000 : ref >= 50_000 ? 5_000 : ref >= 10_000 ? 1_000 : 500;
@@ -350,4 +355,14 @@ export function buildTicketMarkets(counts: Partial<Record<TmPlace, number>>, now
     out.push({ ...m, params: { ...m.params, from: win.from, to: win.to, now: n } });
   }
   return out;
+}
+
+export interface TvArgs { showId: number; showName: string; episodeId: number; season: number; number: number; airstamp: number; reference: number; threshold: number; now: number }
+/** The TVmaze rating three days after an episode airs: "at least <threshold>?" priced around the show's recent episodes. */
+export function buildTvMarket(a: TvArgs): TickMarketInsert {
+  const series = `tv:${a.episodeId}`, def = tickDef(series)!;
+  const at = a.airstamp + 72 * H;
+  const closes = Math.min(at - 6 * H, Math.max(a.now + 15 * 60, a.airstamp));
+  const m = tickMarket(series, def, a.reference, a.threshold, tickSigma(series, a.reference, 72), at, Math.max(closes, a.now + 10 * 60), at + 6 * H);
+  return { ...m, params: { ...m.params, label: a.showName, showId: a.showId, season: a.season, number: a.number, epId: a.episodeId, aired: a.airstamp, digits: 1 } };
 }

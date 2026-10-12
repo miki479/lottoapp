@@ -12,8 +12,9 @@ import { Car, Coins, Globe, ListChecks, MapPin, SlidersHorizontal, Sparkles, Thu
 import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
-import { ChevronDown, Flame, Plus, Search } from "lucide-preact";
+import { ChevronDown, Flame, Plus, Search, Tv } from "lucide-preact";
 import { TrainBoard } from "../components/TrainBoard.tsx";
+import { followedShows, type FollowedShow } from "../lib/series.ts";
 import { FEATURED_CITY_IDS, FEATURED_PLACES, type Place } from "../lib/places.ts";
 import type { MarketRow } from "../lib/format.ts";
 import type { LiveDelay, LiveOcc, Pick, Progress } from "../lib/types.ts";
@@ -27,7 +28,7 @@ export interface Trend { id: string; name: string; country: string; place?: Plac
 export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>; occ: Record<string, LiveOcc>;
   cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null;
-  onQuakeMaker: () => void; onCreate: () => void; registered: boolean; onAuth: () => void; italian: boolean; nearNode?: preact.ComponentChildren; nearbyNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
+  onQuakeMaker: () => void; onSeries: (s?: FollowedShow) => void; onCreate: () => void; registered: boolean; onAuth: () => void; italian: boolean; nearNode?: preact.ComponentChildren; nearbyNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
   stale?: boolean; details: boolean; friendBets: Record<string, number>;
   attributions: { name: string; via?: string; license: string; licenseUrl: string; url: string }[]; installEvt: Event | null;
 }
@@ -60,7 +61,9 @@ export function Home(p: HomeProps) {
   const norm = (x: string) => x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const sportQ = p.cat === "sport" ? norm(teamQ.trim()) : "";
   const picked2 = sportQ ? picked.filter((m) => norm(`${m.params.home ?? ""} ${m.params.away ?? ""} ${m.params.league ?? ""}`).includes(sportQ)) : picked;
-  const shown0 = picked2;
+  const [seriesSel, setSeriesSel] = useState<number | null>(null);
+  const followed = p.cat === "culture" ? followedShows() : [];
+  const shown0 = seriesSel !== null && p.cat === "culture" ? picked2.filter((m) => Number(m.params.showId) === seriesSel) : picked2;
   const shown = p.cat === "nature" ? [...shown0].sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at) || Number(a.params.minMag) - Number(b.params.minMag)) : shown0;
   const topId = shown.reduce<MarketRow | null>((b, m) => (!b || Number(m.odds_yes) > Number(b.odds_yes) ? m : b), null)?.id;
   const cities = CITIES.filter((c) => enabledCategories(c).length > 0);
@@ -90,7 +93,7 @@ export function Home(p: HomeProps) {
             <TopCards items={p.top} />
           </section>
         )}
-        {p.italian && <TrainBoard open={!phone} markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} />}
+        {p.italian && <TrainBoard markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} />}
       </div>
       <div class="main stack">
         <h2 class="steplabel">{msg.home.whatLabel}</h2>
@@ -121,6 +124,15 @@ export function Home(p: HomeProps) {
           <div class="evacts"><button class="createbtn" onClick={p.onCreate}><Plus size={16} />{msg.maker.open}</button>
         </div></div>
         {filterOpen && <FilterSheet msg={msg} options={wxKinds.map((k) => ({ key: k, count: p.list.filter((m) => wxKey(m) === k).length }))} value={wx} onPick={setWx} onClose={() => setFilterOpen(false)} />}
+        {p.cat === "culture" && (
+          <>
+            <button class="btn secondary quakecta" onClick={() => p.onSeries()}><Tv size={18} />{msg.series.cta}</button>
+            {followed.length > 0 && <div class="mkchips wrap" role="tablist" aria-label={msg.series.mine}>
+              <button role="tab" aria-selected={seriesSel === null} class={`mkchip ${seriesSel === null ? "on" : ""}`} onClick={() => setSeriesSel(null)}>{msg.series.all}</button>
+              {followed.map((f) => <button key={f.id} role="tab" aria-selected={seriesSel === f.id} class={`mkchip ${seriesSel === f.id ? "on" : ""}`} onClick={() => setSeriesSel(seriesSel === f.id ? null : f.id)} onDblClick={() => p.onSeries(f)}>{f.name}</button>)}
+            </div>}
+          </>
+        )}
         {p.cat === "nature" && <button class="btn secondary quakecta" onClick={p.onQuakeMaker}><MapPin size={18} />{msg.quakeMaker.cta}</button>}
         {p.cat === "sport" && <label class="searchbox"><Search size={18} /><input class="field" type="search" value={teamQ} placeholder={msg.teamSearch} onInput={(e) => setTeamQ((e.target as HTMLInputElement).value)} /></label>}
         {p.cat === "sport" && p.markets !== null && <MatchList matches={groupMatches(shown)} msg={msg} locale={p.locale} onPick={p.onPick} registered={p.registered} onAuth={p.onAuth} details={p.details} friendBets={p.friendBets} />}

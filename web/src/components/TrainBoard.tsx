@@ -1,24 +1,24 @@
-import { ArrowDownRight, ArrowUpRight, Minus, TrainFront } from "lucide-preact";
 import { useMemo, useState } from "preact/hooks";
-import { Collapse } from "./Collapse.tsx";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { fmtOdds, type MarketRow } from "../lib/format.ts";
 import type { LiveDelay, Pick } from "../lib/types.ts";
 
+/** At most this many trains on the board, like the rows of a real one. */
+const MAX_ROWS = 6, MAX_ROWS_PHONE = 4;
+
 /** "FR 9516" / "REG 3935": the kind of train from the code in front of the number. */
-function kindOf(routeName: unknown, msg: Messages): { label: string; cls: string; num: string } {
+function kindOf(routeName: unknown, msg: Messages): { short: string; num: string } {
   const [code = "", ...rest] = String(routeName ?? "").trim().split(/\s+/);
-  const num = rest.join(" ") || code;
   const up = code.toUpperCase();
   const cls = /^(FR|FA|FB|ES|ITA|NTV|EC|EN)/.test(up) ? "hs" : /^(IC|ICN)/.test(up) ? "ic" : "rg";
-  return { label: msg.board.kinds[cls as "hs"], cls, num };
+  return { short: msg.board.short[cls as "hs"], num: rest.join(" ") || code };
 }
 
 /**
- * A departures-board style table of the Italian trains running now: how late they are, whether it is getting worse, and what each side pays.
+ * The Italian trains running now, drawn like a station departures board: black panel, amber lights, how late each one is and what each side pays.
  * Built only from what the app already knows (open questions + live delays). Tapping a row opens the bet.
  */
-export function TrainBoard(p: { markets: MarketRow[]; live: Record<string, LiveDelay>; msg: Messages; locale: Locale; now: number; open?: boolean; onPick: (m: MarketRow, pick: Pick) => void }) {
+export function TrainBoard(p: { markets: MarketRow[]; live: Record<string, LiveDelay>; msg: Messages; locale: Locale; now: number; onPick: (m: MarketRow, pick: Pick) => void }) {
   const { msg } = p;
   const [tab, setTab] = useState<"late" | "odds">("late");
   const rows = useMemo(() => {
@@ -38,38 +38,42 @@ export function TrainBoard(p: { markets: MarketRow[]; live: Record<string, LiveD
   if (rows.length < 3) return null;
   const late5 = rows.filter((r) => r.delay > 300).length;
   const avg = Math.max(0, Math.round(rows.reduce((a, r) => a + Math.max(0, r.delay), 0) / rows.length / 60));
-  const sorted = [...rows].sort((a, b) => (tab === "late" ? b.delay - a.delay : Math.max(Number(b.m.odds_yes), Number(b.m.odds_no)) - Math.max(Number(a.m.odds_yes), Number(a.m.odds_no)))).slice(0, 8);
-  const mins = (s: number) => (s < 0 ? `${Math.round(s / 60)}` : `+${Math.round(s / 60)}`);
+  const sorted = [...rows].sort((a, b) => (tab === "late" ? b.delay - a.delay : Math.max(Number(b.m.odds_yes), Number(b.m.odds_no)) - Math.max(Number(a.m.odds_yes), Number(a.m.odds_no)))).slice(0, typeof matchMedia === "function" && matchMedia("(max-width: 720px)").matches ? MAX_ROWS_PHONE : MAX_ROWS);
+  const clock = new Intl.DateTimeFormat("it-IT", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Europe/Rome" }).format(new Date(p.now));
   return (
-    <section class="tboard card" aria-label={msg.board.title}>
-      <Collapse id="tboard" title={msg.board.title} count={rows.length} open={p.open}>
-      <p class="tbsub"><TrainFront size={14} /> {msg.board.following(rows.length)}</p>
-      <div class="tbmeter" role="group" aria-label={msg.board.meter}>
-        <span><b class="num">{Math.round((late5 / rows.length) * 100)}%</b>{msg.board.over5}</span>
-        <span><b class="num">{avg} min</b>{msg.board.avg}</span>
+    <section class="led" aria-label={msg.board.title}>
+      <div class="ledbezel">
+        <header class="ledtop">
+          <b>{msg.board.title}</b>
+          <span class="ledtabs" role="tablist">{(["late", "odds"] as const).map((k) => <button key={k} role="tab" aria-selected={tab === k} class={tab === k ? "on" : ""} onClick={() => setTab(k)}>{msg.board[k]}</button>)}</span>
+        </header>
+        <div class="ledcols" aria-hidden="true"><span>{msg.board.heads.train}</span><span>{msg.board.heads.to}</span><span>{msg.board.heads.delay}</span></div>
+        <ul class="ledrows">
+          {sorted.map(({ m, delay, trend }) => {
+            const k = kindOf(m.params.routeName, msg);
+            const dir = (String(m.params.headsign ?? "") || String(m.params.stopName ?? "")).toUpperCase();
+            const min = Math.round(delay / 60);
+            return (
+              <li key={m.id} class={`ledrow ${delay > 300 ? "late" : ""}`}>
+                <button class="ledmain" onClick={() => p.onPick(m, "yes")} aria-label={`${k.short} ${k.num} ${dir} ${min} min`}>
+                  <span class="ledkind">{k.short}</span><span class="lednum">{k.num}</span>
+                  <span class="leddest">{dir}</span>
+                  <span class="leddelay">{min > 0 ? `${min}’` : "—"}{trend > 60 && <i class="leddot" title={msg.board.worse} />}</span>
+                </button>
+                <span class="ledq">
+                  <button onClick={() => p.onPick(m, "yes")}><small>{msg.card.late}</small> ×{fmtOdds(Number(m.odds_yes), p.locale)}</button>
+                  <button onClick={() => p.onPick(m, "no")}><small>{msg.card.onTime}</small> ×{fmtOdds(Number(m.odds_no), p.locale)}</button>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <footer class="ledfoot">
+          <span class="ledclock num" aria-label={clock}>{clock}</span>
+          <span class="ledstat">{Math.round((late5 / rows.length) * 100)}% {msg.board.over5} · {avg}’ {msg.board.avg}</span>
+          <span class="ledmarq" aria-hidden="true"><span>{msg.board.marquee} · {msg.board.marquee}</span></span>
+        </footer>
       </div>
-      <div class="mkchips" role="tablist">{(["late", "odds"] as const).map((k) => <button key={k} role="tab" aria-selected={tab === k} class={`mkchip ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{msg.board[k]}</button>)}</div>
-      <ul class="tbrows">
-        {sorted.map(({ m, delay, trend }) => {
-          const k = kindOf(m.params.routeName, msg);
-          const dir = String(m.params.headsign ?? "") || String(m.params.stopName ?? "");
-          const T = trend > 60 ? ArrowUpRight : trend < -60 ? ArrowDownRight : Minus;
-          return (
-            <li key={m.id} class="tbrow">
-              <button class="tbmain" onClick={() => p.onPick(m, "yes")} aria-label={`${k.label} ${k.num} ${dir}`}>
-                <span class={`tbkind ${k.cls}`}>{k.label}</span><b class="tbnum">{k.num}</b>
-                <span class="tbdir">{dir}</span>
-              </button>
-              <span class={`tbdelay num ${delay > 300 ? "late" : delay < 60 ? "ok" : ""}`} title={trend > 60 ? msg.board.worse : trend < -60 ? msg.board.better : msg.board.steady}>{mins(delay)}′<T size={14} aria-hidden="true" /></span>
-              <span class="tbodds">
-                <button class="tbq late" onClick={() => p.onPick(m, "yes")}><small>{msg.card.late}</small><b class="num">{fmtOdds(Number(m.odds_yes), p.locale)}</b></button>
-                <button class="tbq ok" onClick={() => p.onPick(m, "no")}><small>{msg.card.onTime}</small><b class="num">{fmtOdds(Number(m.odds_no), p.locale)}</b></button>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-      </Collapse>
     </section>
   );
 }

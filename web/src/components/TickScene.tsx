@@ -6,9 +6,22 @@ type Hint = "yes" | "no" | null | undefined;
 /** Scenes of the "number at an instant" questions: a coin price chart, an aurora sky (Kp index) and page-view bars. */
 export function TickScene({ m, hint, msg }: { m: MarketRow; hint: Hint; msg: Messages }) {
   const series = String(m.params.series ?? "");
-  const kind = series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("storm:") ? "storm" : series.startsWith("alert:") ? "alert" : series.startsWith("metal:") ? "metal" : series.startsWith("fuel:") ? "fuel" : series.startsWith("oil:") ? "oil" : series.startsWith("tm:") ? "concert" : "price";
+  const kind = series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("storm:") ? "storm" : series.startsWith("alert:") ? "alert" : series.startsWith("metal:") ? "metal" : series.startsWith("fuel:") ? "fuel" : series.startsWith("oil:") ? "oil" : series.startsWith("tm:") ? "concert" : /^tv:\d+$/.test(series) ? "tv" : "price";
   const cls = `mscene tick ${kind} ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`;
   const cap = kind === "kp" ? "Kp ≥ " + m.params.threshold : msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? "");
+  if (kind === "tv") {
+    const stars = hint === "yes" ? 5 : hint === "no" ? 2 : 3;
+    return (
+      <div class={cls} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="84" fill="#1b1740" />
+          <g class="tv-set"><rect x="102" y="8" width="116" height="60" rx="9" fill="#2c2760" /><rect x="110" y="15" width="100" height="46" rx="5" fill="#0d0b25" /><path class="tv-glow" d="M110 15h100v46H110z" fill="#7aa2ff" opacity=".18" /><path d="M148 68h24l6 8h-36z" fill="#2c2760" /></g>
+          <g class="tv-stars" fill="#ffd24a">{[0, 1, 2, 3, 4].map((i) => <path key={i} class={`tv-star ${i < stars ? "on" : ""}`} style={`--k:${i}`} transform={`translate(${126 + i * 16} 38)`} d="M0-7L2 -2H7L3 1.500 4.500 6.500 0 3.500-4.500 6.500-3 1.500-7-2H-2Z" />)}</g>
+        </svg>
+        <b>{cap}</b>
+      </div>
+    );
+  }
   if (kind === "concert") {
     const crowd = hint === "yes" ? 9 : hint === "no" ? 3 : 6;
     return (
