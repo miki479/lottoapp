@@ -6,7 +6,7 @@ import { parseTrainTripId } from "../_shared/shared/adapters/viaggiatreno.ts";
 import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
-import { CRYPTO, WIKI_ARTICLES, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
+import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
 
@@ -354,6 +354,14 @@ async function fetchPrices(): Promise<Partial<Record<CryptoSeries, number>>> {
   return out;
 }
 
+async function steamCounts(): Promise<Record<string, number>> {
+  const out: Record<string, number> = {};
+  for (const id of Object.keys(STEAM)) {
+    try { const j = await getJson(`https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${id}`); const n = j?.response?.player_count; if (typeof n === "number" && n > 0) out[id] = n; } catch { /* skip this game */ }
+  }
+  return out;
+}
+
 async function kpSeries(): Promise<{ observed: Map<number, number>; predicted: Map<number, number> }> {
   const rows = (await getJson(KP_URL)) as { time_tag: string; kp: number; observed: string }[];
   const observed = new Map<number, number>(), predicted = new Map<number, number>();
@@ -392,6 +400,10 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       if (cryptoDue.length) { const prices = await fetchPrices(); for (const { s, at } of cryptoDue) if (prices[s] !== undefined) rows.push({ series: s, at: new Date(at * 1000).toISOString(), value: prices[s], fetched_at: fetchedAt }); }
     } catch (e) { notes.push(`crypto: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
+      const steamDue = [...need.keys()].filter((x) => x.startsWith("steam:")).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (steamDue.length) { const c = await steamCounts(); for (const { x, at } of steamDue) { const v = c[x.slice(6)]; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
+    } catch (e) { notes.push(`steam: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
       const kpDue = todo("kp");
       if (kpDue.length) { const { observed } = await kpSeries(); for (const at of kpDue) { const v = observed.get(at - 3 * 3600); if (v !== undefined) rows.push({ series: "kp", at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
     } catch (e) { notes.push(`kp: ${String((e as Error).message ?? e).slice(0, 80)}`); }
@@ -411,6 +423,8 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     const markets: Record<string, unknown>[] = [];
     let ok = 0;
     try { markets.push(...buildCryptoMarkets(await fetchPrices(), now)); ok++; } catch (e) { notes.push(`prices: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    let steamNow: Record<string, number> = {};
+    try { steamNow = await steamCounts(); markets.push(...buildSteamMarkets(steamNow, now)); ok++; } catch (e) { notes.push(`steam: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try { markets.push(...buildKpMarkets((await kpSeries()).predicted, now)); ok++; } catch (e) { notes.push(`kp: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
       const means: Record<string, number> = {};
@@ -422,6 +436,24 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     } catch (e) { notes.push(`wiki: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
     notes.push(`${markets.length} offered`);
+    // History for the charts: coin prices by the hour (last ~2 days), Kp by 3-hour window, page views by day.
+    try {
+      const hist: Record<string, unknown>[] = [];
+      for (const k of Object.keys(CRYPTO) as CryptoSeries[]) {
+        const j = await getJson(`https://api.coingecko.com/api/v3/coins/${CRYPTO[k].id}/market_chart?vs_currency=usd&days=3`);
+        const byHour = new Map<number, number>();
+        for (const [t, v] of (j?.prices ?? []) as [number, number][]) if (typeof v === "number") byHour.set(Math.floor(t / 3_600_000) * 3600, v);
+        for (const [at, value] of byHour) hist.push({ series: `px:${k}`, at: new Date(at * 1000).toISOString(), value: Math.round(value * 100) / 100 });
+      }
+      for (const [id, n] of Object.entries(steamNow)) hist.push({ series: `steam:${id}`, at: new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString(), value: n });
+      const { observed } = await kpSeries();
+      for (const [at, value] of observed) hist.push({ series: "kp", at: new Date(at * 1000).toISOString(), value });
+      for (const t of WIKI_ARTICLES) {
+        try { for (const [d, v] of await wikiViews(t, now - 15 * 86400, now - 86400)) hist.push({ series: `wiki:${t}`, at: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}T00:00:00Z`, value: v }); } catch { /* chart just stays shorter */ }
+      }
+      for (let i = 0; i < hist.length; i += 500) await sb.from("tick_history").upsert(hist.slice(i, i + 500), { onConflict: "series,at" });
+      notes.push(`${hist.length} history`);
+    } catch (e) { notes.push(`history: ${String((e as Error).message ?? e).slice(0, 60)}`); }
     if (ok > 0) await sb.from("feed_health").upsert({ feed_id: "ticks", last_ok_at: new Date().toISOString(), last_error: null });
     else await sb.from("feed_health").upsert({ feed_id: "ticks", last_error: notes.join("; ").slice(0, 300), last_error_at: new Date().toISOString() });
   }

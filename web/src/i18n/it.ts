@@ -35,7 +35,9 @@ const it: Messages = {
   places: { more: "Altre città", title: "Meteo di una città", hint: "Cerca qualsiasi città o paese: aprono subito le domande sulla pioggia.", search: "Cerca una città…", recent: "Le tue ultime", capitals: "Capoluoghi di regione", famous: "Città famose nel mondo", withData: "Con bus, treni e meteo", none: "Nessun risultato. Prova a scrivere il nome per intero.", searchError: "Non riesco a cercare adesso. Riprova.", limit: "Hai già aggiunto 5 nuove città oggi. Riprova domani o scegline una già presente.", full: "Troppe città attive in questo momento. Scegline una già presente.", credit: "Ricerca città: Open-Meteo.com (CC BY 4.0). Solo meteo, per ora." },
   top: { late: "Più in ritardo ora", popular: "Più giocato", city: "Città più in ritardo", closing: "Chiude tra poco", avg: (m) => `${m} min di ritardo medio`, players: (n) => (n === 1 ? "1 puntata" : `${n} puntate`), ontime: "In orario", open: "Apri" },
   card: { late: "In ritardo", onTime: "In orario", per10: (w) => `10 → ${w}`, closes: "Chiude", forecast: "previsto", live: "In diretta", yes: "Sì", no: "No", over: (m) => `oltre ${m} min`, topOdds: "Top quota", hot: "Chiude presto" },
+  chart: { title: "Andamento", min: "Min", max: "Max", change: "Variazione", above: "Sopra la soglia" },
   quips: {
+    game: ["Un videogioco non invecchia: si aggiorna e ti ruba il sabato.","Ready Player One? Ready Player Mille.","I server reggono. Il tuo weekend meno.","Un'altra partita e poi dormo. Mentiva."],
     bus: ["Il bus è come il wifi dell'aeroporto: c'è, ma non quando serve.", "Scommessa sul bus: l'unico investimento in cui aspettare è già incluso.", "Il bus arriva quando smetti di guardare il telefono. Probabilmente.", "Orario indicativo, come le promesse elettorali."],
     train: ["I treni sono sempre in orario, tranne quando li prendi tu.", "Il ritardo è solo l'attesa che sale di livello.", "Un treno puntuale è una leggenda metropolitana.", "Il capotreno lo sa. Tu puntaci."],
     rain: ["L'ombrello si porta dietro solo chi non lo userà.", "Se piove, hai ragione tu. Se non piove, hai comunque il sole.", "Le previsioni sono un parere, la pioggia è un fatto.", "Pioverà il giorno del bucato, è scienza."],
@@ -64,7 +66,7 @@ const it: Messages = {
     })[q.metric],
     quake: (q) => `Ci sarà un terremoto di magnitudo ${q.mag} o più ${q.region ? `in ${q.region}` : "in qualunque parte del mondo"} tra le ${q.from} e le ${q.to}${q.region ? " (ora locale)" : ""}?`,
     strike: (q) => `Lo sciopero nazionale del ${q.day} (${q.who.toLowerCase()}) sarà ancora confermato a inizio giornata?`,
-    tick: (q) => (q.kind === "price" ? `${q.label} sopra ${q.value} alle ${q.time}?` : q.kind === "kp" ? `L'indice Kp (aurora boreale) raggiungerà ${q.value} tra le ${q.from} e le ${q.to}?` : `La pagina Wikipedia di ${q.label} avrà più di ${q.value} visite il ${q.day} (UTC)?`),
+    tick: (q) => (q.kind === "players" ? `${q.label} supererà ${q.value} giocatori online su Steam alle ${q.time}?` : q.kind === "price" ? `${q.label} sopra ${q.value} alle ${q.time}?` : q.kind === "kp" ? `L'indice Kp (aurora boreale) raggiungerà ${q.value} tra le ${q.from} e le ${q.to}?` : `La pagina Wikipedia di ${q.label} avrà più di ${q.value} visite il ${q.day} (UTC)?`),
     traffic: (q) => `Tra le ${q.from} e le ${q.to}, la velocità media a ${q.site} verso ${q.toward} sarà inferiore a ${q.kmh} km/h?`,
   },
   sheet: { title: "Schedina", pick: "La tua scelta", stake: "Puntata", potential: "Vincita possibile", confirm: "Conferma puntata", confirming: "Un attimo…", odds: "Quota", placed: (w) => `Puntata registrata. Vincita possibile: ${w}.` },

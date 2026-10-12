@@ -10,7 +10,7 @@ export interface BusQ { route: string; headsign: string; stop: string; time: str
 export interface RainQ { city: string; time: string }
 export type MetricKey = "temp" | "wind" | "snow" | "uv" | "aqi";
 export interface MetricQ { metric: MetricKey; city: string; time: string; value: number; unit: string }
-export interface TickQ { kind: "price" | "kp" | "wiki"; label: string; value: string; time: string; from: string; to: string; day: string }
+export interface TickQ { kind: "price" | "kp" | "wiki" | "players"; label: string; value: string; time: string; from: string; to: string; day: string }
 export interface TrafficQ { site: string; toward: string; from: string; to: string; kmh: number }
 export interface StrikeQ { date: string; day: string; who: string; hours: string }
 export interface QuakeQ { mag: string; from: string; to: string; region?: string }
@@ -49,7 +49,8 @@ export interface Messages {
   places: { more: string; title: string; hint: string; search: string; recent: string; capitals: string; famous: string; withData: string; none: string; searchError: string; limit: string; full: string; credit: string };
   top: { late: string; popular: string; city: string; closing: string; avg: (min: number) => string; players: (n: number) => string; ontime: string; open: string };
   card: { late: string; onTime: string; per10: (win: number) => string; closes: string; forecast: string; live: string; yes: string; no: string; over: (min: number) => string; topOdds: string; hot: string };
-  quips: Record<"bus" | "train" | "rain" | "temp" | "wind" | "snow" | "uv" | "aqi" | "quake" | "strike" | "traffic" | "price" | "kp" | "wiki", string[]>;
+  chart: { title: string; min: string; max: string; change: string; above: string };
+  quips: Record<"bus" | "train" | "rain" | "temp" | "wind" | "snow" | "uv" | "aqi" | "quake" | "strike" | "traffic" | "price" | "kp" | "wiki" | "game", string[]>;
   question: { bus: (q: BusQ) => string; train: (q: BusQ) => string; rain: (q: RainQ) => string; metric: (q: MetricQ) => string; quake: (q: QuakeQ) => string; strike: (q: StrikeQ) => string; traffic: (q: TrafficQ) => string; tick: (q: TickQ) => string };
   sheet: { title: string; pick: string; stake: string; potential: string; confirm: string; confirming: string; odds: string; placed: (win: string) => string };
   bets: { title: string; tabs: { open: string; settled: string }; open: string; won: string; lost: string; void: string; empty: { title: string; body: string; cta: string }; yourPick: (yes: boolean) => string; settles: string; voidReason: Record<string, string>; details: string };

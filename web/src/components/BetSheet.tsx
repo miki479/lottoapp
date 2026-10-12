@@ -13,6 +13,7 @@ import { Sheet } from "./Sheet.tsx";
 import { MetricArt } from "./MetricArt.tsx";
 import { TrafficScene } from "./TrafficScene.tsx";
 import { TickScene } from "./TickScene.tsx";
+import { TickChart } from "./TickChart.tsx";
 import { Sky } from "./Sky.tsx";
 import { TripScene } from "./TripScene.tsx";
 import { StakeControl } from "./StakeControl.tsx";
@@ -46,6 +47,7 @@ export function BetSheet(p: {
       <p class="q" style="font-weight:600"><Q m={p.m} msg={p.msg} locale={p.locale} city={cityName(city, p.locale)} tz={city.timezone} /></p>
       <p class="quip">{quip(p.m, p.msg)}</p>
       {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "traffic_speed_lt" ? <TrafficScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "tick_gt" ? <TickScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" || p.m.kind === "strike_on" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : <TripScene m={p.m} now={p.now} hint={pick} big />}
+      {p.m.kind === "tick_gt" && <TickChart m={p.m} msg={p.msg} locale={p.locale} />}
       <div>
         <span class="detail">{p.msg.sheet.pick}</span>
         <div class="actions2" style="margin-top:8px">

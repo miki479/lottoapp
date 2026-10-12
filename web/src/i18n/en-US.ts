@@ -35,7 +35,9 @@ const enUS: Messages = {
   places: { more: "More cities", title: "Weather for a town", hint: "Search any city or town: its rain questions open right away.", search: "Search a city…", recent: "Your latest", capitals: "Italian regional capitals", famous: "Famous cities worldwide", withData: "With buses, trains and weather", none: "No results. Try the full name.", searchError: "Can't search right now. Try again.", limit: "You've already added 5 new places today. Try again tomorrow or pick an existing one.", full: "Too many active places right now. Pick an existing one.", credit: "City search: Open-Meteo.com (CC BY 4.0). Weather only, for now." },
   top: { late: "Most delayed now", popular: "Most played", city: "Most delayed city", closing: "Closing soon", avg: (m) => `${m} min average delay`, players: (n) => (n === 1 ? "1 bet" : `${n} bets`), ontime: "On time", open: "Open" },
   card: { late: "Late", onTime: "On time", per10: (w) => `10 → ${w}`, closes: "Closes", forecast: "forecast", live: "Live", yes: "Yes", no: "No", topOdds: "Top odds", hot: "Closing soon", over: (m) => `over ${m} min` },
+  chart: { title: "Trend", min: "Low", max: "High", change: "Change", above: "Above the line" },
   quips: {
+    game: ["A video game never gets old, it just patches your weekend away.","Ready Player One? Try Ready Player Million.","The servers hold up. Your weekend doesn't.","One more match and then sleep. They lied."],
     bus: ["The bus is like airport wifi: it exists, just not when you need it.", "Betting on the bus: waiting is already included.", "It shows up the moment you stop looking.", "Timetable: indicative, like most promises."],
     train: ["Trains are always on time, except when you ride them.", "A delay is just waiting with a promotion.", "A punctual train is an urban legend.", "The conductor knows. You just bet."],
     rain: ["Only people who won't need it carry an umbrella.", "If it rains, you were right. If not, you got sun.", "A forecast is an opinion, rain is a fact.", "It rains the day you hang the washing out."],
@@ -64,7 +66,7 @@ const enUS: Messages = {
     })[q.metric],
     quake: (q) => `Will an earthquake of magnitude ${q.mag} or more strike ${q.region ? `in ${q.region}` : "anywhere in the world"} between ${q.from} and ${q.to}${q.region ? " (local time)" : ""}?`,
     strike: (q) => `Will the national strike on ${q.day} (${q.who.toLowerCase()}) still be on at the start of the day?`,
-    tick: (q) => (q.kind === "price" ? `Will ${q.label} be above ${q.value} at ${q.time}?` : q.kind === "kp" ? `Will the Kp index (northern lights) reach ${q.value} between ${q.from} and ${q.to}?` : `Will ${q.label}'s Wikipedia page get over ${q.value} views on ${q.day} (UTC)?`),
+    tick: (q) => (q.kind === "players" ? `Will ${q.label} have over ${q.value} players online on Steam at ${q.time}?` : q.kind === "price" ? `Will ${q.label} be above ${q.value} at ${q.time}?` : q.kind === "kp" ? `Will the Kp index (northern lights) reach ${q.value} between ${q.from} and ${q.to}?` : `Will ${q.label}'s Wikipedia page get over ${q.value} views on ${q.day} (UTC)?`),
     traffic: (q) => `Between ${q.from} and ${q.to}, will the average speed at ${q.site} towards ${q.toward} be under ${q.kmh} km/h?`,
   },
   sheet: { title: "Bet slip", pick: "Your pick", stake: "Stake", potential: "Possible win", confirm: "Confirm bet", confirming: "One sec…", odds: "Odds", placed: (w) => `Bet placed. Possible win: ${w}.` },

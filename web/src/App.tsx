@@ -288,6 +288,7 @@ export function App() {
     const extra = [
       { name: "Ministero delle Infrastrutture e dei Trasporti — Scioperi", license: "Dati pubblici del MIT (nessuna licenza dichiarata)", licenseUrl: "https://scioperi.mit.gov.it", url: "https://scioperi.mit.gov.it" },
       { name: CROWD_SOURCE.name, via: CROWD_SOURCE.via, license: CROWD_SOURCE.license, licenseUrl: CROWD_SOURCE.licenseUrl, url: CROWD_SOURCE.url },
+      { name: "Steam Web API (Valve)", license: "Steam Web API Terms of Use", licenseUrl: "https://steamcommunity.com/dev/apiterms", url: "https://steamcommunity.com/dev" },
       { name: "CoinGecko API", license: "Free API, attribution required", licenseUrl: "https://www.coingecko.com/en/api/documentation", url: "https://www.coingecko.com" },
       { name: "NOAA Space Weather Prediction Center", license: "Public domain (US Government)", licenseUrl: "https://www.weather.gov/disclaimer", url: "https://www.swpc.noaa.gov" },
       { name: "Wikimedia Foundation (page views)", license: "CC0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", url: "https://wikimedia.org/api/rest_v1/" },

@@ -17,11 +17,18 @@ export const CRYPTO = { btc: { id: "bitcoin", label: "Bitcoin", step: 500 }, eth
 export type CryptoSeries = keyof typeof CRYPTO;
 export const isCrypto = (s: string): s is CryptoSeries => s === "btc" || s === "eth";
 
+/** Games whose number of players online (Steam Web API, no key) is asked about. */
+export const STEAM = { "730": "Counter-Strike 2", "570": "Dota 2", "271590": "Grand Theft Auto V", "578080": "PUBG", "1245620": "Elden Ring" } as const;
+export const isSteam = (s: string) => s.startsWith("steam:") && s.slice(6) in STEAM;
+/** Numbers that exist only "right now": they must be read within minutes of the instant. */
+export const isSpot = (s: string) => isCrypto(s) || isSteam(s);
+
 /** English Wikipedia articles people follow: entertainment and sport, no politics. */
-export const WIKI_ARTICLES = ["Taylor_Swift", "Cristiano_Ronaldo", "Lionel_Messi", "Rihanna", "Zendaya", "Netflix", "Formula_One", "Eurovision_Song_Contest"] as const;
+export const WIKI_ARTICLES = ["Taylor_Swift", "Cristiano_Ronaldo", "Lionel_Messi", "Rihanna", "Zendaya", "Netflix", "Formula_One", "Eurovision_Song_Contest", "Grand_Theft_Auto_VI", "Fortnite", "Minecraft"] as const;
 
 export function tickDef(series: string): TickDef | null {
   if (isCrypto(series)) return { category: "finance", label: CRYPTO[series].label, unit: "$", min: 1, max: 10_000_000 };
+  if (isSteam(series)) return { category: "culture", label: STEAM[series.slice(6) as keyof typeof STEAM], unit: "", min: 0, max: 100_000_000 };
   if (series === "kp") return { category: "nature", label: "Kp", unit: "", min: 0, max: 9 };
   if (series.startsWith("wiki:")) return { category: "culture", label: series.slice(5).replace(/_/g, " "), unit: "", min: 0, max: 200_000_000 };
   return null;
@@ -88,6 +95,24 @@ export function buildWikiMarkets(means: Record<string, number>, now: number): Ti
     for (let dayEnd = Math.floor(now / 86400) * 86400 + 86400; dayEnd <= now + 2 * 86400; dayEnd += 86400) {
       if (dayEnd - 12 * H <= now + 300) continue;
       out.push(tickMarket(series, def, mean, thr, mean * 0.15, dayEnd, dayEnd - 12 * H, dayEnd + 30 * H));
+    }
+  }
+  return out;
+}
+
+/** Players online on Steam at 12 and 18 UTC for the next 30 hours; the line is today's count rounded to a friendly step. */
+export function buildSteamMarkets(counts: Record<string, number>, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const [id, n] of Object.entries(counts)) {
+    if (!(n > 1000)) continue;
+    const series = `steam:${id}`, def = tickDef(series)!;
+    const step = n >= 500_000 ? 25_000 : n >= 100_000 ? 10_000 : n >= 20_000 ? 1_000 : 500;
+    const thr = Math.round(n / step) * step;
+    for (let at = Math.floor(now / (6 * H)) * 6 * H + 6 * H; at <= now + 30 * H; at += 6 * H) {
+      const hourUtc = (at % 86400) / H;
+      if ((hourUtc !== 12 && hourUtc !== 18) || at - 600 <= now + 300) continue;
+      const hours = Math.max(1, (at - now) / H);
+      out.push(tickMarket(series, def, n, thr, n * 0.07 * Math.sqrt(Math.min(hours, 12) / 4), at, at - 600, at + 3 * H));
     }
   }
   return out;

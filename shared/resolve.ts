@@ -1,5 +1,5 @@
 import { METRICS } from "./metrics.ts";
-import { CRYPTO_GRACE_SEC, isCrypto, tickDef } from "./ticks.ts";
+import { CRYPTO_GRACE_SEC, isSpot, tickDef } from "./ticks.ts";
 import { MIN_VEHICLES, MIN_WINDOW_SEC } from "./traffic.ts";
 import type {
   DelayEvent,
@@ -142,7 +142,7 @@ function metricReading(event: MetricEvent, input: ResolveInput): Reading {
 function tickReading(event: TickEvent, input: ResolveInput): Reading {
   const obs = (input.ticks ?? []).find((o) => o.series === event.series && o.at === event.targetAt);
   // The number only counts if it was read once the instant had passed (and, for a price, still close to it).
-  if (!obs || obs.fetchedAt < event.targetAt || (isCrypto(event.series) && obs.fetchedAt > event.targetAt + CRYPTO_GRACE_SEC)) return { kind: "none" };
+  if (!obs || obs.fetchedAt < event.targetAt || (isSpot(event.series) && obs.fetchedAt > event.targetAt + CRYPTO_GRACE_SEC)) return { kind: "none" };
   const def = tickDef(event.series);
   if (!def || !Number.isFinite(obs.value) || obs.value < def.min || obs.value > def.max) return { kind: "implausible" };
   return { kind: "ok", yes: obs.value >= event.threshold, evidence: { series: event.series, value: obs.value, threshold: event.threshold } };

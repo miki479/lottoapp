@@ -35,7 +35,9 @@ const ja: Messages = {
   places: { more: "他の都市", title: "都市の天気", hint: "好きな都市や町を検索すると、雨の予想がすぐに開きます。", search: "都市を検索…", recent: "最近の都市", capitals: "イタリアの州都", famous: "世界の有名都市", withData: "バス・電車・天気あり", none: "見つかりません。名前を最後まで入力してください。", searchError: "今は検索できません。もう一度お試しください。", limit: "今日は新しい都市をすでに5つ追加しました。明日また試すか、既存の都市を選んでください。", full: "現在アクティブな都市が多すぎます。既存の都市を選んでください。", credit: "都市検索：Open-Meteo.com（CC BY 4.0）。今のところ天気のみ。" },
   top: { late: "いま最も遅れている", popular: "一番人気", city: "最も遅れている都市", closing: "まもなく締切", avg: (m) => `平均遅延${m}分`, players: (n) => `${n}件の予想`, ontime: "定刻", open: "開く" },
   card: { late: "遅れる", onTime: "定刻", per10: (w) => `10 → ${w}`, closes: "締切", forecast: "予測", live: "ライブ", yes: "はい", no: "いいえ", over: (m) => `${m}分超`, topOdds: "高オッズ", hot: "まもなく締切" },
+  chart: { title: "推移", min: "最低", max: "最高", change: "変化", above: "ライン超え" },
   quips: {
+    game: ["ゲームは古くならない。アップデートで週末が消えるだけ。","あと1試合だけ。そう言って朝になる。","サーバーは耐える。あなたの週末は耐えない。","レディ・プレイヤー・ワン?いいえ、百万。"],
     bus: ["バスは空港のWi-Fiみたい。あるけど、必要な時にはない。", "バスを待つ時間は料金に含まれています。", "時刻表は目安です。選挙公約と同じで。", "見るのをやめた瞬間に来る。たぶん。"],
     train: ["電車はいつも時間通り。自分が乗る時以外は。", "遅延は、待ち時間のグレードアップ。", "時間通りの電車は都市伝説。", "車掌は知っている。あなたは賭けるだけ。"],
     rain: ["傘は使わない人ほど持っている。", "降れば正解。降らなければ晴れ。", "雨は洗濯物を干した日に降る。科学です。", "予報は意見、雨は事実。"],
@@ -64,7 +66,7 @@ const ja: Messages = {
     })[q.metric],
     quake: (q) => `${q.region ?? "世界のどこか"}で、${q.from}から${q.to}の間${q.region ? "（現地時間）" : ""}にマグニチュード${q.mag}以上の地震が起きますか？`,
     strike: (q) => `${q.day}の全国ストライキ（${q.who}）は、その日の始まりにも実施予定のままですか？`,
-    tick: (q) => (q.kind === "price" ? `${q.time}時点で${q.label}は${q.value}を上回りますか？` : q.kind === "kp" ? `${q.from}〜${q.to}にKp指数（オーロラ）は${q.value}に達しますか？` : `${q.day}（UTC）の${q.label}のWikipediaページは${q.value}回を超える閲覧がありますか？`),
+    tick: (q) => (q.kind === "players" ? `${q.time}時点で${q.label}のSteamオンライン人数は${q.value}人を超えますか？` : q.kind === "price" ? `${q.time}時点で${q.label}は${q.value}を上回りますか？` : q.kind === "kp" ? `${q.from}〜${q.to}にKp指数（オーロラ）は${q.value}に達しますか？` : `${q.day}（UTC）の${q.label}のWikipediaページは${q.value}回を超える閲覧がありますか？`),
     traffic: (q) => `${q.from}〜${q.to}の${q.site}（${q.toward}方面）の平均速度は${q.kmh} km/h未満になりますか？`,
   },
   sheet: { title: "予想シート", pick: "あなたの予想", stake: "賭け額", potential: "見込み配当", confirm: "予想を確定", confirming: "少々お待ちください…", odds: "オッズ", placed: (w) => `予想を登録しました。配当は最大${w}です。` },
