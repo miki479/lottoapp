@@ -7,7 +7,7 @@ import { Collapse } from "../components/Collapse.tsx";
 import { Empty } from "../components/Empty.tsx";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, cityOf } from "../lib/cities.ts";
-import { countdown, fmtOdds, isYesNo, money, question } from "../lib/format.ts";
+import { countdown, fmtOdds, isYesNo, money, potentialWin, question } from "../lib/format.ts";
 import type { Challenge } from "../components/ChallengeSheet.tsx";
 import type { MyBet, ParlayRow } from "../lib/types.ts";
 
@@ -60,6 +60,7 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
                 })}
               </ul>
               <div class="info"><span>{msg.slip.odds}</span><span class="num">{money(x.stake, locale)} × {fmtOdds(Number(x.odds), locale)}</span></div>
+              {st === "open" && <div class="info win"><span>{msg.bets.potential}</span><b class="num">{money(potentialWin(x.stake, Number(x.odds), x.boosted), locale)}</b></div>}
             </div>
           );
         })}
@@ -81,6 +82,7 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
               {m.kind !== "match_bet" && (() => { const sj = m.kind === "tick_gt" ? (msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? "")) : m.kind === "bus_delay_gt" || m.kind === "train_delay_gt" ? `${String(m.params.routeName ?? "")} · ${cityName(city, locale)}` : m.kind === "rain_at" || m.kind === "metric_gt" ? cityName(city, locale) : ""; return sj ? <b class="subject">{sj}</b> : null; })()}
               <p class="q"><Q m={m} msg={msg} locale={locale} city={cityName(city, locale)} tz={city.timezone} now={new Date(now)} /></p>
               <div class="info"><span>{msg.bets.yourPick(b.pick === "yes")}</span><span class="num">{money(b.stake, locale)} × {fmtOdds(Number(b.odds), locale)}</span></div>
+              {st === "open" && <div class="info win"><span>{msg.bets.potential}</span><b class="num">{money(potentialWin(b.stake, Number(b.odds), b.boosted), locale)}</b></div>}
               {b.bonus && <p class={`bonusline ${b.bonus_hit ? "hit" : ""}`}>{msg.bonus.line(msg.bonus[b.bonus])}{st !== "open" && st !== "void" ? ` · ${b.bonus_hit === true ? msg.bonus.hit : b.bonus_hit === false ? msg.bonus.miss : msg.bonus.unknown}` : ""}</p>}
             </button>
             {st === "open" && (m.category === "bus" || m.category === "train") && !!m.params.tripId && m.kind !== "bus_full" && <BetMap m={m} msg={msg} now={now} />}

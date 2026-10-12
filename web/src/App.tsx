@@ -62,7 +62,7 @@ const store = {
 };
 const region = () => { try { return new Intl.Locale(navigator.language).maximize().region ?? null; } catch { return null; } };
 const PROFILE_COLS = "id,credits,city_id,locale,timezone,country,streak,best_streak,freezes,boosts,push_flash,push_streak,push_friends,display_name,last_play_date";
-const BET_COLS = "id,pick,stake,odds,status,payout,bonus,bonus_hit,markets(id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,void_reason,outcome,evidence)";
+const BET_COLS = "id,pick,stake,odds,boosted,status,payout,bonus,bonus_hit,markets(id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,void_reason,outcome,evidence)";
 
 export function App() {
   const now = useNow();
@@ -170,7 +170,7 @@ export function App() {
   const loadBets = useCallback(async () => { const { data } = await sb.from("bets").select(BET_COLS).order("placed_at", { ascending: false }).limit(betsLimit); setBets((data ?? []) as unknown as MyBet[]); }, [betsLimit]);
 
   const loadChallenges = useCallback(async () => { if (!registered) { setMyChallenges([]); setInvites([]); setFriendBets({}); return; } const [{ data }, inv, fb] = await Promise.all([sb.rpc("my_challenges"), sb.rpc("my_invites"), sb.rpc("friend_bets")]); setFriendBets(Object.fromEntries(((fb.data ?? []) as { market_id: string; friends: number }[]).map((x) => [x.market_id, Number(x.friends)]))); setMyChallenges((data ?? []) as Challenge[]); setInvites((inv.data ?? []) as (Challenge & { invited_by: string })[]); }, [registered]);
-  const loadParlays = useCallback(async () => { const { data } = await sb.from("parlays").select("id,stake,odds,status,payout,placed_at,settled_at,parlay_legs(market_id,pick,odds,status,markets(city_id,kind,params))").order("placed_at", { ascending: false }).limit(40); setParlays((data ?? []) as unknown as ParlayRow[]); }, []);
+  const loadParlays = useCallback(async () => { const { data } = await sb.from("parlays").select("id,boosted,stake,odds,status,payout,placed_at,settled_at,parlay_legs(market_id,pick,odds,status,markets(city_id,kind,params))").order("placed_at", { ascending: false }).limit(40); setParlays((data ?? []) as unknown as ParlayRow[]); }, []);
   const loadQuests = useCallback(async () => { const [{ data }, dm, fl] = await Promise.all([sb.rpc("my_quests"), sb.rpc("daily_missions"), sb.rpc("daily_flash")]); if (fl.data) setFlashM(fl.data as FlashData); setQuests(((data ?? []) as QuestRow[]).map((q) => ({ ...q, reward: +q.reward }))); if (dm.data) setMissions(dm.data as DailyMissionsData); }, []);
   const loadReferral = useCallback(async () => {
     const { data } = await sb.rpc("my_referral"); const r = (data as { code: string; invited: number; paid: number }[] | null)?.[0];

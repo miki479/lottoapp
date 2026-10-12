@@ -98,7 +98,7 @@ const it: Messages = {
   bets: {
     title: "Le mie puntate", tabs: { open: "In corso", settled: "Concluse" }, open: "In corso", won: "Vinta", lost: "Persa", void: "Rimborsata",
     empty: { title: "Nessuna puntata ancora", body: "Scegli un evento e fai la tua prima previsione.", cta: "Vai agli eventi" },
-    yourPick: (y) => (y ? "Hai scelto: Sì" : "Hai scelto: No"), settles: "Esito", waiting: ["Il server sta consultando i binari…","Il capotreno sta firmando il verbale…","Aspettiamo il dato ufficiale…","Un piccione viaggiatore è in arrivo…","Il server prende un caffè…","Contiamo i minuti, con calma…"], details: "Dettagli",
+    yourPick: (y) => (y ? "Hai scelto: Sì" : "Hai scelto: No"), potential: "Vincita potenziale", settles: "Esito", waiting: ["Il server sta consultando i binari…","Il capotreno sta firmando il verbale…","Aspettiamo il dato ufficiale…","Un piccione viaggiatore è in arrivo…","Il server prende un caffè…","Contiamo i minuti, con calma…"], details: "Dettagli",
     voidReason: { feed_down: "Il feed dei dati era giù: non risolviamo mai a caso.", no_observation: "Nessun dato valido per questa corsa.", implausible_data: "Il dato non era credibile." },
   },
   result: {

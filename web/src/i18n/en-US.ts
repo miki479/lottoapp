@@ -98,7 +98,7 @@ const enUS: Messages = {
   bets: {
     title: "My bets", tabs: { open: "Live", settled: "Settled" }, open: "Live", won: "Won", lost: "Lost", void: "Refunded",
     empty: { title: "No bets yet", body: "Pick an event and make your first call.", cta: "Browse events" },
-    yourPick: (y) => (y ? "You picked: Yes" : "You picked: No"), settles: "Result", waiting: ["The server is checking the tracks…","The conductor is signing the report…","Waiting for the official data…","A carrier pigeon is on its way…","The server is grabbing a coffee…","Counting the minutes, slowly…"], details: "Details",
+    yourPick: (y) => (y ? "You picked: Yes" : "You picked: No"), potential: "Potential win", settles: "Result", waiting: ["The server is checking the tracks…","The conductor is signing the report…","Waiting for the official data…","A carrier pigeon is on its way…","The server is grabbing a coffee…","Counting the minutes, slowly…"], details: "Details",
     voidReason: { feed_down: "The data feed was down. We never settle on a guess.", no_observation: "No valid reading for this trip.", implausible_data: "The reading looked wrong." },
   },
   result: {
