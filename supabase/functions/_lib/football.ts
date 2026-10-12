@@ -100,3 +100,11 @@ export async function fetchPlayerFacts(apiId: string): Promise<{ facts: PlayerFa
   }
   return { facts, remaining: r.remaining };
 }
+
+/** The bookmakers' quotes of one match (API-Football): needs one call. Empty when there are none yet. */
+export async function fetchBookQuotes(apiId: string): Promise<{ books: import("../_shared/shared/sport.ts").BookQuotes; remaining: number | null; error?: string }> {
+  const r = await apiFootball(`/odds?fixture=${encodeURIComponent(apiId)}`);
+  if (!r.ok) return { books: [], remaining: r.remaining, error: r.error };
+  const books = ((r.json?.response ?? [])[0] as { bookmakers?: import("../_shared/shared/sport.ts").BookQuotes } | undefined)?.bookmakers ?? [];
+  return { books, remaining: r.remaining };
+}

@@ -189,13 +189,39 @@ export function twoWayPriors(home: TableRow | undefined, away: TableRow | undefi
   return out;
 }
 
-export function buildMatchMarkets(fixtures: Fixture[], table: TableRow[], now: number, testOnly: boolean, geo: Map<string, Geo>, top: boolean, two?: TwoWayCfg): MatchMarketInsert[] {
+export type BookQuotes = { name: string; bets?: { name: string; values: { value: string; odd: string }[] }[] }[];
+
+/**
+ * The chance of each bet implied by what bookmakers quote: the quotes of every bookmaker are turned into chances, the margin is taken out
+ * of each market, and the bookmakers are averaged. Only the bets bookmakers quote directly (1X2, double chance, goals over/under, both score).
+ */
+export function bookPriors(books: BookQuotes): Partial<Record<MatchBet, number>> {
+  const market = (name: string, keys: string[]) => {
+    const rows: number[][] = [];
+    for (const b of books) {
+      const vals = b.bets?.find((x) => x.name === name)?.values; if (!vals) continue;
+      const odds = keys.map((k) => Number(vals.find((v) => v.value === k)?.odd));
+      if (odds.every((o) => Number.isFinite(o) && o > 1)) { const inv = odds.map((o) => 1 / o), s = inv.reduce((a, x) => a + x, 0); rows.push(inv.map((x) => x / s)); }
+    }
+    return rows.length >= 3 ? keys.map((_, i) => rows.reduce((a, r) => a + r[i]!, 0) / rows.length) : null;
+  };
+  const out: Partial<Record<MatchBet, number>> = {};
+  const r3 = (x: number) => Math.round(x * 1000) / 1000;
+  const x12 = market("Match Winner", ["Home", "Draw", "Away"]);
+  if (x12) { out.home_win = r3(x12[0]!); out.draw = r3(x12[1]!); out.away_win = r3(x12[2]!); out.dc_1x = r3(x12[0]! + x12[1]!); out.dc_x2 = r3(x12[1]! + x12[2]!); out.dc_12 = r3(x12[0]! + x12[2]!); }
+  for (const [line, bet] of [["1.5", "over_1_5"], ["2.5", "over_2_5"], ["3.5", "over_3_5"]] as const) { const ou = market("Goals Over/Under", [`Over ${line}`, `Under ${line}`]); if (ou) out[bet] = r3(ou[0]!); }
+  const bt = market("Both Teams Score", ["Yes", "No"]); if (bt) out.btts = r3(bt[0]!);
+  return out;
+}
+
+export function buildMatchMarkets(fixtures: Fixture[], table: TableRow[], now: number, testOnly: boolean, geo: Map<string, Geo>, top: boolean, two?: TwoWayCfg, book?: Map<string, Partial<Record<MatchBet, number>>>): MatchMarketInsert[] {
   const by = new Map(table.map((r) => [r.team, r]));
   const avg = leagueAverage(table);
   const out: MatchMarketInsert[] = [];
   for (const f of fixtures) {
     if (f.kickoff - 600 <= now + 300 || f.kickoff > now + 7 * 86400) continue;
-    const pri = two ? twoWayPriors(by.get(f.home), by.get(f.away), two) : matchPriors(by.get(f.home), by.get(f.away), avg, top);
+    const modelPri = two ? twoWayPriors(by.get(f.home), by.get(f.away), two) : matchPriors(by.get(f.home), by.get(f.away), avg, top);
+    const pri = { ...modelPri, ...(book?.get(f.eventId) ?? {}) } as typeof modelPri;
     const fx = two ? { ...f, lenSec: two.lenSec } : f;
     for (const bet of two ? (["home_win", "away_win"] as MatchBet[]) : top ? AUTO_BETS : AUTO_BETS_LOWER) out.push(matchMarket(fx, bet, pri, geo.get(f.home), testOnly));
   }

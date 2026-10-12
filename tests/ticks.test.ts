@@ -245,3 +245,18 @@ describe("TV episode ratings", () => {
     expect(Date.parse(m.closes_at)).toBeLessThanOrEqual(Date.parse(m.target_at));
   });
 });
+
+import { bookPriors } from "../shared/sport.ts";
+describe("bookmaker priors", () => {
+  const book = (h: string, d: string, a: string, o: string, u: string, y: string, n: string) => ({ name: "b", bets: [
+    { name: "Match Winner", values: [{ value: "Home", odd: h }, { value: "Draw", odd: d }, { value: "Away", odd: a }] },
+    { name: "Goals Over/Under", values: [{ value: "Over 2.5", odd: o }, { value: "Under 2.5", odd: u }] },
+    { name: "Both Teams Score", values: [{ value: "Yes", odd: y }, { value: "No", odd: n }] }] });
+  it("removes the margin and derives double chance", () => {
+    const pr = bookPriors([book("2.5", "3.0", "3.1", "2.2", "1.65", "1.85", "1.87"), book("2.5", "3.0", "3.1", "2.2", "1.65", "1.85", "1.87"), book("2.5", "3.0", "3.1", "2.2", "1.65", "1.85", "1.87")]);
+    expect((pr.home_win ?? 0) + (pr.draw ?? 0) + (pr.away_win ?? 0)).toBeCloseTo(1, 2);
+    expect(pr.dc_x2).toBeCloseTo((pr.draw ?? 0) + (pr.away_win ?? 0), 2);
+    expect(pr.over_2_5).toBeGreaterThan(0.4); expect(pr.over_2_5).toBeLessThan(0.5); expect(pr.btts).toBeCloseTo(0.5, 1);
+  });
+  it("needs at least three bookmakers", () => { expect(bookPriors([book("2", "3", "4", "2", "1.8", "1.8", "1.9")])).toEqual({}); });
+});

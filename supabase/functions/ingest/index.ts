@@ -11,8 +11,8 @@ import { tvReference, tvRating, tvUpcoming } from "../_lib/tv.ts";
 import { TM_PLACES, buildTicketMarkets, buildTvMarket, isTicket, isTv, tmWindow, type TmPlace } from "../_shared/shared/ticks.ts";
 import { FUELS, METALS, OIL, buildFuelMarkets, buildMetalMarkets, buildOilMarkets, isFuel, isMetal, isOil, type FuelKey, type MetalKey, type OilKey } from "../_shared/shared/ticks.ts";
 import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildAlertMarkets, alertLevel, alertQueryDate, ALERT_AREAS, ALERT_HAZARDS, ALERT_URL, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
-import { buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, type Fixture, type Geo, type TableRow } from "../_shared/shared/sport.ts";
-import { apiFootball, apiKey, fetchDetails, fetchPlayerFacts, loadTable } from "../_lib/football.ts";
+import { bookPriors, buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, type Fixture, type Geo, type MatchBet, type TableRow } from "../_shared/shared/sport.ts";
+import { apiFootball, apiKey, fetchBookQuotes, fetchDetails, fetchPlayerFacts, loadTable } from "../_lib/football.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { DEFAULT_YES_PROBABILITY, computeOdds, learnedPrior, liveYesProbability } from "../_shared/shared/odds.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
@@ -869,7 +869,28 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
           }
           const g = geoCache.get(f.home); if (g) geo.set(f.home, g);
         }
-        const markets = buildMatchMarkets(fixtures, table, now, false, geo, league.top, league.two);
+        // what bookmakers quote for the matches in the next day (one API-Football call each, refreshed every 8 hours, never past the daily quota)
+        const book = new Map<string, Partial<Record<MatchBet, number>>>();
+        if (apiKey() && !league.two) {
+          const soon = fixtures.filter((f) => f.apiId && f.kickoff > now + 1800 && f.kickoff < now + 30 * 3600);
+          if (soon.length) {
+            const { data: have } = await sb.from("match_book").select("event_id,priors,fetched_at").in("event_id", soon.map((f) => f.eventId));
+            const known = new Map((have ?? []).map((r) => [r.event_id as string, r]));
+            let calls = 0;
+            for (const f of soon) {
+              const k = known.get(f.eventId);
+              if (k) book.set(f.eventId, k.priors as Partial<Record<MatchBet, number>>);
+              if (k && Date.now() - Date.parse(k.fetched_at as string) < 8 * 3600_000) continue;
+              if (calls >= 3) continue;
+              calls++;
+              const q = await fetchBookQuotes(f.apiId!);
+              if (q.remaining !== null && q.remaining < 30) break;
+              const pr = bookPriors(q.books);
+              if (Object.keys(pr).length > 0) { book.set(f.eventId, pr); await sb.from("match_book").upsert({ event_id: f.eventId, priors: pr, books: q.books.length, fetched_at: new Date().toISOString() }); }
+            }
+          }
+        }
+        const markets = buildMatchMarkets(fixtures, table, now, false, geo, league.top, league.two, book);
         if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
         // keep the figures of the not-yet-opened bets (and the data-source id) of already open matches current
         const seen = new Set<string>();
