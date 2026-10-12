@@ -84,13 +84,15 @@ export interface DelayMarketArgs {
   serviceDayEpoch: number;
   thresholdSec: number;
   history: History | null;
+  /** Starting chance of "late" learned from the outcomes so far in the same country and category; the fixed guess when absent. */
+  priorYes?: number;
   flashMultiplier?: number;
 }
 
 export function buildDelayMarket(a: DelayMarketArgs): MarketInsert {
   const kind = a.category === "bus" ? "bus_delay_gt" : "train_delay_gt";
   const targetAt = localDayStart(a.serviceDayEpoch, a.tz) + parseGtfsTime(a.stop.time);
-  const odds = computeOdds(yesProbability(a.history, DEFAULT_YES_PROBABILITY[kind]), a.flashMultiplier ?? 1);
+  const odds = computeOdds(yesProbability(a.history, a.priorYes ?? DEFAULT_YES_PROBABILITY[kind]), a.flashMultiplier ?? 1);
   return {
     city_id: a.cityId,
     category: a.category,

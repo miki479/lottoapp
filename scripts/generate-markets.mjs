@@ -18,6 +18,8 @@ import { validateCity } from "../shared/cities.ts";
 import { activeServiceIds, buildDelayMarket, buildWeatherMarkets, localYmd, pickTargetStop, seededRandom } from "../shared/generator.ts";
 import { localDayStart, tzOffsetSec } from "../shared/time.ts";
 import { buildOccupancyMarket } from "../shared/occupancy.ts";
+import { DEFAULT_YES_PROBABILITY, learnedPrior } from "../shared/odds.ts";
+import { readdirSync } from "node:fs";
 import { trainTripId } from "../shared/adapters/viaggiatreno.ts";
 import { historyKey } from "../shared/market.ts";
 import { marketToEvent } from "../shared/market.ts";
@@ -34,6 +36,18 @@ async function sb(path, init = {}) {
   const r = await fetch(`${SB}/rest/v1/${path}`, { ...init, headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal", ...(init.headers ?? {}) } });
   if (!r.ok) throw new Error(`Supabase ${path}: ${r.status} ${await r.text()}`);
   return r.status === 204 || init.method === "POST" ? null : r.json();
+}
+
+/** Chance of "late" learned from every settled question of the same country and category (shrunk toward the fixed guess), so a country where buses are rarely late is not priced like one where they often are. */
+async function learnedPriorYes(category) {
+  const kind = category === "train" ? "train_delay_gt" : "bus_delay_gt", base = DEFAULT_YES_PROBABILITY[kind];
+  if (!SB || !KEY) return base;
+  const same = readdirSync(new URL("../cities/", import.meta.url)).filter((f) => f.endsWith(".json")).map((f) => JSON.parse(readFileSync(new URL(`../cities/${f}`, import.meta.url), "utf8"))).filter((c) => c.country === city.country).map((c) => c.id);
+  const rows = await sb(`markets?category=eq.${category}&kind=eq.${kind}&status=eq.resolved&params->>ladderOf=is.null&city_id=in.(${same.join(",")})&select=outcome&limit=1000`);
+  const yes = rows.filter((r) => r.outcome === "yes").length;
+  const p = learnedPrior(yes, rows.length, base);
+  console.error(`[${city.country} ${category}] chance of "late": ${(p * 100).toFixed(1)}% (${yes} of ${rows.length} settled, guess ${(base * 100).toFixed(0)}%)`);
+  return p;
 }
 
 async function historyLookup() {
@@ -139,6 +153,7 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
   /** Extra facts on a market's params: where the stop is (map), whether positions are estimated, whether a how-full bonus is offered. */
   const withExtras = (m, stopId) => { const pos = stopPos.get(stopId); return { ...m, params: { ...m.params, ...(pos && Number.isFinite(pos[0]) ? { stopLat: pos[0], stopLon: pos[1] } : {}), ...(feed.positionsEstimated ? { posEst: true } : {}), ...(feed.occupancy && m.kind === "bus_delay_gt" ? { occBonus: true } : {}) } }; };
   const hist = await historyLookup();
+  const priorYes = await learnedPriorYes(feed.category);
   const markets = [], schedule = [];
   const threshold = feed.category === "train" ? 300 : 180;
   for (const trip of shuffled) {
@@ -149,13 +164,13 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
     if (!tid) continue;
     const stop = pickTargetStop(stops, rand);
     if (!stop) continue;
-    const draft = buildDelayMarket({ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold, history: null });
+    const draft = buildDelayMarket({ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold, history: null, priorYes });
     const targetAt = Date.parse(draft.target_at) / 1000;
     if (feed.questionsHours) { const h = Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: city.timezone }).format(new Date(targetAt * 1000))); if (h < feed.questionsHours[0] || h >= feed.questionsHours[1]) continue; }
     if (Date.parse(draft.closes_at) / 1000 <= now + 300 || targetAt > now + 30 * 3600) continue; // bettable window
     // Re-price with real history now that the event exists.
     const key = historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone);
-    const priced = buildDelayMarket({ ...{ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold }, history: hist(key) });
+    const priced = buildDelayMarket({ ...{ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold }, history: hist(key), priorYes });
     markets.push(withExtras(priced, stop.stopId));
     // Buses that report how full they are: one more question on the same trip (empty / few seats left / standing room), a third of the time or so.
     if (feed.occupancy && rand() < 0.5) {
@@ -216,6 +231,7 @@ async function trainMarkets(feed) {
   const shuffled = [...candidates.entries()].map((e) => [rand(), e]).sort((a, b) => a[0] - b[0]).map((x) => x[1]).slice(0, max * 3);
 
   const hist = await historyLookup();
+  const priorYes = await learnedPriorYes("train");
   const markets = [];
   for (const [tripId, x] of shuffled) {
     if (markets.length >= max) break;
@@ -232,10 +248,10 @@ async function trainMarkets(feed) {
     const stop = pickTargetStop(stops, rand);
     if (!stop) continue;
     const common = { cityId: city.id, tz: city.timezone, feedId: feed.id, category: "train", routeId: (t.categoria || x.categoriaDescrizione || "").trim() || "train", routeName: `${(x.categoriaDescrizione || "").trim()} ${x.numeroTreno}`.trim(), headsign: x.destinazione ?? "", tripId, stop, stopName: names.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: 300 };
-    const draft = buildDelayMarket({ ...common, history: null });
+    const draft = buildDelayMarket({ ...common, history: null, priorYes });
     const targetAt = Date.parse(draft.target_at) / 1000;
     if (Date.parse(draft.closes_at) / 1000 <= now + 300 || targetAt > now + 30 * 3600) continue;
-    const priced = buildDelayMarket({ ...common, history: hist(historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone)) });
+    const priced = buildDelayMarket({ ...common, history: hist(historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone)), priorYes });
     // Unlicensed source: private test markets, hidden from everyone but the owner (web/src/lib/testmode.ts).
     markets.push({ ...priced, params: { ...priced.params, ...(feed.licenseVerified ? {} : { testOnly: true }) }, deadline_at: new Date((targetAt + VT_TRAIN_DEADLINE_SEC) * 1000).toISOString() });
   }

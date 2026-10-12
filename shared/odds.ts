@@ -29,6 +29,12 @@ export function yesProbability(history: History | null, prior: number): number {
   return Math.min(0.97, Math.max(0.03, p));
 }
 
+/** A starting probability corrected by what actually happened: `yes` of `n` comparable questions, with the fixed guess worth `strength` questions. */
+export function learnedPrior(yes: number, n: number, base: number, strength = 10): number {
+  const p = (Math.min(Math.max(0, yes), Math.max(0, n)) + base * strength) / (Math.max(0, n) + strength);
+  return Math.min(0.9, Math.max(0.03, p));
+}
+
 export interface Odds {
   yes: number;
   no: number;

@@ -77,3 +77,13 @@ describe("boost", () => {
   it("doubles the net win", () => { expect(boostedPayout(100, 2)).toBe(300); expect(boostedPayout(100, 3.07)).toBe(100 * 3.07 > 0 ? 307 + 207 : 0); });
   it("caps the extra at 1000", () => { expect(boostedPayout(500, 15)).toBe(7500 + 1000); });
 });
+
+import { learnedPrior } from "../shared/odds.ts";
+describe("learned starting chance", () => {
+  it("moves the guess toward what happened, more as the sample grows", () => {
+    expect(learnedPrior(0, 0, 0.05)).toBeCloseTo(0.05);
+    expect(learnedPrior(44, 135, 0.05)).toBeGreaterThan(0.28);
+    expect(learnedPrior(1, 28, 0.3)).toBeLessThan(0.12);
+    expect(learnedPrior(0, 500, 0.3)).toBe(0.03);
+  });
+});
