@@ -13,6 +13,7 @@ import { ParlaySheet, slipOdds } from "./components/ParlaySheet.tsx";
 import { Header } from "./components/Header.tsx";
 import { CROWD_SOURCE } from "./lib/crowding.ts";
 import { QuakeMaker } from "./components/QuakeMaker.tsx";
+import { MarketMaker } from "./components/MarketMaker.tsx";
 import { AdminPage } from "./components/AdminPage.tsx";
 import { Sidebar, TabBar, type Screen } from "./components/Nav.tsx";
 import { NicknameSheet } from "./components/NicknameSheet.tsx";
@@ -59,6 +60,7 @@ export function App() {
   const [markets, setMarkets] = useState<MarketRow[] | null>(null);
   const [live, setLive] = useState<Record<string, LiveDelay>>({});
   const [popular, setPopular] = useState<PopularRow[]>([]);
+  const [trendRows, setTrendRows] = useState<{ m: MarketRow; bettors: number; near: boolean }[]>([]);
   const [results, setResults] = useState<ResultRow[]>([]);
   const [bets, setBets] = useState<MyBet[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -82,6 +84,7 @@ export function App() {
   const [, setPlacePending] = useState<Place | null>(null);
   const [placePicker, setPlacePicker] = useState(false);
   const [quakeMaker, setQuakeMaker] = useState(false);
+  const [maker, setMaker] = useState(false);
   const placeIds = useRef<string[]>(myPlaces.map((p) => p.id));
   const [near, setNear] = useState<NearState | null>(() => { try { return JSON.parse(store.get("near") ?? "null"); } catch { return null; } });
   const [nearRows, setNearRows] = useState<{ market_id: string; bets: number }[]>([]);
@@ -180,6 +183,17 @@ export function App() {
     const nowMs = Date.now();
     setStale((h ?? []).some((r) => { const f = CITIES.flatMap((c) => c.feeds).find((x) => x.id === r.feed_id); return !!f && f.category !== "weather" && f.licenseVerified && !!r.last_ok_at && nowMs - Date.parse(r.last_ok_at) > f.staleAfterSeconds * 1000 && (data ?? []).some((m) => m.category === f.category); }));
     const { data: pop } = await sb.rpc("popular_markets", { p_limit: 5 }); setPopular(((pop ?? []) as PopularRow[]).map((x) => ({ ...x, bets: +x.bets })));
+    try {
+      const nearIds = CITIES.filter((c) => c.country === (near?.country ?? profile?.country ?? region())).map((c) => c.id);
+      const here = near?.id ?? (filter !== "world" && filter !== "mine" ? filter : null);
+      const { data: tr } = await sb.rpc("trending_markets", { p_place: here, p_near: nearIds, p_limit: 6 });
+      const ids = ((tr ?? []) as { market_id: string; bettors: number | string }[]);
+      if (ids.length) {
+        const { data: rows } = await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").in("id", ids.map((x) => x.market_id));
+        const by = new Map(((rows ?? []) as unknown as MarketRow[]).map((r) => [r.id, r]));
+        setTrendRows(ids.flatMap((x) => { const mk = by.get(x.market_id); return mk ? [{ m: mk, bettors: +x.bettors, near: !!here && (mk.city_id === here || nearIds.includes(mk.city_id)) }] : []; }));
+      } else setTrendRows([]);
+    } catch { /* trending is optional */ }
   }, []);
   const loadActivity = useCallback(async () => { const { data } = await sb.rpc("activity_feed", { p_limit: 12 }); setActivity(((data ?? []) as ActivityRow[]).map((r) => ({ ...r, amount: +r.amount }))); }, []);
   /** The four towns people bet on most (public aggregate), skipping the ones that already have a permanent chip. */
@@ -196,6 +210,16 @@ export function App() {
     setTrending(out);
   }, [locale]);
   const loadResults = useCallback(async () => { const { data } = await sb.from("markets").select("id,city_id,kind,status,outcome,void_reason,params,evidence").neq("status", "open").order("target_at", { ascending: false }).limit(12); setResults((data ?? []) as ResultRow[]); }, []);
+  /** A shared link (?m=<market id>) opens that question straight away. */
+  useEffect(() => {
+    const id = new URLSearchParams(location.search).get("m");
+    if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return;
+    sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("id", id).maybeSingle().then(({ data }) => {
+      const row = data as unknown as MarketRow | null;
+      if (row && (testMode() || !(row.params as { testOnly?: boolean }).testOnly)) setSheet({ m: row, pick: "yes" });
+      const u = new URL(location.href); u.searchParams.delete("m"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
+    });
+  }, []);
   useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = setInterval(loadMarkets, 30000), b = setInterval(() => { loadResults(); loadActivity(); loadTrending(); }, 60000); return () => { clearInterval(a); clearInterval(b); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
   useEffect(() => { if (!ready) return; const i = setInterval(() => { loadBets(); loadProfile(); loadQuests(); }, 30000); return () => clearInterval(i); }, [ready]);
 
@@ -226,14 +250,14 @@ export function App() {
   /** "Near you" chip: everything from the player's own country (their located town, profile or phone region). */
   const myCountry = near?.country ?? profile?.country ?? region();
   const countryOf = (id: string) => CITIES.find((c) => c.id === id)?.country ?? placeById(id)?.country ?? (near?.id === id ? near.country : undefined);
-  const hasMine = !!myCountry && open.some((m) => m.category !== "nature" && m.category !== "strike" && m.category !== "finance" && m.category !== "culture" && countryOf(m.city_id) === myCountry);
-  const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter || m.category === "nature" || m.category === "strike" || m.category === "finance" || m.category === "culture" || (filter === "mine" && countryOf(m.city_id) === myCountry)), [open, filter, myCountry, near?.id]);
+  const hasMine = !!myCountry && open.some((m) => m.category !== "nature" && m.category !== "strike" && m.category !== "finance" && m.category !== "culture" && m.category !== "sport" && countryOf(m.city_id) === myCountry);
+  const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter || m.category === "nature" || m.category === "strike" || m.category === "finance" || m.category === "culture" || m.category === "sport" || (filter === "mine" && countryOf(m.city_id) === myCountry)), [open, filter, myCountry, near?.id]);
   useEffect(() => { if (hasMine && filter === "world" && !store.get("filter")) setFilter("mine"); }, [hasMine]);
   const byCat = (c: CatId) => inFilter.filter((m) => m.category === c);
   useEffect(() => { if (catChosen || !markets) return; const first = (["bus", "train", "weather"] as CatId[]).find((c) => byCat(c).length > 0); if (first && byCat(cat).length === 0) setCat(first); }, [markets, filter, catChosen]);
   const flashFirst = (a: MarketRow[]) => [...a].sort((x, y) => Number((y.flash_multiplier ?? 1) > 1) - Number((x.flash_multiplier ?? 1) > 1));
   const list = flashFirst(byCat(cat));
-  const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: byCat("nature").length, strike: isItalian ? byCat("strike").length : 0, traffic: byCat("traffic").length, finance: byCat("finance").length, culture: byCat("culture").length, gov: 0 };
+  const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: byCat("nature").length, strike: isItalian ? byCat("strike").length : 0, traffic: byCat("traffic").length, finance: byCat("finance").length, culture: byCat("culture").length, sport: byCat("sport").length, gov: 0 };
 
   const top: TopItem[] = useMemo(() => {
     const items: TopItem[] = [];
@@ -247,10 +271,12 @@ export function App() {
     for (const m of open) { const l = live[m.id]; if (l && !l.is_forecast) byCity.set(m.city_id, [...(byCity.get(m.city_id) ?? []), l.delay_sec]); }
     const worst = [...byCity.entries()].filter(([, v]) => v.length >= 2).map(([c, v]) => [c, v.reduce((a, b) => a + b, 0) / v.length] as const).sort((a, b) => b[1] - a[1])[0];
     if (worst) items.push({ id: "city", icon: MapPin, label: msg.top.city, big: <>{cityName(cityOf(worst[0]), locale)}</>, sub: msg.top.avg(Math.max(0, Math.round(worst[1] / 60))), onClick: () => setFilter(worst[0]) });
+    const tr0 = trendRows.find((t) => (t.m.params as { testOnly?: boolean }).testOnly !== true && Date.parse(t.m.closes_at) > now);
+    if (tr0) { const c = cityOf(tr0.m.city_id); items.unshift({ id: "trend", icon: TrendingUp, label: tr0.near ? msg.maker.trendingNear : msg.maker.trending, big: <>{tr0.bettors}<small>{msg.top.players(tr0.bettors).replace(/^\d+\s*/, "")}</small></>, sub: question(tr0.m, msg, locale, cityName(c, locale), c.timezone, new Date(now)), onClick: () => setSheet({ m: tr0.m, pick: "yes" }) }); }
     const soon = inFilter[0];
     if (soon) items.push({ id: "soon", icon: Clock, label: msg.top.closing, big: <span class="num">{countdown(Date.parse(soon.closes_at) - now)}</span>, sub: question(soon, msg, locale, cityName(cityOf(soon.city_id), locale), cityOf(soon.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: soon, pick: "no" }) });
     return items;
-  }, [inFilter, live, popular, locale, Math.floor(now / 1000)]);
+  }, [inFilter, live, popular, trendRows, locale, Math.floor(now / 1000)]);
 
   const flashId = open.find((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now)?.id;
   useEffect(() => { if (flashId) announce(`flash-${flashId}`, msg.voice.flash, locale); }, [flashId]);
@@ -288,6 +314,7 @@ export function App() {
     const extra = [
       { name: "Ministero delle Infrastrutture e dei Trasporti — Scioperi", license: "Dati pubblici del MIT (nessuna licenza dichiarata)", licenseUrl: "https://scioperi.mit.gov.it", url: "https://scioperi.mit.gov.it" },
       { name: CROWD_SOURCE.name, via: CROWD_SOURCE.via, license: CROWD_SOURCE.license, licenseUrl: CROWD_SOURCE.licenseUrl, url: CROWD_SOURCE.url },
+      { name: "TheSportsDB", license: "Free API key (see their terms); data © its contributors", licenseUrl: "https://www.thesportsdb.com/api.php", url: "https://www.thesportsdb.com" },
       { name: "Steam Web API (Valve)", license: "Steam Web API Terms of Use", licenseUrl: "https://steamcommunity.com/dev/apiterms", url: "https://steamcommunity.com/dev" },
       { name: "CoinGecko API", license: "Free API, attribution required", licenseUrl: "https://www.coingecko.com/en/api/documentation", url: "https://www.coingecko.com" },
       { name: "NOAA Space Weather Prediction Center", license: "Public domain (US Government)", licenseUrl: "https://www.weather.gov/disclaimer", url: "https://www.swpc.noaa.gov" },
@@ -421,7 +448,7 @@ export function App() {
         <main class="content">
           <div class="satire" role="note">{msg.home.satire}</div>
           {stale && <p class="note warn" style="margin-bottom:12px">{msg.feedWarning}</p>}
-          {screen === "home" && <Home onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} nearNode={<NearYou msg={msg} locale={locale} now={now} near={near} items={nearItems.items} fallback={nearItems.fallback} busy={locating} onLocate={locate} onOpen={(m) => setSheet({ m, pick: "yes" })} />} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
+          {screen === "home" && <Home onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} nearNode={<NearYou msg={msg} locale={locale} now={now} near={near} items={nearItems.items} fallback={nearItems.fallback} busy={locating} onLocate={locate} onOpen={(m) => setSheet({ m, pick: "yes" })} />} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "ranking" && <Ranking msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
           {screen === "admin" && <AdminPage msg={msg} onBack={() => go("profile")} />}
@@ -430,6 +457,7 @@ export function App() {
       </div>
       <TabBar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} />
 
+      {maker && <MarketMaker msg={msg} locale={locale} registered={registered} places={[...CITIES.filter((c) => c.categories.weather?.enabled).map((c) => ({ id: c.id, name: cityName(c, locale) })), ...myPlaces.map((pl) => ({ id: pl.id, name: pl.name }))]} onClose={() => setMaker(false)} onQuake={() => { setMaker(false); setQuakeMaker(true); }} onCreated={(m) => { setMaker(false); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
       {quakeMaker && <QuakeMaker msg={msg} locale={locale} onClose={() => setQuakeMaker(false)} onCreated={(m) => { setQuakeMaker(false); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
       {placePicker && <PlacePicker msg={msg} locale={locale} recent={myPlaces} onPick={pickPlace} onCity={(id) => { store.set("filter", id); setFilter(id); setPlacePicker(false); }} onClose={() => setPlacePicker(false)} />}
       {rewardsOpen && <RewardsSheet msg={msg} locale={locale} now={now} profile={profile} quests={quests} referral={referral} registered={registered} onClaim={claimQuest} onGo={goQuest} onShare={shareReferral} onClose={() => setRewardsOpen(false)} />}

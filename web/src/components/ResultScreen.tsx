@@ -11,6 +11,7 @@ import type { MyBet } from "../lib/types.ts";
 /** What the market measured, in words ("Measured delay: 1 min 44 s"). */
 export function evidenceLines(b: MyBet, msg: Messages): string[] {
   const m = b.markets, ev = m.evidence;
+  if (m.kind === "match_bet") return typeof ev?.home === "number" ? [msg.result.matchScore(ev.home, Number(ev.away))] : [];
   if (m.kind === "tick_gt") return typeof ev?.value === "number" ? [msg.result.tickMeasured(String(m.params.series) === "kp" ? ev.value.toFixed(1) : new Intl.NumberFormat().format(Math.round(ev.value)) + (String(m.params.series).startsWith("wiki:") ? "" : " $"))] : [];
   if (m.kind === "traffic_speed_lt") return typeof ev?.avgKmh === "number" ? [msg.result.trafficMeasured(Math.round(ev.avgKmh), Number(m.params.thresholdKmh))] : [];
   if (m.kind === "strike_on") return typeof ev?.present === "number" ? [ev.present ? msg.result.strikeOn : msg.result.strikeOff] : [];

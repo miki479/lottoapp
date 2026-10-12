@@ -2,6 +2,7 @@
 import { resolveEvent } from "../_shared/shared/resolve.ts";
 import { historyKey, marketToEvent, type MarketRow } from "../_shared/shared/market.ts";
 import { parseStrikeRss } from "../_shared/shared/strikes.ts";
+import type { MatchObservation } from "../_shared/shared/sport.ts";
 import type { DelayObservation, MetricObservation, QuakeReading, StrikeReading, TickObservation, TrafficObservation, WeatherObservation } from "../_shared/shared/types.ts";
 import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
 import { lastNotifyError, notifyFlash, notifyModeration, notifyResults, notifyStreak } from "../_lib/notify.ts";
@@ -42,6 +43,7 @@ Deno.serve(safe(async (req) => {
       let strike: StrikeReading | null = null;
       let traffic: TrafficObservation[] = [];
       let ticks: TickObservation[] = [];
+      let match: MatchObservation | null = null;
       if (event.kind === "traffic_speed_lt") {
         const hour = new Date(Math.floor(event.targetAt / 3600) * 3600 * 1000).toISOString();
         const { data } = await sb.from("traffic_observations").select("feed_id,site_id,direction,hour_start,avg_kmh,vehicles,measured_at").eq("feed_id", event.feedId).eq("site_id", event.siteId).eq("direction", event.direction).eq("hour_start", hour);
@@ -52,6 +54,9 @@ Deno.serve(safe(async (req) => {
       } else if (event.kind === "quake_m") {
         quake = await usgsWindow(event.closesAt, event.targetAt, event.minMag, event.bbox, event.circle);
         if (quake) await sb.from("feed_health").upsert({ feed_id: "usgs", last_ok_at: new Date().toISOString(), last_error: null });
+      } else if (event.kind === "match_bet") {
+        const { data } = await sb.from("match_results").select("event_id,home_goals,away_goals,status,fetched_at").eq("event_id", event.eventId).maybeSingle();
+        if (data) match = { eventId: data.event_id, homeGoals: data.home_goals, awayGoals: data.away_goals, status: data.status, fetchedAt: Date.parse(data.fetched_at) / 1000 };
       } else if (event.kind === "tick_gt") {
         const { data } = await sb.from("tick_observations").select("series,at,value,fetched_at").eq("series", event.series).eq("at", new Date(event.targetAt * 1000).toISOString());
         ticks = (data ?? []).map((o) => ({ series: o.series, at: Date.parse(o.at) / 1000, value: Number(o.value), fetchedAt: Date.parse(o.fetched_at) / 1000 }));
@@ -74,8 +79,8 @@ Deno.serve(safe(async (req) => {
       }
 
       const res = resolveEvent({
-        event, now, feed: { feedId: event.feedId, lastOkAt: lastOk.get(event.kind === "tick_gt" ? "ticks" : event.kind === "metric_gt" ? "open-meteo-metrics" : event.feedId.startsWith("om-") ? "open-meteo-places" : event.feedId) ?? null },
-        staleAfterSec: feedStale.get(event.feedId) ?? (event.feedId === "usgs" || event.feedId === "mit-scioperi" || event.kind === "tick_gt" ? 7200 : event.feedId.startsWith("om-") ? 10800 : 300), delays, weather, metrics, quake, strike, traffic, ticks,
+        event, now, feed: { feedId: event.feedId, lastOkAt: lastOk.get(event.kind === "match_bet" ? "sportsdb" : event.kind === "tick_gt" ? "ticks" : event.kind === "metric_gt" ? "open-meteo-metrics" : event.feedId.startsWith("om-") ? "open-meteo-places" : event.feedId) ?? null },
+        staleAfterSec: feedStale.get(event.feedId) ?? (event.feedId === "usgs" || event.feedId === "mit-scioperi" || event.kind === "tick_gt" || event.kind === "match_bet" ? 7200 : event.feedId.startsWith("om-") ? 10800 : 300), delays, weather, metrics, quake, strike, traffic, ticks, match,
       });
       if (res.status === "pending") { out.pending++; continue; }
 

@@ -3,8 +3,8 @@ import { INTL_TAG, type Locale, type Messages } from "../i18n/index.ts";
 export interface MarketRow {
   id: string;
   city_id: string;
-  category: "bus" | "train" | "weather" | "traffic" | "nature" | "strike" | "finance" | "culture";
-  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at" | "metric_gt" | "quake_m" | "strike_on" | "traffic_speed_lt" | "tick_gt";
+  category: "bus" | "train" | "weather" | "traffic" | "nature" | "strike" | "finance" | "culture" | "sport";
+  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at" | "metric_gt" | "quake_m" | "strike_on" | "traffic_speed_lt" | "tick_gt" | "match_bet";
   params: Record<string, unknown>;
   closes_at: string;
   target_at: string;
@@ -34,6 +34,7 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     const h0 = new Date(m.target_at).getTime() - 30 * 60_000, hh = (t: number) => new Intl.DateTimeFormat(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(new Date(t));
     return msg.question.traffic({ site: String(m.params.siteName ?? ""), toward: String(m.params.toward ?? ""), from: hh(h0), to: hh(h0 + 3600_000), kmh: Number(m.params.thresholdKmh) });
   }
+  if (m.kind === "match_bet") return msg.question.match({ bet: m.params.bet as "home_win", home: String(m.params.home), away: String(m.params.away), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
   if (m.kind === "tick_gt") {
     const series = String(m.params.series), at = m.target_at, thr = Number(m.params.threshold);
     const nf = new Intl.NumberFormat(INTL_TAG[locale], { maximumFractionDigits: series === "kp" ? 0 : 0 });
@@ -112,7 +113,7 @@ export interface Piece { t: string; b: boolean }
 /** Splits a question into plain and bold pieces: the subject (line, city, coin, article), the numbers with their unit and the times. */
 export function emphasize(text: string, m: MarketRow, cityName: string): Piece[] {
   const p = m.params;
-  const names = [p.routeName, p.routeId, p.siteName, p.label, cityName].map((x) => (x == null ? "" : String(x).trim())).filter((x) => x.length >= 2 && x !== "world");
+  const names = [p.routeName, p.routeId, p.siteName, p.label, p.home, p.away, cityName].map((x) => (x == null ? "" : String(x).trim())).filter((x) => x.length >= 2 && x !== "world");
   const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const parts = [...new Set(names)].sort((a, b) => b.length - a.length).map(esc);
   const nums = String.raw`\d+(?:[.,]\d+)?\s?(?:min|km\/h|°C|cm|mm|%|\$|M)|\b\d{1,2}:\d{2}\b|M\s?\d(?:[.,]\d)?`;

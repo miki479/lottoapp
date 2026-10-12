@@ -1,8 +1,8 @@
-import { Car, Clapperboard, Landmark, TrendingUp } from "lucide-preact";
+import { Car, Clapperboard, Landmark, Trophy, TrendingUp } from "lucide-preact";
 import { BusGhost, CloudRainGhost, StrikeGhost, TrainGhost, TreeGhost } from "./Vehicles.tsx";
 import { useState } from "preact/hooks";
 
-export type CatId = "bus" | "train" | "weather" | "nature" | "strike" | "traffic" | "finance" | "culture" | "gov";
+export type CatId = "bus" | "train" | "weather" | "nature" | "strike" | "traffic" | "finance" | "culture" | "sport" | "gov";
 export interface CatTile { id: CatId; label: string; count: number; disabled?: boolean; soon?: string }
 
 /** The chip's picture: big, see-through, filling most of the chip. */
@@ -12,6 +12,7 @@ function Art({ id }: { id: CatId }) {
   if (id === "weather") return <CloudRainGhost />;
   if (id === "nature") return <TreeGhost />;
   if (id === "strike") return <StrikeGhost />;
+  if (id === "sport") return <Trophy size={44} strokeWidth={1.6} class="gh" />;
   if (id === "gov") return <Landmark size={44} strokeWidth={1.6} class="gh" />;
   if (id === "finance") return <TrendingUp size={44} strokeWidth={1.6} class="gh" />;
   if (id === "culture") return <Clapperboard size={44} strokeWidth={1.6} class="gh" />;

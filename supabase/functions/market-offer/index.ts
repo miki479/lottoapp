@@ -1,0 +1,116 @@
+// A player creates a question from a fixed template (weather metric at a place, coin price, game players, page views).
+// Nothing free-form is accepted: every parameter is checked against a list or a range, the question is priced from the
+// current reference value and refused when the answer would be too certain. Resolution uses the same public feeds as the house markets.
+import { FAIR_MAX, FAIR_MIN, CRYPTO, WIKI_ARTICLES, buildCustomTick, isCrypto, isSteam, tickChance, tickStep } from "../_shared/shared/ticks.ts";
+import { METRICS, METRIC_IDS, metricOdds, normalCdf, type MetricId } from "../_shared/shared/metrics.ts";
+import { localDayStart } from "../_shared/shared/time.ts";
+import { db, loadCities, safe } from "../_lib/common.ts";
+
+const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
+const UA = { "User-Agent": "LateLotto/0.1 (satirical fake-credit game; https://latelotto.web.app)" };
+const PER_USER_PER_DAY = 10, PER_USER_OPEN = 6, MAX_OPEN_CUSTOM = 500;
+
+async function getJson(url: string) { const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(15_000) }); if (!r.ok) throw new Error(`HTTP ${r.status}`); return await r.json(); }
+
+/** Reference value "now" for a tick series; null when the source cannot be read. */
+async function tickReference(series: string): Promise<number | null> {
+  try {
+    if (isCrypto(series)) { const j = await getJson(`https://api.coingecko.com/api/v3/simple/price?ids=${CRYPTO[series].id}&vs_currencies=usd&precision=2`); const v = j?.[CRYPTO[series].id]?.usd; return typeof v === "number" ? v : null; }
+    if (isSteam(series)) { const j = await getJson(`https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${series.slice(6)}`); const v = j?.response?.player_count; return typeof v === "number" ? v : null; }
+    if (series.startsWith("wiki:")) {
+      const day = (e: number) => new Date(e * 1000).toISOString().slice(0, 10).replace(/-/g, ""), now = Math.floor(Date.now() / 1000);
+      const j = await getJson(`https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/${encodeURIComponent(series.slice(5))}/daily/${day(now - 8 * 86400)}/${day(now - 86400)}`);
+      const v = ((j?.items ?? []) as { views: number }[]).map((i) => i.views);
+      return v.length >= 5 ? v.reduce((a, c) => a + c, 0) / v.length : null;
+    }
+  } catch { /* fall through */ }
+  return null;
+}
+
+Deno.serve(safe(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
+  if (req.method !== "POST") return json({ error: "method" }, 405);
+  const sb = db();
+  const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+  const { data: u } = await sb.auth.getUser(token);
+  const uid = u?.user?.id;
+  if (!uid) return json({ error: "not_authenticated" }, 401);
+  if (u?.user?.is_anonymous) return json({ error: "registration_required" }, 403);
+  const b = await req.json().catch(() => null) as Record<string, unknown> | null;
+  if (!b) return json({ error: "bad_request" }, 400);
+  const now = Math.floor(Date.now() / 1000);
+  const preview = b.preview === true;
+
+  if (!preview) {
+    const day = await sb.from("markets").select("id", { count: "exact", head: true }).eq("created_by", uid).gt("created_at", new Date((now - 86400) * 1000).toISOString());
+    if ((day.count ?? 0) >= PER_USER_PER_DAY) return json({ error: "limit" }, 429);
+    const open = await sb.from("markets").select("id", { count: "exact", head: true }).eq("created_by", uid).eq("status", "open");
+    if ((open.count ?? 0) >= PER_USER_OPEN) return json({ error: "too_many_open" }, 429);
+    const all = await sb.from("markets").select("id", { count: "exact", head: true }).eq("status", "open").eq("params->>custom", "true");
+    if ((all.count ?? 0) >= MAX_OPEN_CUSTOM) return json({ error: "full" }, 429);
+  }
+  const { data: prof } = await sb.from("profiles").select("display_name").eq("id", uid).maybeSingle();
+  const by = (prof?.display_name as string | null) ?? null;
+  const iso = (e: number) => new Date(e * 1000).toISOString();
+  let draft: Record<string, unknown>;
+
+  if (b.type === "metric") {
+    const metric = String(b.metric) as MetricId, placeId = String(b.placeId ?? ""), dayOffset = Number(b.dayOffset), hour = Number(b.hour), threshold = Number(b.threshold);
+    if (!METRIC_IDS.includes(metric) || !Number.isFinite(threshold) || ![0, 1].includes(dayOffset) || !Number.isInteger(hour) || hour < 6 || hour > 23) return json({ error: "bad_request" }, 400);
+    // where: a house city with weather, or a place a player has opened (both are read by the hourly weather job)
+    const city = (await loadCities()).find((c) => c.id === placeId && c.categories.weather?.enabled && c.location);
+    let loc: { lat: number; lon: number; tz: string } | null = city ? { lat: city.location!.lat, lon: city.location!.lon, tz: city.timezone } : null;
+    if (!loc && placeId.startsWith("p-")) {
+      const { data: pl } = await sb.from("places").select("lat,lon,timezone").eq("id", placeId).maybeSingle();
+      if (pl) { loc = { lat: Number(pl.lat), lon: Number(pl.lon), tz: pl.timezone as string }; if (!preview) await sb.from("places").update({ last_used_at: iso(now) }).eq("id", placeId); }
+    }
+    if (!loc) return json({ error: "bad_place" }, 400);
+    const targetAt = localDayStart(now + dayOffset * 86400, loc.tz) + hour * 3600 + 1800;
+    if (targetAt - 600 < now + 35 * 60 || targetAt > now + 48 * 3600) return json({ error: "bad_time" }, 400);
+    const def = METRICS[metric];
+    let forecast: number | undefined;
+    try {
+      const base = def.source === "air" ? "https://air-quality-api.open-meteo.com/v1/air-quality" : "https://api.open-meteo.com/v1/forecast";
+      const j = await getJson(`${base}?${new URLSearchParams({ latitude: String(loc.lat), longitude: String(loc.lon), hourly: def.api, timezone: "GMT", forecast_days: "3" })}`);
+      const t0 = Math.floor(targetAt / 3600) * 3600, i = ((j?.hourly?.time ?? []) as string[]).findIndex((x) => Date.parse(`${x}:00Z`) / 1000 === t0);
+      const v = i >= 0 ? j.hourly[def.api][i] : null;
+      if (typeof v === "number") forecast = v;
+    } catch { /* below */ }
+    if (forecast === undefined) return json({ error: "source_unavailable" }, 503);
+    const thr = Math.round(threshold / def.step) * def.step;
+    const chance = Math.round((1 - normalCdf((thr - forecast) / def.sigma)) * 100) / 100;
+    const info = { forecast, step: def.step, unit: def.unit, chance };
+    if (!(thr >= (metric === "temp" ? -90 : 0) && thr <= def.max) || chance < FAIR_MIN || chance > FAIR_MAX) return json({ error: "too_certain", ...info }, 422);
+    const odds = metricOdds(metric, forecast, thr);
+    if (preview) return json({ preview: { ...info, odds_yes: odds.yes, odds_no: odds.no, threshold: thr } });
+    draft = {
+      city_id: placeId, category: "weather", kind: "metric_gt", feed_id: `om-${placeId}`,
+      params: { metric, threshold: Math.round(thr * 10) / 10, unit: def.unit, localHour: hour, forecast: Math.round(forecast * 10) / 10, custom: "true", by },
+      closes_at: iso(targetAt - 600), target_at: iso(targetAt), deadline_at: iso(Math.floor(targetAt / 3600) * 3600 + 3600 + 5 * 3600),
+      odds_yes: odds.yes, odds_no: odds.no, dedupe_key: `c|${placeId}|metric_${metric}|${targetAt}|${thr}`,
+    };
+  } else if (b.type === "tick") {
+    const series = String(b.series ?? ""), threshold = Number(b.threshold), at = Number(b.at);
+    const known = isCrypto(series) || isSteam(series) || (series.startsWith("wiki:") && (WIKI_ARTICLES as readonly string[]).includes(series.slice(5)));
+    if (!known || !Number.isFinite(threshold) || !Number.isFinite(at)) return json({ error: "bad_request" }, 400);
+    const wiki = series.startsWith("wiki:");
+    const target = wiki ? Math.round(at / 86400) * 86400 : Math.round(at / 300) * 300;
+    if (wiki ? (target < now + 13 * 3600 || target > now + 3 * 86400) : (target < now + 40 * 60 || target > now + 72 * 3600)) return json({ error: "bad_time" }, 400);
+    const ref = await tickReference(series);
+    if (ref === null) return json({ error: "source_unavailable" }, 503);
+    const step = tickStep(series, ref), thr = Math.round(threshold / step) * step;
+    const chance = Math.round(tickChance(series, ref, thr, Math.max(0.6, (target - now) / 3600)) * 100) / 100;
+    const info = { reference: ref, step, chance };
+    if (thr <= 0 || chance < FAIR_MIN || chance > FAIR_MAX) return json({ error: "too_certain", ...info }, 422);
+    const m = buildCustomTick(series, ref, thr, target, now);
+    if (preview) return json({ preview: { ...info, odds_yes: m.odds_yes, odds_no: m.odds_no, threshold: thr } });
+    draft = { ...m, params: { ...m.params, custom: "true", by }, dedupe_key: `c|${series}|${target}|${thr}` };
+  } else return json({ error: "bad_request" }, 400);
+
+  const have = await sb.from("markets").select("*").eq("dedupe_key", draft.dedupe_key as string).maybeSingle();
+  if (have.data) return json({ market: have.data, existing: true });
+  const { data: m, error } = await sb.from("markets").insert({ ...draft, created_by: uid }).select("*").single();
+  if (error) return json({ error: error.message }, 500);
+  return json({ market: m });
+}));

@@ -7,6 +7,7 @@ import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/a
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
 import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
+import { buildMatchMarkets, FINISHED, type Fixture, type TableRow } from "../_shared/shared/sport.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
 
@@ -68,6 +69,7 @@ Deno.serve(safe(async (req) => {
   report["open-meteo-places"] = await ingestPlaces(sb, now, lastAttempt.get("open-meteo-places") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["open-meteo-metrics"] = await ingestMetrics(sb, now, lastAttempt.get("open-meteo-metrics") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["ticks"] = await ingestTicks(sb, now, lastAttempt.get("ticks") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
+  report["sportsdb"] = await ingestSport(sb, now, lastAttempt.get("sportsdb") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["mit-scioperi"] = await ingestStrikes(sb, now, lastAttempt.get("mit-scioperi") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["usgs"] = await pingUsgs(sb, now, lastAttempt.get("usgs") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   return Response.json(report);
@@ -456,6 +458,58 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     } catch (e) { notes.push(`history: ${String((e as Error).message ?? e).slice(0, 60)}`); }
     if (ok > 0) await sb.from("feed_health").upsert({ feed_id: "ticks", last_ok_at: new Date().toISOString(), last_error: null });
     else await sb.from("feed_health").upsert({ feed_id: "ticks", last_error: notes.join("; ").slice(0, 300), last_error_at: new Date().toISOString() });
+  }
+  return notes.join("; ") || "idle";
+}
+
+
+// ---- Football (Serie A) from TheSportsDB. The free test key ("3") is for development: markets made with it are private (testOnly) until a paid key is set. ----
+const SERIE_A = "4332";
+async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
+  const key = Deno.env.get("SPORTSDB_KEY") || "3";
+  const base = `https://www.thesportsdb.com/api/v1/json/${key}`;
+  const notes: string[] = [];
+  // 1. Matches that should be over: store the final score once it is published.
+  const { data: open } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").lte("target_at", new Date(now * 1000).toISOString()).limit(100);
+  const ids = [...new Set((open ?? []).map((m) => String((m.params as { eventId: string }).eventId)))];
+  if (ids.length) {
+    const { data: have } = await sb.from("match_results").select("event_id,status").in("event_id", ids);
+    const done = new Set((have ?? []).filter((r) => FINISHED.has(String(r.status))).map((r) => r.event_id as string));
+    const rows: Record<string, unknown>[] = [];
+    for (const id of ids.filter((x) => !done.has(x)).slice(0, 12)) {
+      try {
+        const e = ((await getJson(`${base}/lookupevent.php?id=${id}`))?.events ?? [])[0];
+        if (!e) continue;
+        const hg = e.intHomeScore === null || e.intHomeScore === undefined ? null : Number(e.intHomeScore), ag = e.intAwayScore === null || e.intAwayScore === undefined ? null : Number(e.intAwayScore);
+        rows.push({ event_id: id, kickoff: `${String(e.strTimestamp)}Z`, home_goals: hg, away_goals: ag, status: String(e.strStatus ?? ""), fetched_at: new Date().toISOString() });
+      } catch (e) { notes.push(`result ${id}: ${String((e as Error).message ?? e).slice(0, 50)}`); }
+    }
+    if (rows.length) { const { error } = await sb.from("match_results").upsert(rows, { onConflict: "event_id" }); if (error) throw new Error(error.message); notes.push(`${rows.length} results`); }
+  }
+  // 2. Hourly: the next two rounds become questions.
+  if (now - last >= 3600 - 5) {
+    await sb.from("feed_health").upsert({ feed_id: "sportsdb", last_attempt_at: new Date(now * 1000).toISOString() });
+    try {
+      const next = ((await getJson(`${base}/eventsnextleague.php?id=${SERIE_A}`))?.events ?? [])[0];
+      if (!next) throw new Error("no upcoming Serie A match");
+      const round = Number(next.intRound), season = String(next.strSeason);
+      const fixtures: Fixture[] = [];
+      for (const r of [round, round + 1]) {
+        for (const e of ((await getJson(`${base}/eventsround.php?id=${SERIE_A}&r=${r}&s=${season}`))?.events ?? []) as Record<string, string>[]) {
+          const k = Date.parse(`${e.strTimestamp}Z`) / 1000;
+          if (e.idEvent && e.strHomeTeam && e.strAwayTeam && Number.isFinite(k)) fixtures.push({ eventId: e.idEvent, league: "Serie A", home: e.strHomeTeam, away: e.strAwayTeam, kickoff: k });
+        }
+      }
+      let table: TableRow[] = [];
+      try { table = (((await getJson(`${base}/lookuptable.php?l=${SERIE_A}&s=${season}`))?.table ?? []) as Record<string, string>[]).map((r) => ({ team: r.strTeam!, played: Number(r.intPlayed), points: Number(r.intPoints), goalsFor: Number(r.intGoalsFor), goalsAgainst: Number(r.intGoalsAgainst) })); } catch { /* priors fall back to averages */ }
+      const markets = buildMatchMarkets(fixtures, table, now, key === "3");
+      if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
+      await sb.from("feed_health").upsert({ feed_id: "sportsdb", last_ok_at: new Date().toISOString(), last_error: null });
+      notes.push(`${fixtures.length} fixtures, ${markets.length} offered`);
+    } catch (e) {
+      await sb.from("feed_health").upsert({ feed_id: "sportsdb", last_error: String((e as Error).message ?? e).slice(0, 300), last_error_at: new Date().toISOString() });
+      throw e;
+    }
   }
   return notes.join("; ") || "idle";
 }

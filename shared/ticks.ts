@@ -117,3 +117,29 @@ export function buildSteamMarkets(counts: Record<string, number>, now: number): 
   }
   return out;
 }
+
+/** Typical error of "what it is now" as a forecast `hours` ahead, used to price player-made questions. */
+export function tickSigma(series: string, ref: number, hours: number): number {
+  if (isCrypto(series)) return ref * 0.005 * Math.sqrt(Math.max(1, hours));
+  if (isSteam(series)) return ref * 0.07 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4);
+  return ref * 0.15;
+}
+
+/** Friendly threshold granularity for a reference value. */
+export function tickStep(series: string, ref: number): number {
+  if (isCrypto(series)) return CRYPTO[series].step;
+  if (isSteam(series)) return ref >= 500_000 ? 25_000 : ref >= 100_000 ? 10_000 : ref >= 20_000 ? 1_000 : 500;
+  return ref >= 200_000 ? 10_000 : ref >= 50_000 ? 5_000 : ref >= 10_000 ? 1_000 : 500;
+}
+
+/** Player-made questions are refused when the outcome is too certain: the chance of "yes" must stay inside this band. */
+export const FAIR_MIN = 0.08, FAIR_MAX = 0.92;
+export function tickChance(series: string, ref: number, threshold: number, hours: number): number {
+  return 1 - normalCdf((threshold - ref) / tickSigma(series, ref, hours));
+}
+
+/** A player-made question about a series, priced with that series' own error. */
+export function buildCustomTick(series: string, ref: number, threshold: number, at: number, now: number): TickMarketInsert {
+  const def = tickDef(series)!, wiki = series.startsWith("wiki:"), hours = Math.max(0.6, (at - now) / H);
+  return tickMarket(series, def, ref, threshold, tickSigma(series, ref, hours), at, wiki ? at - 12 * H : at - 600, at + (wiki ? 30 : 3) * H);
+}

@@ -19,13 +19,13 @@ export interface Trend { id: string; name: string; country: string; place?: Plac
 export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>;
   cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null;
-  onQuakeMaker: () => void; italian: boolean; nearNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
+  onQuakeMaker: () => void; onCreate: () => void; italian: boolean; nearNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
   attributions: { name: string; via?: string; license: string; licenseUrl: string; url: string }[]; installEvt: Event | null;
 }
 
 export function Home(p: HomeProps) {
   const { msg } = p;
-  const tiles = (["bus", "train", "weather", "nature", ...(p.italian ? ["strike"] : []), "traffic", "finance", "culture", "gov"] as CatId[]).map((id) => ({ id, label: msg.tabs[id], count: p.counts[id] ?? 0, disabled: id === "gov", soon: id === "gov" ? msg.tabs.soon : undefined }));
+  const tiles = (["bus", "train", "weather", "nature", ...(p.italian ? ["strike"] : []), "traffic", "finance", "culture", "sport", "gov"] as CatId[]).map((id) => ({ id, label: msg.tabs[id], count: p.counts[id] ?? 0, disabled: id === "gov", soon: id === "gov" ? msg.tabs.soon : undefined }));
   // Weather has sub-pills (rain, temperature, wind…) so the category row stays short; only the kinds that exist today are shown.
   const [wxSel, setWx] = useState<string>("all");
   const wxKey = (m: MarketRow) => (m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : m.kind === "quake_m" ? String(m.params.region ?? "world") : "");
@@ -55,6 +55,7 @@ export function Home(p: HomeProps) {
       </div>
       <div class="main stack">
         <div class="sectionhead evhead"><h2>{msg.home.events}</h2>
+          <button class="createbtn" onClick={p.onCreate}><Plus size={16} />{msg.maker.open}</button>
           {wxKinds.length > 1 && <button class={`filterbtn ${wx !== "all" ? "on" : ""}`} onClick={() => setFilterOpen(true)}><SlidersHorizontal size={16} />{wx === "all" ? msg.wx.filter : filterLabel(msg, wx)}{wx !== "all" && <i role="button" aria-label={msg.common.close} onClick={(e) => { e.stopPropagation(); setWx("all"); }}><X size={14} /></i>}</button>}
         </div>
         {filterOpen && <FilterSheet msg={msg} options={wxKinds.map((k) => ({ key: k, count: p.list.filter((m) => wxKey(m) === k).length }))} value={wx} onPick={setWx} onClose={() => setFilterOpen(false)} />}

@@ -10,7 +10,8 @@ export type MarketEvent =
   | QuakeEvent
   | StrikeEvent
   | TrafficEvent
-  | TickEvent;
+  | TickEvent
+  | MatchEvent;
 
 interface BaseEvent {
   id: string;
@@ -165,4 +166,12 @@ export interface TickObservation {
   at: number;
   value: number;
   fetchedAt: number;
+}
+
+/** "Will this bet on this football match come true?" Settled from the final score. */
+export interface MatchEvent extends BaseEvent {
+  kind: "match_bet";
+  category: "sport";
+  eventId: string;
+  bet: "home_win" | "over_2_5" | "btts";
 }

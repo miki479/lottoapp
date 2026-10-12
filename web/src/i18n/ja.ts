@@ -3,7 +3,7 @@ import type { Messages } from "./types.ts";
 const ja: Messages = {
   nav: { home: "ホーム", bets: "マイ予想", ranking: "ランキング", profile: "プロフィール" },
   common: { backOnline: "オンラインに戻りました", close: "閉じる", cancel: "キャンセル", save: "保存", retry: "やり直す", soon: "近日公開", offline: "オフラインです。最新のデータは表示されず、予想もできません。", install: "アプリをインストール", language: "言語", credits: "クレジット", copied: "コピーしました", back: "戻る" },
-  tabs: { bus: "バス", train: "電車", weather: "天気", strike: "スト", nature: "自然", traffic: "渋滞", finance: "仮想通貨", culture: "カルチャー", gov: "政府", soon: "近日" },
+  tabs: { bus: "バス", train: "電車", weather: "天気", strike: "スト", nature: "自然", traffic: "渋滞", finance: "仮想通貨", culture: "カルチャー", sport: "スポーツ", gov: "政府", soon: "近日" },
   wx: { filter: "絞り込み", world: "世界", regions: { jp: "日本", it: "イタリア", ca: "カリフォルニア", tr: "トルコ" }, localTime: "現地時間", all: "すべて", rain: "雨", names: { temp: "気温", wind: "風", snow: "雪", uv: "UV", aqi: "空気" }, forecast: (v) => `予報 ${v}`, quakeArt: "世界の地震" },
   world: "世界中",
   quakeMaker: { cta: "場所と時間を選ぶ", title: "オリジナル地震予想", body: "場所・半径・マグニチュード・時間を選ぶと、その地域の過去1年の実際の地震からオッズを計算します。", place: "場所", search: "都市を検索…", radius: "半径", mag: "最小マグニチュード", day: "日", today: "今日", tomorrow: "明日", hour: "開始", length: "長さ", hours: (n) => `${n}時間`, km: (n) => `${n} km`, create: "オッズを計算して開く", creating: "計算中…", pickPlace: "先に場所を選んでください", local: (tz) => `その場所の現地時間（${tz}）`, limit: "今日はすでに5件作成しました。明日またお試しください。", full: "オリジナル予想が多すぎます。後でお試しください。", usgs: "地震カタログが応答しません。しばらくしてからお試しください。", time: "未来の時間（今から30分以上先）を選んでください。", credit: "データ：USGS Earthquake Hazards Program。" },
@@ -35,8 +35,10 @@ const ja: Messages = {
   places: { more: "他の都市", title: "都市の天気", hint: "好きな都市や町を検索すると、雨の予想がすぐに開きます。", search: "都市を検索…", recent: "最近の都市", capitals: "イタリアの州都", famous: "世界の有名都市", withData: "バス・電車・天気あり", none: "見つかりません。名前を最後まで入力してください。", searchError: "今は検索できません。もう一度お試しください。", limit: "今日は新しい都市をすでに5つ追加しました。明日また試すか、既存の都市を選んでください。", full: "現在アクティブな都市が多すぎます。既存の都市を選んでください。", credit: "都市検索：Open-Meteo.com（CC BY 4.0）。今のところ天気のみ。" },
   top: { late: "いま最も遅れている", popular: "一番人気", city: "最も遅れている都市", closing: "まもなく締切", avg: (m) => `平均遅延${m}分`, players: (n) => `${n}件の予想`, ontime: "定刻", open: "開く" },
   card: { late: "遅れる", onTime: "定刻", per10: (w) => `10 → ${w}`, closes: "締切", forecast: "予測", live: "ライブ", yes: "はい", no: "いいえ", over: (m) => `${m}分超`, topOdds: "高オッズ", hot: "まもなく締切" },
+  maker: { open: "チャレンジを作る", title: "チャレンジを作成", hint: "賭ける内容を自分で選べます。結果は公開データで判定され、共有もできます。", tabs: { weather: "天気", crypto: "仮想通貨", games: "ゲーム", culture: "カルチャー", quake: "地震" }, place: "場所", metric: "項目", day: "日", today: "今日", tomorrow: "明日", hour: "時刻", line: "ライン", now: "現在", forecastLbl: "予報", when: "いつ", pickOne: "対象", in_h: "{n}時間後", midnightToday: "今日の終わり(UTC)", midnightTomorrow: "明日の終わり(UTC)", odds: "オッズ", chance: "確率", create: "作成して共有", creating: "作成中…", needAccount: "チャレンジの作成にはアカウントが必要です。", errors: { limit: "今日はチャレンジを作りすぎました。明日また試してください。", too_many_open: "開催中のチャレンジが6つあります。終了を待ってください。", full: "現在アクティブなチャレンジが多すぎます。", too_certain: "当たり前すぎます。ラインを実際の値に近づけてください。", bad_time: "時刻が無効です。もっと先を選んでください。", source_unavailable: "データ元が現在応答しません。", generic: "チャレンジを作成できません。もう一度お試しください。" }, trending: "トレンド", trendingNear: "近くのトレンド", share: "共有", copied: "リンクをコピーしました", shareText: "LateLottoで賭けよう（風刺ゲーム、架空のクレジット）：", by: (n) => `作成者：${n}` },
   chart: { title: "推移", min: "最低", max: "最高", change: "変化", above: "ライン超え" },
   quips: {
+    sport: ["サッカーは全員が監督になれる唯一の仕事。","VARは見ている。あなたは賭けるだけ。","90分のうち、本気のプレーは5分。","居酒屋の予想もあなたの予想と同じ価値。"],
     game: ["ゲームは古くならない。アップデートで週末が消えるだけ。","あと1試合だけ。そう言って朝になる。","サーバーは耐える。あなたの週末は耐えない。","レディ・プレイヤー・ワン?いいえ、百万。"],
     bus: ["バスは空港のWi-Fiみたい。あるけど、必要な時にはない。", "バスを待つ時間は料金に含まれています。", "時刻表は目安です。選挙公約と同じで。", "見るのをやめた瞬間に来る。たぶん。"],
     train: ["電車はいつも時間通り。自分が乗る時以外は。", "遅延は、待ち時間のグレードアップ。", "時間通りの電車は都市伝説。", "車掌は知っている。あなたは賭けるだけ。"],
@@ -66,6 +68,7 @@ const ja: Messages = {
     })[q.metric],
     quake: (q) => `${q.region ?? "世界のどこか"}で、${q.from}から${q.to}の間${q.region ? "（現地時間）" : ""}にマグニチュード${q.mag}以上の地震が起きますか？`,
     strike: (q) => `${q.day}の全国ストライキ（${q.who}）は、その日の始まりにも実施予定のままですか？`,
+    match: (q) => `${q.bet === "home_win" ? `${q.home}が${q.away}に勝つ` : q.bet === "over_2_5" ? `${q.home}対${q.away}で3ゴール以上` : `${q.home}対${q.away}で両チームが得点`}？キックオフは${q.time}。`,
     tick: (q) => (q.kind === "players" ? `${q.time}時点で${q.label}のSteamオンライン人数は${q.value}人を超えますか？` : q.kind === "price" ? `${q.time}時点で${q.label}は${q.value}を上回りますか？` : q.kind === "kp" ? `${q.from}〜${q.to}にKp指数（オーロラ）は${q.value}に達しますか？` : `${q.day}（UTC）の${q.label}のWikipediaページは${q.value}回を超える閲覧がありますか？`),
     traffic: (q) => `${q.from}〜${q.to}の${q.site}（${q.toward}方面）の平均速度は${q.kmh} km/h未満になりますか？`,
   },
@@ -79,7 +82,7 @@ const ja: Messages = {
   result: {
     won: "的中", lost: "外れ", void: "返金", amountWon: (n) => `+${n}`, amountLost: (n) => `−${n}`, amountVoid: (n) => `${n}`,
     subWon: "予想的中です。", subLost: "今回はデータが違いました。", subVoid: "データが信頼できなかったため、賭け額を全額お返ししました。",
-    measured: (m, s) => (m > 0 ? `実測の遅延：${m}分${s}秒` : `実測の遅延：${s}秒`), threshold: (m) => `しきい値：${m}分超`, rainMeasured: (mm) => `実測の降水量：${mm} mm`, tickMeasured: (v) => `実測値：${v}`, trafficMeasured: (a, t) => `実測の平均速度：${a} km/h（しきい値 ${t}）`, strikeOn: "ストライキは予定通り", strikeOff: "ストライキは中止または延期", metricMeasured: (n, v) => `${n}の実測値：${v}`, quakeMeasured: (c, m) => (c === 0 ? "その時間帯に地震はありませんでした" : `地震${c}回、最大${m}`),
+    measured: (m, s) => (m > 0 ? `実測の遅延：${m}分${s}秒` : `実測の遅延：${s}秒`), threshold: (m) => `しきい値：${m}分超`, rainMeasured: (mm) => `実測の降水量：${mm} mm`, matchScore: (h, a) => `最終スコア：${h}–${a}`, tickMeasured: (v) => `実測値：${v}`, trafficMeasured: (a, t) => `実測の平均速度：${a} km/h（しきい値 ${t}）`, strikeOn: "ストライキは予定通り", strikeOff: "ストライキは中止または延期", metricMeasured: (n, v) => `${n}の実測値：${v}`, quakeMeasured: (c, m) => (c === 0 ? "その時間帯に地震はありませんでした" : `地震${c}回、最大${m}`),
     stake: "賭け額", odds: "オッズ", share: "結果をシェア", shareText: "LateLottoでの私の結果", close: "閉じる", more: (n) => `他に${n}件の結果`, saved: "画像を保存しました",
   },
   ranking: {

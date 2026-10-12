@@ -1,5 +1,6 @@
+import { sb } from "../lib/api.ts";
 import { Q } from "./Q.tsx";
-import { Layers, Rocket, X } from "lucide-preact";
+import { Layers, Rocket, Share2, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { fmtOdds, isYesNo, money, question, quip, type MarketRow } from "../lib/format.ts";
@@ -13,6 +14,7 @@ import { Sheet } from "./Sheet.tsx";
 import { MetricArt } from "./MetricArt.tsx";
 import { TrafficScene } from "./TrafficScene.tsx";
 import { TickScene } from "./TickScene.tsx";
+import { SportScene } from "./SportScene.tsx";
 import { TickChart } from "./TickChart.tsx";
 import { Sky } from "./Sky.tsx";
 import { TripScene } from "./TripScene.tsx";
@@ -28,6 +30,14 @@ export function BetSheet(p: {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const share = async () => {
+    const url = `${location.origin}/?m=${p.m.id}`;
+    const text = `${p.msg.maker.shareText} ${question(p.m, p.msg, p.locale, cityName(city, p.locale), city.timezone)}`;
+    sb.rpc("register_share", { p_market: p.m.id }).then(() => {}, () => {});
+    try { if (navigator.share) { await navigator.share({ title: "LateLotto", text, url }); return; } } catch { return; }
+    try { await navigator.clipboard.writeText(`${text} ${url}`); setCopied(true); setTimeout(() => setCopied(false), 2500); } catch { /* nothing to do */ }
+  };
   const [boost, setBoost] = useState(false);
   const city = cityOf(p.m.city_id), isRain = isYesNo(p.m.kind);
   const odds = Number(pick === "yes" ? p.m.odds_yes : p.m.odds_no);
@@ -43,10 +53,12 @@ export function BetSheet(p: {
   if (joining) return <JoinStep msg={p.msg} locale={p.locale} googleOn={p.googleOn} stakeLabel={money(amount, p.locale)} onBack={() => setJoining(false)} onClose={p.onClose} onJoined={place} />;
   return (
     <Sheet onClose={p.onClose} label={p.msg.sheet.title}>
-      <div class="shead"><h2>{p.msg.sheet.title}</h2><button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>
+      <div class="shead"><h2>{p.msg.sheet.title}</h2><span class="grow" /><button class="iconbtn" onClick={share} aria-label={p.msg.maker.share}><Share2 size={20} /></button><button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>
+      {copied && <p class="hint" role="status">{p.msg.maker.copied}</p>}
       <p class="q" style="font-weight:600"><Q m={p.m} msg={p.msg} locale={p.locale} city={cityName(city, p.locale)} tz={city.timezone} /></p>
       <p class="quip">{quip(p.m, p.msg)}</p>
-      {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "traffic_speed_lt" ? <TrafficScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "tick_gt" ? <TickScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" || p.m.kind === "strike_on" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : <TripScene m={p.m} now={p.now} hint={pick} big />}
+      {typeof p.m.params.by === "string" && p.m.params.by && <p class="byline">{p.msg.maker.by(p.m.params.by)}</p>}
+      {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "traffic_speed_lt" ? <TrafficScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "match_bet" ? <SportScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "tick_gt" ? <TickScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" || p.m.kind === "strike_on" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : <TripScene m={p.m} now={p.now} hint={pick} big />}
       {p.m.kind === "tick_gt" && <TickChart m={p.m} msg={p.msg} locale={p.locale} />}
       <div>
         <span class="detail">{p.msg.sheet.pick}</span>

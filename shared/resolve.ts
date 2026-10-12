@@ -1,4 +1,5 @@
 import { METRICS } from "./metrics.ts";
+import { FINISHED, type MatchObservation } from "./sport.ts";
 import { CRYPTO_GRACE_SEC, isSpot, tickDef } from "./ticks.ts";
 import { MIN_VEHICLES, MIN_WINDOW_SEC } from "./traffic.ts";
 import type {
@@ -6,6 +7,7 @@ import type {
   DelayObservation,
   FeedHealth,
   MarketEvent,
+  MatchEvent,
   MetricEvent,
   MetricObservation,
   QuakeEvent,
@@ -36,6 +38,7 @@ export interface ResolveInput {
   strike?: StrikeReading | null;
   traffic?: TrafficObservation[];
   ticks?: TickObservation[];
+  match?: MatchObservation | null;
 }
 
 /** A bus delay reading counts only if taken within this window around the scheduled time. */
@@ -80,6 +83,7 @@ export function resolveEvent(input: ResolveInput): Resolution {
     event.kind === "strike_on" ? strikeReading(event, input) :
     event.kind === "traffic_speed_lt" ? trafficReading(event, input) :
     event.kind === "tick_gt" ? tickReading(event, input) :
+    event.kind === "match_bet" ? matchReading(event, input) :
     delayReading(event, input);
 
   if (reading.kind === "none") {
@@ -137,6 +141,15 @@ function metricReading(event: MetricEvent, input: ResolveInput): Reading {
   const def = METRICS[event.metric];
   if (!Number.isFinite(obs.value) || obs.value < def.min || obs.value > def.max) return { kind: "implausible" };
   return { kind: "ok", yes: obs.value >= event.threshold, evidence: { metric: event.metric, value: obs.value, hourStart, threshold: event.threshold } };
+}
+
+function matchReading(event: MatchEvent, input: ResolveInput): Reading {
+  const o = input.match;
+  // Only a final score counts: a live or postponed match stays pending, then is voided at the deadline.
+  if (!o || !FINISHED.has(o.status) || o.homeGoals === null || o.awayGoals === null) return { kind: "none" };
+  if (o.homeGoals < 0 || o.awayGoals < 0 || o.homeGoals > 30 || o.awayGoals > 30) return { kind: "implausible" };
+  const yes = event.bet === "home_win" ? o.homeGoals > o.awayGoals : event.bet === "over_2_5" ? o.homeGoals + o.awayGoals >= 3 : o.homeGoals > 0 && o.awayGoals > 0;
+  return { kind: "ok", yes, evidence: { home: o.homeGoals, away: o.awayGoals, bet: event.bet } };
 }
 
 function tickReading(event: TickEvent, input: ResolveInput): Reading {
