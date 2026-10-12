@@ -166,3 +166,86 @@ export function StrikeGhost() {
     </svg>
   );
 }
+
+/** Cripto: a gold coin and a chart that climbs. The coin spins and the line draws itself on hover or tap. */
+export function CryptoGhost() {
+  return (
+    <svg viewBox="0 0 80 70" class="gh gh-crypto" aria-hidden="true">
+      <path d="M0 62Q22 56 44 61T80 59V70H0Z" fill="#c98f1e" opacity=".35" />
+      <g class="gh-bars"><rect x="10" y="44" width="9" height="16" rx="2" fill="#f2b01e" opacity=".7" /><rect x="22" y="36" width="9" height="24" rx="2" fill="#f2b01e" opacity=".8" /><rect x="34" y="40" width="9" height="20" rx="2" fill="#f2b01e" opacity=".7" /></g>
+      <path class="gh-line" d="M8 46L24 34L36 40L56 16L68 20" stroke="#2e9e6b" stroke-width="3.400" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+      <path class="gh-arrow" d="M60 14L69 19L62 26" stroke="#2e9e6b" stroke-width="3.400" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+      <g class="gh-coin"><circle cx="58" cy="46" r="13" fill="#f7b733" stroke="#c98f1e" stroke-width="2.200" /><circle cx="58" cy="46" r="9" fill="none" stroke="#c98f1e" stroke-width="1.400" opacity=".7" /><path d="M54 40h6a3.600 3.600 0 0 1 0 7h-6zm0 7h7a3.600 3.600 0 0 1 0 7h-7zM57 38v2M60 38v2M57 54v2M60 54v2" stroke="#8a5d0a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" /></g>
+    </svg>
+  );
+}
+
+/** Cultura: a clapperboard and a popcorn bucket. The clapper snaps shut on hover or tap. */
+export function CultureGhost() {
+  return (
+    <svg viewBox="0 0 80 70" class="gh gh-culture" aria-hidden="true">
+      <path d="M0 62Q22 56 44 61T80 59V70H0Z" fill="#8a5ad8" opacity=".25" />
+      <g class="gh-board"><rect x="8" y="30" width="40" height="28" rx="3" fill="#2a2f3a" /><path d="M8 38h40" stroke="#fff" stroke-width="1.600" opacity=".6" /><path d="M14 44h12M14 50h20" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7" /></g>
+      <g class="gh-clap"><rect x="8" y="22" width="40" height="9" rx="2" fill="#2a2f3a" /><path d="M12 22l7 9M22 22l7 9M32 22l7 9M42 22l6 8" stroke="#fff" stroke-width="3.600" stroke-linecap="round" opacity=".9" /></g>
+      <g class="gh-pop"><path d="M54 36h20l-3 24H57z" fill="#e5484d" /><path d="M58 36l1 24M64 36v24M70 36l-1 24" stroke="#fff" stroke-width="2" opacity=".85" /><g fill="#fff3c4"><circle cx="58" cy="32" r="4.500" /><circle cx="65" cy="29" r="5" /><circle cx="71" cy="33" r="4.200" /><circle cx="62" cy="34" r="4" /></g></g>
+    </svg>
+  );
+}
+
+/** Sport: a pitch corner with a goal and a ball. The ball is kicked into the net on hover or tap. */
+export function SportGhost() {
+  return (
+    <svg viewBox="0 0 80 70" class="gh gh-sport" aria-hidden="true">
+      <path d="M0 62Q22 54 44 60T80 57V70H0Z" fill="#2e9e6b" opacity=".6" /><path d="M0 67Q30 61 80 66V70H0Z" fill="#1f7a50" opacity=".5" />
+      <g stroke="#f4f7fb" stroke-width="3" fill="none" stroke-linecap="round"><path d="M52 58V26h22v32" /></g><path d="M52 26h22" stroke="#1f7a50" stroke-width="1" opacity=".5" />
+      <path class="gh-net" d="M54 28h18M54 36h18M54 44h18M54 52h18M60 28v30M66 28v30" stroke="#f4f7fb" stroke-width="1.200" opacity=".9" />
+      <g class="gh-ball"><circle cx="22" cy="54" r="9" fill="#fff" stroke="#1d2433" stroke-width="1.800" /><path d="M22 47l5 3.600-2 6h-6l-2-6z" fill="#1d2433" /><path d="M22 47v-3M27 50.600l3-1M25 56.600l2 3M19 56.600l-2 3M17 50.600l-3-1" stroke="#1d2433" stroke-width="1.400" stroke-linecap="round" /></g>
+    </svg>
+  );
+}
+
+/** One detailed little car seen from the side, facing right: two-tone body, window pillars, door and handle, mirror, lights, arches, hubcaps. */
+function SideCar({ x, col, kind, k }: { x: number; col: string; kind: "sedan" | "hatch" | "taxi"; k: number }) {
+  const r0 = kind === "hatch" ? 6.5 : 9, r1 = kind === "hatch" ? 21 : 20.5, rY = kind === "hatch" ? 31.6 : 32.4, mid = (r0 + r1) / 2 + 0.6;
+  const body = `M1 48V43.5Q1 41.4 3.200 40.900L${r0 - 2} 40L${r0} ${rY + 1.500}Q${r0 + 0.800} ${rY} ${r0 + 2.200} ${rY}H${r1 - 2}Q${r1 - 0.400} ${rY} ${r1 + 0.800} ${rY + 1.200}L${r1 + 3} 40L23.400 40.800Q26 41.500 26 43.800V48Z`;
+  const glass = `M${r0 + 1.400} 39.400L${r0 + 2.600} ${rY + 2}Q${r0 + 3} ${rY + 1.200} ${r0 + 3.800} ${rY + 1.200}H${r1 - 3}Q${r1 - 2} ${rY + 1.200} ${r1 - 1.400} ${rY + 2.200}L${r1 + 0.400} 39.400Z`;
+  return (
+    <g class={`gh-car c${k}`} transform={`translate(${x} 3) scale(.9)`}>
+      <ellipse cx="13.500" cy="52.500" rx="12.500" ry="1.800" fill="#000" opacity=".16" />
+      <path d={body} fill={col} /><path d="M1 44.600H26V48H1Z" fill="#000" opacity=".16" />
+      <path d={glass} fill="#cfe6fa" /><path d={glass} fill="#1c2a44" opacity=".25" />
+      <path d={`M${mid} ${rY + 1.200}V39.600`} stroke={col} stroke-width="1.500" />
+      <path d={`M${mid + 0.800} 40.600V46.400`} stroke="#000" stroke-width=".7" opacity=".3" /><rect x={mid + 1.400} y="42" width="3" height="1" rx=".5" fill="#fff" opacity=".8" />
+      <rect x={r1 + 1} y="38.400" width="1.800" height="1.300" rx=".5" fill={col} /><rect x="1" y="42" width="1.300" height="2.400" rx=".5" fill="#ff3b30" /><rect class="gh-brake" x="0.600" y="42.200" width="1.700" height="2.200" rx=".6" fill="#ff3b30" />
+      <path d="M24.600 42.200Q26 42.400 26 43.800V44.600H24.600Z" fill="#fff6c2" /><rect x="0.800" y="46.600" width="25.200" height="1.600" rx=".8" fill="#2a2f3a" opacity=".55" />
+      {kind === "taxi" && <g><rect x={(r0 + r1) / 2 - 1.800} y={rY - 2.400} width="5.200" height="2.400" rx=".6" fill="#ffe36a" stroke="#2a2f3a" stroke-width=".5" /></g>}
+      <g><path d="M3.600 48.500A3.700 3.700 0 0 1 11 48.500Z" fill="#15121f" /><path d="M16.200 48.500A3.700 3.700 0 0 1 23.600 48.500Z" fill="#15121f" /></g>
+      <circle cx="7.300" cy="49" r="3.300" fill="#1a1c25" /><circle cx="7.300" cy="49" r="1.600" fill="#c9d0de" /><circle cx="19.900" cy="49" r="3.300" fill="#1a1c25" /><circle cx="19.900" cy="49" r="1.600" fill="#c9d0de" />
+    </g>
+  );
+}
+
+/** Traffico: a short queue of detailed cars with brake lights. The cars creep forward and the lights blink on hover or tap. */
+export function TrafficGhost() {
+  return (
+    <svg viewBox="0 0 80 70" class="gh gh-traffic" aria-hidden="true">
+      <g fill="#8a96ad" opacity=".5"><rect x="4" y="8" width="10" height="26" /><rect x="17" y="2" width="12" height="32" /><rect x="33" y="12" width="10" height="22" /><rect x="48" y="4" width="12" height="30" /><rect x="64" y="14" width="10" height="20" /></g>
+      <g fill="#fff" opacity=".35"><rect x="6" y="12" width="2" height="2" /><rect x="10" y="12" width="2" height="2" /><rect x="19" y="8" width="2" height="2" /><rect x="24" y="8" width="2" height="2" /><rect x="50" y="10" width="2" height="2" /><rect x="55" y="10" width="2" height="2" /></g>
+      <rect x="0" y="54" width="80" height="14" fill="#5f6675" opacity=".6" /><rect x="0" y="54" width="80" height="1.600" fill="#8e96a8" opacity=".7" /><path d="M0 61H80" stroke="#fff" stroke-width="2" stroke-dasharray="7 6" opacity=".7" />
+      <g class="gh-cars"><SideCar x={1} col="#e5484d" kind="sedan" k={0} /><SideCar x={27} col="#3b6fd4" kind="hatch" k={1} /><SideCar x={53} col="#f2b01e" kind="taxi" k={2} /></g>
+    </svg>
+  );
+}
+
+/** Governo: a columned building with a flag. The flag waves on hover or tap. */
+export function GovGhost() {
+  return (
+    <svg viewBox="0 0 80 70" class="gh gh-gov" aria-hidden="true">
+      <path d="M0 62Q22 56 44 61T80 59V70H0Z" fill="#5b6b8a" opacity=".3" />
+      <path d="M12 30L40 14L68 30z" fill="#5b6b8a" /><rect x="14" y="30" width="52" height="4" fill="#8a96ad" />
+      <g fill="#cfd6e4"><rect x="18" y="35" width="6" height="22" /><rect x="29" y="35" width="6" height="22" /><rect x="45" y="35" width="6" height="22" /><rect x="56" y="35" width="6" height="22" /></g>
+      <rect x="12" y="57" width="56" height="5" rx="1" fill="#8a96ad" />
+      <rect x="21" y="8" width="2" height="14" fill="#8a5a36" /><path class="gh-flag" d="M23 9h14q-3 4 0 8H23z" fill="#e5484d" />
+    </svg>
+  );
+}

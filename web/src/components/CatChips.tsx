@@ -1,5 +1,4 @@
-import { Car, Clapperboard, Landmark, Trophy, TrendingUp } from "lucide-preact";
-import { BusGhost, CloudRainGhost, StrikeGhost, TrainGhost, TreeGhost } from "./Vehicles.tsx";
+import { BusGhost, CloudRainGhost, CryptoGhost, CultureGhost, GovGhost, SportGhost, StrikeGhost, TrafficGhost, TrainGhost, TreeGhost } from "./Vehicles.tsx";
 import { useState } from "preact/hooks";
 
 export type CatId = "bus" | "train" | "weather" | "nature" | "strike" | "traffic" | "finance" | "culture" | "sport" | "gov";
@@ -12,11 +11,11 @@ function Art({ id }: { id: CatId }) {
   if (id === "weather") return <CloudRainGhost />;
   if (id === "nature") return <TreeGhost />;
   if (id === "strike") return <StrikeGhost />;
-  if (id === "sport") return <Trophy size={44} strokeWidth={1.6} class="gh" />;
-  if (id === "gov") return <Landmark size={44} strokeWidth={1.6} class="gh" />;
-  if (id === "finance") return <TrendingUp size={44} strokeWidth={1.6} class="gh" />;
-  if (id === "culture") return <Clapperboard size={44} strokeWidth={1.6} class="gh" />;
-  return <Car size={44} strokeWidth={1.6} class="gh" />;
+  if (id === "finance") return <CryptoGhost />;
+  if (id === "culture") return <CultureGhost />;
+  if (id === "sport") return <SportGhost />;
+  if (id === "gov") return <GovGhost />;
+  return <TrafficGhost />;
 }
 
 /** Category chips. Each picture plays one short scene when hovered or tapped (the vehicle drives through, rain falls, leaves blow) and then rests. */

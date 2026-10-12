@@ -23,7 +23,7 @@ export function TabBar({ value, onPick, msg, openBets, profileDot }: { value: Sc
 export function Sidebar({ value, onPick, msg, openBets, profileDot }: { value: Screen; onPick: (s: Screen) => void; msg: Messages; openBets: number; profileDot?: boolean }) {
   return (
     <nav class="side" aria-label="Main">
-      <div class="brand"><i><Clock3 size={20} strokeWidth={2.4} /></i><span>Late<b>Lotto</b></span></div>
+      <div class="brand"><i><Clock3 size={20} strokeWidth={2.4} /></i><span class="tx"><span class="wm">Late<b>Lotto</b></span><em class="stag">{msg.home.satire}</em></span></div>
       {ITEMS.map(([id, Icon]) => (
         <button key={id} class={value === id ? "on" : ""} onClick={() => onPick(id)} aria-current={value === id ? "page" : undefined}>
           <Icon size={20} strokeWidth={value === id ? 2.4 : 2} /><span>{msg.nav[id]}</span>

@@ -1,5 +1,6 @@
 import { CloudRain } from "lucide-preact";
 import { FilterSheet, filterLabel } from "../components/FilterSheet.tsx";
+import { quip } from "../lib/format.ts";
 import { CatChips, type CatId } from "../components/CatChips.tsx";
 import { Empty } from "../components/Empty.tsx";
 import { CrowdCard } from "../components/CrowdCard.tsx";
@@ -33,6 +34,10 @@ export function Home(p: HomeProps) {
   const wxKey = (m: MarketRow) => (m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : m.kind === "quake_m" ? String(m.params.region ?? "world") : "");
   const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi", "hail"] : p.cat === "nature" ? ["world", "jp", "it", "ca", "tr"] : [];
   const [filterOpen, setFilterOpen] = useState(false);
+  // The hero tells the dry jokes: the fixed line first, then one per kind of question that is open right now, rotating.
+  const jokes = [...new Set([msg.home.hero.body, ...(p.markets ?? []).map((m) => quip(m, msg)).filter(Boolean)])].slice(0, 12);
+  const [jokeIdx, setJokeIdx] = useState(0);
+  useEffect(() => { if (jokes.length < 2) return; const i = setInterval(() => setJokeIdx((x) => (x + 1) % jokes.length), 6500); return () => clearInterval(i); }, [jokes.length]);
   const [catsOpen, setCatsOpen] = useState(() => EXTRA_CATS.includes(p.cat));
   const extraCount = EXTRA_CATS.reduce((n, c) => n + (p.counts[c] ?? 0), 0);
   useEffect(() => { if (EXTRA_CATS.includes(p.cat)) setCatsOpen(true); }, [p.cat]);
@@ -48,7 +53,7 @@ export function Home(p: HomeProps) {
         <i class="star s1" /><i class="star s2" /><i class="star s3" /><i class="star s4" />
         <span class="hero-ico"><Sparkles size={22} /></span>
         <h1>{msg.home.hero.title}</h1>
-        <p>{msg.home.hero.body}</p>
+        <p class="hero-quip" key={jokeIdx}>{jokes[jokeIdx % jokes.length]}</p>
       </section>
       <div class="aside">
         {p.top.length > 0 && (

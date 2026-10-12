@@ -32,7 +32,7 @@ import { ensureGuest, guestState, sb } from "./lib/api.ts";
 import { CITIES, cityInfos, cityName, cityOf } from "./lib/cities.ts";
 import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
-import { countdown, currencySymbol, dayIn, isYesNo, money, question, quip, type MarketRow } from "./lib/format.ts";
+import { countdown, currencySymbol, dayIn, isYesNo, money, question, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
 import { PlacePicker } from "./components/PlacePicker.tsx";
@@ -329,9 +329,6 @@ export function App() {
     for (const p of popular.slice(0, 2)) { const m = open.find((x) => x.id === p.market_id); if (m) out.push({ id: `p${m.id}`, node: <><b>{msg.ticker.crowd(p.bets)}</b> · {q(m)}</> }); }
     open.filter((m) => !m.params.ladderOf && Date.parse(m.closes_at) - now < 8 * 60_000 && Date.parse(m.closes_at) > now).slice(0, 2).forEach((m) => out.push({ id: `c${m.id}`, node: <><b>{msg.ticker.closing}</b> · {q(m)}</> }));
     if (isItalian) { const s = open.filter((m) => m.category === "strike").sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at))[0]; if (s) out.push({ id: `s${s.id}`, node: <>{msg.ticker.strike(new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(new Date(s.target_at)))}</> }); }
-    // The dry one-liners live here, with the other jokes: one per kind of question that is open right now.
-    const seenKinds = new Set<string>();
-    for (const m of open) { const t = quip(m, msg); if (!t || seenKinds.has(t.slice(0, 12))) continue; if (seenKinds.size >= 8) break; seenKinds.add(t.slice(0, 12)); out.push({ id: `j${m.id}`, node: <i>{t}</i> }); }
     msg.home.idle.forEach((s, i) => out.splice(Math.min(out.length, 1 + i * 2), 0, { id: `t${i}`, node: <>{s}</> }));
     return out;
   }, [activity, results, locale, open, live, popular, isItalian, Math.floor(now / 30000)]);
@@ -476,11 +473,10 @@ export function App() {
     <div class="shell">
       <Sidebar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} />
       <div>
-        <Header claimable={claimable} onWallet={() => setRewardsOpen(true)} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} wallet={profile ? new Intl.NumberFormat(INTL_TAG[locale]).format(Math.round(wallet)) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
+        <Header satire={msg.home.satire} claimable={claimable} onWallet={() => setRewardsOpen(true)} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} wallet={profile ? new Intl.NumberFormat(INTL_TAG[locale]).format(Math.round(wallet)) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
         <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
         <Ticker items={tickerItems} />
         <main class="content">
-          <div class="satire" role="note">{msg.home.satire}</div>
           {stale && <p class="note warn" style="margin-bottom:12px">{msg.feedWarning}</p>}
           {screen === "home" && <Home nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets challenges={myChallenges} onChallenge={(code) => setChallengeCode(code)} parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
