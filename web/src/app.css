@@ -878,3 +878,5 @@ textarea.field { resize: vertical; min-height: 84px; }
   .morecats { display: none; }
 }
 @media (max-width: 560px) { .hero { padding: 16px 18px; } .hero-ico { display: none; } .hero h1 { font-size: 22px; max-width: none; } }
+
+.sheet .mkchips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .sheet .mkchips::-webkit-scrollbar { display: none; } .sheet .mkchips .mkchip { flex: none; }

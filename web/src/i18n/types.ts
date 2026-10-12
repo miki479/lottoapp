@@ -10,7 +10,7 @@ export interface BusQ { route: string; headsign: string; stop: string; time: str
 export interface RainQ { city: string; time: string }
 export type MetricKey = "temp" | "wind" | "snow" | "uv" | "aqi" | "hail";
 export interface MetricQ { metric: MetricKey; city: string; time: string; value: number; unit: string }
-export type MatchBetKey = "home_win" | "draw" | "away_win" | "dc_1x" | "dc_x2" | "dc_12" | "over_1_5" | "over_2_5" | "over_3_5" | "btts" | "home_clean" | "away_clean";
+export type MatchBetKey = import("../../../shared/sport.ts").MatchBet;
 export interface MatchQ { bet: MatchBetKey; home: string; away: string; time: string }
 export interface TickQ { kind: "price" | "kp" | "wiki" | "players" | "storm" | "alert"; label: string; value: string; time: string; from: string; to: string; day: string }
 export interface TrafficQ { site: string; toward: string; from: string; to: string; kmh: number }
@@ -53,7 +53,7 @@ export interface Messages {
   card: { late: string; onTime: string; per10: (win: number) => string; closes: string; forecast: string; live: string; yes: string; no: string; over: (min: number) => string; topOdds: string; hot: string };
   alertNames: { yellow: string; orange: string; red: string };
   nearby: { title: string; hint: string; radius: string; none: string; home: string; homeHint: string; homeSet: string; homeClear: string; homeSearch: string; homeNone: string; askLocate: string; statsTitle: string; statsIntro: string; towns: string; bands: string; yes: string; notEnough: string; people: string; total: string; km: string };
-  sportui: { all: string; allMarkets: string; result: string; double: string; goals: string; over: string; under: string; goalNo: string; goal: string; noGoal: string; clean: string; cleanHome: string; cleanAway: string; pickOne: string; needAccount: string; busy: string; noMatches: string };
+  sportui: { all: string; allMarkets: string; result: string; double: string; goals: string; over: string; under: string; goalNo: string; goal: string; noGoal: string; clean: string; cleanHome: string; cleanAway: string; pickOne: string; needAccount: string; busy: string; noMatches: string; firstHalf: string; secondHalf: string; cornersT: string; cardsT: string; redT: string; halfGoal: string; yes: string; no: string; unavailable: string; halves: string; finalT: string };
   teamSearch: string;
   matchmaker: { tab: string; pick: string; reason: string; exists: string; none: string; open: string; bets: Record<MatchBetKey, string> };
   fx: { visibility: string; vPrivate: string; vPrivateHint: string; vPublic: string; vPublicHint: string; world: string; judgeLabel: string; judgeCreator: string; judgeVote: string; judgeHint: string; needHome: string; voteTitle: string; voteWait: string; voteDone: string; votes: string; judgeCant: string; byVote: string; byJudge: string; publicBadge: string; privateBadge: string; report: string; reported: string; nearTitle: string; players: string; errors: Record<"judge_cannot_bet" | "decided_by_vote" | "decided_by_judge" | "not_a_player" | "home_required" | "account_too_new" | "bad_mode", string> };

@@ -5,6 +5,7 @@ import { INTL_TAG } from "../i18n/index.ts";
 import { fmtOdds, type MarketRow } from "../lib/format.ts";
 import type { Pick } from "../lib/types.ts";
 import { computeOdds } from "../../../shared/odds.ts";
+import { DETAIL_LEAGUES } from "../../../shared/sport.ts";
 import { sb } from "../lib/api.ts";
 import { Sheet } from "./Sheet.tsx";
 import { X } from "lucide-preact";
@@ -48,9 +49,12 @@ function OddsBtn(p: { label: string; odds: number | null; locale: Locale; onClic
 }
 
 /** Football the way betting sites show it: one row per match with 1-X-2, and "all markets" for goals, double chance, clean sheets. */
-export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; onPick: (m: MarketRow, pick: Pick) => void; registered: boolean; onAuth: () => void }) {
+export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; onPick: (m: MarketRow, pick: Pick) => void; registered: boolean; onAuth: () => void; details: boolean }) {
   const u = p.msg.sportui;
   const [open, setOpen] = useState<Match | null>(null), [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null);
+  const [tab, setTab] = useState<"main" | "half" | "corners" | "cards">("main");
+  const hasDetails = !!open && p.details && DETAIL_LEAGUES.includes(open.league);
+  const line = (l: string) => (p.locale === "it" ? l.replace("_", ",") : l.replace("_", "."));
   const leagues = useMemo(() => [...new Set(p.matches.map((m) => m.league))], [p.matches]);
   const [league, setLeague] = useState("");
   const when = (e: number) => new Intl.DateTimeFormat(INTL_TAG[p.locale], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(e * 1000));
@@ -61,7 +65,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
     setBusy(true);
     const m = await ensure(mt, bet);
     setBusy(false);
-    if (!m) { setErr(p.msg.maker.errors.generic); return; }
+    if (!m) { setErr(u.unavailable); return; }
     mt.markets.set(bet, m);
     setOpen(null);
     p.onPick(m, pick);
@@ -69,7 +73,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
   const shown = p.matches.filter((m) => !league || m.league === league);
   const Row = (mt: Match) => (
     <article class="card matchrow" key={mt.eventId}>
-      <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span><button class="more" onClick={() => setOpen(mt)}>{u.allMarkets}<ChevronRight size={14} /></button></div>
+      <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span><button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button></div>
       <b class="teams">{mt.home} – {mt.away}</b>
       <div class="oddsrow">
         <OddsBtn label="1" odds={oddsOf(mt, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(mt, "home_win", "yes")} />
@@ -91,6 +95,8 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
           <div class="shead"><h2>{open.home} – {open.away}</h2><button class="iconbtn" onClick={() => setOpen(null)} aria-label={p.msg.common.close}><X size={22} /></button></div>
           <span class="byline">{open.league} · {when(open.kickoff)}</span>
           {err && <p class="formerr" role="alert">{err}</p>}
+          {hasDetails && <div class="mkchips">{([["main", u.finalT], ["half", u.halves], ["corners", u.cornersT], ["cards", u.cardsT]] as const).map(([k, l]) => <button key={k} class={`mkchip ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>}
+          {(tab === "main" || !hasDetails) && <>
           {group(u.result, <>
             <OddsBtn label="1" odds={oddsOf(open, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "home_win", "yes")} />
             <OddsBtn label="X" odds={oddsOf(open, "draw", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "draw", "yes")} />
@@ -109,6 +115,55 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
             <OddsBtn label={`${u.cleanHome} ${open.home}`} odds={oddsOf(open, "home_clean", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "home_clean", "yes")} />
             <OddsBtn label={`${u.cleanAway} ${open.away}`} odds={oddsOf(open, "away_clean", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "away_clean", "yes")} />
           </>)}
+          </>}
+          {tab === "half" && hasDetails && <>
+            {group(u.firstHalf, <><OddsBtn label="1" odds={oddsOf(open, "ht_home", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "ht_home", "yes")} /> <OddsBtn label="X" odds={oddsOf(open, "ht_draw", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "ht_draw", "yes")} /> <OddsBtn label="2" odds={oddsOf(open, "ht_away", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "ht_away", "yes")} /></>)}
+            {group(`${u.firstHalf} · ${u.halfGoal}`, <>
+            <OddsBtn label={u.yes} odds={oddsOf(open, "ht_goal", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "ht_goal", "yes")} />
+            <OddsBtn label={u.no} odds={oddsOf(open, "ht_goal", "no")} locale={p.locale} busy={busy} onClick={() => go(open, "ht_goal", "no")} />
+            </>)}
+            {group(u.secondHalf, <><OddsBtn label="1" odds={oddsOf(open, "st_home", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "st_home", "yes")} /> <OddsBtn label="X" odds={oddsOf(open, "st_draw", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "st_draw", "yes")} /> <OddsBtn label="2" odds={oddsOf(open, "st_away", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "st_away", "yes")} /></>)}
+            {group(`${u.secondHalf} · ${u.halfGoal}`, <>
+            <OddsBtn label={u.yes} odds={oddsOf(open, "st_goal", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "st_goal", "yes")} />
+            <OddsBtn label={u.no} odds={oddsOf(open, "st_goal", "no")} locale={p.locale} busy={busy} onClick={() => go(open, "st_goal", "no")} />
+            </>)}
+          </>}
+          {tab === "corners" && hasDetails && <>
+            {group(`${u.cornersT} ${line("8_5")}`, <>
+              <OddsBtn label={u.over} odds={oddsOf(open, "corners_8_5", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "corners_8_5", "yes")} />
+              <OddsBtn label={u.under} odds={oddsOf(open, "corners_8_5", "no")} locale={p.locale} busy={busy} onClick={() => go(open, "corners_8_5", "no")} />
+            </>)}
+            {group(`${u.cornersT} ${line("9_5")}`, <>
+              <OddsBtn label={u.over} odds={oddsOf(open, "corners_9_5", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "corners_9_5", "yes")} />
+              <OddsBtn label={u.under} odds={oddsOf(open, "corners_9_5", "no")} locale={p.locale} busy={busy} onClick={() => go(open, "corners_9_5", "no")} />
+            </>)}
+            {group(`${u.cornersT} ${line("10_5")}`, <>
+              <OddsBtn label={u.over} odds={oddsOf(open, "corners_10_5", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "corners_10_5", "yes")} />
+              <OddsBtn label={u.under} odds={oddsOf(open, "corners_10_5", "no")} locale={p.locale} busy={busy} onClick={() => go(open, "corners_10_5", "no")} />
+            </>)}
+            {group(`${u.cornersT} ${line("11_5")}`, <>
+              <OddsBtn label={u.over} odds={oddsOf(open, "corners_11_5", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "corners_11_5", "yes")} />
+              <OddsBtn label={u.under} odds={oddsOf(open, "corners_11_5", "no")} locale={p.locale} busy={busy} onClick={() => go(open, "corners_11_5", "no")} />
+            </>)}
+          </>}
+          {tab === "cards" && hasDetails && <>
+            {group(`${u.cardsT} ${line("3_5")}`, <>
+              <OddsBtn label={u.over} odds={oddsOf(open, "cards_3_5", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "cards_3_5", "yes")} />
+              <OddsBtn label={u.under} odds={oddsOf(open, "cards_3_5", "no")} locale={p.locale} busy={busy} onClick={() => go(open, "cards_3_5", "no")} />
+            </>)}
+            {group(`${u.cardsT} ${line("4_5")}`, <>
+              <OddsBtn label={u.over} odds={oddsOf(open, "cards_4_5", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "cards_4_5", "yes")} />
+              <OddsBtn label={u.under} odds={oddsOf(open, "cards_4_5", "no")} locale={p.locale} busy={busy} onClick={() => go(open, "cards_4_5", "no")} />
+            </>)}
+            {group(`${u.cardsT} ${line("5_5")}`, <>
+              <OddsBtn label={u.over} odds={oddsOf(open, "cards_5_5", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "cards_5_5", "yes")} />
+              <OddsBtn label={u.under} odds={oddsOf(open, "cards_5_5", "no")} locale={p.locale} busy={busy} onClick={() => go(open, "cards_5_5", "no")} />
+            </>)}
+            {group(u.redT, <>
+            <OddsBtn label={u.yes} odds={oddsOf(open, "red_card", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "red_card", "yes")} />
+            <OddsBtn label={u.no} odds={oddsOf(open, "red_card", "no")} locale={p.locale} busy={busy} onClick={() => go(open, "red_card", "no")} />
+            </>)}
+          </>}
           <p class="hint">{t.home_win}: 1 · {t.draw}: X · {t.away_win}: 2</p>
         </Sheet>
       )}

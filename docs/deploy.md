@@ -7,6 +7,7 @@
   The built-in mail sender is rate limited (a few emails per hour); add a custom SMTP before promoting the app.
 - Functions: `node scripts/build-functions.mjs`, then `supabase functions deploy ingest resolve --use-api --no-verify-jwt`.
 - Secrets: `CRON_SECRET`, `CONTACT_EMAIL` (OVapi asks for a contact in the User-Agent).
+- Optional secret `APIFOOTBALL_KEY` (free key from dashboard.api-football.com, 100 calls a day): half-time score, corners and cards for Serie A and B. Without it the app simply does not offer those bets. Set it with `npx supabase secrets set APIFOOTBALL_KEY=<key> --project-ref <ref>` or in the dashboard (Edge Functions, Secrets). `ingest` checks the key against the current season every 6 hours (`feed_health` row `apifootball`); the bets appear only while that check passes, and a match whose figures never arrive is voided and refunded.
 - Cron: `ingest` and `resolve` every minute, `prune` daily (see `supabase/migrations/0005_prune_job.sql` and the commented
   `cron.schedule` calls at the end of `0001_core.sql`).
 - `node scripts/sync-cities.mjs` whenever a file in `cities/` changes.

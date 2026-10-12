@@ -7,7 +7,8 @@ import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/a
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
 import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildAlertMarkets, alertLevel, alertQueryDate, ALERT_AREAS, ALERT_HAZARDS, ALERT_URL, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
-import { buildMatchMarkets, CLUB_TOWN, FINISHED, LEAGUES, type Fixture, type Geo, type TableRow } from "../_shared/shared/sport.ts";
+import { buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, LEAGUES, type Fixture, type Geo, type TableRow } from "../_shared/shared/sport.ts";
+import { apiFootball, apiKey, fetchDetails, loadTable } from "../_lib/football.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
 
@@ -519,6 +520,46 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
     }
     if (rows.length) { const { error } = await sb.from("match_results").upsert(rows, { onConflict: "event_id" }); if (error) throw new Error(error.message); notes.push(`${rows.length} results`); }
   }
+  // 1b. Half-time score, corners and cards for the matches that are over (needs the API-Football key; at most a few matches per minute, and never past today's free quota).
+  if (apiKey()) {
+    try {
+      const { data: wait } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").in("params->>bet", DETAIL_BETS as string[]).lte("target_at", new Date(now * 1000).toISOString()).limit(60);
+      const todo = new Map<string, { apiId: string; kickoff: number }>();
+      for (const m of wait ?? []) { const p = m.params as { eventId: string; apiId?: string; kickoff: number }; if (p.apiId) todo.set(String(p.eventId), { apiId: p.apiId, kickoff: p.kickoff }); }
+      if (todo.size) {
+        const { data: have } = await sb.from("match_details").select("event_id,fetched_at,attempted_at,corners").in("event_id", [...todo.keys()]);
+        const state = new Map((have ?? []).map((r) => [r.event_id as string, r]));
+        let calls = 0;
+        for (const [eventId, t] of todo) {
+          if (calls >= 3) break;
+          const st = state.get(eventId);
+          if (st?.fetched_at || (st?.attempted_at && Date.now() - Date.parse(st.attempted_at as string) < 10 * 60_000)) continue;
+          calls++;
+          const r = await fetchDetails(t.apiId);
+          const d = r.details;
+          const final = !!d && FINISHED.has(d.status);
+          // statistics can appear a little after the final whistle: look again every 10 minutes for up to 6 hours
+          const complete = final && d!.corners !== null || final && now - t.kickoff > 6 * 3600;
+          await sb.from("match_details").upsert({ event_id: eventId, api_id: t.apiId, kickoff: new Date(t.kickoff * 1000).toISOString(), status: d?.status ?? "", ht_home: d?.htHome ?? null, ht_away: d?.htAway ?? null, corners: d?.corners ?? null, cards: d?.cards ?? null, reds: d?.reds ?? null, attempted_at: new Date().toISOString(), fetched_at: complete ? new Date().toISOString() : null }, { onConflict: "event_id" });
+          notes.push(`details ${eventId}: ${complete ? "ok" : r.error ?? d?.status ?? "wait"}`);
+          if (r.remaining !== null && r.remaining <= 4) break;
+        }
+      }
+    } catch (e) { notes.push(`details: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    // Every 6 hours: is the source usable for the CURRENT season on this plan? Only then are the extra bets offered.
+    const { data: hp } = await sb.from("feed_health").select("last_attempt_at").eq("feed_id", "apifootball").maybeSingle();
+    if (!hp?.last_attempt_at || Date.now() - Date.parse(hp.last_attempt_at as string) > 6 * 3600_000) {
+      await sb.from("feed_health").upsert({ feed_id: "apifootball", last_attempt_at: new Date().toISOString() });
+      const { data: recent } = await sb.from("team_form").select("api_id").in("league", DETAIL_LEAGUES).not("api_id", "is", null).order("kickoff", { ascending: false }).limit(1);
+      const id = recent?.[0]?.api_id as string | undefined;
+      if (id) {
+        const r = await apiFootball(`/fixtures?id=${encodeURIComponent(id)}`);
+        if (r.ok && (r.json?.response ?? []).length > 0) await sb.from("feed_health").upsert({ feed_id: "apifootball", last_ok_at: new Date().toISOString(), last_error: null });
+        else await sb.from("feed_health").upsert({ feed_id: "apifootball", last_error: String(r.error ?? "empty").slice(0, 300), last_error_at: new Date().toISOString() });
+        notes.push(`apifootball probe: ${r.ok ? "ok" : r.error}`);
+      }
+    }
+  }
   // 2. Hourly: the next two rounds of every league become questions.
   if (now - last >= 3600 - 5) {
     await sb.from("feed_health").upsert({ feed_id: "sportsdb", last_attempt_at: new Date(now * 1000).toISOString() });
@@ -537,12 +578,26 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
           const evs = ((await getJson(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
           for (const e of evs) {
             const k = Date.parse(`${e.strTimestamp}Z`) / 1000;
-            if (e.idEvent && e.strHomeTeam && e.strAwayTeam && Number.isFinite(k)) { fixtures.push({ eventId: e.idEvent, league: league.name, home: e.strHomeTeam, away: e.strAwayTeam, kickoff: k }); season = season || String(e.strSeason ?? ""); }
+            if (e.idEvent && e.strHomeTeam && e.strAwayTeam && Number.isFinite(k)) { fixtures.push({ eventId: e.idEvent, league: league.name, home: e.strHomeTeam, away: e.strAwayTeam, kickoff: k, ...(e.idAPIfootball ? { apiId: e.idAPIfootball } : {}) }); season = season || String(e.strSeason ?? ""); }
           }
         }
+        // the last three days: finished matches feed the team strengths
+        const played: Record<string, unknown>[] = [];
+        for (let d = 1; d <= 3; d++) {
+          const day = new Date((now - d * 86400) * 1000).toISOString().slice(0, 10);
+          const evs = ((await getJson(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
+          for (const e of evs) {
+            const k = Date.parse(`${e.strTimestamp}Z`) / 1000, hg = e.intHomeScore, ag = e.intAwayScore;
+            if (e.idEvent && e.strHomeTeam && e.strAwayTeam && Number.isFinite(k) && FINISHED.has(String(e.strStatus)) && hg !== null && hg !== undefined && ag !== null && ag !== undefined) {
+              played.push({ event_id: e.idEvent, league: league.name, season: String(e.strSeason ?? ""), kickoff: new Date(k * 1000).toISOString(), home: e.strHomeTeam, away: e.strAwayTeam, hg: Number(hg), ag: Number(ag), api_id: e.idAPIfootball ?? null });
+            }
+          }
+        }
+        if (played.length) await sb.from("team_form").upsert(played, { onConflict: "event_id" });
         if (fixtures.length === 0) continue;
-        let table: TableRow[] = [];
-        try { table = (((await getJson(`${base}/lookuptable.php?l=${league.id}&s=${season}`))?.table ?? []) as Record<string, string>[]).map((r) => ({ team: r.strTeam!, played: Number(r.intPlayed), points: Number(r.intPoints), goalsFor: Number(r.intGoalsFor), goalsAgainst: Number(r.intGoalsAgainst) })); } catch { /* priors fall back to averages */ }
+        // strengths from the matches already played; the free league table (five teams) only when nothing is stored yet
+        let table: TableRow[] = await loadTable(sb, league.name).catch(() => []);
+        if (table.length < 8) { try { table = (((await getJson(`${base}/lookuptable.php?l=${league.id}&s=${season}`))?.table ?? []) as Record<string, string>[]).map((r) => ({ team: r.strTeam!, played: Number(r.intPlayed), points: Number(r.intPoints), goalsFor: Number(r.intGoalsFor), goalsAgainst: Number(r.intGoalsAgainst) })); } catch { /* priors fall back to averages */ } }
         // town of every home team, geocoded once and remembered
         const geo = new Map<string, Geo>();
         for (const f of fixtures) {
@@ -560,6 +615,9 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
         }
         const markets = buildMatchMarkets(fixtures, table, now, false, geo, league.top);
         if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
+        // keep the figures of the not-yet-opened bets (and the data-source id) of already open matches current
+        const seen = new Set<string>();
+        for (const m of markets) { const p = m.params; if (seen.has(p.eventId)) continue; seen.add(p.eventId); await sb.rpc("refresh_match_info", { p_event: p.eventId, p_priors: p.priors, p_api_id: p.apiId ?? null }); }
         okLeagues++; fixturesN += fixtures.length; offered += markets.length;
       } catch (e) { notes.push(`${league.name}: ${String((e as Error).message ?? e).slice(0, 60)}`); }
     }

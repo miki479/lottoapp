@@ -3,10 +3,11 @@
 // current reference value and refused when the answer would be too certain. Resolution uses the same public feeds as the house markets.
 import { FAIR_MAX, FAIR_MIN, CRYPTO, WIKI_ARTICLES, buildCustomTick, isCrypto, isSteam, tickChance, tickStep } from "../_shared/shared/ticks.ts";
 import { computeOdds } from "../_shared/shared/odds.ts";
-import { MATCH_BETS, matchMarket, type MatchBet } from "../_shared/shared/sport.ts";
+import { ALL_BETS, DETAIL_LEAGUES, isDetailBet, leagueAverage, matchMarket, matchPriors, type MatchBet } from "../_shared/shared/sport.ts";
 import { METRICS, METRIC_IDS, metricOdds, normalCdf, type MetricId } from "../_shared/shared/metrics.ts";
 import { localDayStart } from "../_shared/shared/time.ts";
 import { db, loadCities, safe } from "../_lib/common.ts";
+import { detailsAvailable, loadTable } from "../_lib/football.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
@@ -120,15 +121,28 @@ Deno.serve(safe(async (req) => {
     draft = { ...m, params: { ...m.params, custom: "true", by }, dedupe_key: `c|${series}|${target}|${thr}` };
   } else if (b.type === "match") {
     const eventId = String(b.eventId ?? ""), bet = String(b.bet) as MatchBet;
-    if (!(MATCH_BETS as string[]).includes(bet) || !/^\d{3,12}$/.test(eventId)) return json({ error: "bad_request" }, 400);
+    if (!(ALL_BETS as string[]).includes(bet) || !/^\d{3,12}$/.test(eventId)) return json({ error: "bad_request" }, 400);
     // the match must already be known (house markets are made for every upcoming round); the same bet is never made twice
     const { data: sib } = await sb.from("markets").select("params,lat,lon").eq("kind", "match_bet").eq("params->>eventId", eventId).limit(1).maybeSingle();
     if (!sib) return json({ error: "unknown_match" }, 404);
-    const sp = sib.params as { league: string; home: string; away: string; kickoff: number; priors: Record<MatchBet, number>; testOnly?: boolean };
+    const sp = sib.params as { league: string; home: string; away: string; kickoff: number; priors: Record<MatchBet, number>; apiId?: string; testOnly?: boolean };
     if (!(sp.kickoff >= now + 35 * 60)) return json({ error: "bad_time" }, 400);
-    const chance = sp.priors?.[bet];
+    // half-time, corners and cards are settled from a second source: only offered where it works right now, and only for the leagues it covers
+    let apiId = sp.apiId;
+    if (isDetailBet(bet)) {
+      if (!DETAIL_LEAGUES.includes(sp.league) || !(await detailsAvailable(sb))) return json({ error: "details_unavailable" }, 503);
+      if (!apiId) { try { apiId = String((await getJson(`https://www.thesportsdb.com/api/v1/json/${Deno.env.get("SPORTSDB_KEY") || "3"}/lookupevent.php?id=${eventId}`))?.events?.[0]?.idAPIfootball ?? "") || undefined; } catch { /* below */ } }
+      if (!apiId) return json({ error: "details_unavailable" }, 503);
+    }
+    // older markets were made before these bets existed: price them from the same strengths
+    let priors = sp.priors ?? ({} as Record<MatchBet, number>);
+    if (typeof priors[bet] !== "number") {
+      const table = await loadTable(sb, sp.league), by = new Map(table.map((r) => [r.team, r]));
+      priors = matchPriors(by.get(sp.home), by.get(sp.away), leagueAverage(table), sp.league === "Serie A");
+    }
+    const chance = priors[bet];
     if (typeof chance !== "number" || chance < FAIR_MIN || chance > FAIR_MAX) return json({ error: "too_certain", chance }, 422);
-    const m = matchMarket({ eventId, league: sp.league, home: sp.home, away: sp.away, kickoff: sp.kickoff }, bet, sp.priors, sib.lat === null ? undefined : { lat: Number(sib.lat), lon: Number(sib.lon) }, !!sp.testOnly, { by });
+    const m = matchMarket({ eventId, league: sp.league, home: sp.home, away: sp.away, kickoff: sp.kickoff, ...(apiId ? { apiId } : {}) }, bet, priors, sib.lat === null ? undefined : { lat: Number(sib.lat), lon: Number(sib.lon) }, !!sp.testOnly, { by });
     if (preview) return json({ preview: { chance, odds_yes: m.odds_yes, odds_no: m.odds_no, threshold: 0 } });
     draft = m as unknown as Record<string, unknown>;
   } else return json({ error: "bad_request" }, 400);
