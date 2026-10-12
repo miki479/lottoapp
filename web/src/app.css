@@ -1110,3 +1110,18 @@ textarea.field { resize: vertical; min-height: 84px; }
 
 /* Desktop: the extra categories open as new rows under the first one, in the same columns and at the same size */
 @media (min-width: 561px) { .catchips, .catchips.many { grid-template-columns: repeat(var(--dn, var(--n)), minmax(0, 1fr)); } }
+
+/* On phones and tablets text is not selectable or copyable (a long press should not highlight words); fields stay editable */
+@media (pointer: coarse) {
+  body, body * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  input, textarea, [contenteditable="true"], input *, textarea * { -webkit-user-select: text; user-select: text; }
+}
+
+.loadbar { display: flex; flex-direction: column; gap: 8px; padding: 14px 14px 12px; border-radius: var(--radius-card); background: var(--surface); border: 1px solid var(--line, #e3e6ef); }
+.lbscene { position: relative; height: 34px; overflow: hidden; }
+.lbveh { position: absolute; bottom: 4px; left: -60px; animation: lbdrive 4.2s linear infinite; } .lbveh.train { animation-duration: 5.6s; animation-delay: -2.4s; bottom: 5px; }
+.lbroad { position: absolute; left: 0; right: 0; bottom: 2px; height: 2px; background: repeating-linear-gradient(90deg, #98a2b8 0 12px, transparent 12px 24px); opacity: .6; animation: lbroad .8s linear infinite; }
+.lbtrack { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--brand) 14%, transparent); overflow: hidden; } .lbtrack i { display: block; height: 100%; width: 40%; border-radius: inherit; background: linear-gradient(90deg, #6c5ce7, #ff5fa8, #ffb020); animation: lbfill 1.6s ease-in-out infinite; }
+.lbtext { font-size: 12px; font-weight: 700; color: var(--muted); text-align: center; }
+@keyframes lbdrive { from { transform: translateX(0); } to { transform: translateX(calc(100vw + 60px)); } } @keyframes lbroad { to { background-position: -24px 0; } } @keyframes lbfill { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+@media (prefers-reduced-motion: reduce) { .lbveh, .lbroad, .lbtrack i { animation: none; } .lbveh { left: 20px; } .lbtrack i { width: 60%; } }

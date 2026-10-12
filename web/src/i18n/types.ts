@@ -7,9 +7,9 @@ export const LOCALES: { id: Locale; label: string; short: string }[] = [
 ];
 
 export interface BusQ { route: string; headsign: string; stop: string; time: string; min: number }
-export interface RainQ { city: string; time: string }
+export interface RainQ { city: string; time: string; to: string }
 export type MetricKey = "temp" | "wind" | "snow" | "uv" | "aqi" | "hail";
-export interface MetricQ { metric: MetricKey; city: string; time: string; value: number; unit: string }
+export interface MetricQ { metric: MetricKey; city: string; time: string; to: string; value: number; unit: string }
 export type MatchBetKey = import("../../../shared/sport.ts").MatchBet;
 export interface MatchQ { bet: MatchBetKey; home: string; away: string; time: string }
 export interface ConcertsQ { place: string; from: string; to: string; value: string; time: string }
@@ -29,7 +29,7 @@ export const TROPHY_RARITY: Record<TrophyId, "common" | "rare" | "epic"> = {
 /** Every locale implements this: add `ja` by creating ja.ts and registering it in index.ts. */
 export interface Messages {
   nav: { home: string; bets: string; ranking: string; profile: string };
-  common: { backOnline: string; close: string; cancel: string; save: string; retry: string; soon: string; offline: string; install: string; language: string; credits: string; copied: string; back: string };
+  common: { loading: string; backOnline: string; close: string; cancel: string; save: string; retry: string; soon: string; offline: string; install: string; language: string; credits: string; copied: string; back: string };
   tabs: { bus: string; train: string; weather: string; nature: string; strike: string; traffic: string; finance: string; culture: string; sport: string; gov: string; soon: string };
   wx: { filter: string; all: string; rain: string; world: string; regions: Record<string, string>; localTime: string; names: Record<MetricKey | "crypto" | "metals" | "oil" | "fuel", string>; forecast: (v: string) => string; quakeArt: string };
   world: string;
@@ -56,7 +56,7 @@ export interface Messages {
   referral: { title: string; body: (bonus: string) => string; code: string; copy: string; copied: string; share: string; shareText: (code: string) => string; counts: (invited: number, paid: number) => string; guest: string; accepted: string };
   voice: { on: string; off: string; placed: (win: string) => string; won: (amount: string) => string; lost: string; flash: string; label: string };
   ladder: { title: string; sub: (min: number) => string; estimate: string; chip: string };
-  push: { friendsPref: string; flashPref: string; streakPref: string; prefsHint: string; title: string; body: string; enable: string; disable: string; on: string; off: string; denied: string; later: string; askTitle: string; askBody: string; yes: string };
+  push: { active: string; events: string; friendsPref: string; flashPref: string; streakPref: string; prefsHint: string; title: string; body: string; enable: string; disable: string; on: string; off: string; denied: string; later: string; askTitle: string; askBody: string; yes: string };
   boost: { gain: (from: string, to: string) => string; title: string; toggle: string; hint: string; have: (n: number) => string; none: string; gift: string; explain: string };
   rewards: { title: string; subtitle: string; daily: string; dailyReset: (t: string) => string; once: string; claim: (amount: string) => string; claimed: string; go: string; invite: string; inviteBody: (amount: string, max: number) => string; invited: (n: number, max: number) => string; allDone: string; streakRisk: (n: number) => string; open: string; quest: Record<string, { t: string; d: string }> };
   weather: { clear: string; light: string; heavy: string };

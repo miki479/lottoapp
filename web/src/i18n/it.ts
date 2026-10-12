@@ -2,7 +2,7 @@ import type { Messages } from "./types.ts";
 
 const it: Messages = {
   nav: { home: "Home", bets: "Le mie puntate", ranking: "Classifica", profile: "Profilo" },
-  common: { backOnline: "Di nuovo online", close: "Chiudi", cancel: "Annulla", save: "Salva", retry: "Riprova", soon: "Presto", offline: "Sei offline: non vedi dati aggiornati e non puoi puntare.", install: "Installa l'app", language: "Lingua", credits: "crediti", copied: "Copiato", back: "Indietro" },
+  common: { loading: "Sto caricando gli eventi…", backOnline: "Di nuovo online", close: "Chiudi", cancel: "Annulla", save: "Salva", retry: "Riprova", soon: "Presto", offline: "Sei offline: non vedi dati aggiornati e non puoi puntare.", install: "Installa l'app", language: "Lingua", credits: "crediti", copied: "Copiato", back: "Indietro" },
   tabs: { bus: "Bus", train: "Treni", weather: "Meteo", strike: "Scioperi", nature: "Natura", traffic: "Traffico", finance: "Mercati", culture: "Cultura", sport: "Sport", gov: "Governo", soon: "Presto" },
   wx: { filter: "Filtra", world: "Mondo", regions: { jp: "Giappone", it: "Italia", ca: "California", tr: "Turchia" }, localTime: "ora locale", all: "Tutto", rain: "Pioggia", names: { temp: "Temperatura", wind: "Vento", snow: "Neve", uv: "UV", crypto: "Cripto", metals: "Metalli", oil: "Petrolio", fuel: "Carburante", aqi: "Aria" , hail: "Grandine" }, forecast: (v) => `previsto ${v}`, quakeArt: "Terremoti nel mondo" },
   world: "Tutto il mondo",
@@ -31,7 +31,7 @@ const it: Messages = {
   referral: { title: "Invita un amico", body: (b) => `Quando il tuo amico fa la prima puntata ricevi ${b}.`, code: "Il tuo codice", copy: "Copia link", copied: "Link copiato", share: "Condividi invito", shareText: (c) => `Gioca con me a LateLotto: dati veri, crediti finti. Codice invito ${c}`, counts: (i, p) => `${i} invitati · ${p} hanno giocato`, guest: "Crea un profilo per avere il tuo codice invito.", accepted: "Invito accettato" },
   voice: { on: "Voce attiva", off: "Voce spenta", placed: (w) => `Puntata registrata. Vincita possibile: ${w}.`, won: (a) => `Hai vinto ${a}. Complimenti.`, lost: "Stavolta è andata male. Il prossimo treno è un’altra storia.", flash: "Attenzione: evento flash, quota maggiorata.", label: "Annunci vocali" },
   ladder: { title: "Ci scusiamo per il disagio", sub: (m) => `Il ritardo peggiora di almeno… (adesso +${m}′)`, estimate: "Quote stimate: non vengono dallo storico.", chip: "Disagio in corso" },
-  push: { friendsPref: "Un amico vince 3.000 o più in una puntata", flashPref: "Eventi flash, super quote e grandi eventi", streakPref: "Promemoria della serie", prefsHint: "Al massimo 2 al giorno, mai di notte (22–8).", title: "Notifiche", body: "Un avviso quando una tua puntata ha il suo esito. Niente altro.", enable: "Attiva notifiche", disable: "Disattiva", on: "Notifiche attive", off: "Notifiche spente", denied: "Le notifiche sono bloccate nelle impostazioni del browser.", later: "No, grazie", askTitle: "Vuoi sapere com’è andata?", askBody: "Ti avvisiamo solo quando una tua puntata ha il suo esito. Puoi spegnerle quando vuoi.", yes: "Sì, avvisami" },
+  push: { active: "Notifiche attive", events: "Eventi", friendsPref: "Un amico vince 3.000 o più in una puntata", flashPref: "Eventi flash, super quote e grandi eventi", streakPref: "Promemoria della serie", prefsHint: "Eventi: super quote, eventi flash, promemoria della serie e amici che vincono 3.000 o più. Al massimo 2 al giorno, mai di notte (22–8).", title: "Notifiche", body: "Un avviso quando una tua puntata ha il suo esito. Niente altro.", enable: "Attiva notifiche", disable: "Disattiva", on: "Notifiche attive", off: "Notifiche spente", denied: "Le notifiche sono bloccate nelle impostazioni del browser.", later: "No, grazie", askTitle: "Vuoi sapere com’è andata?", askBody: "Ti avvisiamo solo quando una tua puntata ha il suo esito. Puoi spegnerle quando vuoi.", yes: "Sì, avvisami" },
   boost: { gain: (a, b) => `Guadagno netto: ${a} → ${b}`, title: "Boost", toggle: "Usa un boost", hint: "Se vinci, la vincita netta raddoppia (extra al massimo 1.000).", have: (n) => (n === 1 ? "1 boost" : `${n} boost`), none: "Nessun boost", gift: "Regalo di benvenuto: 1 congelamento e 1 boost", explain: "Un boost raddoppia la vincita netta di una puntata. Si consuma quando la puntata si chiude, e torna se viene rimborsata." },
   rewards: { title: "Bonus", subtitle: "Piccoli compiti, crediti in regalo.", daily: "Missioni di oggi", dailyReset: (t) => `Si rinnovano tra ${t}`, once: "Da fare una volta", claim: (a) => `Riscuoti ${a}`, claimed: "Riscosso", go: "Vai", invite: "Invita un amico", inviteBody: (a, m) => `${a} per ogni amico che fa la prima puntata (fino a ${m} amici).`, invited: (n, m) => `${n} su ${m} amici`, allDone: "Tutto riscosso per oggi. Nuove missioni domani.", streakRisk: (n) => `Hai una serie di ${n} giorni: una puntata oggi la tiene viva.`, open: "Bonus", quest: {
     d_bet: { t: "Fai una puntata", d: "Una qualsiasi, oggi." }, d_parlay: { t: "Gioca una multipla", d: "Almeno due eventi insieme." }, d_win: { t: "Vinci una puntata", d: "Basta una vittoria oggi." },
@@ -75,14 +75,14 @@ const it: Messages = {
   question: {
     bus: (q) => `La linea ${q.route} per ${q.headsign} avrà più di ${q.min} min di ritardo a ${q.stop} alle ${q.time}?`,
     train: (q) => `Il treno ${q.route} per ${q.headsign} arriverà con più di ${q.min} min di ritardo a ${q.stop} alle ${q.time}?`,
-    rain: (q) => `Pioverà a ${q.city} alle ${q.time}?`,
+    rain: (q) => `Pioverà a ${q.city} tra le ${q.time} e le ${q.to}?`,
     metric: (q) => ({
-      temp: `A ${q.city} alle ${q.time} ci saranno almeno ${q.value}${q.unit}?`,
-      wind: `Raffiche di almeno ${q.value} ${q.unit} a ${q.city} alle ${q.time}?`,
-      snow: `Nevicherà a ${q.city} alle ${q.time}?`,
-      uv: `L'indice UV a ${q.city} alle ${q.time} sarà almeno ${q.value}?`,
-      aqi: `L'aria a ${q.city} alle ${q.time} avrà un indice di inquinamento europeo (EAQI) di almeno ${q.value}?`,
-      hail: `Grandine a ${q.city} alle ${q.time}?`,
+      temp: `A ${q.city} tra le ${q.time} e le ${q.to} ci saranno almeno ${q.value}${q.unit}?`,
+      wind: `Raffiche di almeno ${q.value} ${q.unit} a ${q.city} tra le ${q.time} e le ${q.to}?`,
+      snow: `Nevicherà a ${q.city} tra le ${q.time} e le ${q.to}?`,
+      uv: `L'indice UV a ${q.city} tra le ${q.time} e le ${q.to} sarà almeno ${q.value}?`,
+      aqi: `L'aria a ${q.city} tra le ${q.time} e le ${q.to} avrà un indice di inquinamento europeo (EAQI) di almeno ${q.value}?`,
+      hail: `Grandine a ${q.city} tra le ${q.time} e le ${q.to}?`,
     })[q.metric],
     quake: (q) => `Ci sarà un terremoto di magnitudo ${q.mag} o più ${q.region ? `in ${q.region}` : "in qualunque parte del mondo"} tra le ${q.from} e le ${q.to}${q.region ? " (ora locale)" : ""}?`,
     strike: (q) => `Lo sciopero nazionale del ${q.day} (${q.who.toLowerCase()}) sarà ancora confermato a inizio giornata?`,

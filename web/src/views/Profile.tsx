@@ -56,18 +56,15 @@ export function ProfileView(p: {
           <StreakCard streak={p.profile?.streak ?? 0} freezes={p.profile?.freezes ?? 0} msg={p.msg} locale={p.locale} />
           {p.missionsNode}
           {p.push && (
-            <section class="card" style="display:flex;gap:12px;align-items:center">
-              <Bell size={22} style="color:var(--brand);flex:none" />
-              <div style="flex:1"><b>{p.msg.push.title}</b><p class="hint">{p.push.denied ? p.msg.push.denied : p.msg.push.body}</p></div>
-              <button class={`btn ${p.push.on ? "secondary" : "primary"}`} onClick={p.push.toggle} disabled={p.push.denied}>{p.push.on ? p.msg.push.disable : p.msg.push.enable}</button>
-            </section>
-          )}
-          {p.push?.on && (
             <section class="card stack">
-              <label class="switchrow"><input type="checkbox" checked={p.push.flash} onChange={(e) => p.push!.setPrefs((e.target as HTMLInputElement).checked, p.push!.streak, p.push!.friends)} /><span>{p.msg.push.flashPref}</span></label>
-              <label class="switchrow"><input type="checkbox" checked={p.push.streak} onChange={(e) => p.push!.setPrefs(p.push!.flash, (e.target as HTMLInputElement).checked, p.push!.friends)} /><span>{p.msg.push.streakPref}</span></label>
-              <label class="switchrow"><input type="checkbox" checked={p.push.friends} onChange={(e) => p.push!.setPrefs(p.push!.flash, p.push!.streak, (e.target as HTMLInputElement).checked)} /><span>{p.msg.push.friendsPref}</span></label>
-              <p class="hint">{p.msg.push.prefsHint}</p>
+              <label class="switchrow"><input type="checkbox" checked={p.push.on} disabled={p.push.denied} onChange={p.push.toggle} /><Bell size={18} style="color:var(--brand);flex:none" /><span>{p.msg.push.active}</span></label>
+              {p.push.denied && <p class="hint">{p.msg.push.denied}</p>}
+              {p.push.on && (
+                <>
+                  <label class="switchrow"><input type="checkbox" checked={p.push.flash && p.push.streak && p.push.friends} onChange={(e) => { const v = (e.target as HTMLInputElement).checked; p.push!.setPrefs(v, v, v); }} /><span>{p.msg.push.events}</span></label>
+                  <p class="hint">{p.msg.push.prefsHint}</p>
+                </>
+              )}
             </section>
           )}
           <section class="card stack referral">

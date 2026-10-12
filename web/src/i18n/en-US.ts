@@ -2,7 +2,7 @@ import type { Messages } from "./types.ts";
 
 const enUS: Messages = {
   nav: { home: "Home", bets: "My bets", ranking: "Ranks", profile: "Profile" },
-  common: { backOnline: "Back online", close: "Close", cancel: "Cancel", save: "Save", retry: "Try again", soon: "Soon", offline: "You're offline: data may be out of date and bets can't be placed.", install: "Install the app", language: "Language", credits: "credits", copied: "Copied", back: "Back" },
+  common: { loading: "Loading events…", backOnline: "Back online", close: "Close", cancel: "Cancel", save: "Save", retry: "Try again", soon: "Soon", offline: "You're offline: data may be out of date and bets can't be placed.", install: "Install the app", language: "Language", credits: "credits", copied: "Copied", back: "Back" },
   tabs: { bus: "Buses", train: "Trains", weather: "Weather", strike: "Strikes", nature: "Nature", traffic: "Traffic", finance: "Markets", culture: "Culture", sport: "Sport", gov: "Government", soon: "Soon" },
   wx: { filter: "Filter", world: "World", regions: { jp: "Japan", it: "Italy", ca: "California", tr: "Turkey" }, localTime: "local time", all: "All", rain: "Rain", names: { temp: "Temperature", wind: "Wind", snow: "Snow", uv: "UV", crypto: "Crypto", metals: "Metals", oil: "Oil", fuel: "Fuel", aqi: "Air" , hail: "Hail" }, forecast: (v) => `forecast ${v}`, quakeArt: "Earthquakes worldwide" },
   world: "Worldwide",
@@ -31,7 +31,7 @@ const enUS: Messages = {
   referral: { title: "Invite a friend", body: (b) => `When your friend places their first bet you get ${b}.`, code: "Your code", copy: "Copy link", copied: "Link copied", share: "Share invite", shareText: (c) => `Play LateLotto with me: real data, fake credits. Invite code ${c}`, counts: (i, p) => `${i} invited · ${p} played`, guest: "Create a profile to get your invite code.", accepted: "Invite accepted" },
   voice: { on: "Voice on", off: "Voice off", placed: (w) => `Bet placed. Possible win: ${w}.`, won: (a) => `You won ${a}. Nice one.`, lost: "Not this time. The next train is another story.", flash: "Heads up: flash event, boosted odds.", label: "Voice announcements" },
   ladder: { title: "Sorry about the delay", sub: (m) => `It gets worse by at least… (now +${m}′)`, estimate: "Estimated odds: not based on history.", chip: "Delay in progress" },
-  push: { friendsPref: "A friend wins 3,000 or more on one bet", flashPref: "Flash events, super odds and big events", streakPref: "Streak reminder", prefsHint: "At most 2 a day, never at night (10pm–8am).", title: "Notifications", body: "One alert when a bet of yours has a result. Nothing else.", enable: "Turn on notifications", disable: "Turn off", on: "Notifications on", off: "Notifications off", denied: "Notifications are blocked in your browser settings.", later: "No thanks", askTitle: "Want to know how it went?", askBody: "We only ping you when one of your bets has a result. Turn it off any time.", yes: "Yes, ping me" },
+  push: { active: "Notifications on", events: "Events", friendsPref: "A friend wins 3,000 or more on one bet", flashPref: "Flash events, super odds and big events", streakPref: "Streak reminder", prefsHint: "Events: super odds, flash events, streak reminders and friends who win 3,000 or more. At most 2 a day, never at night (10pm–8am).", title: "Notifications", body: "One alert when a bet of yours has a result. Nothing else.", enable: "Turn on notifications", disable: "Turn off", on: "Notifications on", off: "Notifications off", denied: "Notifications are blocked in your browser settings.", later: "No thanks", askTitle: "Want to know how it went?", askBody: "We only ping you when one of your bets has a result. Turn it off any time.", yes: "Yes, ping me" },
   boost: { gain: (a, b) => `Net win: ${a} → ${b}`, title: "Boost", toggle: "Use a boost", hint: "If you win, your net win doubles (the extra is capped at 1,000).", have: (n) => (n === 1 ? "1 boost" : `${n} boosts`), none: "No boosts", gift: "Welcome gift: 1 freeze and 1 boost", explain: "A boost doubles the net win of one bet. It is used up when the bet settles, and given back if the bet is refunded." },
   rewards: { title: "Rewards", subtitle: "Small tasks, free credits.", daily: "Today's missions", dailyReset: (t) => `Renews in ${t}`, once: "One-time", claim: (a) => `Claim ${a}`, claimed: "Claimed", go: "Go", invite: "Invite a friend", inviteBody: (a, m) => `${a} for every friend who places a first bet (up to ${m} friends).`, invited: (n, m) => `${n} of ${m} friends`, allDone: "All claimed for today. New missions tomorrow.", streakRisk: (n) => `You're on a ${n}-day streak: a bet today keeps it alive.`, open: "Rewards", quest: {
     d_bet: { t: "Place a bet", d: "Any bet, today." }, d_parlay: { t: "Play a parlay", d: "At least two picks together." }, d_win: { t: "Win a bet", d: "One win today is enough." },
@@ -75,14 +75,14 @@ const enUS: Messages = {
   question: {
     bus: (q) => `Will the ${q.route} to ${q.headsign} run more than ${q.min} min late at ${q.stop} at ${q.time}?`,
     train: (q) => `Will the ${q.route} to ${q.headsign} roll into ${q.stop} more than ${q.min} min late at ${q.time}?`,
-    rain: (q) => `Rain in ${q.city} at ${q.time}?`,
+    rain: (q) => `Rain in ${q.city} between ${q.time} and ${q.to}?`,
     metric: (q) => ({
-      temp: `Will it be at least ${q.value}${q.unit} in ${q.city} at ${q.time}?`,
-      wind: `Will gusts reach ${q.value} ${q.unit} or more in ${q.city} at ${q.time}?`,
-      snow: `Will it snow in ${q.city} at ${q.time}?`,
-      uv: `Will the UV index in ${q.city} at ${q.time} be at least ${q.value}?`,
-      aqi: `Will the European air quality index (EAQI) in ${q.city} at ${q.time} be at least ${q.value}?`,
-      hail: `Hail in ${q.city} at ${q.time}?`,
+      temp: `Will it be at least ${q.value}${q.unit} in ${q.city} between ${q.time} and ${q.to}?`,
+      wind: `Will gusts reach ${q.value} ${q.unit} or more in ${q.city} between ${q.time} and ${q.to}?`,
+      snow: `Will it snow in ${q.city} between ${q.time} and ${q.to}?`,
+      uv: `Will the UV index in ${q.city} between ${q.time} and ${q.to} be at least ${q.value}?`,
+      aqi: `Will the European air quality index (EAQI) in ${q.city} between ${q.time} and ${q.to} be at least ${q.value}?`,
+      hail: `Hail in ${q.city} between ${q.time} and ${q.to}?`,
     })[q.metric],
     quake: (q) => `Will an earthquake of magnitude ${q.mag} or more strike ${q.region ? `in ${q.region}` : "anywhere in the world"} between ${q.from} and ${q.to}${q.region ? " (local time)" : ""}?`,
     strike: (q) => `Will the national strike on ${q.day} (${q.who.toLowerCase()}) still be on at the start of the day?`,

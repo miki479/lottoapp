@@ -23,14 +23,19 @@ export function formatWhen(iso: string, locale: Locale, timeZone: string, now = 
   const day = (x: Date) => new Intl.DateTimeFormat("en-CA", { timeZone }).format(x);
   const time = new Intl.DateTimeFormat(tag, { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(d);
   if (day(d) === day(now)) return time;
+  // the questions read "alle <time>": in Italian the day goes after the hour ("alle 16:00 di martedì"), not before it
+  if (locale === "it") return `${time} di ${new Intl.DateTimeFormat(tag, { weekday: "long", timeZone }).format(d)}`;
   return `${new Intl.DateTimeFormat(tag, { weekday: "short", timeZone }).format(d)} ${time}`;
 }
 
 export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: string, timeZone: string, now = new Date()): string {
   const time = formatWhen(m.target_at, locale, timeZone, now);
   if (m.kind === "bus_full") return msg.question.full({ occ: m.params.occ as "empty", route: String(m.params.routeName ?? ""), stop: String(m.params.stopName ?? ""), time });
-  if (m.kind === "rain_at") return msg.question.rain({ city: cityName, time });
-  if (m.kind === "metric_gt") return msg.question.metric({ metric: m.params.metric as "temp", city: cityName, time, value: Number(m.params.threshold), unit: String(m.params.unit ?? "") });
+  // the answer counts the whole hour: the question names the hour, not the middle of it
+  const h0 = new Date(Math.floor(new Date(m.target_at).getTime() / 3600_000) * 3600_000).toISOString(), h1 = new Date(Date.parse(h0) + 3600_000).toISOString();
+  const hourFrom = formatWhen(h0, locale, timeZone, now), hourTo = new Intl.DateTimeFormat(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(new Date(h1));
+  if (m.kind === "rain_at") return msg.question.rain({ city: cityName, time: hourFrom, to: hourTo });
+  if (m.kind === "metric_gt") return msg.question.metric({ metric: m.params.metric as "temp", city: cityName, time: hourFrom, to: hourTo, value: Number(m.params.threshold), unit: String(m.params.unit ?? "") });
   if (m.kind === "traffic_speed_lt") {
     const h0 = new Date(m.target_at).getTime() - 30 * 60_000, hh = (t: number) => new Intl.DateTimeFormat(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(new Date(t));
     return msg.question.traffic({ site: String(m.params.siteName ?? ""), toward: String(m.params.toward ?? ""), from: hh(h0), to: hh(h0 + 3600_000), kmh: Number(m.params.thresholdKmh) });

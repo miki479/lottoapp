@@ -2,7 +2,7 @@ import type { Messages } from "./types.ts";
 
 const ja: Messages = {
   nav: { home: "ホーム", bets: "マイ予想", ranking: "ランキング", profile: "プロフィール" },
-  common: { backOnline: "オンラインに戻りました", close: "閉じる", cancel: "キャンセル", save: "保存", retry: "やり直す", soon: "近日公開", offline: "オフラインです。最新のデータは表示されず、予想もできません。", install: "アプリをインストール", language: "言語", credits: "クレジット", copied: "コピーしました", back: "戻る" },
+  common: { loading: "イベントを読み込み中…", backOnline: "オンラインに戻りました", close: "閉じる", cancel: "キャンセル", save: "保存", retry: "やり直す", soon: "近日公開", offline: "オフラインです。最新のデータは表示されず、予想もできません。", install: "アプリをインストール", language: "言語", credits: "クレジット", copied: "コピーしました", back: "戻る" },
   tabs: { bus: "バス", train: "電車", weather: "天気", strike: "スト", nature: "自然", traffic: "渋滞", finance: "市場", culture: "カルチャー", sport: "スポーツ", gov: "政府", soon: "近日" },
   wx: { filter: "絞り込み", world: "世界", regions: { jp: "日本", it: "イタリア", ca: "カリフォルニア", tr: "トルコ" }, localTime: "現地時間", all: "すべて", rain: "雨", names: { temp: "気温", wind: "風", snow: "雪", uv: "UV", crypto: "暗号資産", metals: "金属", oil: "原油", fuel: "燃料", aqi: "空気" , hail: "雹" }, forecast: (v) => `予報 ${v}`, quakeArt: "世界の地震" },
   world: "世界中",
@@ -31,7 +31,7 @@ const ja: Messages = {
   referral: { title: "友だちを招待", body: (b) => `友だちが初めて予想すると${b}を受け取れます。`, code: "あなたのコード", copy: "リンクをコピー", copied: "リンクをコピーしました", share: "招待を共有", shareText: (c) => `LateLottoで遊ぼう：データは本物、クレジットは架空。招待コード ${c}`, counts: (i, p) => `招待${i}人・予想した人${p}人`, guest: "プロフィールを作成すると招待コードが使えます。", accepted: "招待を承認しました" },
   voice: { on: "音声オン", off: "音声オフ", placed: (w) => `予想を登録しました。配当は最大${w}です。`, won: (a) => `${a}を獲得しました。おめでとうございます。`, lost: "今回は残念でした。次の電車は別の話です。", flash: "フラッシュイベント開催中。オッズがアップしています。", label: "音声アナウンス" },
   ladder: { title: "ご迷惑をおかけしております", sub: (m) => `遅延がさらに悪化したら…（現在+${m}分）`, estimate: "オッズは推定値で、過去データに基づくものではありません。", chip: "遅延発生中" },
-  push: { friendsPref: "友達が1回の予想で3,000以上を獲得", flashPref: "フラッシュ・スーパーオッズ・大きなイベント", streakPref: "連続記録のお知らせ", prefsHint: "1日最大2件、夜間（22〜8時）は送りません。", title: "通知", body: "予想の結果が出たときだけお知らせします。それ以外は送りません。", enable: "通知をオン", disable: "オフにする", on: "通知オン", off: "通知オフ", denied: "通知はブラウザの設定でブロックされています。", later: "今はしない", askTitle: "結果を知りたいですか？", askBody: "予想の結果が出たときだけお知らせします。いつでもオフにできます。", yes: "はい、知らせて" },
+  push: { active: "通知オン", events: "イベント", friendsPref: "友達が1回の予想で3,000以上を獲得", flashPref: "フラッシュ・スーパーオッズ・大きなイベント", streakPref: "連続記録のお知らせ", prefsHint: "イベント：スーパーオッズ、フラッシュ、連続記録のリマインド、友達の3,000以上の勝利。1日最大2件、夜間（22〜8時）は送りません。", title: "通知", body: "予想の結果が出たときだけお知らせします。それ以外は送りません。", enable: "通知をオン", disable: "オフにする", on: "通知オン", off: "通知オフ", denied: "通知はブラウザの設定でブロックされています。", later: "今はしない", askTitle: "結果を知りたいですか？", askBody: "予想の結果が出たときだけお知らせします。いつでもオフにできます。", yes: "はい、知らせて" },
   boost: { gain: (a, b) => `純利益：${a} → ${b}`, title: "ブースト", toggle: "ブーストを使う", hint: "当たれば純利益が2倍に（追加分は最大1,000）。", have: (n) => `ブースト${n}個`, none: "ブーストなし", gift: "ウェルカムギフト：フリーズ1個とブースト1個", explain: "ブーストは1回の予想の純利益を2倍にします。予想が確定すると消費され、返金された場合は戻ります。" },
   rewards: { title: "ボーナス", subtitle: "ちょっとした課題でクレジットをプレゼント。", daily: "今日のミッション", dailyReset: (t) => `${t}後に更新`, once: "一度だけ", claim: (a) => `${a}を受け取る`, claimed: "受取済み", go: "行く", invite: "友だちを招待", inviteBody: (a, m) => `友だちが初めて予想するたびに${a}（最大${m}人まで）。`, invited: (n, m) => `${m}人中${n}人`, allDone: "今日の分はすべて受取済み。明日また新しいミッションが届きます。", streakRisk: (n) => `${n}日連続中：今日1回予想すれば記録が続きます。`, open: "ボーナス", quest: {
     d_bet: { t: "予想を1回する", d: "今日、どれでも1回。" }, d_parlay: { t: "複数予想をする", d: "2件以上を組み合わせて。" }, d_win: { t: "予想に勝つ", d: "今日1勝すればOK。" },
@@ -75,14 +75,14 @@ const ja: Messages = {
   question: {
     bus: (q) => `${q.route}（${q.headsign}行き）は、${q.time}に${q.stop}で${q.min}分を超えて遅れますか？`,
     train: (q) => `${q.route}（${q.headsign}行き）は、${q.time}に${q.stop}へ${q.min}分を超えて遅れて到着しますか？`,
-    rain: (q) => `${q.city}で${q.time}に雨が降りますか？`,
+    rain: (q) => `${q.city}で${q.time}〜${q.to}に雨が降りますか？`,
     metric: (q) => ({
-      temp: `${q.city}の${q.time}の気温は${q.value}${q.unit}以上になりますか？`,
-      wind: `${q.city}の${q.time}の最大瞬間風速は${q.value} ${q.unit}以上になりますか？`,
-      snow: `${q.city}で${q.time}に雪が降りますか？`,
-      uv: `${q.city}の${q.time}のUV指数は${q.value}以上になりますか？`,
-      aqi: `${q.city}の${q.time}の欧州大気質指数（EAQI）は${q.value}以上になりますか？`,
-      hail: `${q.time}に${q.city}で雹は降りますか？`,
+      temp: `${q.city}の${q.time}〜${q.to}の気温は${q.value}${q.unit}以上になりますか？`,
+      wind: `${q.city}の${q.time}〜${q.to}の最大瞬間風速は${q.value} ${q.unit}以上になりますか？`,
+      snow: `${q.city}で${q.time}〜${q.to}に雪が降りますか？`,
+      uv: `${q.city}の${q.time}〜${q.to}のUV指数は${q.value}以上になりますか？`,
+      aqi: `${q.city}の${q.time}〜${q.to}の欧州大気質指数（EAQI）は${q.value}以上になりますか？`,
+      hail: `${q.time}〜${q.to}に${q.city}で雹は降りますか？`,
     })[q.metric],
     quake: (q) => `${q.region ?? "世界のどこか"}で、${q.from}から${q.to}の間${q.region ? "（現地時間）" : ""}にマグニチュード${q.mag}以上の地震が起きますか？`,
     strike: (q) => `${q.day}の全国ストライキ（${q.who}）は、その日の始まりにも実施予定のままですか？`,

@@ -14,6 +14,7 @@ import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
 import { ChevronDown, Flame, Plus, Search, Tv } from "lucide-preact";
 import { TrainBoard } from "../components/TrainBoard.tsx";
+import { LoadBar } from "../components/LoadBar.tsx";
 import { followedShows, type FollowedShow } from "../lib/series.ts";
 import { FEATURED_CITY_IDS, FEATURED_PLACES, type Place } from "../lib/places.ts";
 import type { MarketRow } from "../lib/format.ts";
@@ -138,7 +139,8 @@ export function Home(p: HomeProps) {
         {p.cat === "sport" && p.markets !== null && <MatchList matches={groupMatches(shown)} msg={msg} locale={p.locale} onPick={p.onPick} registered={p.registered} onAuth={p.onAuth} details={p.details} friendBets={p.friendBets} />}
         {p.stale && <p class="note warn">{msg.feedWarning}</p>}
         <div class="cardgrid" style={p.cat === "sport" ? "display:none" : undefined}>
-          {p.markets === null && [0, 1, 2].map((i) => <div class="sk" key={i} />)}
+          {p.markets === null && <div style="grid-column:1/-1"><LoadBar label={msg.common.loading} /></div>}
+          {p.markets === null && [0, 1].map((i) => <div class="sk" key={i} />)}
           {p.markets !== null && p.cat === "traffic" && shown.length === 0 && <div style="grid-column:1/-1"><Empty icon={Car} title={msg.tabs.traffic} body={msg.home.trafficSoon} /></div>}
           {p.markets !== null && p.cat === "train" && (p.filter === "tokyo" || (p.filter === "world" && p.locale === "ja")) && <div style="grid-column:1/-1"><CrowdCard msg={msg} locale={p.locale} /></div>}
           {p.markets !== null && p.cat !== "traffic" && shown.length === 0 && !(p.cat === "train" && p.filter === "tokyo") && (

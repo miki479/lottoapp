@@ -86,7 +86,7 @@ describe("market text", () => {
   });
   it("asks about rain with the city and time", () => {
     const rain: MarketRow = { ...m, kind: "rain_at", category: "weather", params: {} };
-    expect(question(rain, MESSAGES.it, "it", "Roma", "Europe/Rome", now)).toBe("Pioverà a Roma alle 15:49?");
+    expect(question(rain, MESSAGES.it, "it", "Roma", "Europe/Rome", now)).toBe("Pioverà a Roma tra le 15:00 e le 16:00?");
   });
   it("counts minutes to closing without going negative", () => {
     expect(minutesUntil("2026-10-11T13:39:00Z", Date.parse("2026-10-11T13:00:00Z"))).toBe(39);
