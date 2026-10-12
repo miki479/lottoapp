@@ -6,7 +6,7 @@ import { parseTrainTripId } from "../_shared/shared/adapters/viaggiatreno.ts";
 import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/adapters/types.ts";
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
-import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
+import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildAlertMarkets, alertLevel, alertQueryDate, ALERT_AREAS, ALERT_HAZARDS, ALERT_URL, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
 import { buildMatchMarkets, CLUB_TOWN, FINISHED, LEAGUES, type Fixture, type Geo, type TableRow } from "../_shared/shared/sport.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
@@ -421,6 +421,15 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       }
     } catch (e) { notes.push(`storms: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
+      // civil-protection alerts: the state at that exact local time is asked again from the service (it keeps its history)
+      const alertAts = new Map<number, string[]>();
+      for (const x of [...need.keys()].filter((k) => k.startsWith("alert:"))) for (const at of todo(x)) alertAts.set(at, [...(alertAts.get(at) ?? []), x]);
+      for (const [at, list] of [...alertAts].slice(0, 6)) {
+        const doc = await getJson(`${ALERT_URL}?data=${encodeURIComponent(alertQueryDate(at))}`);
+        for (const x of list) { const [, area, hz] = x.split(":"); const v = alertLevel(doc, area!, hz!); if (v !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); }
+      }
+    } catch (e) { notes.push(`alert: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
       const kpDue = todo("kp");
       if (kpDue.length) { const { observed } = await kpSeries(); for (const at of kpDue) { const v = observed.get(at - 3 * 3600); if (v !== undefined) rows.push({ series: "kp", at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
     } catch (e) { notes.push(`kp: ${String((e as Error).message ?? e).slice(0, 80)}`); }
@@ -441,6 +450,12 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     const markets: Record<string, unknown>[] = [];
     let ok = 0;
     try { markets.push(...buildCryptoMarkets(await fetchPrices(), now)); ok++; } catch (e) { notes.push(`prices: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const doc = await getJson(ALERT_URL);
+      const cur: Record<string, number> = {};
+      for (const area of Object.keys(ALERT_AREAS)) for (const hz of Object.keys(ALERT_HAZARDS)) { const v = alertLevel(doc, area, hz); if (v !== null) cur[`alert:${area}:${hz}`] = v; }
+      markets.push(...buildAlertMarkets(now, cur)); ok++;
+    } catch (e) { notes.push(`alert: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     let stormsNow: { id: string; name: string; kt: number; cls: string }[] = [];
     try { stormsNow = await activeStorms(); markets.push(...buildStormMarkets(stormsNow, now)); ok++; } catch (e) { notes.push(`storms: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     let steamNow: Record<string, number> = {};

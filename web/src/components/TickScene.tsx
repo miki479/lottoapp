@@ -6,7 +6,7 @@ type Hint = "yes" | "no" | null | undefined;
 /** Scenes of the "number at an instant" questions: a coin price chart, an aurora sky (Kp index) and page-view bars. */
 export function TickScene({ m, hint }: { m: MarketRow; hint: Hint; msg: Messages }) {
   const series = String(m.params.series ?? "");
-  const kind = series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("storm:") ? "storm" : "price";
+  const kind = series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("storm:") ? "storm" : series.startsWith("alert:") ? "alert" : "price";
   const cls = `mscene tick ${kind} ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`;
   const cap = kind === "kp" ? "Kp ≥ " + m.params.threshold : String(m.params.label ?? "");
   if (kind === "kp") {
@@ -21,6 +21,19 @@ export function TickScene({ m, hint }: { m: MarketRow; hint: Hint; msg: Messages
           <g fill="#fff" opacity=".8"><circle cx="30" cy="14" r="1" /><circle cx="84" cy="30" r="1.200" /><circle cx="140" cy="10" r="1" /><circle cx="210" cy="22" r="1.200" /><circle cx="270" cy="12" r="1" /><circle cx="296" cy="34" r="1" /></g>
           <g class="aur"><path class="a1" d="M0 46 C50 10 90 60 150 26 S250 4 320 38 L320 70 L0 70 Z" fill="url(#tk-aur)" /><path class="a2" d="M0 56 C60 30 110 64 170 38 S270 24 320 52 L320 74 L0 74 Z" fill="url(#tk-aur)" /></g>
           <path d="M0 84 L0 68 L40 60 L70 66 L120 56 L170 66 L230 58 L280 64 L320 60 L320 84 Z" fill="#070b18" />
+        </svg>
+        <b>{cap}</b>
+      </div>
+    );
+  }
+  if (kind === "alert") {
+    return (
+      <div class={cls} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="84" fill="#9fb4cf" />
+          <path d="M0 52Q50 30 100 46T200 40T320 48V84H0Z" fill="#6f9a5c" /><path d="M0 62Q70 48 140 60T320 56V84H0Z" fill="#5b8a4c" />
+          <g class="rv-water"><path d="M0 60Q40 54 80 60T160 60T240 60T320 60V84H0Z" fill="#4c8fd6" /><path d="M0 66Q40 61 80 66T160 66T240 66T320 66" stroke="#fff" stroke-width="1.500" fill="none" opacity=".5" /></g>
+          <g class="rv-bridge"><rect x="130" y="50" width="60" height="5" fill="#8a7a66" /><rect x="138" y="55" width="5" height="22" fill="#6e6150" /><rect x="177" y="55" width="5" height="22" fill="#6e6150" /></g>
         </svg>
         <b>{cap}</b>
       </div>

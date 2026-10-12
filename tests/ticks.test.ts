@@ -49,3 +49,24 @@ describe("storm markets", () => {
     expect(r).toMatchObject({ status: "resolved", outcome: "no" });
   });
 });
+
+import { alertLevel, alertQueryDate, buildAlertMarkets } from "../shared/ticks.ts";
+describe("regional alerts", () => {
+  const doc = { A1: { idraulica: "orange", idrogeologica: "red", temporali: "green" }, A2: { idraulica: "green", idrogeologica: "yellow", temporali: "green" }, B1: { idraulica: "red" }, B2: { idraulica: "yellow", mareggiate: "yellow" }, G1: { idraulica: "green" } };
+  it("takes the highest level of the zones of an area", () => {
+    expect(alertLevel(doc, "romagna", "idraulica")).toBe(3);
+    expect(alertLevel(doc, "romagna", "idrogeologica")).toBe(3);
+    expect(alertLevel(doc, "romagna", "temporali")).toBe(0);
+    expect(alertLevel(doc, "parma", "idraulica")).toBe(0);
+  });
+  it("returns null for an unknown colour or area", () => {
+    expect(alertLevel({ A1: { idraulica: "purple" } }, "romagna", "idraulica")).toBeNull();
+    expect(alertLevel(doc, "nowhere", "idraulica")).toBeNull();
+  });
+  it("formats the query date in Italian local time", () => { expect(alertQueryDate(Date.UTC(2026, 9, 14, 10, 0) / 1000)).toBe("2026-10-14 12:00"); });
+  it("offers questions that close before the bulletin of that day", () => {
+    const m = buildAlertMarkets(NOW, { "alert:romagna:idraulica": 1 });
+    expect(m.length).toBeGreaterThan(10);
+    for (const x of m) { expect(Date.parse(x.closes_at) / 1000).toBeGreaterThan(NOW); expect(x.lat).toBeTruthy(); expect(x.params.local).toBe("true"); }
+  });
+});

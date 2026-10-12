@@ -851,3 +851,4 @@ textarea.field { resize: vertical; min-height: 84px; }
 .cc.sport .gh-net { opacity: .85; } .cc em.soon { top: 6px; bottom: auto; right: 6px; }
 .hero-quip { min-height: 2.6em; animation: quipin .5s ease both; font-style: italic; } @keyframes quipin { from { opacity: 0; transform: translateY(4px); } to { opacity: .92; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .hero-quip { animation: none; } }
+.mscene.alert .rv-water { transition: transform 1s cubic-bezier(.2,.8,.2,1), filter 1s; transform: translateY(0); } .mscene.alert.s-yes .rv-water { transform: translateY(-16px); filter: hue-rotate(-40deg) saturate(1.3); } .mscene.alert.s-no .rv-water { transform: translateY(6px); }

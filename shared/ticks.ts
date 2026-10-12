@@ -1,5 +1,6 @@
 import { computeOdds } from "./odds.ts";
 import { normalCdf } from "./metrics.ts";
+import { localDayStart } from "./time.ts";
 
 /** Questions about a single number at a given instant, for the whole world: coin prices, the Kp index, Wikipedia page views. */
 export type TickCategory = "finance" | "nature" | "culture";
@@ -22,6 +23,7 @@ export const STEAM = { "730": "Counter-Strike 2", "570": "Dota 2", "271590": "Gr
 export const isSteam = (s: string) => s.startsWith("steam:") && s.slice(6) in STEAM;
 /** Numbers that exist only "right now": they must be read within minutes of the instant. */
 export const isStorm = (s: string) => s.startsWith("storm:");
+export const isAlert = (s: string) => s.startsWith("alert:");
 export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isStorm(s);
 
 /** Saffir-Simpson scale by sustained wind in knots (1 min average), as NHC reports it. */
@@ -32,6 +34,7 @@ export const WIKI_ARTICLES = ["Taylor_Swift", "Cristiano_Ronaldo", "Lionel_Messi
 
 export function tickDef(series: string): TickDef | null {
   if (isCrypto(series)) return { category: "finance", label: CRYPTO[series].label, unit: "$", min: 1, max: 10_000_000 };
+  if (isAlert(series)) return { category: "nature", label: "Allerta", unit: "", min: 0, max: 3 };
   if (isStorm(series)) return { category: "nature", label: "Storm", unit: " kt", min: 0, max: 200 };
   if (isSteam(series)) return { category: "culture", label: STEAM[series.slice(6) as keyof typeof STEAM], unit: "", min: 0, max: 100_000_000 };
   if (series === "kp") return { category: "nature", label: "Kp", unit: "", min: 0, max: 9 };
@@ -41,7 +44,8 @@ export function tickDef(series: string): TickDef | null {
 
 export interface TickMarketInsert {
   city_id: "world"; category: TickCategory; kind: "tick_gt"; feed_id: string;
-  params: { series: string; label: string; threshold: number; unit: string; forecast: number; at: number; note?: string };
+  lat?: number; lon?: number;
+  params: { series: string; label: string; threshold: number; unit: string; forecast: number; at: number; note?: string; local?: "true" };
   closes_at: string; target_at: string; deadline_at: string; odds_yes: number; odds_no: number; dedupe_key: string;
 }
 
@@ -165,6 +169,69 @@ export function buildStormMarkets(storms: StormNow[], now: number): TickMarketIn
       for (const o of options) {
         const def: TickDef = { category: "nature", label: st.name, unit: " kt", min: 0, max: 200 };
         out.push(tickMarket(series, def, st.kt, o.kt, tickSigma(series, st.kt, hours), at, at - 600, at + 3 * H, o.label));
+      }
+    }
+  }
+  return out;
+}
+
+// ---- Regional civil-protection alerts (Allerta Meteo Emilia-Romagna): colour of the alert per zone and hazard ----
+export const ALERT_URL = "https://allertameteo.regione.emilia-romagna.it/o/get-stato-allerta";
+export const ALERT_TZ = "Europe/Rome";
+export const ALERT_AREAS: Record<string, { label: string; zones: string[]; lat: number; lon: number }> = {
+  romagna: { label: "Romagna", zones: ["A1", "A2", "B1", "B2"], lat: 44.2227, lon: 12.0407 },
+  bologna: { label: "Bologna e Ferrara", zones: ["C1", "C2", "D1", "D2", "D3"], lat: 44.4949, lon: 11.3426 },
+  modena: { label: "Modena e Reggio Emilia", zones: ["E1", "E2", "F1", "F2", "F3"], lat: 44.6471, lon: 10.9252 },
+  parma: { label: "Parma e Piacenza", zones: ["G1", "G2", "H1", "H2"], lat: 44.8015, lon: 10.3279 },
+};
+export const ALERT_HAZARDS: Record<string, { label: string; json: string }> = {
+  idraulica: { label: "Allerta idraulica (piene dei fiumi)", json: "idraulica" },
+  idrogeologica: { label: "Allerta idrogeologica (frane)", json: "idrogeologica" },
+  temporali: { label: "Allerta temporali", json: "temporali" },
+};
+const LEVEL: Record<string, number> = { green: 0, yellow: 1, orange: 2, red: 3 };
+
+/** The highest alert level in an area for a hazard (0 green … 3 red), from a `get-stato-allerta` answer. */
+export function alertLevel(doc: unknown, area: string, hazard: string): number | null {
+  const a = ALERT_AREAS[area], h = ALERT_HAZARDS[hazard];
+  if (!a || !h || !doc || typeof doc !== "object") return null;
+  let best: number | null = null;
+  for (const z of a.zones) {
+    const v = ((doc as Record<string, Record<string, string | null> | undefined>)[z])?.[h.json];
+    if (v === undefined || v === null) continue;
+    if (!(v in LEVEL)) return null;
+    best = Math.max(best ?? 0, LEVEL[v]!);
+  }
+  return best;
+}
+
+/** "YYYY-MM-DD HH:mm" in Italy for the API's `data` parameter. */
+export function alertQueryDate(epoch: number): string {
+  const d = new Date(epoch * 1000), p = new Intl.DateTimeFormat("en-CA", { timeZone: ALERT_TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(d);
+  const g = (t: string) => p.find((x) => x.type === t)!.value;
+  return `${g("year")}-${g("month")}-${g("day")} ${g("hour")}:${g("minute")}`;
+}
+
+const ALERT_BASE: Record<string, [number, number]> = { idraulica: [0.1, 0.04], idrogeologica: [0.09, 0.03], temporali: [0.22, 0.07] };
+export const LEVEL_NAMES = ["green", "yellow", "orange", "red"] as const;
+
+/** Day-after-tomorrow and the next: "will the alert for that day be at least yellow / orange?" Closes before the bulletin for that day is issued. */
+export function buildAlertMarkets(now: number, current: Record<string, number>): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const [area, a] of Object.entries(ALERT_AREAS)) {
+    const hazards = area === "romagna" ? ["idraulica", "idrogeologica", "temporali"] : ["idraulica", "temporali"];
+    for (const hz of hazards) {
+      const series = `alert:${area}:${hz}`, active = (current[series] ?? 0) >= 1;
+      for (const dayOff of [2, 3]) {
+        const day = localDayStart(now + dayOff * 86400, ALERT_TZ), at = day + 12 * H, closes = day - 16 * H;
+        if (closes <= now + 300) continue;
+        for (const thr of hz === "temporali" ? [1] : [1, 2]) {
+          const base = ALERT_BASE[hz]![thr - 1]!, p = Math.min(0.6, active ? base * 2.5 : base);
+          const def: TickDef = { category: "nature", label: `${ALERT_HAZARDS[hz]!.label} · ${a.label}`, unit: "", min: 0, max: 3 };
+          const m = tickMarket(series, def, p * 3, thr, 1, at, closes, at + 36 * H, LEVEL_NAMES[thr]);
+          const odds = computeOdds(Math.min(0.9, Math.max(0.1, p)));
+          out.push({ ...m, odds_yes: odds.yes, odds_no: odds.no, lat: a.lat, lon: a.lon, params: { ...m.params, forecast: current[series] ?? 0, local: "true" } });
+        }
       }
     }
   }

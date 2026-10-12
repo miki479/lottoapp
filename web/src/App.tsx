@@ -340,6 +340,7 @@ export function App() {
     const extra = [
       { name: "Ministero delle Infrastrutture e dei Trasporti — Scioperi", license: "Dati pubblici del MIT (nessuna licenza dichiarata)", licenseUrl: "https://scioperi.mit.gov.it", url: "https://scioperi.mit.gov.it" },
       { name: CROWD_SOURCE.name, via: CROWD_SOURCE.via, license: CROWD_SOURCE.license, licenseUrl: CROWD_SOURCE.licenseUrl, url: CROWD_SOURCE.url },
+      { name: "Allerta Meteo Emilia-Romagna", license: "CC BY-NC-SA 4.0 (non commercial use)", licenseUrl: "https://allertameteo.regione.emilia-romagna.it/note-legali", url: "https://allertameteo.regione.emilia-romagna.it/" },
       { name: "TheSportsDB", license: "Free API key (see their terms); data © its contributors", licenseUrl: "https://www.thesportsdb.com/api.php", url: "https://www.thesportsdb.com" },
       { name: "Steam Web API (Valve)", license: "Steam Web API Terms of Use", licenseUrl: "https://steamcommunity.com/dev/apiterms", url: "https://steamcommunity.com/dev" },
       { name: "CoinGecko API", license: "Free API, attribution required", licenseUrl: "https://www.coingecko.com/en/api/documentation", url: "https://www.coingecko.com" },
