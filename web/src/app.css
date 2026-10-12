@@ -1013,8 +1013,8 @@ textarea.field { resize: vertical; min-height: 84px; }
 /* crests and the "vs" card */
 .crest { flex: none; object-fit: contain; border-radius: 8px; } .crest.ph { display: inline-grid; place-items: center; background: var(--brand-soft); color: var(--brand); font-weight: 800; border-radius: 50%; }
 .vs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: center; }
-.vs .side { display: flex; align-items: center; gap: 8px; min-width: 0; } .vs .side.away { justify-content: flex-end; text-align: right; }
-.vs .side b { font-size: 15px; font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; } .vsmark { font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); padding: 2px 7px; border-radius: 999px; background: var(--surface-2); }
+.vs .vsside { display: flex; align-items: center; gap: 8px; min-width: 0; } .vs .vsside.away { justify-content: flex-end; text-align: right; }
+.vs .vsside b { font-size: 15px; font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; } .vsmark { font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); padding: 2px 7px; border-radius: 999px; background: var(--surface-2); }
 .reason { display: inline-flex; align-items: center; align-self: flex-start; padding: 4px 10px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: 12.5px; font-weight: 800; border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent); }
 .reason.big { font-size: 14px; padding: 6px 12px; }
 .vscard { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--surface-2); }

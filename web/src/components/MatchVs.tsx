@@ -15,9 +15,9 @@ export function Crest({ src, name, size = 30 }: { src?: string; name: string; si
 export function MatchVs({ home, away, homeBadge, awayBadge, size = 30, stack }: { home: string; away: string; homeBadge?: string; awayBadge?: string; size?: number; stack?: boolean }) {
   return (
     <div class={`vs ${stack ? "stack-vs" : ""}`}>
-      <span class="side"><Crest src={homeBadge} name={home} size={size} /><b>{home}</b></span>
+      <span class="vsside"><Crest src={homeBadge} name={home} size={size} /><b>{home}</b></span>
       <i class="vsmark">vs</i>
-      <span class="side away"><b>{away}</b><Crest src={awayBadge} name={away} size={size} /></span>
+      <span class="vsside away"><b>{away}</b><Crest src={awayBadge} name={away} size={size} /></span>
     </div>
   );
 }
