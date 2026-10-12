@@ -3,7 +3,7 @@ import { cityName, cityOf } from "../lib/cities.ts";
 import { countdown, fmtOdds, isYesNo, money, per10, question, type MarketRow } from "../lib/format.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { LiveDelay, Pick } from "../lib/types.ts";
-import { BusSide, CloudRainSide, TrainSide } from "./Vehicles.tsx";
+import { BusSide, CloudRainSide, isMetroLine, MetroSide, TrainSide } from "./Vehicles.tsx";
 import { Sky, useHint } from "./Sky.tsx";
 import { TripScene } from "./TripScene.tsx";
 import { DelayMeter } from "./DelayMeter.tsx";
@@ -21,7 +21,7 @@ export function liveLabel(msg: Messages, l: LiveDelay) {
 /** One event: what it is (detail row), the question (title), then two big, equal choices. */
 export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now: number; live?: LiveDelay; index: number; top?: boolean; hasLadder?: boolean; mm?: number; showCity: boolean; onPick: (m: MarketRow, pick: Pick) => void }) {
   const { m, msg, locale, now, live } = p;
-  const city = cityOf(m.city_id), Kind = KIND[m.category];
+  const city = cityOf(m.city_id), Kind = m.category === "train" && isMetroLine(m.params.routeName) ? MetroSide : KIND[m.category];
   const { hint, show, clear } = useHint();
   const left = Date.parse(m.closes_at) - now;
   const isRain = isYesNo(m.kind);

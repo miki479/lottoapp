@@ -17,6 +17,26 @@ export function TrainSide(p: P) {
   );
 }
 
+/** Urban train (S-Bahn / U-Bahn / metro): two short cars joined by a gangway, facing right. Same size contract as TrainSide (`size` is the height, the width is 3x). */
+export function MetroSide(p: P) {
+  const h = p.size ?? 24;
+  return (
+    <svg width={h * 3} height={h} viewBox="0 0 48 16" class={p.class} style={p.style} aria-hidden="true">
+      <path d="M1.500 4.400Q1.500 2.200 3.700 2.200H21.300Q23.500 2.200 23.500 4.400V11.200H1.500Z" fill="#e2332b" />
+      <path d="M25 4.400Q25 2.200 27.200 2.200H37C41.800 2.200 44.600 5.200 46.800 9.600Q47.200 10.600 46.400 11H25Z" fill="#e2332b" />
+      <rect x="23.300" y="5" width="2" height="5.600" rx=".6" fill="#1c212b" />
+      <g fill="#1c212b"><rect x="3.200" y="4" width="4" height="3.200" rx=".7" /><rect x="8.600" y="4" width="4" height="3.200" rx=".7" /><rect x="14" y="4" width="4" height="3.200" rx=".7" /><rect x="26.700" y="4" width="4" height="3.200" rx=".7" /><rect x="32.100" y="4" width="4" height="3.200" rx=".7" /><path d="M38 4h2.600C42.400 4.400 43.600 6 44.600 7.200H38z" /></g>
+      <path d="M1.500 8.600H23.500M25 8.600H46.800" stroke="#fff" stroke-width="1" opacity=".85" />
+      <path d="M19.600 4v6.800M30.600 4v6.800" stroke="#9c1f1a" stroke-width=".7" />
+      <path d="M2.500 11.200H22.500V12.400Q22.500 13 21.900 13H3.100Q2.500 13 2.500 12.400Z" fill="#1c212b" /><path d="M26 11H45.500V12.400Q45.500 13 44.900 13H26.600Q26 13 26 12.400Z" fill="#1c212b" />
+      <rect x="6" y="13" width="7" height="1.300" rx=".6" fill="#1c212b" /><rect x="31" y="13" width="7" height="1.300" rx=".6" fill="#1c212b" />
+    </svg>
+  );
+}
+
+/** Which train drawing a question gets: the two-car urban train for S/U/M lines (Berlin S7, U9, Helsinki M1…), the long one otherwise. */
+export const isMetroLine = (routeName: unknown) => /^[SUM]\d/i.test(String(routeName ?? ""));
+
 /** Illustrated side-view bus (amber), same drawing style as the train. `size` is the height; the width is 2.4x. */
 export function BusSide(p: P) {
   const h = p.size ?? 24;
