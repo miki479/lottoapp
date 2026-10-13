@@ -4,6 +4,8 @@ import { RING_BONUS, STREAK_MILESTONES } from "../../shared/rewards.ts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { AuthSheet } from "./components/AuthSheet.tsx";
 import { BetSheet } from "./components/BetSheet.tsx";
+import { offerOdds } from "../../shared/offers.ts";
+import { OFFER_EVENT, offerErrorText, type OfferUse } from "./components/PersonalOffer.tsx";
 import type { CatId } from "./components/CatChips.tsx";
 import { DelayMeter } from "./components/DelayMeter.tsx";
 import { OfflineBar } from "./components/OfflineBar.tsx";
@@ -96,7 +98,7 @@ export function App() {
   const [reqCount, setReqCount] = useState(0), [reqTick, setReqTick] = useState(0);
   const [look, setLook] = useState<MyProgress | null>(null), [lookOpen, setLookOpen] = useState(false), [pubUser, setPubUser] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [sheet, setSheet] = useState<{ m: MarketRow; pick: Pick } | null>(null);
+  const [sheet, setSheet] = useState<{ m: MarketRow; pick: Pick; offer?: OfferUse } | null>(null);
   const [auth, setAuth] = useState(false);
   const [nick, setNick] = useState(false);
   const [googleOn, setGoogleOn] = useState(false);
@@ -498,12 +500,14 @@ export function App() {
   const closeResult = () => { if (resultBet) markSeen(resultBet.id); setResultBet(null); };
 
   // ---------- actions ----------
-  const place = async (m: MarketRow, pick: Pick, stake: number, boost = false, bonus: string | null = null, vice = false) => {
+  const place = async (m: MarketRow, pick: Pick, stake: number, boost = false, bonus: string | null = null, vice = false, offerId: string | null = null) => {
     if (offline) return msg.common.offline;
     const before = { bonus: progress?.bonus_claimed ?? false, trophies: new Set(trophies), streak: profile?.streak ?? 0 };
-    const { error } = await sb.rpc("place_bet", { p_market: m.id, p_pick: pick, p_stake: stake, p_boost: boost, ...(bonus ? { p_bonus: bonus } : {}), ...(vice ? { p_vice: true } : {}) });
-    if (error) return msg.errors[Object.keys(msg.errors).find((k) => error.message.includes(k)) ?? "generic"]!;
+    const baseOdds = Number(pick === "yes" ? m.odds_yes : m.odds_no), betOdds = offerId && sheet?.offer ? offerOdds(baseOdds, sheet.offer.mult) : baseOdds;
+    const { error } = await sb.rpc("place_bet", { p_market: m.id, p_pick: pick, p_stake: stake, p_boost: boost, ...(bonus ? { p_bonus: bonus } : {}), ...(vice ? { p_vice: true } : {}), ...(offerId ? { p_offer: offerId } : {}) });
+    if (error) return (offerId ? offerErrorText(error.message, locale) : null) ?? msg.errors[Object.keys(msg.errors).find((k) => error.message.includes(k)) ?? "generic"]!;
     setSheet(null);
+    if (offerId) dispatchEvent(new Event(OFFER_EVENT));
     const [pf] = await Promise.all([loadProfile(), loadBets(), loadQuests(), loadMarkets(), loadChallenges()]);
     const reached = pf && pf.streak > before.streak ? STREAK_MILESTONES[pf.streak] : undefined;
     const [pr, tr] = [await loadProgress(), await loadTrophies()];
@@ -511,9 +515,9 @@ export function App() {
     if (won.length) { setFresh(new Set(won)); flash(`${msg.profile.trophy[won[0]!].name}`); }
     else if (reached) { flash(msg.streak.milestone(pf!.streak, `+${money(reached, locale)}`)); haptic.success(); }
     else if (pr?.bonus_claimed && !before.bonus) flash(`${msg.home.missionsDone} · +${money(RING_BONUS, locale)}`);
-    else flash(msg.sheet.placed(money(Math.floor(stake * Number(pick === "yes" ? m.odds_yes : m.odds_no)), locale)));
+    else flash(msg.sheet.placed(money(Math.floor(stake * betOdds), locale)));
     if (pushAvailable() && !pushAsked() && !pushDenied()) setTimeout(() => setAskPush(true), 1500);
-    announce(`placed-${m.id}`, msg.voice.placed(money(Math.floor(stake * Number(pick === "yes" ? m.odds_yes : m.odds_no)), locale)), locale);
+    announce(`placed-${m.id}`, msg.voice.placed(money(Math.floor(stake * betOdds), locale)), locale);
     return null;
   };
   const addSlip = (m: MarketRow, pick: Pick) => { setSlip((s) => (s.some((l) => l.m.id === m.id) ? s : [...s, { m, pick }])); setSheet(null); flash(`${msg.slip.added} · ${msg.slip.bar(slip.some((l) => l.m.id === m.id) ? slip.length : slip.length + 1)}`); haptic.tap(); };
@@ -648,7 +652,7 @@ export function App() {
         <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
         <Ticker items={tickerItems} />
         <main class="content">
-          {screen === "home" && <Home onSeries={(s) => setSeriesMaker({ show: s ?? null })} occ={occ} friendBets={friendBets} details={detailsOn} stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} country={myCountry} homePos={home ? { lat: home.lat, lon: home.lon } : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
+          {screen === "home" && <Home onOffer={(m, o) => setSheet({ m, pick: "yes", offer: o })} onSeries={(s) => setSeriesMaker({ show: s ?? null })} occ={occ} friendBets={friendBets} details={detailsOn} stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} country={myCountry} homePos={home ? { lat: home.lat, lon: home.lon } : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets canMore={bets.length >= betsLimit} onMore={() => setBetsLimit((n) => n + 60)} invites={invites} challenges={myChallenges} onChallenge={(code) => setChallengeCode(code)} parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "friends" && <Friends reqTick={reqTick} onReqs={loadReqs} onProfile={setPubUser} referral={referral} onShareReferral={shareReferral} onChallenge={() => (registered ? setChallengeMaker(true) : setAuth(true))} onOpen={(code) => setChallengeCode(code)} locale={locale} msg={msg} registered={registered} onToast={flash} onAuth={() => setAuth(true)} now={now} />}
           {screen === "ranking" && <Ranking onProfile={setPubUser} home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
@@ -667,7 +671,7 @@ export function App() {
       {rewardsOpen && <RewardsSheet flash={flashM} onClaimFlash={claimFlash} missions={missions} onClaimMission={claimMission} onClaimChest={claimChest} msg={msg} locale={locale} now={now} profile={profile} quests={quests} referral={referral} registered={registered} onClaim={claimQuest} onGo={goQuest} onShare={shareReferral} onClose={() => setRewardsOpen(false)} />}
       {askPush && <PushAsk lifted={slip.length > 0} msg={msg} onYes={() => turnPush(true)} onNo={() => { rememberPush(false); setAskPush(false); }} />}
       <ParlayBar count={slip.length} odds={slipOdds(slip)} msg={msg} locale={locale} onOpen={() => setParlayOpen(true)} />
-      {sheet && <BetSheet now={now} occ={occ[sheet.m.id]} mm={outlook[sheet.m.id]} boosts={profile?.boosts ?? 0} key={sheet.m.id} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
+      {sheet && <BetSheet offer={sheet.offer} now={now} occ={occ[sheet.m.id]} mm={outlook[sheet.m.id]} boosts={profile?.boosts ?? 0} key={sheet.m.id} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
       {parlayOpen && slip.length > 0 && <ParlaySheet boosts={profile?.boosts ?? 0} legs={slip} msg={msg} locale={locale} credits={profile?.credits ?? 0} needJoin={needJoin} googleOn={googleOn} onClose={() => setParlayOpen(false)} onRemove={(id) => setSlip((s) => s.filter((l) => l.m.id !== id))} onClear={() => { setSlip([]); setParlayOpen(false); }} onJoined={async () => {}} onPlace={placeParlay} />}
       {auth && <AuthSheet msg={msg} guest={!registered} googleOn={googleOn} onClose={() => setAuth(false)} onDone={(text) => { setAuth(false); flash(text); }} />}
       {lookOpen && look && <LookSheet progress={look} msg={msg} myId={profile?.id ?? ""} onClose={() => setLookOpen(false)} onSaved={(p) => { setLook(p); flash(msg.look.saved); }} />}

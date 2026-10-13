@@ -1,0 +1,14 @@
+.pofer { --gold: #a8740a; --gold-hi: #e9b52e; border: 1px solid color-mix(in srgb, var(--gold-hi) 55%, var(--border)); background: linear-gradient(160deg, color-mix(in srgb, var(--gold-hi) 11%, var(--surface)), var(--surface) 60%); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pofer { --gold: #ffd23f; } }
+:root[data-theme="dark"] .pofer { --gold: #ffd23f; }
+.pofer .pohead { display: flex; align-items: center; gap: 8px; } .pofer .pohead svg { color: var(--gold); flex: none; }
+.pofer .pohead small { font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--gold); }
+.pofer .poq { margin: 0; font-weight: 600; }
+.pofer .pomult { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.pofer .poshine { font-size: 40px; line-height: 1; font-weight: 900; font-variant-numeric: tabular-nums; background: linear-gradient(100deg, var(--gold) 35%, #fff8d6 50%, var(--gold) 65%); background-size: 260% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: poshine 3.2s linear infinite; }
+.pofer .pometa { color: var(--text-2); font-size: 13px; }
+.pofer .pocount { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text); }
+@keyframes poshine { to { background-position: -260% 0; } }
+@media (prefers-reduced-motion: reduce) { .pofer .poshine { animation: none; background: none; -webkit-text-fill-color: currentColor; color: var(--gold); } }
+.pobanner { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, #e9b52e 55%, var(--border)); background: color-mix(in srgb, #e9b52e 12%, var(--surface)); font-size: 14px; }
+.pobanner b { font-variant-numeric: tabular-nums; }
