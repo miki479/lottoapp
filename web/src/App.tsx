@@ -349,6 +349,9 @@ export function App() {
       const u = new URL(location.href); u.searchParams.delete("m"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
     });
   }, []);
+  // a new filter or home town needs its own questions (regions and "near you" read towns the first page does not hold)
+  const filterSeen = useRef(true);
+  useEffect(() => { if (filterSeen.current) { filterSeen.current = false; return; } void loadMarkets(); }, [filter, home?.id]);
   useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = every(loadMarkets, 45_000), b = every(() => { loadResults(); loadActivity(); loadTrending(); }, 90_000); return () => { a(); b(); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
   useEffect(() => { if (!ready) return; return every(() => { loadBets(); loadProfile(); loadQuests(); }, 60_000); }, [ready]);
 
