@@ -122,3 +122,17 @@ function normalCdf(z: number): number {
   const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
   return z > 0 ? 1 - p : p;
 }
+
+/**
+ * A rain question priced from the hourly precipitation forecast for its hour (Open-Meteo): the forecast depth against the line
+ * decides, the history of past answers counts for more the further away the hour is. A dry forecast never goes under about 17%,
+ * so "No" stays a modest, playable price instead of a sure thing.
+ */
+export function rainYesProbability(forecastMm: number | null, minMm: number, hoursAhead: number, pHist: number): number {
+  if (forecastMm === null || !Number.isFinite(forecastMm)) return pHist;
+  const r = Math.max(0, forecastMm) / Math.max(0.05, minMm);
+  const pf = r < 1 ? 0.17 + 0.27 * r : r < 3 ? 0.44 + 0.22 * (r - 1) : Math.min(0.9, 0.88 + 0.01 * (r - 3));
+  const h = Math.max(0, hoursAhead);
+  const w = h <= 3 ? 0.9 : h >= 24 ? 0.55 : 0.9 - (0.35 * (h - 3)) / 21;
+  return Math.min(0.93, Math.max(0.1, w * pf + (1 - w) * pHist));
+}

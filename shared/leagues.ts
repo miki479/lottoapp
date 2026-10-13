@@ -8,6 +8,8 @@ export const LEAGUES = ["bronze", "silver", "gold", "platinum", "diamond"] as co
 export type LeagueId = (typeof LEAGUES)[number];
 export const MAX_LEAGUE = LEAGUES.length - 1;
 export const PROMOTE_TOP = 10;
+/** The promotion line is the top quarter of the ranked players of a league, at most PROMOTE_TOP: fewer than 4 players promote nobody by rank. */
+export const promoteSlots = (ranked: number): number => Math.min(PROMOTE_TOP, Math.floor(Math.max(0, ranked) / 4));
 export const PROMOTE_CREDITS = 1_000_000;
 export const BASE_CREDITS = 1000;
 export const LEAGUE_BONUS = 150;
@@ -32,7 +34,8 @@ export function closeSeason(players: SeasonPlayer[]): SeasonResult[] {
       continue;
     }
     const rank = 1 + players.filter((o) => o.played && clampLeague(o.league) === before && o.credits > p.credits).length;
-    const up = before < MAX_LEAGUE && (rank <= PROMOTE_TOP || p.credits >= PROMOTE_CREDITS);
+    const ranked = players.filter((o) => o.played && clampLeague(o.league) === before).length;
+    const up = before < MAX_LEAGUE && (rank <= promoteSlots(ranked) || p.credits >= PROMOTE_CREDITS);
     const after = up ? before + 1 : before;
     out.push({ id: p.id, leagueBefore: before, leagueAfter: after, credits: p.credits, rank, newCredits: resetBalance(after) });
   }

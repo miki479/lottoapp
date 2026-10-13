@@ -8,19 +8,22 @@ describe("leagues", () => {
   it("reset grows with the league but stays small", () => {
     expect([0, 1, 2, 3, 4, 9].map(resetBalance)).toEqual([1000, 1150, 1300, 1450, 1600, 1600]);
   });
-  it("top 10 of each league move up, the rest stay", () => {
-    const ps = Array.from({ length: 12 }, (_, i) => P(`a${i}`, 0, 5000 - i * 100));
+  it("the top quarter of each league (at most 10) moves up, the rest stay", () => {
+    const ps = Array.from({ length: 48 }, (_, i) => P(`a${i}`, 0, 9000 - i * 100));
     ps.push(P("b0", 1, 10));
     const r = closeSeason(ps);
-    expect(r.filter((x) => x.leagueAfter === 1).length).toBe(10);
+    expect(r.filter((x) => x.id.startsWith("a") && x.leagueAfter === 1).length).toBe(10);
     expect(get(r, "a10").leagueAfter).toBe(0);
     expect(get(r, "a0").rank).toBe(1);
     expect(get(r, "a0").newCredits).toBe(1150);
     expect(get(r, "a11").newCredits).toBe(1000);
-    expect(get(r, "b0").leagueAfter).toBe(2); // alone in its league: first place
+    const small = closeSeason(Array.from({ length: 12 }, (_, i) => P(`m${i}`, 0, 5000 - i * 100)));
+    expect(small.filter((x) => x.leagueAfter === 1).length).toBe(3);
+    expect(closeSeason([P("u1", 0, 900), P("u2", 0, 800), P("u3", 0, 700)]).every((x) => x.leagueAfter === 0)).toBe(true);
+    expect(get(r, "b0").leagueAfter).toBe(1); // alone in its league: too few players to promote by rank
   });
   it("1,000,000 credits promotes even outside the top 10, and ties share the rank", () => {
-    const ps = [...Array.from({ length: 10 }, (_, i) => P(`t${i}`, 0, 2_000_000 - i)), P("rich", 0, 1_000_000), P("x", 0, 999_999)];
+    const ps = [...Array.from({ length: 40 }, (_, i) => P(`t${i}`, 0, 2_000_000 - i)), P("rich", 0, 1_000_000), P("x", 0, 999_999)];
     const r = closeSeason(ps);
     expect(get(r, "rich").leagueAfter).toBe(1);
     expect(get(r, "x").leagueAfter).toBe(0);
@@ -32,7 +35,7 @@ describe("leagues", () => {
     const r = closeSeason([P("d", 4, 5_000_000), P("s", 3, 1)]);
     expect(get(r, "d").leagueAfter).toBe(4);
     expect(get(r, "d").newCredits).toBe(1600);
-    expect(get(r, "s").leagueAfter).toBe(4);
+    expect(get(r, "s").leagueAfter).toBe(3);
   });
   it("inactive players keep their league and are never reduced below their credits", () => {
     const r = closeSeason([P("i1", 2, 400, false), P("i2", 2, 90_000, false), P("p", 2, 10)]);

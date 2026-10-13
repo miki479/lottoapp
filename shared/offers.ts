@@ -1,6 +1,6 @@
 // Personal super-odds: pure rules, mirrored by public.make_personal_offers() and public.place_bet() (migration 0096).
 export type OfferReason = "absent" | "losses" | "random";
-export const OFFER_MULTIPLIERS = [20, 40] as const;
+export const OFFER_MULTIPLIERS = [5, 10] as const;
 export const OFFER_MAX_STAKE = 20;
 export const OFFER_MAX_ODDS = 100;
 export const OFFER_GAP_DAYS = 10;
@@ -35,7 +35,7 @@ export function offerReason(p: OfferPlayer): OfferReason | null {
   if (p.absentDays !== null && p.absentDays <= OFFER_ACTIVE_DAYS && p.localHour === 10 && p.roll < OFFER_RANDOM_RATE) return "random";
   return null;
 }
-export const offerMultiplier = (r: OfferReason): 20 | 40 => (r === "random" ? 20 : 40);
+export const offerMultiplier = (r: OfferReason): 5 | 10 => (r === "random" ? 5 : 10);
 
 export interface OfferMarket { odds_yes: number; odds_no: number; closesInH: number; flash: boolean; delayKind: boolean }
 export function marketEligible(m: OfferMarket): boolean {

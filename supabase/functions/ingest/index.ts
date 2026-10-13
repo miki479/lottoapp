@@ -19,7 +19,7 @@ import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, bui
 import { bookPriors, buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, type Fixture, type Geo, type MatchBet, type TableRow } from "../_shared/shared/sport.ts";
 import { apiFootball, apiKey, fetchBookQuotes, fetchDetails, fetchPlayerFacts, loadTable } from "../_lib/football.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
-import { DEFAULT_YES_PROBABILITY, computeOdds, delayContextAt, learnedPrior, liveYesProbability } from "../_shared/shared/odds.ts";
+import { DEFAULT_YES_PROBABILITY, computeOdds, delayContextAt, learnedPrior, liveYesProbability, rainYesProbability } from "../_shared/shared/odds.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
 
 const FETCH_TIMEOUT_MS = 25_000;
@@ -85,6 +85,7 @@ Deno.serve(safe(async (req) => {
     }
   }
   report["live-odds"] = await repriceDelays(sb).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
+  report["rain-odds"] = await repriceRain(sb).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   if (heavyRun) return Response.json(report);
   report["open-meteo-places"] = await ingestPlaces(sb, now, lastAttempt.get("open-meteo-places") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["open-meteo-metrics"] = await ingestMetrics(sb, now, lastAttempt.get("open-meteo-metrics") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
@@ -145,6 +146,33 @@ async function learnedPriors(sb: ReturnType<typeof db>, now: number): Promise<(c
  * A bus or train already running late is likely to still be late at the question's stop: the open delay markets follow the real delay
  * (bets placed keep their odds). Questions with no reading yet get the starting chance learned for their country, if they still carry an old price.
  */
+/** Open rain questions follow the hourly precipitation forecast for their hour (bets already placed keep their odds). */
+async function repriceRain(sb: ReturnType<typeof db>): Promise<string> {
+  const now = Date.now() / 1000;
+  const priorOf = await learnedPriors(sb, Math.floor(now));
+  const { data: ms, error } = await sb.from("markets").select("id,city_id,params,target_at,odds_yes,odds_no,flash_multiplier").eq("kind", "rain_at").eq("status", "open").gt("closes_at", new Date(now * 1000).toISOString()).limit(500);
+  if (error) throw new Error(error.message);
+  const rows = (ms ?? []) as { id: string; city_id: string; params: { minMm?: number }; target_at: string; odds_yes: number; odds_no: number; flash_multiplier: number }[];
+  if (!rows.length) return "ok 0";
+  const hourOf = (r: { target_at: string }) => Math.floor(Date.parse(r.target_at) / 3600000) * 3600;
+  const lo = Math.min(...rows.map(hourOf)), hi = Math.max(...rows.map(hourOf));
+  const { data: obs } = await sb.from("weather_observations").select("city_id,hour_start,precipitation_mm").in("city_id", [...new Set(rows.map((r) => r.city_id))]).gte("hour_start", new Date(lo * 1000).toISOString()).lte("hour_start", new Date(hi * 1000).toISOString());
+  const mm = new Map<string, number>();
+  for (const o of (obs ?? []) as { city_id: string; hour_start: string; precipitation_mm: number }[]) mm.set(`${o.city_id}|${Date.parse(o.hour_start) / 1000}`, Number(o.precipitation_mm));
+  const out: { id: string; prior: number; yes: number; no: number }[] = [];
+  for (const r of rows) {
+    const f = mm.get(`${r.city_id}|${hourOf(r)}`) ?? null;
+    if (f === null) continue;
+    const prior = priorOf(r.city_id, "rain_at");
+    const p = rainYesProbability(f, Number(r.params?.minMm ?? 0.1), (Date.parse(r.target_at) / 1000 - now) / 3600, prior);
+    const o = computeOdds(p), cur = Number(r.odds_yes) / Math.max(1, Number(r.flash_multiplier));
+    if (Math.abs(o.yes - cur) / cur < 0.04 && Math.abs(o.no - Number(r.odds_no)) < 0.03) continue;
+    out.push({ id: r.id, prior, yes: o.yes, no: o.no });
+  }
+  if (out.length) { const { error: e2 } = await sb.rpc("apply_live_odds", { p: out }); if (e2) throw new Error(e2.message); }
+  return `ok ${out.length}/${rows.length}`;
+}
+
 async function repriceDelays(sb: ReturnType<typeof db>): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   const priorOf = await learnedPriors(sb, now);

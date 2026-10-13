@@ -380,3 +380,17 @@ describe("delay pricing with the time of day", () => {
     expect(liveYesProbability(0.05, 1200, 300, 15, true)).toBeGreaterThan(0.7);
   });
 });
+
+import { rainYesProbability } from "../shared/odds.ts";
+describe("rain priced from the forecast", () => {
+  it("a dry forecast keeps No modest, a wet one makes Yes likely", () => {
+    const dry = rainYesProbability(0, 0.1, 2, 0.25), wet = rainYesProbability(1.5, 0.1, 2, 0.25);
+    expect(dry).toBeGreaterThan(0.15); expect(dry).toBeLessThan(0.3);
+    expect(wet).toBeGreaterThan(0.8);
+    expect(rainYesProbability(0.05, 0.1, 2, 0.25)).toBeGreaterThan(dry);
+  });
+  it("far ahead the history counts for more; no forecast leaves the prior", () => {
+    expect(rainYesProbability(1.5, 0.1, 30, 0.25)).toBeLessThan(rainYesProbability(1.5, 0.1, 2, 0.25));
+    expect(rainYesProbability(null, 0.1, 5, 0.25)).toBe(0.25);
+  });
+});

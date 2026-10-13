@@ -32,10 +32,10 @@ describe("offerReason", () => {
     expect(offerReason({ ...base, absentDays: 9, daysSinceLastOffer: 10 })).toBe("absent");
     expect(offerReason({ ...base, absentDays: 9, credits: 5 })).toBeNull();
   });
-  it("multiplier 40 for absent/losses, 20 for random", () => {
-    expect(offerMultiplier("absent")).toBe(40);
-    expect(offerMultiplier("losses")).toBe(40);
-    expect(offerMultiplier("random")).toBe(20);
+  it("multiplier 10 for absent/losses, 5 for random", () => {
+    expect(offerMultiplier("absent")).toBe(10);
+    expect(offerMultiplier("losses")).toBe(10);
+    expect(offerMultiplier("random")).toBe(5);
   });
 });
 
@@ -54,13 +54,13 @@ describe("marketEligible", () => {
 
 describe("odds and payout", () => {
   it("multiplies and caps at 100", () => {
-    expect(offerOdds(1.79, 40)).toBe(71.6);
+    expect(offerOdds(1.79, 10)).toBe(17.9);
     expect(offerOdds(2.5, 40)).toBe(100);
     expect(offerOdds(3.99, 20)).toBe(79.8);
     expect(offerOdds(4, 40)).toBe(100);
   });
   it("pays stake x odds, floored", () => {
-    expect(offerPayout(20, 1.79, 40)).toBe(1432);
+    expect(offerPayout(20, 1.79, 10)).toBe(358);
     expect(offerPayout(20, 3, 40)).toBe(2000);
   });
 });
