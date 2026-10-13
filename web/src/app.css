@@ -30,9 +30,11 @@ p { margin: 0; }
 .brand span b { font-weight: 900; font-style: italic; letter-spacing: .06em; padding-right: 2px; background: linear-gradient(100deg, #6b5bff 0%, #ff4fa3 55%, #ffb000 100%); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; filter: drop-shadow(0 1px 0 rgba(0,0,0,.12)); }
 .brand .tx { display: grid; gap: 1px; line-height: 1; }
 /* small hand-stuck label under the name: noticeable, not loud */
-.stag { justify-self: start; font-style: normal; font-size: 8.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #8a5d0a; background: #fff1c2; border: 1px dashed #d9a62a; border-radius: 3px; padding: 0 4px 0 3px; transform: rotate(-2.5deg); transform-origin: left center; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .stag { background: #3a2d0a; color: #ffe29a; border-color: #8a6a1a; } }
-:root[data-theme="dark"] .stag { background: #3a2d0a; color: #ffe29a; border-color: #8a6a1a; }
+.stag { justify-self: start; font-style: normal; font-size: 8.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #8a5d0a; padding: 0 4px 0 3px; transform: rotate(-2.5deg); transform-origin: left center; white-space: nowrap; opacity: 0; animation: stagcome 18s ease-in-out 2s infinite; }
+@keyframes stagcome { 0%, 100% { opacity: 0; } 6%, 30% { opacity: 1; } 38% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .stag { animation: none; opacity: 1; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .stag { color: #ffe29a; } }
+:root[data-theme="dark"] .stag { color: #ffe29a; }
 .header .grow { flex: 1; }
 .iconbtn { width: var(--touch); height: var(--touch); border-radius: var(--radius-control); display: grid; place-items: center; color: var(--text-2); transition: background var(--dur-fast), transform var(--dur-fast); }
 .iconbtn:hover { background: var(--surface-2); } .iconbtn:active { transform: scale(.96); }

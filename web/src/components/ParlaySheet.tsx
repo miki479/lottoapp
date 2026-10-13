@@ -6,7 +6,7 @@ import { haptic } from "../lib/haptics.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { SlipLeg } from "../lib/types.ts";
 import { JoinStep } from "./JoinStep.tsx";
-import { boostedPayout } from "../../../shared/wallet.ts";
+import { boostedPayout, parlayStakeCap } from "../../../shared/wallet.ts";
 import { Sheet } from "./Sheet.tsx";
 import { StakeControl } from "./StakeControl.tsx";
 
@@ -22,7 +22,8 @@ export function ParlaySheet(p: {
   const [joining, setJoining] = useState(false);
   const [boost, setBoost] = useState(false);
   const odds = slipOdds(p.legs);
-  const cap = p.credits >= 10 ? Math.min(5000, Math.floor(p.credits)) : 500;
+  const slipCap = parlayStakeCap(p.legs.map((l) => Number(l.pick === "yes" ? l.m.odds_yes : l.m.odds_no)));
+  const cap = Math.max(10, p.credits >= 10 ? Math.min(slipCap, Math.floor(p.credits)) : Math.min(slipCap, 500));
   const amount = Math.min(stake, cap);
   const m = p.msg;
   const going = useRef(false);

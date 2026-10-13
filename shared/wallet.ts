@@ -42,6 +42,14 @@ export function delayStakeCap(odds: number): number {
   return odds > 1 ? Math.max(FUN_STAKE, Math.min(sc, Math.floor(2000 / (odds - 1)))) : sc;
 }
 
+/** Stake limit of a parlay, mirrors place_parlay (0114): the lowest single-bet cap among the legs, 20000 of profit at most (floor FUN_STAKE), 5000 at most. */
+export function parlayStakeCap(legOdds: readonly number[]): number {
+  let cap = PARLAY_MAX_STAKE;
+  for (const o of legOdds) cap = Math.min(cap, stakeCap(o));
+  const odds = parlayOdds(legOdds);
+  return odds > 1 ? Math.min(cap, Math.max(FUN_STAKE, Math.floor(20000 / (odds - 1)))) : cap;
+}
+
 /** Parlays: 2 to 5 legs, stake 10..5000, combined odds are the product of the legs, rounded to cents and capped at 100. Mirrors place_parlay / settle_legs. */
 export const PARLAY_MIN_LEGS = 2;
 export const PARLAY_MAX_LEGS = 5;

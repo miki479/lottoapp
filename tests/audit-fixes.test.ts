@@ -73,3 +73,9 @@ describe("migration 0113", () => {
     expect(sql).toContain("p_legs is null or jsonb_typeof(p_legs)");
   });
 });
+
+import { parlayStakeCap as psc } from "../shared/wallet.ts";
+describe("parlayStakeCap", () => {
+  it("is limited by the safest leg", () => { expect(psc([1.05, 3])).toBe(20); expect(psc([1.2, 2])).toBe(200); });
+  it("is limited by 20000 of profit and 5000", () => { expect(psc([2.5, 2.5])).toBe(3809); expect(psc([1.8, 1.8])).toBe(5000); expect(psc([6, 6, 6])).toBe(202); });
+});
