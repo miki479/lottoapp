@@ -115,10 +115,10 @@ p { margin: 0; }
 .missions .txt b { display: block; font-size: var(--fs-body); } .missions .txt span { font-size: 13px; color: var(--text-2); }
 
 /* ---------- outcome pills (the only place green/red appear) ---------- */
-.pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 700; transition: background var(--dur), color var(--dur); background: var(--surface-2); color: var(--text-2); }
+.pill { display: inline-flex; flex: none; align-items: center; gap: 6px; white-space: nowrap; padding: 5px 10px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 700; transition: background var(--dur), color var(--dur); background: var(--surface-2); color: var(--text-2); }
 .pill.won { background: var(--won-bg); color: var(--won-fg); } .pill.lost { background: var(--lost-bg); color: var(--lost-fg); }
 .bet { display: flex; flex-direction: column; gap: 10px; animation: rise var(--dur) var(--ease) both; animation-delay: calc(var(--i, 0) * 30ms); }
-.bet .row1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bet .row1 { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; } .bet .row1 .detail { flex: 1 1 150px; min-width: 0; text-align: right; line-height: 1.25; }
 .bet .q { font-weight: 600; } .bet .info { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--text-2); }
 .bet .amt { font-weight: 800; font-size: 18px; }
 .bet .info.win b { color: var(--won-fg); font-weight: 800; }
