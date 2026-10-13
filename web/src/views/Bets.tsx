@@ -2,7 +2,7 @@ import { Q } from "../components/Q.tsx";
 import { Check, RotateCcw, Ticket, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { MarketVs, reasonOf } from "../components/MatchVs.tsx";
-import { BetMap } from "../components/BetMap.tsx";
+import { BetInsight } from "../components/BetInsight.tsx";
 import { Collapse } from "../components/Collapse.tsx";
 import { Empty } from "../components/Empty.tsx";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -85,8 +85,7 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
               {st === "open" && <div class="info win"><span>{msg.bets.potential}</span><b class="num">{money(potentialWin(b.stake, Number(b.odds), b.boosted, b.vice_pct ?? 0), locale)}</b></div>}
               {b.bonus && <p class={`bonusline ${b.bonus_hit ? "hit" : ""}`}>{msg.bonus.line(msg.bonus[b.bonus])}{st !== "open" && st !== "void" ? ` · ${b.bonus_hit === true ? msg.bonus.hit : b.bonus_hit === false ? msg.bonus.miss : msg.bonus.unknown}` : ""}</p>}
             </button>
-            {st === "open" && (m.category === "bus" || m.category === "train") && !!m.params.tripId && m.kind !== "bus_full" && <BetMap m={m} msg={msg} now={now} />}
-            {st === "open" && m.kind === "bus_full" && !!m.params.tripId && <BetMap m={m} msg={msg} now={now} />}
+            {st === "open" && <BetInsight m={m} pick={b.pick} msg={msg} now={now} />}
             </div>
           );
         })}

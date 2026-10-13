@@ -2,6 +2,7 @@ import type { Messages } from "./types.ts";
 
 const ja: Messages = {
   nav: { home: "ホーム", bets: "マイ予想", friends: "友達", ranking: "ランキング", profile: "プロフィール" },
+  insight: { how: "いまの状況", noReadings: "この便の情報はまだありません。運行が始まるとここに遅延が表示されます。", delayNow: "現在の遅延", chartLabel: "遅延の推移", line: (n) => `基準 ${n}分`, goingWell: "今のところ予想は有利です", goingBad: "今のところ予想は不利です", updated: (n) => `${n}分前に更新`, forecast: "予測", noForm: "最近の試合なし", res: { w: "勝", d: "分", l: "負" }, goalsFor: "1試合の得点", goalsAgainst: "1試合の失点", pointsFor: "1試合の得点(点)", pointsAgainst: "1試合の失点(点)", chance: "あなたの選択の推定確率", waitMatch: "ライブスコアはまだありません。両チームの直近5試合の調子を表示します。" },
   common: { loading: "イベントを読み込み中…", backOnline: "オンラインに戻りました", close: "閉じる", cancel: "キャンセル", save: "保存", retry: "やり直す", soon: "近日公開", offline: "オフラインです。最新のデータは表示されず、予想もできません。", install: "アプリをインストール", language: "言語", credits: "クレジット", copied: "コピーしました", back: "戻る" },
   tabs: { law: "法律", bus: "バス", train: "電車", weather: "天気", strike: "スト", nature: "自然", traffic: "渋滞", finance: "市場", culture: "カルチャー", sport: "スポーツ", gov: "政府", soon: "近日" },
   wx: { filter: "絞り込み", world: "世界", regions: { jp: "日本", it: "イタリア", ca: "カリフォルニア", tr: "トルコ" }, localTime: "現地時間", all: "すべて", rain: "雨", names: { temp: "気温", wind: "風", snow: "雪", uv: "UV", crypto: "暗号資産", metals: "金属", oil: "原油", fuel: "燃料", aqi: "空気" , hail: "雹" }, forecast: (v) => `予報 ${v}`, quakeArt: "世界の地震" },
