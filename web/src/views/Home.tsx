@@ -11,6 +11,7 @@ import { CatChips, type CatId } from "../components/CatChips.tsx";
 import { Empty } from "../components/Empty.tsx";
 import { CrowdCard } from "../components/CrowdCard.tsx";
 import { EventCard } from "../components/EventCard.tsx";
+import { GameGroup } from "../components/GameGroup.tsx";
 import { Flag } from "../components/Flag.tsx";
 import { TopCards, type TopItem } from "../components/TopCards.tsx";
 import { Car, Coins, Globe, ListChecks, MapPin, SlidersHorizontal, Sparkles, ThumbsUp, X } from "lucide-preact";
@@ -81,6 +82,11 @@ export function Home(p: HomeProps) {
   const shown0 = seriesSel !== null && p.cat === "culture" ? shown00.filter((m) => Number(m.params.showId) === seriesSel) : shown00;
   const shown = p.cat === "nature" ? [...shown0].sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at) || Number(a.params.minMag) - Number(b.params.minMag)) : shown0;
   const topId = shown.reduce<MarketRow | null>((b, m) => (!b || Number(m.odds_yes) > Number(b.odds_yes) ? m : b), null)?.id;
+  const steamOf = (m: MarketRow) => { const sr = String(m.params.series ?? ""); return m.kind === "tick_gt" && sr.startsWith("steam:") ? sr.slice(6) : null; };
+  const gameGroups = new Map<string, MarketRow[]>();
+  if (p.cat === "culture") for (const m of shown) { const a = steamOf(m); if (a) gameGroups.set(a, [...(gameGroups.get(a) ?? []), m].sort((x, y) => Date.parse(x.target_at) - Date.parse(y.target_at))); }
+  const plain = gameGroups.size ? shown.filter((m) => !steamOf(m)) : shown;
+  const card = (m: MarketRow, i: number) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} live={p.live[m.id]} occ={p.occ[m.id]} index={i} mm={p.outlook[m.id]} friends={p.friendBets[m.id]} hasLadder={(p.ladders[m.id]?.length ?? 0) > 0} top={m.id === topId && shown.length > 3} showCity={p.filter === "world" || p.filter === "mine"} onPick={p.onPick} />;
   const cities = CITIES.filter((c) => enabledCategories(c).length > 0);
   const placeName = (() => { const c = CITIES.find((x) => x.id === p.filter); if (c) return cityName(c, p.locale); return [...p.places, ...FEATURED_PLACES, ...p.trending.map((t) => t.place).filter((x): x is Place => !!x)].find((x) => x.id === p.filter)?.name ?? p.filter; })();
   /** What does exist in the chosen place: offered as buttons so nothing switches by itself. */
@@ -174,7 +180,8 @@ export function Home(p: HomeProps) {
               {alt.length > 0 && <div class="tryalt"><span>{msg.home.tryInstead}</span>{alt.map((t) => <button key={t.id} class="chip" onClick={() => p.onCat(t.id)}>{t.label}<em>{t.count}</em></button>)}</div>}
             </div>
           )}
-          {shown.slice(0, 40).map((m, i) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} live={p.live[m.id]} occ={p.occ[m.id]} index={i} mm={p.outlook[m.id]} friends={p.friendBets[m.id]} hasLadder={(p.ladders[m.id]?.length ?? 0) > 0} top={m.id === topId && shown.length > 3} showCity={p.filter === "world" || p.filter === "mine"} onPick={p.onPick} />)}
+          {[...gameGroups].map(([appid, ms]) => <GameGroup key={appid} appid={appid} count={ms.length}>{ms.map((m, i) => card(m, i))}</GameGroup>)}
+          {plain.slice(0, 40).map((m, i) => card(m, i))}
         </div>
         <div class="nearwrap stack">{p.nearbyNode}{p.nearNode}</div>
         <footer class="legal">

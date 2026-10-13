@@ -462,7 +462,7 @@ export function App() {
       { name: "Ministero delle Imprese e del Made in Italy — Osservatorio prezzi carburanti", license: "IODL 2.0 (open data)", licenseUrl: "https://www.dati.gov.it/content/italian-open-data-license-v20", url: "https://www.mimit.gov.it/it/prezzo-medio-carburanti" },
       { name: "U.S. Energy Information Administration", license: "Public domain (US Government)", licenseUrl: "https://www.eia.gov/about/copyrights_reuse.php", url: "https://www.eia.gov/opendata/" },
       ...(detailsOn ? [{ name: "API-Football (API-Sports)", license: "Free plan (see their terms)", licenseUrl: "https://www.api-football.com/terms", url: "https://www.api-football.com" }] : []),
-      { name: "Steam Web API (Valve)", license: "Steam Web API Terms of Use", licenseUrl: "https://steamcommunity.com/dev/apiterms", url: "https://steamcommunity.com/dev" },
+      { name: "Steam Web API and game images (Valve)", license: "Steam Web API Terms of Use", licenseUrl: "https://steamcommunity.com/dev/apiterms", url: "https://steamcommunity.com/dev" },
       { name: "CoinGecko API", license: "Free API, attribution required", licenseUrl: "https://www.coingecko.com/en/api/documentation", url: "https://www.coingecko.com" },
       { name: "NOAA Space Weather Prediction Center", license: "Public domain (US Government)", licenseUrl: "https://www.weather.gov/disclaimer", url: "https://www.swpc.noaa.gov" },
       { name: "Wikimedia Foundation (page views)", license: "CC0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", url: "https://wikimedia.org/api/rest_v1/" },
