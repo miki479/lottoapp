@@ -1257,3 +1257,10 @@ textarea.field { resize: vertical; min-height: 84px; }
 .opt small { display: block; font-size: .72rem; font-weight: 600; opacity: .85; margin-top: 2px; }
 
 .meta .frbadge { position: static; flex: none; }
+
+/* "For you, now": the card that follows what the person is doing */
+.foryou { border: 1px solid var(--brand-soft, var(--border)); }
+.foryou.waiting { border-color: var(--brand); }
+.fyhead { display: flex; align-items: center; gap: 8px; } .fyhead svg { color: var(--brand); flex: none; }
+.fyrow { display: flex; align-items: center; gap: 10px; } .fyrow .detail { display: block; }
+.fyactions { display: flex; gap: 8px; justify-content: flex-end; }

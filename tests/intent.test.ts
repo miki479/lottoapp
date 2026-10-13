@@ -81,3 +81,41 @@ describe("intent", () => {
     expect(leisureTime(new Date(2026, 9, 17, 10, 0))).toBe(true);   // Saturday
   });
 });
+
+import { extractArrivals, offerWindowOk, buildStopMarket, hms, delayDedupeKey } from "../shared/nearby.ts";
+
+const NOW = 1_800_000_000;
+const feed = (stu: Record<string, unknown>[], tripId = "T1") => ({ header: { timestamp: NOW }, entity: [{ id: "1", tripUpdate: { trip: { tripId, routeId: "R9" }, stopTimeUpdate: stu } }] }) as never;
+
+describe("arrivals from a live feed", () => {
+  it("lists the trips the feed expects at the wanted stop, soonest first, with the schedule from time minus delay", () => {
+    const f = { header: { timestamp: NOW }, entity: [
+      { id: "1", tripUpdate: { trip: { tripId: "A", routeId: "R1" }, stopTimeUpdate: [{ stopId: "S1", stopSequence: 3, arrival: { time: NOW + 600, delay: 120 } }, { stopId: "S2", arrival: { time: NOW + 900 } }] } },
+      { id: "2", tripUpdate: { trip: { tripId: "B", routeId: "R2" }, stopTimeUpdate: [{ stopId: "S1", arrival: { time: NOW + 300, delay: 0 } }] } },
+      { id: "3", tripUpdate: { trip: { tripId: "C", routeId: "R3", scheduleRelationship: "CANCELED" }, stopTimeUpdate: [{ stopId: "S1", arrival: { time: NOW + 400 } }] } },
+      { id: "4", tripUpdate: { trip: { tripId: "D", routeId: "R4" }, stopTimeUpdate: [{ stopId: "S1", arrival: { time: NOW + 5000 } }] } },
+    ] } as never;
+    const out = extractArrivals(f, { kind: "trip_updates", stopIds: new Set(["S1"]), now: NOW });
+    expect(out.map((a) => a.tripId)).toEqual(["B", "A"]);
+    expect(out[1]!.scheduledAt).toBe(NOW + 480);
+    expect(out[1]!.delaySec).toBe(120);
+  });
+  it("skips skipped stops and stops without a time", () => {
+    const out = extractArrivals(feed([{ stopId: "S1", scheduleRelationship: "SKIPPED", arrival: { time: NOW + 100 } }, { stopId: "S1", arrival: { delay: 30 } }]), { kind: "trip_updates", stopIds: new Set(["S1"]), now: NOW });
+    expect(out).toEqual([]);
+  });
+  it("an offer needs the schedule time 5 to 60 minutes away", () => {
+    expect(offerWindowOk(NOW + 4 * 60, NOW)).toBe(false);
+    expect(offerWindowOk(NOW + 10 * 60, NOW)).toBe(true);
+    expect(offerWindowOk(NOW + 61 * 60, NOW)).toBe(false);
+    expect(offerWindowOk(null, NOW)).toBe(false);
+  });
+  it("builds a market that closes before the scheduled time and matches the generator's key", () => {
+    const m = buildStopMarket({ cityId: "romagna", tz: "Europe/Rome", feedId: "start-trip-updates", category: "bus", routeId: "R1", routeName: "11", headsign: "Centro", tripId: "A", stopId: "S1", stopName: "Via Seganti", stopLat: 44.22, stopLon: 12.04, stopSequence: 3, scheduledAt: NOW + 900, delaySec: null, history: null, priorYes: 0.3, now: NOW });
+    expect(Date.parse(m.target_at) / 1000).toBe(NOW + 900);
+    expect(Date.parse(m.closes_at)).toBeLessThan(Date.parse(m.target_at));
+    expect(m.params.nearby).toBe(true);
+    expect(m.dedupe_key).toBe(delayDedupeKey(m));
+    expect(hms(3661)).toBe("01:01:01");
+  });
+});

@@ -1,4 +1,5 @@
 import { startChips } from "../lib/startcities.ts";
+import { ForYou } from "../components/ForYou.tsx";
 import { trainZone } from "../lib/zones.ts";
 import { CloudRain } from "lucide-preact";
 import { FilterSheet, filterLabel, ICON as KIND_ICON } from "../components/FilterSheet.tsx";
@@ -30,7 +31,7 @@ const safe = { get: (k: string) => { try { return localStorage.getItem(k); } cat
 export interface Trend { id: string; name: string; country: string; place?: Place }
 export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>; occ: Record<string, LiveOcc>;
-  cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null; country?: string | null;
+  cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null; country?: string | null; homePos?: { lat: number; lon: number } | null;
   onQuakeMaker: () => void; onSeries: (s?: FollowedShow) => void; onCreate: () => void; registered: boolean; onAuth: () => void; italian: boolean; nearNode?: preact.ComponentChildren; nearbyNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
   stale?: boolean; details: boolean; friendBets: Record<string, number>;
   attributions: { name: string; via?: string; license: string; licenseUrl: string; url: string }[]; installEvt: Event | null;
@@ -94,6 +95,7 @@ export function Home(p: HomeProps) {
         </section>
       )}
       <div class="aside">
+        <ForYou msg={msg} locale={p.locale} now={p.now} markets={p.markets} registered={p.registered} home={p.homePos ?? null} onPick={p.onPick} onCreate={p.onCreate} />
         {(p.top.length > 0 || p.italian) && (
           <section class="stack" style="gap:8px">
             <div class="sectionhead"><h2>{msg.home.top}</h2></div>

@@ -1,4 +1,4 @@
-import { Bell, Gift, Rocket, Calendar, CalendarCheck, ChevronRight, Flame, Gem, Ghost, LogOut, Medal, Pencil, Percent, Share2, Snowflake, Sparkles, Target, Telescope, Trash2, TrainFront, TrendingUp, Trophy, Umbrella, User, Zap } from "lucide-preact";
+import { MapPin, Bell, Gift, Rocket, Calendar, CalendarCheck, ChevronRight, Flame, Gem, Ghost, LogOut, Medal, Pencil, Percent, Share2, Snowflake, Sparkles, Target, Telescope, Trash2, TrainFront, TrendingUp, Trophy, Umbrella, User, Zap } from "lucide-preact";
 import type { LucideIcon } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Sheet } from "../components/Sheet.tsx";
@@ -10,6 +10,7 @@ import { HistoryCard } from "../components/HistoryCard.tsx";
 import type { MyStats, Profile, Progress } from "../lib/types.ts";
 import { INTL_TAG } from "../i18n/index.ts";
 import { Look } from "../components/looks/Look.tsx";
+import { readConsent, writeConsent } from "../lib/useIntent.ts";
 import { Trophy3D } from "../components/looks/Trophy3D.tsx";
 import { XpInfo } from "../components/XpInfo.tsx";
 import { levelProgress } from "../../../shared/looks";
@@ -23,6 +24,7 @@ export function ProfileView(p: {
   giftCard: boolean; onGiftSeen: () => void; push: { on: boolean; denied: boolean; toggle: () => void; flash: boolean; streak: boolean; friends: boolean; setPrefs: (f: boolean, s: boolean, fr: boolean) => void } | null; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
   onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => void; onDelete: () => Promise<void>; sources: { name: string; via?: string; license: string; licenseUrl: string; url: string }[];
 }) {
+  const [intentOn, setIntentOn] = useState(() => readConsent() === "on");
   const m = p.msg.profile;
   const [xpOpen, setXpOpen] = useState(false);
   const [stats, setStats] = useState<MyStats | null>(null);
@@ -77,6 +79,10 @@ export function ProfileView(p: {
               )}
             </section>
           )}
+          <section class="card stack">
+            <label class="switchrow"><span class="swlabel"><MapPin size={18} style="color:var(--brand);flex:none" /><span>{p.msg.fy.setTitle}</span></span><input type="checkbox" role="switch" checked={intentOn} onChange={(e) => { const on = (e.target as HTMLInputElement).checked; writeConsent(on ? "on" : "off"); setIntentOn(on); }} /></label>
+            <p class="hint">{intentOn ? p.msg.fy.setOn : p.msg.fy.setOff}</p>
+          </section>
           <section class="card stack referral">
             <div style="display:flex;gap:12px;align-items:center"><span class="refico"><Gift size={22} /></span><div><b>{p.msg.referral.title}</b><p class="hint">{p.msg.referral.body(money(1500, p.locale))} {p.msg.frd.referralNote}</p></div></div>
             {p.referral

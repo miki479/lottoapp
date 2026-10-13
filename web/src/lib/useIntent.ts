@@ -11,15 +11,16 @@ export interface Arrival {
 export type Consent = "unset" | "on" | "off";
 const KEY = "intent";
 const get = (): string | null => { try { return localStorage.getItem(KEY); } catch { return null; } };
+export const writeConsent = (c: Consent) => put(c === "on" ? "1" : c === "off" ? "0" : "");
 const put = (v: string) => { try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); } catch { /* storage unavailable */ } };
-const read = (): Consent => { const v = get(); return v === "1" ? "on" : v === "0" ? "off" : "unset"; };
+export const readConsent = (): Consent => { const v = get(); return v === "1" ? "on" : v === "0" ? "off" : "unset"; };
 
 /**
  * What the person is probably looking for: waiting at a stop, at home, or just passing. The position is read only while the page is visible and
  * only after the person said yes; it stays in this phone's memory, and the server only ever sees it rounded to a ~100 m grid, to list the stops nearby.
  */
 export function useIntent(o: { registered: boolean; home: { lat: number; lon: number } | null }) {
-  const [consent, setConsent] = useState<Consent>(read);
+  const [consent, setConsent] = useState<Consent>(readConsent);
   const [situation, setSituation] = useState<Situation>("unknown");
   const [stops, setStops] = useState<NearbyStop[]>([]);
   const [arrivals, setArrivals] = useState<Arrival[]>([]);

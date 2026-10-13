@@ -30,6 +30,7 @@ export const TROPHY_RARITY: Record<TrophyId, "common" | "rare" | "epic" | "legen
 /** Every locale implements this: add `ja` by creating ja.ts and registering it in index.ts. */
 export interface Messages {
   nav: { home: string; bets: string; friends: string; ranking: string; profile: string };
+  fy: { title: string; consentTitle: string; consentBody: string; consentYes: string; consentNo: string; atStop: (n: string) => string; line: (time: string, delay: string) => string; late: (n: number) => string; onTime: string; bet: string; unavailable: string; homeTitle: string; matchBtn: string; rainBtn: string; challenge: string; denied: string; setTitle: string; setOn: string; setOff: string };
   insight: { how: string; noReadings: string; delayNow: string; chartLabel: string; line: (n: number) => string; goingWell: string; goingBad: string; updated: (n: number) => string; forecast: string; noForm: string; res: { w: string; d: string; l: string }; goalsFor: string; goalsAgainst: string; pointsFor: string; pointsAgainst: string; chance: string; waitMatch: string };
   common: { loading: string; backOnline: string; close: string; cancel: string; save: string; retry: string; soon: string; offline: string; install: string; language: string; credits: string; copied: string; back: string };
   tabs: { law: string; bus: string; train: string; weather: string; nature: string; strike: string; traffic: string; finance: string; culture: string; sport: string; gov: string; soon: string };
