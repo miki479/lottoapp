@@ -61,6 +61,8 @@ const store = {
   get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
   set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
 };
+/** Country-wide feeds (all Italian trains, all German regional trains): they show up under every town of that country, not only under a city of their own. */
+const NATIONAL = new Set(CITIES.filter((c) => c.id === "italia" || c.id === "germany").map((c) => c.id));
 const region = () => { try { return new Intl.Locale(navigator.language).maximize().region ?? null; } catch { return null; } };
 const PROFILE_COLS = "id,credits,city_id,locale,timezone,country,streak,best_streak,freezes,boosts,push_flash,push_streak,push_friends,display_name,last_play_date";
 const BET_COLS = "id,pick,stake,odds,boosted,vice_pct,status,payout,bonus,bonus_hit,markets(id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,void_reason,outcome,evidence)";
@@ -332,7 +334,7 @@ export function App() {
   const myCountry = near?.country ?? profile?.country ?? region();
   const countryOf = (id: string) => CITIES.find((c) => c.id === id)?.country ?? placeById(id)?.country ?? (near?.id === id ? near.country : undefined);
   const hasMine = !!myCountry && open.some((m) => m.category !== "nature" && m.category !== "strike" && m.category !== "finance" && m.category !== "culture" && m.category !== "sport" && m.category !== "law" && countryOf(m.city_id) === myCountry);
-  const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter || m.category === "nature" || m.category === "strike" || m.category === "finance" || m.category === "culture" || m.category === "sport" || m.category === "law" || (filter === "mine" && countryOf(m.city_id) === myCountry)), [open, filter, myCountry, near?.id]);
+  const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter || m.category === "nature" || m.category === "strike" || m.category === "finance" || m.category === "culture" || m.category === "sport" || m.category === "law" || (filter === "mine" && countryOf(m.city_id) === myCountry) || (NATIONAL.has(m.city_id) && countryOf(filter) === countryOf(m.city_id))), [open, filter, myCountry, near?.id]);
   useEffect(() => { if (hasMine && filter === "world" && !store.get("filter")) setFilter("mine"); }, [hasMine]);
   const byCat = (c: CatId) => inFilter.filter((m) => m.category === c);
   useEffect(() => { if (catChosen || !markets) return; const first = (["bus", "train", "weather"] as CatId[]).find((c) => byCat(c).length > 0); if (first && byCat(cat).length === 0) setCat(first); }, [markets, filter, catChosen]);
