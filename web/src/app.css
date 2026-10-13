@@ -1338,3 +1338,27 @@ textarea.field { resize: vertical; min-height: 84px; }
 /* untouchable while the app is still starting (no half-loaded taps), but never for more than 5 s if the network is slow */
 .shell.booting main, .shell.booting nav { pointer-events: none; animation: bootunlock .01s 5s forwards; }
 @keyframes bootunlock { to { pointer-events: auto; } }
+/* Boost: rocket button with the count, an (i) with the rules, and the extra it adds, in the same glowing number as the stake. */
+.boostrow { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 10px 12px; border-radius: var(--radius-control); border: 1px solid var(--border-strong); background: var(--surface-2); transition: border-color .2s, box-shadow .2s, background .2s; }
+.boostrow.on { border-color: hsl(24 100% 62%); background: color-mix(in srgb, hsl(24 100% 62%) 12%, var(--surface-2)); box-shadow: 0 0 18px rgba(255, 140, 60, .35); }
+.boostbtn { display: inline-flex; align-items: center; gap: 8px; min-height: var(--touch); padding: 0 6px; background: none; border: 0; color: var(--text); font: inherit; cursor: pointer; }
+.boostbtn b { font-size: 15px; }
+.boostrow .rocket { position: relative; display: grid; place-items: center; width: 34px; height: 34px; color: var(--c-pop); }
+.boostrow.on .rocket { color: hsl(24 100% 62%); }
+.boostrow .flame { position: absolute; left: 2px; bottom: 1px; width: 11px; height: 17px; border-radius: 50% 50% 60% 60% / 70% 70% 40% 40%; background: radial-gradient(ellipse at 50% 70%, #fff6c0 0 25%, #ffb23c 45%, #ff5a1f 75%, transparent 78%); transform: rotate(45deg) scaleY(0); transform-origin: 50% 0; opacity: 0; filter: blur(.3px); }
+.boostrow.on .flame { opacity: .85; transform: rotate(45deg) scaleY(.55); animation: flameflicker .35s ease-in-out infinite alternate; }
+.boostrow .rocket.go { animation: rocketgo 1.5s cubic-bezier(.5, 0, .7, 1) both; }
+.boostrow .rocket.go .flame { opacity: 1; animation: flamegrow 1.5s ease-out both; }
+.boostrow .glow.boostnum { margin-left: auto; font-size: 34px; font-weight: 800; line-height: 1; letter-spacing: var(--ls-title); font-variant-numeric: tabular-nums; color: var(--hot); background: linear-gradient(100deg, var(--hot) 35%, #fff 50%, var(--hot) 65%); background-size: 260% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 var(--halo) var(--hot)); animation: popnum 220ms var(--ease), sheen 2.6s ease-in-out infinite, breathe 2s ease-in-out infinite; }
+.boostrow:not(.on) .glow.boostnum { opacity: .7; }
+.boostinfo { flex-basis: 100%; margin: 2px 0 0; }
+@keyframes flameflicker { from { transform: rotate(45deg) scaleY(.45); } to { transform: rotate(45deg) scaleY(.7); } }
+@keyframes flamegrow { 0% { transform: rotate(45deg) scaleY(.4); } 25% { transform: rotate(45deg) scaleY(1.5); } 60% { transform: rotate(45deg) scaleY(2.1); opacity: 1; } 100% { transform: rotate(45deg) scaleY(.55); opacity: .85; } }
+@keyframes rocketgo {
+  0% { transform: translate(0, 0); opacity: 1; }
+  10% { transform: translate(-1px, 1px); } 15% { transform: translate(1px, -1px); } 20% { transform: translate(-1px, 0); } 25% { transform: translate(1px, 1px); }
+  62% { transform: translate(60px, -52px) scale(.9); opacity: 0; }
+  63% { transform: translate(0, 0); opacity: 0; }
+  100% { transform: translate(0, 0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .boostrow .rocket.go, .boostrow .rocket.go .flame, .boostrow.on .flame, .boostrow .glow.boostnum { animation: none; } }

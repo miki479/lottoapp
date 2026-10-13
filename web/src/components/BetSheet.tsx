@@ -24,6 +24,7 @@ import { Sky } from "./Sky.tsx";
 import { OccScene } from "./OccScene.tsx";
 import { TripScene } from "./TripScene.tsx";
 import { StakeControl } from "./StakeControl.tsx";
+import { BoostRow } from "./BoostRow.tsx";
 import { offerText, type OfferUse } from "./PersonalOffer.tsx";
 import { OFFER_MIN_BASE_ODDS, offerOdds } from "../../../shared/offers.ts";
 import { Remind } from "./Remind.tsx";
@@ -125,7 +126,7 @@ export function BetSheet(p: {
       <p class="oddsword">{fmtOdds(shownOf(pick), p.locale)}× · {oddsWord(shownOf(pick), p.locale)}</p>
       {(decided || nearly) && <p class="note warn" role="status">{p.msg.errors.odds_too_low}</p>}
       <StakeControl value={amount} onChange={setStake} cap={cap} balance={p.credits} odds={odds} boost={boost && p.boosts > 0} vice={vice && pick === "yes" ? vicePct : 0} fancy={exclusive} locale={p.locale} msg={p.msg} />
-      {!offer && p.boosts > 0 && <label class={`boosttoggle ${boost ? "on" : ""}`}><input type="checkbox" checked={boost} onChange={(e) => setBoost((e.target as HTMLInputElement).checked)} /><Rocket size={20} /><span><b>{p.msg.boost.toggle}</b> · {p.msg.boost.have(p.boosts)}<small>{p.msg.boost.gain("+" + money(Math.floor(amount * odds) - amount, p.locale), "+" + money(boostedPayout(amount, odds) - amount, p.locale))} · {p.msg.boost.hint}</small></span></label>}
+      {!offer && p.boosts > 0 && <BoostRow on={boost} onToggle={setBoost} boosts={p.boosts} stake={amount} odds={odds} locale={p.locale} msg={p.msg} />}
       {err && <p class="formerr" role="alert">{err}</p>}
       {(p.openBets ?? 0) >= 32 && <p class="hint" role="status">{OPEN_HINT[p.locale] ?? OPEN_HINT["en-US"]}: {p.openBets}/40</p>}
       <button class="btn primary wide" disabled={busy || !p.ready || decided} aria-busy={busy} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? p.msg.sheet.confirming : `${p.msg.sheet.confirm} · ${money(amount, p.locale)}`}</button>
