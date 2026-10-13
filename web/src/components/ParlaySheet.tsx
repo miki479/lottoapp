@@ -22,7 +22,7 @@ export function ParlaySheet(p: {
   const [joining, setJoining] = useState(false);
   const [boost, setBoost] = useState(false);
   const odds = slipOdds(p.legs);
-  const cap = p.credits >= 10 ? Math.min(2000, Math.floor(p.credits)) : 500;
+  const cap = p.credits >= 10 ? Math.min(5000, Math.floor(p.credits)) : 500;
   const amount = Math.min(stake, cap);
   const m = p.msg;
   const place = async () => {
