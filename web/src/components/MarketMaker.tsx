@@ -4,6 +4,8 @@ import type { Locale, Messages } from "../i18n/index.ts";
 import { INTL_TAG } from "../i18n/index.ts";
 import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
+import { ensurePlace, searchPlaces, type Place } from "../lib/places.ts";
+import { Search } from "lucide-preact";
 import type { MarketRow } from "../lib/format.ts";
 import { fmtOdds } from "../lib/format.ts";
 import { Sheet } from "./Sheet.tsx";
@@ -25,6 +27,21 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
   const [series, setSeries] = useState("btc"), [offset, setOffset] = useState(6), [wikiDay, setWikiDay] = useState(1);
   const [thr, setThr] = useState<number | null>(null), [pv, setPv] = useState<Preview | null>(null);
   const [busy, run] = useBusy(), [err, setErr] = useState<string | null>(null);
+  // any town can be picked, not only the ones listed: the search finds it, and ensure_place gives it the id the questions are made on
+  const [q, setQ] = useState(""), [found, setFound] = useState<Place[] | null>(null), [extra, setExtra] = useState<{ id: string; name: string }[]>([]), [picking, setPicking] = useState(false);
+  useEffect(() => {
+    if (q.trim().length < 2) { setFound(null); return; }
+    const ctl = new AbortController();
+    const t = setTimeout(() => searchPlaces(q.trim(), p.locale === "it" ? "it" : "en", ctl.signal).then(setFound).catch(() => {}), 300);
+    return () => { clearTimeout(t); ctl.abort(); };
+  }, [q]);
+  const pickTown = async (pl: Place) => {
+    if (picking) return;
+    setPicking(true); setErr(null);
+    try { const id = await ensurePlace(pl); setExtra((x) => (x.some((y) => y.id === id) ? x : [...x, { id, name: pl.admin ? `${pl.name} (${pl.admin})` : pl.name }])); setPlace(id); setQ(""); setFound(null); }
+    catch (e) { setErr(String((e as Error).message).includes("places_limit") ? p.msg.places.limit : p.msg.maker.errors.generic!); }
+    setPicking(false);
+  };
 
   const seriesList = tab === "crypto" ? Object.keys(CRYPTO) : tab === "games" ? Object.keys(STEAM).map((id) => `steam:${id}`) : WIKI_ARTICLES.map((a) => `wiki:${a}`);
   const label = (s: string) => (s === "btc" || s === "eth" ? CRYPTO[s].label : s.startsWith("steam:") ? STEAM[s.slice(6) as keyof typeof STEAM] : s.slice(5).replace(/_/g, " "));
@@ -78,7 +95,9 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
         <button class="mkchip" onClick={p.onQuake}>{m.tabs.quake}</button>
       </div>
       {tab === "match" ? <MatchPicker msg={p.msg} locale={p.locale} origin={p.origin} registered={p.registered} onCreated={p.onCreated} /> : tab === "weather" ? <>
-        <label class="qmfield"><span class="detail">{m.place}</span><select class="field" value={place} onChange={(e) => setPlace((e.target as HTMLSelectElement).value)}>{p.places.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+        <label class="qmfield"><span class="detail">{m.place}</span><select class="field" value={place} onChange={(e) => setPlace((e.target as HTMLSelectElement).value)}>{[...p.places, ...extra.filter((x) => !p.places.some((y) => y.id === x.id))].map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+        <label class="searchbox"><Search size={18} /><input class="field" value={q} placeholder={p.msg.places.search} aria-label={p.msg.places.search} onInput={(e) => setQ((e.target as HTMLInputElement).value)} /></label>
+        {found?.map((pl) => <button key={`${pl.lat},${pl.lon}`} class="placerow" disabled={picking} onClick={() => pickTown(pl)}><span class="pn"><b>{pl.name}</b>{pl.admin && <small>{pl.admin}</small>}</span></button>)}
         <span class="detail">{m.metric}</span>{chips(METRIC_LIST.map((k) => ({ k, t: p.msg.wx.names[k] })), metric, (k) => setMetric(k as typeof metric))}
         <div class="qmgrid">
           <label class="qmfield"><span class="detail">{m.day}</span><select class="field" value={dayOffset} onChange={(e) => setDayOffset(Number((e.target as HTMLSelectElement).value))}><option value={0}>{m.today}</option><option value={1}>{m.tomorrow}</option></select></label>
