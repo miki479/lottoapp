@@ -65,7 +65,7 @@ export function LawGhost() {
 export function LawScene({ m, hint, msg }: { m: MarketRow; hint: "yes" | "no" | null | undefined; msg: Messages }) {
   const [go, setGo] = useState(0);
   const tap = () => { setGo((n) => n + 1); };
-  const cap = String((m.params as { label?: string }).label ?? msg.tabs.law);
+  const lab = String((m.params as { label?: string }).label ?? msg.tabs.law), cap = msg.cm[lab] ?? lab;
   return (
     <div class={`mscene tick house law ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`}>
       <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice" onClick={tap} aria-hidden="true">

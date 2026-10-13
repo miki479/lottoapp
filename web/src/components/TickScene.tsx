@@ -194,13 +194,15 @@ export function TickScene({ m, hint, msg, now }: { m: MarketRow; hint: Hint; msg
       </div>
     );
   }
+  // the dot at the end of the line wears the currency only where the number is a price
+  const sym = series === "btc" || series === "eth" ? "$" : series === "power:it" ? "€" : series.startsWith("fx:") ? "⇄" : "";
   return (
     <div class={cls} aria-hidden="true">
       <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
         <rect width="320" height="84" fill="#121a2e" />
         <g stroke="#26324d" stroke-width="1"><path d="M0 20H320M0 62H320M60 0V84M140 0V84M220 0V84M300 0V84" /></g>
         <path d="M0 42H320" stroke="#8ea0c8" stroke-width="1.500" stroke-dasharray="6 5" />
-        <g class="pline"><polyline points="0,50 30,44 60,52 90,40 120,47 150,36 180,45 210,38 240,48 270,40 300,44" fill="none" stroke="#f7b733" stroke-width="2.500" stroke-linejoin="round" stroke-linecap="round" /><circle cx="300" cy="44" r="6" fill="#f7b733" /><text x="300" y="47.500" text-anchor="middle" font-size="9" font-weight="800" fill="#121a2e">$</text></g>
+        <g class="pline"><polyline points="0,50 30,44 60,52 90,40 120,47 150,36 180,45 210,38 240,48 270,40 300,44" fill="none" stroke="#f7b733" stroke-width="2.500" stroke-linejoin="round" stroke-linecap="round" /><circle cx="300" cy="44" r="6" fill="#f7b733" /><text x="300" y="47.500" text-anchor="middle" font-size="9" font-weight="800" fill="#121a2e">{sym}</text></g>
       </svg>
       <b>{cap}</b>
     </div>

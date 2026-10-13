@@ -23,18 +23,21 @@ export function TickChart({ m, msg, locale }: { m: MarketRow; msg: Messages; loc
   if (series.startsWith("alert:") || !pts || pts.length < 3) return null;
   const thr = Number(m.params.threshold), W = 320, H = 96, pad = 6;
   const all = [...pts.map((p) => p.v), thr];
-  const lo = Math.min(...all), hi = Math.max(...all), span = hi - lo || 1;
+  const lo = kind === "price" ? Math.min(...all) : Math.min(0, ...all), hi = Math.max(...all), span = hi - lo || 1;
   const x = (i: number) => pad + (i * (W - 2 * pad)) / (pts.length - 1);
   const y = (v: number) => H - pad - ((v - lo) / span) * (H - 2 * pad);
   const last = pts[pts.length - 1]!, first = pts[0]!;
   const dg = typeof m.params.digits === "number" ? m.params.digits : 0, nf = new Intl.NumberFormat(INTL_TAG[locale], { minimumFractionDigits: kind === "kp" ? 0 : dg, maximumFractionDigits: kind === "kp" ? 1 : dg });
   const above = pts.filter((p) => p.v >= thr).length;
   const change = first.v ? ((last.v - first.v) / first.v) * 100 : 0;
-  const unit = series === "btc" || series === "eth" || series.startsWith("metal:") || series.startsWith("oil:") ? " $" : series.startsWith("fuel:") ? " €/l" : series === "carbon:gb" ? " g/kWh" : series === "power:it" ? " €/MWh" : series.startsWith("tide:") ? " m" : series.startsWith("river:") ? " cm" : series.startsWith("storm:") ? " kt" : "";
+  // currency goes in front outside Italy ("$4,200", "€1.85/l"); other units stay behind the number
+  const cur = series === "btc" || series === "eth" || series.startsWith("metal:") || series.startsWith("oil:") ? "$" : series.startsWith("fuel:") ? "€" : "";
+  const suffix = series.startsWith("fuel:") ? "/l" : series === "carbon:gb" ? " g/kWh" : series === "power:it" ? " €/MWh" : series.startsWith("tide:") ? " m" : series.startsWith("river:") ? " cm" : series.startsWith("storm:") ? " kt" : "";
+  const fmt = (v: number) => locale === "it" && cur ? `${nf.format(v)} ${cur}${suffix}` : `${cur}${nf.format(v)}${cur && locale === "it" ? "" : suffix}`;
   const poly = pts.map((p, i) => `${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
   return (
     <div class={`tickchart ${kind}`} role="img" aria-label={msg.chart.title}>
-      <div class="tchead"><b>{msg.chart.title}</b><span class="num">{nf.format(last.v)}{unit}</span></div>
+      <div class="tchead"><b>{msg.chart.title}</b><span class="num">{fmt(last.v)}</span></div>
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
         {kind === "price" ? <>
           <polygon points={`${x(0)},${H - pad} ${poly} ${x(pts.length - 1)},${H - pad}`} class="tcarea" />
@@ -44,9 +47,10 @@ export function TickChart({ m, msg, locale }: { m: MarketRow; msg: Messages; loc
         {kind === "price" && <circle cx={x(pts.length - 1)} cy={y(last.v)} r="3.500" class="tcdot" />}
       </svg>
       <div class="tcstats">
-        <span><em>{msg.chart.min}</em><b class="num">{nf.format(lo)}{unit}</b></span>
-        <span><em>{msg.chart.max}</em><b class="num">{nf.format(hi)}{unit}</b></span>
+        <span><em>{msg.chart.min}</em><b class="num">{fmt(Math.min(...all))}</b></span>
+        <span><em>{msg.chart.max}</em><b class="num">{fmt(hi)}</b></span>
         {kind === "price" && <span><em>{msg.chart.change}</em><b class={`num ${change >= 0 ? "up" : "down"}`}>{change >= 0 ? "+" : ""}{change.toFixed(1)}%</b></span>}
+        <span><em>{msg.chart.line}</em><b class="num">{fmt(thr)}</b></span>
         <span><em>{msg.chart.above}</em><b class="num">{above}/{pts.length}</b></span>
       </div>
     </div>

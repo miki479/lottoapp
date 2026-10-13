@@ -70,7 +70,9 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     if (series.startsWith("wiki:")) return msg.question.tick({ kind: "wiki", label: String(m.params.label), value: nf.format(thr), time: "", from: "", to: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3600_000)) });
     const dg = typeof m.params.digits === "number" ? m.params.digits : 0, nd = new Intl.NumberFormat(INTL_TAG[locale], { minimumFractionDigits: dg, maximumFractionDigits: dg }), lab = msg.cm[String(m.params.label)] ?? String(m.params.label);
     const day = new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3600_000));
-    if (series.startsWith("fuel:")) return msg.question.tick({ kind: "fuel", label: lab, value: `${nd.format(thr)} €`, time: "", from: "", to: "", day });
+    // Italian puts the currency after the number ("4.200 $"); English and Japanese put it in front ("$4,200")
+    const cur = (sym: string) => (locale === "it" ? `${nd.format(thr)} ${sym}` : `${sym}${nd.format(thr)}`);
+    if (series.startsWith("fuel:")) return msg.question.tick({ kind: "fuel", label: lab, value: cur("€"), time: "", from: "", to: "", day });
     if (series.startsWith("fx:")) return msg.question.tick({ kind: "fx", label: lab, value: nd.format(thr), time: "", from: "", to: "", day });
     if (series === "feargreed") return msg.question.tick({ kind: "feargreed", label: lab, value: nd.format(thr), time: "", from: "", to: "", day });
     if (series === "carbon:gb") return msg.question.tick({ kind: "carbon", label: lab, value: `${nd.format(thr)} g/kWh`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
@@ -78,8 +80,8 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     if (series.startsWith("tide:")) return msg.question.tick({ kind: "tide", label: lab, value: `${nd.format(thr)} m`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("river:")) return msg.question.tick({ kind: "river", label: lab, value: `${nd.format(thr)} cm`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series === "nws:us") return msg.question.tick({ kind: "nws", label: lab, value: nd.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
-    if (series.startsWith("oil:")) return msg.question.tick({ kind: "oil", label: lab, value: `${nd.format(thr)} $`, time: "", from: "", to: "", day });
-    return msg.question.tick({ kind: "price", label: lab, value: `${nd.format(thr)} $`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series.startsWith("oil:")) return msg.question.tick({ kind: "oil", label: lab, value: cur("$"), time: "", from: "", to: "", day });
+    return msg.question.tick({ kind: "price", label: lab, value: cur("$"), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
   }
   if (m.kind === "strike_on") return msg.question.strike({ date: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone }).format(new Date(m.target_at)), who: [m.params.sector, m.params.unions].filter(Boolean).join(" · "), hours: String(m.params.hours ?? "") });
   if (m.kind === "quake_m") {
@@ -110,11 +112,14 @@ export const daysUntil = (ms: number, now = Date.now()) => Math.max(0, Math.ceil
 export const minutesUntil = (iso: string, now = Date.now()) => Math.max(0, Math.floor((Date.parse(iso) - now) / 60000));
 
 /** "05:12" under an hour, "2h 05m" above, "17g 03h" from 48h. */
+/** The day unit of countdowns ("2g 05h" in Italian, "2d 05h" in English); the app sets it with the language. */
+let dayUnit = "g";
+export const setDayUnit = (u: string) => { dayUnit = u; };
 export function countdown(ms: number): string {
   const t = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = t % 60;
   const p = (n: number) => String(n).padStart(2, "0");
-  if (h >= 48) return `${Math.floor(h / 24)}g ${p(h % 24)}h`;
+  if (h >= 48) return `${Math.floor(h / 24)}${dayUnit} ${p(h % 24)}h`;
   return h > 0 ? `${h}h ${p(m)}m` : m > 0 ? `${m}m ${p(sec)}s` : `${sec}s`;
 }
 
@@ -163,7 +168,7 @@ export function emphasize(text: string, m: MarketRow, cityName: string): Piece[]
   const names = [p.routeName, p.routeId, p.siteName, p.label, p.home, p.away, cityName].map((x) => (x == null ? "" : String(x).trim())).filter((x) => x.length >= 2 && x !== "world");
   const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const parts = [...new Set(names)].sort((a, b) => b.length - a.length).map(esc);
-  const nums = String.raw`\d+(?:[.,]\d+)?\s?(?:min|kt|km\/h|°C|cm|mm|%|\$|M)|\b\d{1,2}:\d{2}\b|M\s?\d(?:[.,]\d)?`;
+  const nums = String.raw`[$€]\d+(?:[.,]\d+)*|\d+(?:[.,]\d+)?\s?(?:min|kt|km\/h|°C|cm|mm|%|\$|€\/MWh|€|g\/kWh|M)|\b\d{1,2}:\d{2}\b|M\s?\d(?:[.,]\d)?`;
   const re = new RegExp([...parts, nums].join("|"), "gi");
   const out: Piece[] = [];
   let last = 0;

@@ -35,7 +35,7 @@ import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
 import { every } from "./lib/poll.ts";
 import { computeOdds } from "../../shared/odds.ts";
-import { countdown, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, type MarketRow } from "./lib/format.ts";
+import { countdown, setDayUnit, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
 import { FAMOUS_PLACES, FEATURED_CITY_IDS, FEATURED_PLACES, ITALY_CAPITALS, ensurePlace, km, placeById, placeIdOf, recentPlaces, rememberPlace, type Place } from "./lib/places.ts";
@@ -77,6 +77,7 @@ const BET_COLS = "id,pick,stake,odds,boosted,vice_pct,status,payout,bonus,bonus_
 export function App() {
   const now = useNow(5000);
   const [locale, setLocale] = useState<Locale>(() => (store.get("locale") as Locale) || pickLocale(navigator.languages ?? [navigator.language]));
+  setDayUnit(locale === "it" ? "g" : locale === "ja" ? "日" : "d");
   const [filter, setFilter] = useState<string>(() => store.get("filter") || "world");
   const [cat, setCat] = useState<CatId>("bus");
   const [catChosen, setCatChosen] = useState(false);
