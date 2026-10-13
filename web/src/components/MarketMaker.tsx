@@ -5,7 +5,8 @@ import { INTL_TAG } from "../i18n/index.ts";
 import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
 import { ensurePlace, searchPlaces, type Place } from "../lib/places.ts";
-import { Search } from "lucide-preact";
+import { Map as MapIcon, Search } from "lucide-preact";
+import { ItalyMapPicker, type MapCity } from "./ItalyMapPicker.tsx";
 import type { MarketRow } from "../lib/format.ts";
 import { fmtOdds } from "../lib/format.ts";
 import { Sheet } from "./Sheet.tsx";
@@ -18,6 +19,7 @@ interface Preview { threshold: number; step?: number; odds_yes: number; odds_no:
 const METRIC_LIST = ["temp", "wind", "uv", "aqi", "snow", "hail"] as const;
 const SPOT_OFFSETS = [1, 3, 6, 12, 24];
 
+const MAP_TXT: Record<string, string> = { it: "Scegli sulla mappa", "en-US": "Pick on the map", "en-GB": "Pick on the map", ja: "地図から選ぶ" };
 /** Build your own question from a template. The server checks, prices and refuses what would be too obvious. */
 export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: string; name: string }[]; onClose: () => void; onQuake: () => void; onFriends: () => void; onCreated: (m: MarketRow) => void; registered: boolean; origin: { lat: number; lon: number } | null }) {
   const m = p.msg.maker, nf1 = new Intl.NumberFormat(INTL_TAG[p.locale], { maximumFractionDigits: 1 }), nf0 = new Intl.NumberFormat(INTL_TAG[p.locale], { maximumFractionDigits: 0 });
@@ -35,6 +37,20 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
     const t = setTimeout(() => searchPlaces(q.trim(), p.locale === "it" ? "it" : "en", ctl.signal).then(setFound).catch(() => {}), 300);
     return () => { clearTimeout(t); ctl.abort(); };
   }, [q]);
+  const [mapOpen, setMapOpen] = useState(false), [mapRegion, setMapRegion] = useState<string | null>(null);
+  // a town chosen on the map: find its exact position (the map only knows the province), then register it like any searched town
+  const pickMapCity = async (c: MapCity) => {
+    if (picking) return;
+    let pl: Place = { id: "", name: c.name, admin: c.region, country: "IT", lat: c.lat, lon: c.lon, timezone: "Europe/Rome" };
+    try {
+      const hits = await searchPlaces(c.name, "it");
+      const norm = (x: string | null) => (x ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const it = hits.filter((h) => h.country === "IT");
+      pl = it.find((h) => norm(h.admin) === norm(c.region)) ?? it[0] ?? pl;
+    } catch { /* the position of the province is good enough for a forecast */ }
+    await pickTown({ ...pl, name: c.name });
+    setMapOpen(false);
+  };
   const pickTown = async (pl: Place) => {
     if (picking) return;
     setPicking(true); setErr(null);
@@ -95,7 +111,11 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
         <button class="mkchip" onClick={p.onQuake}>{m.tabs.quake}</button>
       </div>
       {tab === "match" ? <MatchPicker msg={p.msg} locale={p.locale} origin={p.origin} registered={p.registered} onCreated={p.onCreated} /> : tab === "weather" ? <>
-        <label class="qmfield"><span class="detail">{m.place}</span><select class="field" value={place} onChange={(e) => setPlace((e.target as HTMLSelectElement).value)}>{[...p.places, ...extra.filter((x) => !p.places.some((y) => y.id === x.id))].map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+        <div class="qmfield"><span class="detail">{m.place}</span>
+          <div class="townrow"><b>{[...p.places, ...extra].find((x) => x.id === place)?.name ?? "—"}</b>
+            <button type="button" class="btn secondary" aria-expanded={mapOpen} onClick={() => setMapOpen(!mapOpen)}><MapIcon size={16} />{MAP_TXT[p.locale] ?? MAP_TXT["en-US"]}</button></div>
+        </div>
+        {mapOpen && <ItalyMapPicker locale={p.locale} initialRegion={mapRegion} onRegion={setMapRegion} onPick={pickMapCity} busy={picking} />}
         <label class="searchbox"><Search size={18} /><input class="field" value={q} placeholder={p.msg.places.search} aria-label={p.msg.places.search} onInput={(e) => setQ((e.target as HTMLInputElement).value)} /></label>
         {found?.map((pl) => <button key={`${pl.lat},${pl.lon}`} class="placerow" disabled={picking} onClick={() => pickTown(pl)}><span class="pn"><b>{pl.name}</b>{pl.admin && <small>{pl.admin}</small>}</span></button>)}
         <span class="detail">{m.metric}</span>{chips(METRIC_LIST.map((k) => ({ k, t: p.msg.wx.names[k] })), metric, (k) => setMetric(k as typeof metric))}

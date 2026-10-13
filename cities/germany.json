@@ -27,7 +27,7 @@
       "enabled": true
     },
     "weather": {
-      "enabled": true
+      "enabled": false
     },
     "traffic": {
       "enabled": false

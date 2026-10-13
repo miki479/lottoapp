@@ -1370,3 +1370,21 @@ textarea.field { resize: vertical; min-height: 84px; }
   100% { transform: translate(0, 0); opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) { .boostrow .rocket.go, .boostrow .rocket.go .flame, .boostrow.on .flame, .boostrow .glow.boostnum { animation: none; } }
+/* Italy map picker */
+.itpick { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: var(--radius-control); border: 1px solid var(--border); background: var(--surface-2); }
+.ithead { display: flex; align-items: center; gap: 8px; min-height: 36px; } .ithead b { font-size: 1.05rem; } .ithead .hint { margin-left: auto; font-size: .82rem; }
+.itdot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand); margin: 0 6px; }
+.itmap { width: 100%; max-height: min(52dvh, 460px); display: block; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.itreg { cursor: pointer; transition: opacity .35s ease; outline: none; --l: 52%; }
+.itreg .itprov { fill: hsl(var(--h) 58% var(--l)); stroke: color-mix(in srgb, var(--surface-2) 70%, transparent); stroke-width: 1.2; stroke-linejoin: round; transition: fill .2s ease; }
+.itreg:hover .itprov, .itreg:focus-visible .itprov { fill: hsl(var(--h) 70% 62%); }
+.itreg.here { cursor: default; } .itreg.here .itprov { fill: hsl(var(--h) 52% 44%); stroke: color-mix(in srgb, #fff 55%, transparent); cursor: pointer; } .itreg.here .itprov:hover { fill: hsl(var(--h) 64% 54%); }
+.itreg.off { opacity: .13; pointer-events: none; }
+.itlabel { fill: #fff; font-weight: 800; paint-order: stroke; stroke: rgba(0, 0, 0, .55); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; opacity: .92; }
+.itcity { cursor: pointer; outline: none; } .itcity circle { fill: #fff; stroke: #1d0f55; stroke-width: 2; } .itcity .hit { fill: transparent; stroke: none; }
+.itcity text { fill: #fff; font-weight: 800; paint-order: stroke; stroke: rgba(0, 0, 0, .7); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+.itcity:hover circle:first-of-type, .itcity:focus-visible circle:first-of-type { fill: var(--star, #ffd23f); }
+.itlist { display: flex; flex-wrap: wrap; gap: 6px; max-height: 120px; overflow-y: auto; overscroll-behavior: contain; }
+.itlist .mkchip { min-height: 36px; padding: 6px 12px; font-size: .84rem; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .itreg { --l: 58%; } }
+.townrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .townrow b { flex: 1; min-width: 0; font-size: 1.05rem; overflow-wrap: anywhere; } .townrow .btn { min-height: 40px; padding: 0 12px; gap: 6px; }

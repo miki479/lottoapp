@@ -24,7 +24,7 @@ jobs:
       - name: Weather (all cities)
         if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         run: |
-          for c in tokyo rome amsterdam sanfrancisco oslo torino zurich paris madrid berlin helsinki boston romagna modena reggio-emilia piacenza friuli-venezia-giulia venezia bari mantova vicenza lazio cuneo alto-adige parma toscana trentino napoli; do node scripts/generate-markets.mjs --city $c --weather --apply; done
+          for c in tokyo rome amsterdam sanfrancisco oslo torino zurich paris madrid berlin helsinki boston modena reggio-emilia piacenza venezia bari mantova vicenza cuneo parma napoli; do node scripts/generate-markets.mjs --city $c --weather --apply; done
       - name: Tokyo buses
         if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         run: node scripts/generate-markets.mjs --city tokyo --feed toei-bus-vehicle --max 30 --apply
