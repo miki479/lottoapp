@@ -62,7 +62,7 @@ export function AdminPage({ msg, onBack }: { msg: Messages; onBack: () => void }
         {!data.moderation || data.moderation.recent.length === 0 ? <p class="hint">{a.noModeration}</p> : data.moderation.recent.map((x, i) => (
           <div class="adminrow" key={i}><span class="grow"><b>«{x.text}»</b><small class="hint" style="display:block">{x.matched} · {x.source} · {ago(x.at, now)}</small></span></div>
         ))}
-        {house.length > 0 && <><h3>Esclusive</h3>{house.map((h) => (
+        {house.length > 0 && <><h3>Domande della casa (GTA VI, Legalità)</h3>{house.map((h) => (
           <div class="adminrow" key={h.id}>
             <span class="grow"><b>{h.label}</b><small class="hint" style="display:block">{h.status}{h.outcome ? ` → ${h.outcome}` : ""} · {h.bets} puntate · {new Date(h.target_at).toLocaleString()}</small></span>
             {h.status === "open" && Date.parse(h.target_at) <= now && <><button class="btn secondary" onClick={() => settle(h.id, false)}>No</button><button class="btn primary" onClick={() => settle(h.id, true)}>Sì</button></>}
