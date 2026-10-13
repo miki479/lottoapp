@@ -1,6 +1,6 @@
 import { X } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
-import { LEAGUES, PROMOTE_CREDITS, PROMOTE_TOP, promotionGap, resetBalance } from "../../../shared/leagues.ts";
+import { LEAGUES, PROMOTE_CREDITS, PROMOTE_TOP, promoteSlots, promotionGap, resetBalance } from "../../../shared/leagues.ts";
 import { INTL_TAG, type Locale, type Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 import { PlayerTitle } from "./PlayerTitle.tsx";
@@ -17,25 +17,25 @@ const T = {
   it: {
     names: ["Bronzo", "Argento", "Oro", "Platino", "Diamante"], league: (n: string) => `Lega ${n}`, rank: (r: number, n: number) => `${r}º su ${n} giocatori`, none: "Gioca una giocata questo mese per entrare in classifica", days: (d: number) => (d === 1 ? "Ultimo giorno del mese" : `${d} giorni al nuovo mese`),
     zone: "Sei in zona promozione", gap: (n: string) => `Ti mancano ${n} crediti per salire`, top: "Sei nella lega più alta", board: "Classifica della lega", empty: "Nessun giocatore in questa lega, per ora.", you: "tu", how: "Come funzionano le leghe",
-    rows: (base: string) => [`Ogni mese i crediti ripartono da ${base} (un po' di più nelle leghe alte), così si gioca alla pari.`, `A fine mese, tra chi ha giocato almeno una volta, i primi ${PROMOTE_TOP} di ogni lega salgono alla lega successiva. Sale anche chi arriva a 1.000.000 di crediti.`, "Salendo si sblocca l'anello della lega sul tuo avatar, più un boost in regalo.", "Nessuno scende: chi non gioca un mese resta dov'è."],
+    rows: (base: string) => [`Ogni mese i crediti ripartono da ${base} (un po' di più nelle leghe alte), così si gioca alla pari.`, `A fine mese, tra chi ha giocato almeno una volta, il primo quarto di ogni lega (al massimo ${PROMOTE_TOP} persone, con un posto garantito anche nelle leghe piccole) sale alla lega successiva. Sale anche chi arriva a 1.000.000 di crediti.`, "Salendo si sblocca l'anello della lega sul tuo avatar, più un boost in regalo.", "Chi non fa nemmeno una puntata in un mese scende di una lega (il Bronzo resta Bronzo) e tiene i suoi crediti."],
     note: "Sono crediti di gioco, senza alcun valore reale.", close: "Chiudi",
   },
   "en-US": {
     names: ["Bronze", "Silver", "Gold", "Platinum", "Diamond"], league: (n: string) => `${n} league`, rank: (r: number, n: number) => `${r}${r % 10 === 1 && r !== 11 ? "st" : r % 10 === 2 && r !== 12 ? "nd" : r % 10 === 3 && r !== 13 ? "rd" : "th"} of ${n} players`, none: "Make one pick this month to join the table", days: (d: number) => (d === 1 ? "Last day of the month" : `${d} days to the new month`),
     zone: "You are in the promotion zone", gap: (n: string) => `${n} credits to move up`, top: "You are in the top league", board: "League table", empty: "No players in this league yet.", you: "you", how: "How leagues work",
-    rows: (base: string) => [`Every month credits restart from ${base} (a little more in the higher leagues), so everyone starts level.`, `At month end, among players who played at least once, the top ${PROMOTE_TOP} of each league move up. Reaching 1,000,000 credits also moves you up.`, "Moving up unlocks the league ring for your avatar, plus a free boost.", "Nobody moves down: if you skip a month you stay where you are."],
+    rows: (base: string) => [`Every month credits restart from ${base} (a little more in the higher leagues), so everyone starts level.`, `At month end, among players who played at least once, the top quarter of each league (at most ${PROMOTE_TOP} people, and at least one place even in small leagues) moves up. Reaching 1,000,000 credits also moves you up.`, "Moving up unlocks the league ring for your avatar, plus a free boost.", "A month without a single bet moves you down one league (Bronze stays Bronze) and you keep your credits."],
     note: "Game credits only, with no real-world value.", close: "Close",
   },
   "en-GB": {
     names: ["Bronze", "Silver", "Gold", "Platinum", "Diamond"], league: (n: string) => `${n} league`, rank: (r: number, n: number) => `${r}${r % 10 === 1 && r !== 11 ? "st" : r % 10 === 2 && r !== 12 ? "nd" : r % 10 === 3 && r !== 13 ? "rd" : "th"} of ${n} players`, none: "Make one pick this month to join the table", days: (d: number) => (d === 1 ? "Last day of the month" : `${d} days to the new month`),
     zone: "You are in the promotion zone", gap: (n: string) => `${n} credits to move up`, top: "You are in the top league", board: "League table", empty: "No players in this league yet.", you: "you", how: "How leagues work",
-    rows: (base: string) => [`Every month credits restart from ${base} (a little more in the higher leagues), so everyone starts level.`, `At month end, among players who played at least once, the top ${PROMOTE_TOP} of each league move up. Reaching 1,000,000 credits also moves you up.`, "Moving up unlocks the league ring for your avatar, plus a free boost.", "Nobody moves down: if you skip a month you stay where you are."],
+    rows: (base: string) => [`Every month credits restart from ${base} (a little more in the higher leagues), so everyone starts level.`, `At month end, among players who played at least once, the top quarter of each league (at most ${PROMOTE_TOP} people, and at least one place even in small leagues) moves up. Reaching 1,000,000 credits also moves you up.`, "Moving up unlocks the league ring for your avatar, plus a free boost.", "A month without a single bet moves you down one league (Bronze stays Bronze) and you keep your credits."],
     note: "Game credits only, with no real-world value.", close: "Close",
   },
   ja: {
     names: ["ブロンズ", "シルバー", "ゴールド", "プラチナ", "ダイヤモンド"], league: (n: string) => `${n}リーグ`, rank: (r: number, n: number) => `${n}人中${r}位`, none: "今月1回予想すると順位表に載ります", days: (d: number) => (d === 1 ? "今月の最終日" : `新しい月まであと${d}日`),
     zone: "昇格圏内です", gap: (n: string) => `昇格まであと${n}クレジット`, top: "最上位リーグです", board: "リーグ順位表", empty: "このリーグにはまだ誰もいません。", you: "あなた", how: "リーグのしくみ",
-    rows: (base: string) => [`毎月クレジットは${base}から再スタート（上位リーグは少し多め）。みんな同じ条件で始まります。`, `月末に、1回以上遊んだ人のうち各リーグの上位${PROMOTE_TOP}人が昇格します。1,000,000クレジットに届いた人も昇格します。`, "昇格するとリーグのリングがアバターに解放され、ブーストももらえます。", "降格はありません。遊ばなかった月も今のリーグのままです。"],
+    rows: (base: string) => [`毎月クレジットは${base}から再スタート（上位リーグは少し多め）。みんな同じ条件で始まります。`, `月末に、1回以上遊んだ人のうち各リーグの上位4分の1（最大${PROMOTE_TOP}人、小さなリーグでも最低1枠）が昇格します。1,000,000クレジットに届いた人も昇格します。`, "昇格するとリーグのリングがアバターに解放され、ブーストももらえます。", "1か月まったく賭けないと1つ下のリーグに下がります（ブロンズはそのまま）。クレジットは保持されます。"],
     note: "ゲーム内クレジットで、現実の価値はありません。", close: "閉じる",
   },
 } as const;
@@ -101,7 +101,7 @@ export function LeaguePanel(p: { locale: Locale; registered: boolean; onProfile:
   const nf = new Intl.NumberFormat(INTL_TAG[p.locale]);
   const gap = promotionGap(d.league, d.credits, d.threshold);
   const progress = d.league >= 4 ? 1 : Math.min(1, d.credits / Math.max(1, d.threshold != null ? Math.min(d.threshold, PROMOTE_CREDITS) : PROMOTE_CREDITS));
-  const line = d.league >= 4 ? t.top : d.rank == null ? t.none : gap === 0 || (d.rank <= PROMOTE_TOP) ? t.zone : t.gap(nf.format(gap ?? 0));
+  const line = d.league >= 4 ? t.top : d.rank == null ? t.none : gap === 0 || (d.rank <= promoteSlots(d.players)) ? t.zone : t.gap(nf.format(gap ?? 0));
   const sel = view ?? d.league;
   return (
     <>

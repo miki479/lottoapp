@@ -9,8 +9,8 @@ export const LEAGUES = ["bronze", "silver", "gold", "platinum", "diamond"] as co
 export type LeagueId = (typeof LEAGUES)[number];
 export const MAX_LEAGUE = LEAGUES.length - 1;
 export const PROMOTE_TOP = 10;
-/** The promotion line is the top quarter of the ranked players of a league, at most PROMOTE_TOP: fewer than 4 players promote nobody by rank. */
-export const promoteSlots = (ranked: number): number => Math.min(PROMOTE_TOP, Math.floor(Math.max(0, ranked) / 4));
+/** The promotion line is the top quarter of the ranked players of a league (rounded up), at most PROMOTE_TOP. A league of 2 to 4 players promotes one; a lone player nobody. */
+export const promoteSlots = (ranked: number): number => (ranked >= 2 ? Math.min(PROMOTE_TOP, Math.ceil(ranked / 4)) : 0);
 export const PROMOTE_CREDITS = 1_000_000;
 export const BASE_CREDITS = 1000;
 export const LEAGUE_BONUS = 150;

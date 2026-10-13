@@ -1,3 +1,4 @@
+import { createPortal } from "preact/compat";
 import { Coins, Mail, X, Zap } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { sb } from "../lib/api.ts";
@@ -36,7 +37,8 @@ export function Inbox({ registered, ok, locale }: { registered: boolean; ok: str
   }
   const t = T[locale] ?? T["en-US"]!, g = m.gifts!;
   const joke = t.jokes[[...m.id].reduce((a, c) => a + c.charCodeAt(0), 0) % t.jokes.length]!;
-  return (
+  // in the document body: inside the page the "screen" animation makes it the containing block of fixed children, so the card ended up far down the long page
+  return createPortal(
     <div class="rwscrim" role="dialog" aria-modal="true" aria-label={m.heading}>
       <div class="rwcard">
         <i class="rwsp s1" /><i class="rwsp s2" /><i class="rwsp s3" /><i class="rwsp s4" />
@@ -50,6 +52,7 @@ export function Inbox({ registered, ok, locale }: { registered: boolean; ok: str
         <p class="rwjoke">{joke}</p>
         <button class="btn primary wide" onClick={done}>{t.go}</button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -19,7 +19,9 @@ describe("leagues", () => {
     expect(get(r, "a11").newCredits).toBe(1000);
     const small = closeSeason(Array.from({ length: 12 }, (_, i) => P(`m${i}`, 0, 5000 - i * 100)));
     expect(small.filter((x) => x.leagueAfter === 1).length).toBe(3);
-    expect(closeSeason([P("u1", 0, 900), P("u2", 0, 800), P("u3", 0, 700)]).every((x) => x.leagueAfter === 0)).toBe(true);
+    const three = closeSeason([P("u1", 0, 900), P("u2", 0, 800), P("u3", 0, 700)]);
+    expect(three.map((x) => x.leagueAfter)).toEqual([1, 0, 0]); // a small league still promotes one (quarter rounded up)
+    expect(closeSeason([P("solo", 0, 900)])[0]!.leagueAfter).toBe(0); // alone: nobody to rank against
     expect(get(r, "b0").leagueAfter).toBe(1); // alone in its league: too few players to promote by rank
   });
   it("1,000,000 credits promotes even outside the top 10, and ties share the rank", () => {
