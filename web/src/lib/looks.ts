@@ -22,20 +22,30 @@ export async function loadPublicProfile(id: string): Promise<PublicProfileData |
 }
 
 const cache = new Map<string, LookInfo>();
-/** Avatars of the people in a list, fetched once and remembered. */
+let version = 0;
+/** Ids already asked for, so someone the server returns nothing for is not asked again in a loop. */
+const asked = new Set<string>();
+const subs = new Set<(v: number) => void>();
+const changed = () => { version++; subs.forEach((f) => f(version)); };
+/** Avatars of the people in a list, fetched once and remembered; a change anywhere (own look saved, a profile opened) refreshes every list. */
 export function useLooks(ids: string[]): Record<string, LookInfo> {
-  const [, bump] = useState(0);
+  const [v, setV] = useState(version);
+  useEffect(() => { subs.add(setV); return () => { subs.delete(setV); }; }, []);
   const key = ids.join();
   useEffect(() => {
-    const need = ids.filter((i) => !cache.has(i));
+    const need = ids.filter((i) => !cache.has(i) && !asked.has(i));
     if (need.length === 0) return;
+    need.forEach((i) => asked.add(i));
     let live = true;
     sb.rpc("looks", { ids: need }).then(({ data }) => {
       for (const r of (data ?? []) as { user_id: string; avatar: string; decoration: string | null; level: number }[]) cache.set(r.user_id, { avatar: r.avatar, decoration: r.decoration, level: r.level });
-      if (live) bump((n) => n + 1);
+      if (live) setV((n) => n + 1);
     });
     return () => { live = false; };
-  }, [key]);
+  }, [key, v]);
   return Object.fromEntries(ids.filter((i) => cache.has(i)).map((i) => [i, cache.get(i)!]));
 }
-export const forgetLook = (id: string) => cache.delete(id);
+/** The look of someone changed (their own save): drop it and let every list fetch it again. */
+export const forgetLook = (id: string) => { cache.delete(id); asked.delete(id); changed(); };
+/** A fresh look is known (a profile was just opened): keep it for the lists instead of dropping it. */
+export const rememberLook = (id: string, l: LookInfo) => { cache.set(id, l); changed(); };

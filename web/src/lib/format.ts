@@ -107,7 +107,7 @@ export function countdown(ms: number): string {
   const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = t % 60;
   const p = (n: number) => String(n).padStart(2, "0");
   if (h >= 48) return `${Math.floor(h / 24)}g ${p(h % 24)}h`;
-  return h > 0 ? `${h}h ${p(m)}m` : `${p(m)}:${p(sec)}`;
+  return h > 0 ? `${h}h ${p(m)}m` : m > 0 ? `${m}m ${p(sec)}s` : `${sec}s`;
 }
 
 /** What a winning bet pays out: the stake times the odds, plus the boost's extra when one was used. */
