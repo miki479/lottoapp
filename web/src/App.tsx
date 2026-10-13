@@ -1,4 +1,3 @@
-import { testMode } from "./lib/testmode.ts";
 import { Activity, Bitcoin, Clapperboard, Clock, CloudLightning, Gamepad2, MapPin, Trophy, TrendingUp, Users, Zap } from "lucide-preact";
 import { RING_BONUS, STREAK_MILESTONES } from "../../shared/rewards.ts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
@@ -260,7 +259,7 @@ export function App() {
     const seen = new Set([...(data ?? []), ...mine].map((x) => (x as { id: string }).id));
     const extra = [...far, ...house, ...here, ...own].filter((x) => { const id = (x as unknown as { id: string }).id; if (seen.has(id)) return false; seen.add(id); return true; });
     if (seq !== mkSeq.current) return;
-    if (!error) { const all = [...(data ?? []), ...mine, ...extra].filter((m) => testMode() || !(m.params as { testOnly?: boolean } | null)?.testOnly) as MarketRow[]; setMarkets(all); try { localStorage.setItem("mk1", JSON.stringify({ t: Date.now(), rows: all.slice(0, 250) })); } catch { /* storage full or unavailable */ } if (navigator.onLine) setOffline(false); }
+    if (!error) { const all = [...(data ?? []), ...mine, ...extra] as MarketRow[]; setMarkets(all); try { localStorage.setItem("mk1", JSON.stringify({ t: Date.now(), rows: all.slice(0, 250) })); } catch { /* storage full or unavailable */ } if (navigator.onLine) setOffline(false); }
     else if (/fetch|network|load failed/i.test(error.message)) setOffline(true);
     const { data: h } = await sb.from("feed_health").select("feed_id,last_ok_at");
     const nowMs = Date.now();
@@ -317,7 +316,7 @@ export function App() {
     if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return;
     sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("id", id).maybeSingle().then(({ data }) => {
       const row = data as unknown as MarketRow | null;
-      if (row && (testMode() || !(row.params as { testOnly?: boolean }).testOnly)) setSheet({ m: row, pick: "yes" });
+      if (row) setSheet({ m: row, pick: "yes" });
       const u = new URL(location.href); u.searchParams.delete("m"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
     });
   }, []);
@@ -477,6 +476,7 @@ export function App() {
       ...(detailsOn ? [{ name: "API-Football (API-Sports)", license: "Free plan (see their terms)", licenseUrl: "https://www.api-football.com/terms", url: "https://www.api-football.com" }] : []),
       { name: "Frankfurter (ECB euro reference rates)", license: "European Central Bank reference rates, free API without key", licenseUrl: "https://frankfurter.dev", url: "https://frankfurter.dev" },
       { name: "Carbon Intensity API (National Grid ESO)", license: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0/", url: "https://carbonintensity.org.uk" },
+      { name: "ViaggiaTreno (public train circulation information, RFI / Trenitalia: unofficial interface)", license: "No published open licence: read once a minute for a non-commercial satirical game", licenseUrl: "https://www.viaggiatreno.it", url: "https://www.viaggiatreno.it" },
       { name: "Citi Bike (NYC Bike Share, a Lyft company)", license: "NYCBS data use policy", licenseUrl: "https://citibikenyc.com/data-sharing-policy", url: "https://gbfs.citibikenyc.com" },
       { name: "Vélib' Métropole (Smovengo)", license: "Licence Ouverte / Open Licence 2.0", licenseUrl: "https://www.etalab.gouv.fr/licence-ouverte-open-licence", url: "https://www.velib-metropole.fr" },
       { name: "docomo Bike Share Tokyo (Open Data Challenge for Public Transportation, ODPT)", license: "ODPT open data terms", licenseUrl: "https://www.odpt.org/terms", url: "https://www.odpt.org" },

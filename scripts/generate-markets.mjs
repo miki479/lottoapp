@@ -219,7 +219,7 @@ async function trainMarkets(feed) {
     if (Date.parse(draft.closes_at) / 1000 <= now + 300 || targetAt > now + 30 * 3600) continue;
     const priced = buildDelayMarket({ ...common, history: hist(historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone)), priorYes });
     // Unlicensed source: private test markets, hidden from everyone but the owner (web/src/lib/testmode.ts).
-    markets.push({ ...priced, params: { ...priced.params, ...(feed.licenseVerified ? {} : { testOnly: true }) }, deadline_at: new Date((targetAt + VT_TRAIN_DEADLINE_SEC) * 1000).toISOString() });
+    markets.push({ ...priced, params: { ...priced.params }, deadline_at: new Date((targetAt + VT_TRAIN_DEADLINE_SEC) * 1000).toISOString() });
     // every stop of the train (also the ones already passed) for the "Show stops" board; the market's own question is unaffected
     const sd = `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
     for (const f of t.fermate) {
