@@ -1,4 +1,4 @@
-import { Bus, Check, Lock, Rocket, TrainFront, Zap } from "lucide-preact";
+import { Check, Crown, Gem, Lock, Sparkles, Star } from "lucide-preact";
 import type { LucideIcon } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { PACK_RARITIES, PACKS, lookChance, packRefund, REFUND_PCT, type PackDef, type PackRarity } from "../../../shared/shop.ts";
@@ -14,11 +14,11 @@ import { Figurine } from "./Figurine.tsx";
 import { Look } from "./looks/Look.tsx";
 import "./RewardsHub.css";
 
-const TIER_ICON: Record<number, LucideIcon> = { 1: Bus, 2: TrainFront, 3: Zap, 4: Rocket };
+const TIER_ICON: Record<number, LucideIcon> = { 1: Sparkles, 2: Star, 3: Crown, 4: Gem };
 
 /** A sealed pack drawn as two halves with a torn edge between them, so it can split when opened. */
 function PackArt({ pack, name, taps = 0, open = false, big = false }: { pack: PackDef; name: string; taps?: number; open?: boolean; big?: boolean }) {
-  const Icon = TIER_ICON[pack.tier] ?? Bus;
+  const Icon = TIER_ICON[pack.tier] ?? Sparkles;
   const face = (
     <span class="pkface" aria-hidden="true"><i class="pkfoil" /><span class="pkico"><Icon /></span><b>{name}</b><i class="pkband" /></span>
   );

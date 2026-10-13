@@ -28,6 +28,18 @@ export function formatWhen(iso: string, locale: Locale, timeZone: string, now = 
   return `${new Intl.DateTimeFormat(tag, { weekday: "short", timeZone }).format(d)} ${time}`;
 }
 
+const TRAIN_NAMES: Record<string, [string, string, string]> = { it: ["Alta velocità", "Intercity", "Regionale"], "en-US": ["High-speed", "Intercity", "Regional"], "en-GB": ["High-speed", "Intercity", "Regional"] };
+/** "REG 4340" → "Regionale 4340", "FR 9516" → "Alta velocità 9516": the kind of train in words in front of its number. */
+export function trainLabel(route: string, kind: string, locale: string): string {
+  const names = TRAIN_NAMES[locale];
+  if (kind !== "train_delay_gt" || !names) return route;
+  const m = route.trim().match(/^([A-Za-z]{1,4})\s*(\d{1,5}[A-Za-z]?)$/);
+  if (!m) return route;
+  const code = m[1]!.toUpperCase();
+  const label = /^(FR|FA|FB|ES|ITA|NTV|EC|EN)$/.test(code) ? names[0] : /^(IC|ICN)$/.test(code) ? names[1] : /^(REG|RV|R|RE)$/.test(code) ? names[2] : null;
+  return label ? `${label} ${m[2]}` : route;
+}
+
 export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: string, timeZone: string, now = new Date()): string {
   const time = formatWhen(m.target_at, locale, timeZone, now);
   // a question we wrote ourselves carries its own text in every language
@@ -94,7 +106,7 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
   }
   const p = m.params;
   const q = {
-    route: String(p.routeName ?? p.routeId ?? ""),
+    route: trainLabel(String(p.routeName ?? p.routeId ?? ""), m.kind, locale),
     headsign: String(p.headsign ?? ""),
     stop: String(p.stopName ?? p.stopId ?? ""),
     time,
