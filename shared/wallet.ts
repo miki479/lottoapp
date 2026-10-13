@@ -4,7 +4,11 @@ export const START_CREDITS = 1000;
 export const REFILL_THRESHOLD = 100;
 export const REFILL_TO = 250;
 export const MIN_STAKE = 10;
-export const MAX_STAKE = 500;
+export const MAX_STAKE = 100_000;
+/** Mirrors `stake_cap` in the database: nothing below 1.10 (the result is all but known), then more as the odds grow. */
+export function stakeCap(odds: number): number {
+  return odds < 1.1 ? 0 : odds < 1.3 ? 100 : odds < 1.6 ? 500 : odds < 2.2 ? 5000 : MAX_STAKE;
+}
 
 export function validateStake(stake: number, balance: number): "ok" | "not_integer" | "too_low" | "too_high" | "insufficient" {
   if (!Number.isInteger(stake)) return "not_integer";

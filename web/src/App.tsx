@@ -174,6 +174,9 @@ export function App() {
     if (p.level !== before) store.set("lvl", String(p.level));
   }, [msg]);
   const loadProfile = useCallback(async () => { const { data } = await sb.from("profiles").select(PROFILE_COLS).maybeSingle(); if (data) setProfile(data as Profile); return data as Profile | null; }, []);
+  // signed in with Google and no nickname yet: take the name from the Google profile (a nickname already chosen is never touched)
+  const namedOnce = useRef(false);
+  useEffect(() => { if (!registered || !profile || profile.display_name || namedOnce.current) return; namedOnce.current = true; sb.rpc("claim_google_name").then(({ data }) => { if (data) { loadProfile(); loadQuests(); } }); }, [registered, profile?.display_name]);
   const loadProgress = useCallback(async (zone = tz) => {
     const { data } = await sb.from("daily_progress").select("day,bus,train,weather,traffic,bonus_claimed").order("day", { ascending: false }).limit(1).maybeSingle();
     const p = data && data.day === dayIn(zone) ? (data as Progress) : null; setProgress(p); return p;
@@ -182,7 +185,7 @@ export function App() {
   const loadBets = useCallback(async () => { const { data } = await sb.from("bets").select(BET_COLS).order("placed_at", { ascending: false }).limit(betsLimit); setBets((data ?? []) as unknown as MyBet[]); }, [betsLimit]);
 
   const loadChallenges = useCallback(async () => { if (!registered) { setMyChallenges([]); setInvites([]); setFriendBets({}); return; } const [{ data }, inv, fb] = await Promise.all([sb.rpc("my_challenges"), sb.rpc("my_invites"), sb.rpc("friend_bets")]); setFriendBets(Object.fromEntries(((fb.data ?? []) as { market_id: string; friends: number }[]).map((x) => [x.market_id, Number(x.friends)]))); setMyChallenges((data ?? []) as Challenge[]); setInvites((inv.data ?? []) as (Challenge & { invited_by: string })[]); }, [registered]);
-  const loadParlays = useCallback(async () => { const { data } = await sb.from("parlays").select("id,boosted,stake,odds,status,payout,placed_at,settled_at,parlay_legs(market_id,pick,odds,status,markets(city_id,kind,params))").order("placed_at", { ascending: false }).limit(40); setParlays((data ?? []) as unknown as ParlayRow[]); }, []);
+  const loadParlays = useCallback(async () => { const { data } = await sb.from("parlays").select("id,boosted,stake,odds,status,payout,placed_at,settled_at,parlay_legs(market_id,pick,odds,status,markets(id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status))").order("placed_at", { ascending: false }).limit(40); setParlays((data ?? []) as unknown as ParlayRow[]); }, []);
   const loadQuests = useCallback(async () => { const [{ data }, dm, fl] = await Promise.all([sb.rpc("my_quests"), sb.rpc("daily_missions"), sb.rpc("daily_flash")]); if (fl.data) setFlashM(fl.data as FlashData); setQuests(((data ?? []) as QuestRow[]).map((q) => ({ ...q, reward: +q.reward }))); if (dm.data) setMissions(dm.data as DailyMissionsData); }, []);
   const loadReferral = useCallback(async () => {
     const { data } = await sb.rpc("my_referral"); const r = (data as { code: string; invited: number; paid: number }[] | null)?.[0];
@@ -350,7 +353,9 @@ export function App() {
   const hasMine = !!myCountry && open.some((m) => m.category !== "nature" && m.category !== "strike" && m.category !== "finance" && m.category !== "culture" && m.category !== "sport" && m.category !== "law" && countryOf(m.city_id) === myCountry);
   const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter || m.category === "nature" || m.category === "strike" || m.category === "finance" || m.category === "culture" || m.category === "sport" || m.category === "law" || (m.category === "traffic" && m.city_id === "world") || (filter === "mine" && countryOf(m.city_id) === myCountry) || (NATIONAL.has(m.city_id) && countryOf(filter) === countryOf(m.city_id))), [open, filter, myCountry, near?.id]);
   useEffect(() => { if (hasMine && filter === "world" && !store.get("filter")) setFilter("mine"); }, [hasMine]);
-  const byCat = (c: CatId) => inFilter.filter((m) => m.category === c);
+  // a question already bet on leaves the lists (it stays in "My bets"), so it cannot be played twice by mistake
+  const betOn = useMemo(() => new Set(bets.filter((b) => b.status === "open").map((b) => b.markets.id)), [bets]);
+  const byCat = (c: CatId) => inFilter.filter((m) => m.category === c && !betOn.has(m.id));
   useEffect(() => { if (catChosen || !markets) return; const first = (["bus", "train", "weather"] as CatId[]).find((c) => byCat(c).length > 0); if (first && byCat(cat).length === 0) setCat(first); }, [markets, filter, catChosen]);
   const flashFirst = (a: MarketRow[]) => [...a].sort((x, y) => Number((y.flash_multiplier ?? 1) > 1) - Number((x.flash_multiplier ?? 1) > 1));
   // trains and buses: the most delayed right now first, then the rest

@@ -145,9 +145,20 @@ async function learnedPriors(sb: ReturnType<typeof db>, now: number): Promise<(c
  * A bus or train already running late is likely to still be late at the question's stop: the open delay markets follow the real delay
  * (bets placed keep their odds). Questions with no reading yet get the starting chance learned for their country, if they still carry an old price.
  */
+/** Local hour and weekday in a city, for the rush-hour effect on delays. */
+function delayCtx(tz: string | undefined, nowSec: number): { hour: number | null; weekday: boolean } {
+  if (!tz) return { hour: null, weekday: true };
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", minute: "numeric", hourCycle: "h23", weekday: "short" }).formatToParts(new Date(nowSec * 1000));
+    const g = (t: string) => parts.find((x) => x.type === t)?.value ?? "";
+    return { hour: Number(g("hour")) + Number(g("minute")) / 60, weekday: !["Sat", "Sun"].includes(g("weekday")) };
+  } catch { return { hour: null, weekday: true }; }
+}
+
 async function repriceDelays(sb: ReturnType<typeof db>): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   const priorOf = await learnedPriors(sb, now);
+  const tzOf = new Map((await loadCities()).map((c) => [c.id, c.timezone]));
   const { data, error } = await sb.rpc("live_pricing_inputs");
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as { market_id: string; city_id: string; kind: string; threshold_sec: number; target_seq: number; obs_seq: number; delay_sec: number; odds_yes: number; odds_no: number; flash_multiplier: number }[];
@@ -156,7 +167,7 @@ async function repriceDelays(sb: ReturnType<typeof db>): Promise<string> {
   for (const r of rows) {
     live.add(r.market_id);
     const prior = priorOf(r.city_id, r.kind);
-    const p = liveYesProbability(prior, r.delay_sec, r.threshold_sec, r.target_seq - r.obs_seq, r.kind === "train_delay_gt");
+    const p = liveYesProbability(prior, r.delay_sec, r.threshold_sec, r.target_seq - r.obs_seq, r.kind === "train_delay_gt", delayCtx(tzOf.get(r.city_id), now));
     const o = computeOdds(p);
     const cur = Number(r.odds_yes) / Math.max(1, Number(r.flash_multiplier));
     if (Math.abs(o.yes - cur) / cur < 0.03 && Math.abs(o.no - Number(r.odds_no)) < 0.03) continue;

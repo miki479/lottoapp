@@ -363,3 +363,20 @@ describe("power price, tides, rivers and more fx pairs", () => {
     expect(m.find((x) => x.params.series === "fx:chf")!.params.threshold).toBeCloseTo(0.93, 6);
   });
 });
+
+import { crowding } from "../shared/odds.ts";
+describe("delay pricing with the time of day", () => {
+  it("rush hour keeps a late train late, the night lets it recover", () => {
+    expect(crowding({ hour: 8, weekday: true })).toBe(1);
+    expect(crowding({ hour: 8, weekday: false })).toBe(0);
+    expect(crowding({ hour: 23 })).toBe(-1);
+    const rush = liveYesProbability(0.06, 420, 300, 8, true, { hour: 8, weekday: true });
+    const calm = liveYesProbability(0.06, 420, 300, 8, true);
+    const night = liveYesProbability(0.06, 420, 300, 8, true, { hour: 23 });
+    expect(rush).toBeGreaterThan(calm);
+    expect(calm).toBeGreaterThan(night);
+  });
+  it("a delay already past the line is believed even far from the stop", () => {
+    expect(liveYesProbability(0.05, 1200, 300, 15, true)).toBeGreaterThan(0.7);
+  });
+});

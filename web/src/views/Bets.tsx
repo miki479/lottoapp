@@ -10,6 +10,7 @@ import { cityName, cityOf } from "../lib/cities.ts";
 import { countdown, fmtOdds, isYesNo, money, potentialWin, question } from "../lib/format.ts";
 import type { Challenge } from "../components/ChallengeSheet.tsx";
 import type { MyBet, ParlayRow } from "../lib/types.ts";
+import type { MarketRow } from "../lib/format.ts";
 
 export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlays, bets, msg, locale, now, onOpen, onHome }: { canMore: boolean; onMore: () => void; invites: (Challenge & { invited_by: string })[]; challenges: Challenge[]; onChallenge: (code: string) => void; parlays: ParlayRow[]; bets: MyBet[]; msg: Messages; locale: Locale; now: number; onOpen: (b: MyBet) => void; onHome: () => void }) {
   const [tab, setTab] = useState<"open" | "settled">("open");
@@ -56,7 +57,8 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
                 {x.parlay_legs.map((l) => {
                   const c = cityOf(l.markets.city_id), rain = isYesNo(l.markets.kind);
                   const pickLabel = l.pick === "yes" ? (rain ? msg.card.yes : msg.card.late) : (rain ? msg.card.no : msg.card.onTime);
-                  return <li key={l.market_id} class={l.status}><span>{(String(l.markets.params.routeName ?? "") || cityName(c, locale))} · {pickLabel}</span><b class="num">{fmtOdds(Number(l.odds), locale)}</b></li>;
+                  const text = l.markets.target_at ? question(l.markets as unknown as MarketRow, msg, locale, cityName(c, locale), c.timezone) : (String(l.markets.params.routeName ?? "") || cityName(c, locale));
+                  return <li key={l.market_id} class={l.status}><span class="legq">{text}<em>{pickLabel}</em></span><b class="num">{fmtOdds(Number(l.odds), locale)}</b></li>;
                 })}
               </ul>
               <div class="info"><span>{msg.slip.odds}</span><span class="num">{money(x.stake, locale)} × {fmtOdds(Number(x.odds), locale)}</span></div>

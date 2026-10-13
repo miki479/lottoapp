@@ -22,7 +22,7 @@ export function ParlaySheet(p: {
   const [joining, setJoining] = useState(false);
   const [boost, setBoost] = useState(false);
   const odds = slipOdds(p.legs);
-  const cap = p.credits >= 10 ? Math.min(500, Math.floor(p.credits)) : 500;
+  const cap = p.credits >= 10 ? Math.min(2000, Math.floor(p.credits)) : 500;
   const amount = Math.min(stake, cap);
   const m = p.msg;
   const place = async () => {
@@ -49,7 +49,7 @@ export function ParlaySheet(p: {
       </ul>
       <div class="summary"><span>{m.slip.odds}</span><b class="num pop" key={odds.toFixed(2)} style="color:var(--c-pop)">{fmtOdds(odds, p.locale)}×</b></div>
       {p.legs.length < 2 && <p class="note">{m.slip.need2}</p>}
-      <StakeControl value={amount} onChange={setStake} cap={cap} odds={odds} boost={boost && p.boosts > 0} locale={p.locale} msg={m} />
+      <StakeControl value={amount} onChange={setStake} cap={cap} balance={p.credits} odds={odds} boost={boost && p.boosts > 0} locale={p.locale} msg={m} />
       {p.boosts > 0 && <label class={`boosttoggle ${boost ? "on" : ""}`}><input type="checkbox" checked={boost} onChange={(e) => setBoost((e.target as HTMLInputElement).checked)} /><Rocket size={20} /><span><b>{m.boost.toggle}</b> · {m.boost.have(p.boosts)}<small>{m.boost.gain("+" + money(Math.floor(amount * odds) - amount, p.locale), "+" + money(boostedPayout(amount, odds) - amount, p.locale))} · {m.boost.hint}</small></span></label>}
       <p class="hint">{m.slip.maxWin}</p>
       {err && <p class="formerr" role="alert">{err}</p>}

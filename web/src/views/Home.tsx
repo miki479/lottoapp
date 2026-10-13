@@ -1,5 +1,6 @@
 import { catTiles } from "../lib/countrycats.ts";
 import { startChips } from "../lib/startcities.ts";
+import { InstallHint } from "../components/InstallHint.tsx";
 import { Inbox } from "../components/Inbox.tsx";
 import { ForYou } from "../components/ForYou.tsx";
 import { CLASS_LABEL, trainClass, trainZone, type TrainClass } from "../lib/zones.ts";
@@ -109,6 +110,7 @@ export function Home(p: HomeProps) {
         </section>
       )}
       <div class="aside">
+        <InstallHint locale={p.locale} invited={!!safe.get("ref")} />
         <Inbox registered={p.registered} ok={msg.common.close} locale={p.locale} />
         <ForYou msg={msg} locale={p.locale} now={p.now} markets={p.markets} registered={p.registered} home={p.homePos ?? null} onPick={p.onPick} onCreate={p.onCreate} />
         {(p.top.length > 0 || p.italian) && (

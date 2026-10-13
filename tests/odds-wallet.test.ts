@@ -36,7 +36,7 @@ describe("wallet", () => {
   it("validates stakes", () => {
     expect(validateStake(50, 1000)).toBe("ok");
     expect(validateStake(MIN_STAKE - 1, 1000)).toBe("too_low");
-    expect(validateStake(MAX_STAKE + 1, 5000)).toBe("too_high");
+    expect(validateStake(MAX_STAKE + 1, 500000)).toBe("too_high");
     expect(validateStake(50, 40)).toBe("insufficient");
     expect(validateStake(10.5, 1000)).toBe("not_integer");
   });

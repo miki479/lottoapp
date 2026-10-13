@@ -1,4 +1,5 @@
 import { sb } from "../lib/api.ts";
+import { stakeCap } from "../../../shared/wallet.ts";
 import { Q } from "./Q.tsx";
 import { MarketVs, noOf, reasonOf } from "./MatchVs.tsx";
 import { Layers, Rocket, Share2, Sparkles, X } from "lucide-preact";
@@ -47,8 +48,9 @@ export function BetSheet(p: {
   const [bonus, setBonus] = useState<"free" | "few" | "standing" | null>(null);
   const city = cityOf(p.m.city_id), isRain = isYesNo(p.m.kind);
   const odds = Number(pick === "yes" ? p.m.odds_yes : p.m.odds_no);
-  // Upper limit: 500, or the balance when it is known and at least 10 (the server checks it again).
-  const cap = p.credits >= 10 ? Math.min(500, Math.floor(p.credits)) : 500;
+  // Upper limit: what the odds allow (all-but-certain picks are closed), or the whole balance when it is lower (the server checks it again).
+  const oddsCap = stakeCap(odds), cap = Math.max(10, p.credits >= 10 ? Math.min(oddsCap, Math.floor(p.credits)) : Math.min(oddsCap, 500));
+  const decided = oddsCap === 0;
   const amount = Math.min(stake, cap);
   const place = async () => {
     setBusy(true); setErr(null); haptic.tap();
@@ -99,10 +101,11 @@ export function BetSheet(p: {
         </div>
       )}
       {vicePct > 0 && pick === "yes" && <label class={`boosttoggle vicetoggle ${vice ? "on" : ""}`}><input type="checkbox" checked={vice} onChange={(e) => setVice((e.target as HTMLInputElement).checked)} /><Sparkles size={20} /><span><b>{p.msg.house.viceTitle}</b> · +{vicePct}%<small>{p.msg.house.viceBody(vicePct)}</small></span></label>}
-      <StakeControl value={amount} onChange={setStake} cap={cap} odds={odds} boost={boost && p.boosts > 0} vice={vice && pick === "yes" ? vicePct : 0} fancy={exclusive} locale={p.locale} msg={p.msg} />
+      {decided && <p class="note warn" role="status">{p.msg.errors.odds_too_low}</p>}
+      <StakeControl value={amount} onChange={setStake} cap={cap} balance={p.credits} odds={odds} boost={boost && p.boosts > 0} vice={vice && pick === "yes" ? vicePct : 0} fancy={exclusive} locale={p.locale} msg={p.msg} />
       {p.boosts > 0 && <label class={`boosttoggle ${boost ? "on" : ""}`}><input type="checkbox" checked={boost} onChange={(e) => setBoost((e.target as HTMLInputElement).checked)} /><Rocket size={20} /><span><b>{p.msg.boost.toggle}</b> · {p.msg.boost.have(p.boosts)}<small>{p.msg.boost.gain("+" + money(Math.floor(amount * odds) - amount, p.locale), "+" + money(boostedPayout(amount, odds) - amount, p.locale))} · {p.msg.boost.hint}</small></span></label>}
       {err && <p class="formerr" role="alert">{err}</p>}
-      <button class="btn primary wide" disabled={busy || !p.ready} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? p.msg.sheet.confirming : `${p.msg.sheet.confirm} · ${money(amount, p.locale)}`}</button>
+      <button class="btn primary wide" disabled={busy || !p.ready || decided} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? p.msg.sheet.confirming : `${p.msg.sheet.confirm} · ${money(amount, p.locale)}`}</button>
       <button class="btn secondary wide" onClick={() => { p.onAddSlip(p.m, pick); haptic.tap(); }} disabled={p.inSlip}><Layers size={18} />{p.inSlip ? p.msg.slip.added : p.msg.slip.add}</button>
       <ReportLink marketId={p.m.id} msg={p.msg} />
     </Sheet>

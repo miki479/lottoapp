@@ -57,13 +57,31 @@ export function computeOdds(pYes: number, flashMultiplier = 1): Odds {
  * estimate the chance that the delay at the target stop exceeds the threshold: the delay recovers a little per stop
  * and the uncertainty grows with the stops left. Close to the stop the live reading dominates; far away history still counts.
  */
-export function liveYesProbability(pHist: number, delaySec: number, thresholdSec: number, stopsLeft: number, train: boolean): number {
+export interface DelayContext {
+  /** Local hour of the day (0-23.99) at the stop, and whether it is a weekday: rush hours pile delays up, empty nights let services recover. */
+  hour?: number | null;
+  weekday?: boolean;
+}
+/** +1 in the commuter rush (weekdays 7-9:30 and 16:30-19:30), -1 at night (22-5), 0 otherwise. */
+export function crowding(ctx?: DelayContext): -1 | 0 | 1 {
+  const h = ctx?.hour;
+  if (h === null || h === undefined || !Number.isFinite(h)) return 0;
+  if (ctx?.weekday !== false && ((h >= 7 && h < 9.5) || (h >= 16.5 && h < 19.5))) return 1;
+  return h >= 22 || h < 5 ? -1 : 0;
+}
+
+export function liveYesProbability(pHist: number, delaySec: number, thresholdSec: number, stopsLeft: number, train: boolean, ctx?: DelayContext): number {
   const n = Math.max(0, stopsLeft);
-  const recover = train ? 20 : 10, sd = (train ? 60 : 45) + (train ? 30 : 25) * Math.sqrt(n);
-  const mean = delaySec > 0 ? Math.max(0, delaySec - recover * n) : delaySec;
+  const crowd = crowding(ctx);
+  // in the rush a late service keeps losing time (crowded platforms), at night it recovers faster
+  const recover = (train ? 20 : 10) * (crowd > 0 ? 0.3 : crowd < 0 ? 1.5 : 1), sd = (train ? 60 : 45) + (train ? 30 : 25) * Math.sqrt(n);
+  const drift = crowd > 0 && delaySec > 0 ? (train ? 12 : 8) * n : 0;
+  const mean = delaySec > 0 ? Math.max(0, delaySec - recover * n + drift) : delaySec;
   const z = (thresholdSec + 0.5 - mean) / sd;
   const pLive = 1 - normalCdf(z);
-  const w = 10 / (10 + n);
+  // a delay already past the line is persistent: the live reading counts for more even far from the stop
+  let w = 10 / (10 + n);
+  if (delaySec >= thresholdSec) w = Math.max(w, train ? 0.7 : 0.55);
   return Math.min(0.97, Math.max(0.03, w * pLive + (1 - w) * pHist));
 }
 
