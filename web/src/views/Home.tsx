@@ -1,3 +1,4 @@
+import { catTiles } from "../lib/countrycats.ts";
 import { startChips } from "../lib/startcities.ts";
 import { ForYou } from "../components/ForYou.tsx";
 import { CLASS_LABEL, trainClass, trainZone, type TrainClass } from "../lib/zones.ts";
@@ -24,7 +25,6 @@ import type { MarketRow } from "../lib/format.ts";
 import type { LiveDelay, LiveOcc, Pick, Progress } from "../lib/types.ts";
 
 /** Categories tucked away under "More categories" so the main row stays short. */
-const EXTRA_CATS: CatId[] = ["finance", "culture", "sport", "law", "gov"];
 /** Only these depend on a place: the city chips are shown for them and nowhere else, so a global category is never emptied by a city. */
 const LOCAL_CATS: CatId[] = ["bus", "train", "weather", "traffic"];
 const safe = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
@@ -39,7 +39,10 @@ export interface HomeProps {
 
 export function Home(p: HomeProps) {
   const { msg } = p;
-  const tiles = (["bus", "train", "weather", "nature", ...(p.italian ? ["strike"] : []), "traffic", "finance", "culture", "sport", "law", "gov"] as CatId[]).map((id) => ({ id, label: msg.tabs[id], count: p.counts[id] ?? 0, disabled: id === "gov", soon: id === "gov" ? msg.tabs.soon : undefined }));
+  const catOrder = catTiles(p.country, p.italian, p.counts);
+  const tiles = catOrder.map((id) => ({ id, label: msg.tabs[id], count: p.counts[id] ?? 0, disabled: id === "gov", soon: id === "gov" ? msg.tabs.soon : undefined }));
+  // the first five or six (the ones this country looks at first) are always on show, the rest fold away
+  const EXTRA_CATS: CatId[] = catOrder.slice(p.italian ? 6 : 5);
   // Weather has sub-pills (rain, temperature, wind…) so the category row stays short; only the kinds that exist today are shown.
   const [wxSel, setWx] = useState<string>("all");
   const finKey = (m: MarketRow) => { const s = String(m.params.series ?? ""); return s.startsWith("metal:") ? "metals" : s.startsWith("oil:") ? "oil" : s.startsWith("fuel:") ? "fuel" : "crypto"; };
