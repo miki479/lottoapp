@@ -42,22 +42,28 @@ export function ItalyMapPicker(p: { locale: Locale; initialRegion?: string | nul
   const cities = useMemo(() => (reg ? MAP_PROVINCES.filter((x) => x.region === reg.id).sort((a, b) => a.name.localeCompare(b.name, "it")) : []), [reg]);
   const regionName = (r: MapRegion) => (p.locale === "it" ? r.name : r.en);
   const pick = (c: MapProvince) => { if (p.busy) return; haptic.tap(); p.onPick({ name: c.name, region: reg?.name ?? "", lat: c.lat, lon: c.lon }); };
-  const w = vb[2];
+  const w = vb[2], labelSize = target[2] * (cities.length > 8 ? 0.03 : 0.04);
   // town labels: put each one where it overlaps no other (above, below, or to the side of its dot)
   const labels = useMemo(() => {
-    const tw = target[2], fs = tw * 0.04, placed: { x0: number; x1: number; y0: number; y1: number }[] = [], out: Record<string, { x: number; y: number; anchor: "start" | "middle" | "end" }> = {};
-    for (const c of [...cities].sort((a, b) => a.x - b.x)) {
-      const wd = c.name.length * fs * 0.56, r = tw * 0.02;
+    const tw = target[2], fs = labelSize, placed: { x0: number; x1: number; y0: number; y1: number }[] = [], out: Record<string, { x: number; y: number; anchor: "start" | "middle" | "end"; text: string }> = {};
+    const shorten = (n: string) => { const w = n.split(/[\s-]/)[0]!; return w.length > 8 ? `${w.slice(0, 6)}.` : n.includes(" ") || n.includes("-") ? `${w}.` : w; };
+    const tryPlace = (c: MapProvince, text: string) => {
+      const wd = text.length * fs * 0.56, r = tw * 0.02;
       const cand: [number, number, "start" | "middle" | "end"][] = [[c.x, c.y - r - fs * 0.35, "middle"], [c.x, c.y + r + fs * 0.95, "middle"], [c.x + r + fs * 0.3, c.y - fs * 0.2, "start"], [c.x - r - fs * 0.3, c.y - fs * 0.2, "end"], [c.x + r + fs * 0.3, c.y + fs * 1.1, "start"], [c.x - r - fs * 0.3, c.y + fs * 1.1, "end"]];
-      let best = cand[0]!, hit = Infinity;
+      let best = cand[0]!, hit = Infinity, bestRect = { x0: 0, x1: 0, y0: 0, y1: 0 };
       for (const [x, y, a] of cand) {
         const x0 = a === "middle" ? x - wd / 2 : a === "start" ? x : x - wd, rect = { x0, x1: x0 + wd, y0: y - fs, y1: y + fs * 0.25 };
         const n = placed.filter((q) => rect.x0 < q.x1 && rect.x1 > q.x0 && rect.y0 < q.y1 && rect.y1 > q.y0).length;
-        if (n < hit) { hit = n; best = [x, y, a]; if (n === 0) break; }
+        if (n < hit) { hit = n; best = [x, y, a]; bestRect = rect; if (n === 0) break; }
       }
-      const x0 = best[2] === "middle" ? best[0] - wd / 2 : best[2] === "start" ? best[0] : best[0] - wd;
-      placed.push({ x0, x1: x0 + wd, y0: best[1] - fs, y1: best[1] + fs * 0.25 });
-      out[c.id] = { x: best[0], y: best[1], anchor: best[2] };
+      return { best, hit, rect: bestRect };
+    };
+    // a name that cannot find room is cut short (Reggio Emilia -> Reggio, Pesaro e Urbino -> Pesaro.); the full list below always has the whole name
+    for (const c of [...cities].sort((a, b) => a.x - b.x)) {
+      let text = c.name, t = tryPlace(c, text);
+      if (t.hit > 0) { const short = shorten(c.name), t2 = tryPlace(c, short); if (t2.hit < t.hit) { text = short; t = t2; } }
+      placed.push(t.rect);
+      out[c.id] = { x: t.best[0], y: t.best[1], anchor: t.best[2], text };
     }
     return out;
   }, [cities, target]);
@@ -83,16 +89,17 @@ export function ItalyMapPicker(p: { locale: Locale; initialRegion?: string | nul
         {reg && cities.map((c) => (
           <g key={c.id} class="itcity" role="button" tabIndex={0} aria-label={c.name} onClick={() => pick(c)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(c); } }}>
             <circle cx={c.x} cy={c.y} r={w * 0.016} /><circle class="hit" cx={c.x} cy={c.y} r={w * 0.045} />
-            <text x={labels[c.id]?.x ?? c.x} y={labels[c.id]?.y ?? c.y} font-size={target[2] * 0.04} text-anchor={labels[c.id]?.anchor ?? "middle"}>{c.name}</text>
+            <text x={labels[c.id]?.x ?? c.x} y={labels[c.id]?.y ?? c.y} font-size={labelSize} text-anchor={labels[c.id]?.anchor ?? "middle"}>{labels[c.id]?.text ?? c.name}</text>
           </g>
         ))}
         {!reg && MAP_REGIONS.map((r) => <text key={r.id} class="itlabel" x={r.cx} y={r.cy} font-size="26" text-anchor="middle">{SHORT[r.id] ?? regionName(r)}</text>)}
       </svg>
       <div class="itlist" role="group">
         {reg
-          ? cities.map((c) => <button key={c.id} type="button" class="mkchip" disabled={p.busy} onClick={() => pick(c)}>{c.name}</button>)
+          ? <>{cities.map((c) => <button key={c.id} type="button" class="mkchip" disabled={p.busy} onClick={() => pick(c)}>{c.name}</button>)}</>
           : MAP_REGIONS.map((r) => <button key={r.id} type="button" class="mkchip" onClick={() => go(r.id)}>{regionName(r)}</button>)}
       </div>
+      {reg && <button type="button" class="btn secondary wide itback" onClick={() => go(null)}><ArrowLeft size={18} />{t.italy}</button>}
     </div>
   );
 }

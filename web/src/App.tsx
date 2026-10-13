@@ -38,9 +38,9 @@ import { computeOdds } from "../../shared/odds.ts";
 import { countdown, setDayUnit, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
-import { FAMOUS_PLACES, FEATURED_CITY_IDS, FEATURED_PLACES, ITALY_CAPITALS, ensurePlace, km, placeById, placeIdOf, recentPlaces, rememberPlace, type Place } from "./lib/places.ts";
+import { FAMOUS_PLACES, FEATURED_CITY_IDS, FEATURED_PLACES, ITALY_CAPITALS, ensurePlace, km, placeById, placeIdOf, recentPlaces, registerPlace, rememberPlace, type Place } from "./lib/places.ts";
 import { distanceM } from "../../shared/geo.ts";
-import { isRegionFilter, locOf, regionOfCity } from "./lib/regions.ts";
+import { isRegionFilter, locOf, regionOfCity, regionOfPoint } from "./lib/regions.ts";
 import { PushAsk, type PushVariant } from "./components/PushAsk.tsx";
 import { disablePush, enablePush, pushAsked, pushAvailable, pushDenied, pushEnabled, rememberPush, markNag, nagDue } from "./lib/push.ts";
 import { announce, setVoice, voiceEnabled, voiceSupported } from "./lib/voice.ts";
@@ -74,6 +74,21 @@ const store = {
 /** How far "Near you" reaches, and how far a whole-region question is allowed to be (a region has no single point). */
 const RADIUS_KM = 50, REGION_KM = 120;
 const REGION_IDS = new Set(CITIES.filter((c) => c.region).map((c) => c.id));
+/** The provincial capitals seeded as permanent places (scripts/seed-capitals.mjs): read once in a while, then used to find the ones near the player or in a region. */
+let pinnedPlaces: { at: number; rows: Place[] } | null = null;
+async function loadPinnedPlaces(): Promise<Place[]> {
+  if (pinnedPlaces && Date.now() - pinnedPlaces.at < 600_000) return pinnedPlaces.rows;
+  const { data } = await sb.from("places").select("id,name,admin,country,lat,lon,timezone").gt("last_used_at", "2030-01-01").limit(300);
+  const rows = ((data ?? []) as unknown as Place[]).map((r) => ({ ...r, lat: Number(r.lat), lon: Number(r.lon) }));
+  rows.forEach(registerPlace);
+  pinnedPlaces = { at: Date.now(), rows };
+  return rows;
+}
+async function capitalIdsFor(filter: string, origin: { lat: number; lon: number } | null): Promise<string[]> {
+  if (filter === "mine" ? !origin : !isRegionFilter(filter)) return [];
+  const rows = await loadPinnedPlaces();
+  return filter === "mine" ? rows.filter((r) => distanceM(origin!.lat, origin!.lon, r.lat, r.lon) / 1000 <= RADIUS_KM).map((r) => r.id) : rows.filter((r) => regionOfPoint(r.lat, r.lon) === filter.slice(4)).map((r) => r.id);
+}
 const NATIONAL = new Set(CITIES.filter((c) => c.id === "italia" || c.id === "germany").map((c) => c.id));
 const region = () => { try { return new Intl.Locale(navigator.language).maximize().region ?? null; } catch { return null; } };
 const PROFILE_COLS = "id,credits,city_id,locale,timezone,country,streak,best_streak,freezes,boosts,push_flash,push_streak,push_friends,display_name,last_play_date,stake_factor";
@@ -242,7 +257,7 @@ export function App() {
   useEffect(() => { if (profile && !profile.country && region()) sb.rpc("set_country", { p_country: region() }).then(loadProfile); }, [profile?.id]);
 
   // loadMarkets runs on a timer from the first render: it reads the player's current town, country and filter through a ref
-  const envRef = useRef({ near, profile, filter }); envRef.current = { near, profile, filter };
+  const envRef = useRef({ near, profile, filter, home }); envRef.current = { near, profile, filter, home };
   const mkSeq = useRef(0); // calls overlap (timer, bets, filter changes): only the newest answer may replace the list
   const loadMarkets = useCallback(async () => {
     const seq = ++mkSeq.current;
@@ -256,7 +271,7 @@ export function App() {
     const cc = envRef.current.near?.country ?? envRef.current.profile?.country ?? region();
     const ownIds = CITIES.filter((c) => c.country === cc && !c.region).map((c) => c.id);
     const nationalIds = [...NATIONAL].filter((id) => CITIES.find((c) => c.id === id)?.country === cc);
-    const [first, mineR, farR, houseR, hereR, ownR] = await Promise.all([
+    const [first, mineR, farR, houseR, hereR, ownR, capR] = await Promise.all([
       open().not("city_id", "like", "p-%").order("closes_at").limit(300),
       // Markets of the towns this player picked are loaded separately so a long list of places never crowds out the real cities.
       placeIds.current.length ? open().in("city_id", placeIds.current).order("closes_at").limit(160) : none,
@@ -266,10 +281,12 @@ export function App() {
       open().eq("kind", "tick_gt").like("params->>series", "house:%").order("closes_at").limit(60),
       f0 && f0 !== "world" && f0 !== "mine" && !isRegionFilter(f0) && !placeIds.current.includes(f0) ? open().in("city_id", [f0, ...[...NATIONAL].filter((id) => CITIES.find((c) => c.id === id)?.country === (CITIES.find((c) => c.id === f0)?.country ?? placeById(f0)?.country))]).order("closes_at").limit(400) : none,
       cc && ownIds.length + nationalIds.length ? open().in("city_id", [...ownIds, ...nationalIds]).order("closes_at").limit(300) : none,
+      // the weather of the provincial capitals near the player (or in the region being looked at)
+      (async () => { const e = envRef.current, o = e.home ? { lat: e.home.lat, lon: e.home.lon } : e.near ? locOf(e.near.id) : null; const ids = await capitalIdsFor(e.filter, o).catch(() => []); return ids.length ? await open().in("city_id", ids).order("closes_at").limit(260) : { data: [] as unknown[] }; })(),
     ]);
-    const { data, error } = first, mine = mineR.data ?? [], far = farR.flatMap((r) => r.data ?? []), house = houseR.data ?? [], here = hereR.data ?? [], own = ownR.data ?? [];
+    const { data, error } = first, mine = mineR.data ?? [], far = farR.flatMap((r) => r.data ?? []), house = houseR.data ?? [], here = hereR.data ?? [], own = ownR.data ?? [], cap = capR.data ?? [];
     const seen = new Set([...(data ?? []), ...mine].map((x) => (x as { id: string }).id));
-    const extra = [...far, ...house, ...here, ...own].filter((x) => { const id = (x as unknown as { id: string }).id; if (seen.has(id)) return false; seen.add(id); return true; });
+    const extra = [...far, ...house, ...here, ...own, ...cap].filter((x) => { const id = (x as unknown as { id: string }).id; if (seen.has(id)) return false; seen.add(id); return true; });
     if (seq !== mkSeq.current) return;
     if (!error) { const all = [...(data ?? []), ...mine, ...extra] as MarketRow[]; setMarkets(all); try { localStorage.setItem("mk1", JSON.stringify({ t: Date.now(), rows: all.slice(0, 250) })); } catch { /* storage full or unavailable */ } if (navigator.onLine) setOffline(false); }
     else if (/fetch|network|load failed/i.test(error.message)) setOffline(true);

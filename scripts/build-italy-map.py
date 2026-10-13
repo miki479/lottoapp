@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Builds web/src/lib/italyMap.ts: simplified outlines of the Italian provinces (grouped by region) for the map picker.
 Source: Natural Earth 1:10m admin-1 (public domain), https://github.com/nvkelso/natural-earth-vector (geojson/ne_10m_admin_1_states_provinces.geojson).
-Usage: python3 scripts/build-italy-map.py path/to/ne_10m_admin_1_states_provinces.geojson > web/src/lib/italyMap.ts"""
+Usage: python3 scripts/build-italy-map.py path/to/ne_10m_admin_1_states_provinces.geojson [scripts/capitals.json] > web/src/lib/italyMap.ts"""
 import json, math, sys
 
 K = 100.0                       # units per degree of latitude
@@ -46,6 +46,7 @@ def ring_path(ring):
     return "".join(out) + "z"
 
 d = json.load(open(sys.argv[1]))
+CAPS = json.load(open(sys.argv[2])) if len(sys.argv) > 2 else {}
 feats = [f for f in d["features"] if f["properties"].get("iso_a2") == "IT"]
 regions = {}
 provs = []
@@ -61,8 +62,9 @@ for f in feats:
             if r: paths.append(r)
     name = CAPITAL.get(p["name"], p.get("woe_name") or p["name"])
     if p["name"] == "Genova": name = "Genova"
-    x, y = proj(p["longitude"], p["latitude"])
-    provs.append({"id": slug(p["name"]), "region": slug(reg), "name": name, "d": "".join(paths), "x": round(x), "y": round(y), "lat": round(p["latitude"], 4), "lon": round(p["longitude"], 4)})
+    cap = CAPS.get(name) or {"lat": p["latitude"], "lon": p["longitude"]}   # the real position of the capital town when known, else the province middle
+    x, y = proj(cap["lon"], cap["lat"])
+    provs.append({"id": slug(p["name"]), "region": slug(reg), "name": name, "d": "".join(paths), "x": round(x), "y": round(y), "lat": round(cap["lat"], 4), "lon": round(cap["lon"], 4)})
     r = regions.setdefault(slug(reg), {"id": slug(reg), "name": reg, "en": EN.get(reg, reg), "xs": [], "ys": []})
     for path in paths:
         pass
