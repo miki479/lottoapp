@@ -1272,3 +1272,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 
 /* the friends badge sits in the top right corner again; the card leaves it room so it never covers the stop pin */
 .event.has-friends { padding-top: 38px; position: relative; }
+
+/* with the multiple bar open, a message sits above it instead of covering it */
+.toast.lift { bottom: calc(var(--tabbar-h) + 10px + var(--touch, 48px) + 28px + env(safe-area-inset-bottom)); }
+@media (min-width: 1024px) { .toast.lift { bottom: 84px; } }

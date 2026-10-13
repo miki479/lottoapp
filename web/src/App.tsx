@@ -497,7 +497,7 @@ export function App() {
     announce(`placed-${m.id}`, msg.voice.placed(money(Math.floor(stake * Number(pick === "yes" ? m.odds_yes : m.odds_no)), locale)), locale);
     return null;
   };
-  const addSlip = (m: MarketRow, pick: Pick) => { setSlip((s) => (s.some((l) => l.m.id === m.id) ? s : [...s, { m, pick }])); setSheet(null); flash(msg.slip.added); };
+  const addSlip = (m: MarketRow, pick: Pick) => { setSlip((s) => (s.some((l) => l.m.id === m.id) ? s : [...s, { m, pick }])); setSheet(null); flash(`${msg.slip.added} · ${msg.slip.bar(slip.some((l) => l.m.id === m.id) ? slip.length : slip.length + 1)}`); haptic.tap(); };
   const placeParlay = async (legs: SlipLeg[], stake: number, boost = false) => {
     if (offline) return msg.common.offline;
     const { error } = await sb.rpc("place_parlay", { p_legs: legs.map((l) => ({ market: l.m.id, pick: l.pick })), p_stake: stake, p_boost: boost });
@@ -655,7 +655,7 @@ export function App() {
       {pubUser && <PublicProfile id={pubUser} msg={msg} locale={locale} onClose={() => { setPubUser(null); loadReqs(); setReqTick((n) => n + 1); }} onToast={flash} />}
       {nick && <NicknameSheet msg={msg} current={profile?.display_name ?? null} onClose={() => setNick(false)} onSaved={(n) => { setNick(false); loadProfile(); loadQuests(); flash(n); }} />}
       {resultBet && <ResultScreen bet={resultBet} msg={msg} locale={locale} remaining={Math.max(0, unseen.filter((b) => b.id !== resultBet.id).length)} onClose={closeResult} onShare={shareResult} onNext={() => { markSeen(resultBet.id); const next = unseen.find((b) => b.id !== resultBet.id); setResultBet(next ?? null); }} />}
-      {toast && <Toast text={toast.text} kind={toast.kind} />}
+      {toast && <Toast text={toast.text} kind={toast.kind} lift={slip.length > 0} />}
     </div>
   );
 }
