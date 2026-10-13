@@ -446,3 +446,54 @@ export async function notifyDirect(sb: Db): Promise<number> {
   }
   return n;
 }
+
+// ---- personal super-odds (public.make_personal_offers, migration 0096) ----
+// Warm, a little ironic, never about losses or chasing: the text only says there is a gift, how big, and that ignoring it is fine.
+const OFFER_TXT = {
+  it: {
+    head: "Una quota solo per te",
+    absent: (x: number, s: number) => `Ti abbiamo tenuto il posto caldo. Una quota ×${x} su una domanda scelta per te, puntata massima ${s} crediti finti. Nessun debito, giuro.`,
+    losses: (x: number, s: number) => `Un regalo, non un invito: una quota ×${x} su una domanda scelta per te, puntata massima ${s} crediti finti. Guardala con calma, o ignorala senza rimorsi.`,
+    random: (x: number, s: number) => `Oggi il caso ti ha scelto: una quota ×${x} tutta tua, puntata massima ${s} crediti finti. Il caso ha i suoi capricci.`,
+  },
+  "en-US": {
+    head: "Odds just for you",
+    absent: (x: number, s: number) => `We kept your seat warm. Odds of ×${x} on a question picked for you, max stake ${s} pretend credits. No debt, promise.`,
+    losses: (x: number, s: number) => `A gift, not an invitation: odds of ×${x} on a question picked for you, max stake ${s} pretend credits. Look at it calmly, or ignore it with a clear conscience.`,
+    random: (x: number, s: number) => `Chance picked you today: odds of ×${x} all your own, max stake ${s} pretend credits. Chance has its whims.`,
+  },
+  "en-GB": {
+    head: "Odds just for you",
+    absent: (x: number, s: number) => `We kept your seat warm. Odds of ×${x} on a question picked for you, max stake ${s} pretend credits. No debt, promise.`,
+    losses: (x: number, s: number) => `A gift, not an invitation: odds of ×${x} on a question picked for you, max stake ${s} pretend credits. Have a calm look, or ignore it with a clear conscience.`,
+    random: (x: number, s: number) => `Chance picked you today: odds of ×${x} all your own, max stake ${s} pretend credits. Chance does like its whims.`,
+  },
+  ja: {
+    head: "あなただけのオッズ",
+    absent: (x: number, s: number) => `席を温めておきました。あなたのために選んだ予想にオッズ×${x}。上限は${s}ニセクレジット。貸しはありません。`,
+    losses: (x: number, s: number) => `お誘いではなく、ただの贈り物です。あなたのために選んだ予想にオッズ×${x}。上限は${s}ニセクレジット。ゆっくり見ても、見送ってもかまいません。`,
+    random: (x: number, s: number) => `今日は偶然があなたを選びました。あなただけのオッズ×${x}。上限は${s}ニセクレジット。`,
+  },
+} as const;
+
+/** A new personal offer: write the in-app message (once), then push it under the optional-push limits (2 a day, quiet hours); retried while the offer is alive. */
+export async function notifyOffers(sb: Db): Promise<number> {
+  const { data } = await sb.from("personal_offers").select("id,user_id,multiplier,max_stake,reason,messaged,profiles(id,locale,timezone,city_id,streak,last_play_date,push_day,push_count,streak_push_day,push_flash,push_streak)")
+    .eq("notified", false).is("used_at", null).gt("expires_at", new Date().toISOString()).gt("created_at", new Date(Date.now() - 2 * 86400_000).toISOString()).limit(50);
+  let n = 0;
+  type Row = { id: string; user_id: string; multiplier: number; max_stake: number; reason: "absent" | "losses" | "random"; messaged: boolean; profiles: (Pref & { push_flash: boolean; push_streak: boolean }) | null };
+  for (const r of (data ?? []) as unknown as Row[]) {
+    const p = r.profiles;
+    if (!p) continue;
+    const t = OFFER_TXT[L(p.locale)], body = t[r.reason](r.multiplier, r.max_stake);
+    // the message first, so a player without push (or in quiet hours) still finds the gift in the app
+    if (!r.messaged) {
+      const { error } = await sb.from("user_messages").insert({ user_id: r.user_id, heading: t.head, body });
+      if (error) continue;
+      await sb.from("personal_offers").update({ messaged: true }).eq("id", r.id);
+    }
+    if (!(p.push_flash || p.push_streak) || !Deno.env.get("ONESIGNAL_REST_API_KEY")) { await sb.from("personal_offers").update({ notified: true }).eq("id", r.id); continue; }
+    if (await sendOptional(sb, [p], () => body) > 0) { await sb.from("personal_offers").update({ notified: true }).eq("id", r.id); n++; }
+  }
+  return n;
+}
