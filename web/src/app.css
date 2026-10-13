@@ -127,8 +127,8 @@ p { margin: 0; }
 /* ---------- bento ---------- */
 .bento { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); }
 .bento .cell { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-height: 96px; animation: rise var(--dur) var(--ease) both; animation-delay: calc(var(--i, 0) * 40ms); }
-.cell .v { font-size: var(--fs-title-lg); font-weight: 800; letter-spacing: var(--ls-title); line-height: 1.05; }
-.cell .v small { font-size: 14px; font-weight: 700; color: var(--text-2); margin-left: 3px; }
+.cell .v { white-space: nowrap; max-width: 100%; font-size: min(var(--fs-title-lg), 5.4vw); font-weight: 800; letter-spacing: var(--ls-title); line-height: 1.05; }
+.cell .v small { white-space: nowrap; font-size: 14px; font-weight: 700; color: var(--text-2); margin-left: 3px; }
 .cell .ic { color: var(--brand); }
 .span2 { grid-column: span 2; } .row2 { grid-row: span 2; }
 .cell.big { align-items: center; justify-content: center; text-align: center; }
