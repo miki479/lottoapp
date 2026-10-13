@@ -45,7 +45,7 @@ export function BetSheet(p: {
     const url = `${location.origin}/?m=${p.m.id}`;
     const text = `${p.msg.maker.shareText} ${question(p.m, p.msg, p.locale, cityName(city, p.locale), city.timezone)}`;
     sb.rpc("register_share", { p_market: p.m.id }).then(() => {}, () => {});
-    try { if (navigator.share) { await navigator.share({ title: "LateLotto", text, url }); return; } } catch { return; }
+    try { if (navigator.share) { await navigator.share({ title: "LateBet", text, url }); return; } } catch { return; }
     try { await navigator.clipboard.writeText(`${text} ${url}`); setCopied(true); setTimeout(() => setCopied(false), 2500); } catch { /* nothing to do */ }
   };
   const [boost, setBoost] = useState(false), [vice, setVice] = useState(false);

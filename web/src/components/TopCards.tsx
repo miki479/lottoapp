@@ -40,7 +40,7 @@ export function TopCards({ items, lead }: { items: TopItem[]; lead?: ComponentCh
   const cards = (copy: boolean) => (
     <>
       {copy ? <span class="top-dup" aria-hidden="true" /> : null}
-      {copy ? <div class="top-ghost" aria-hidden="true" {...{ inert: true }}>{lead}</div> : lead}
+      {copy ? <div class="top-ghost">{lead}</div> : lead}
       {items.map((it, i) => {
         const Icon = it.icon;
         return (

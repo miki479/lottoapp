@@ -630,13 +630,13 @@ export function App() {
   const slipIds = new Set(slip.map((l) => l.m.id));
   const shareReferral = async () => {
     if (!referral) return; const url = `${location.origin}/?ref=${referral.code}`;
-    try { if (navigator.share) { await navigator.share({ title: "LateLotto", text: msg.referral.shareText(referral.code), url }); return; } await navigator.clipboard.writeText(url); flash(msg.referral.copied); } catch { /* cancelled */ }
+    try { if (navigator.share) { await navigator.share({ title: "LateBet", text: msg.referral.shareText(referral.code), url }); return; } await navigator.clipboard.writeText(url); flash(msg.referral.copied); } catch { /* cancelled */ }
   };
-  const shareResult = async () => { if (!resultBet) return; const blob = await makeResultCard(resultBet, msg, locale); if ((await shareImage(blob, "LateLotto", msg.result.shareText)) === "saved") flash(msg.result.saved); };
+  const shareResult = async () => { if (!resultBet) return; const blob = await makeResultCard(resultBet, msg, locale); if ((await shareImage(blob, "LateBet", msg.result.shareText)) === "saved") flash(msg.result.saved); };
   const shareProfile = async () => {
     const { data } = await sb.rpc("my_stats"); const s = (data as MyStats[] | null)?.[0] ?? null;
     const blob = await makeProfileCard({ name: profile?.display_name ?? null, streak: profile?.streak ?? 0, stats: s ? { total: +s.total, won: +s.won, lost: +s.lost, voided: +s.voided, best_win: +s.best_win, net: +s.net, staked: +s.staked } : null, trophies: TROPHY_IDS.filter((x) => trophies.has(x)) }, msg);
-    if ((await shareImage(blob, "LateLotto", msg.profile.shareText)) === "saved") flash(msg.result.saved);
+    if ((await shareImage(blob, "LateBet", msg.profile.shareText)) === "saved") flash(msg.result.saved);
   };
   const signOut = async () => { await sb.auth.signOut(); setProfile(null); setBets([]); setParlays([]); setProgress(null); setTrophies(new Set()); setReferral(null); setMissions(null); setFlashM(null); setQuests([]); setLook(null); setReqCount(0); store.set("lvl", ""); setReady(false); await bootstrap(); };
   const deleteAccount = async () => {

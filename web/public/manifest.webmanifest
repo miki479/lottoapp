@@ -1,6 +1,6 @@
 {
-  "name": "LateLotto",
-  "short_name": "LateLotto",
+  "name": "LateBet",
+  "short_name": "LateBet",
   "description": "Bet fake credits on real bus, train and weather delays.",
   "start_url": "/",
   "display": "standalone",

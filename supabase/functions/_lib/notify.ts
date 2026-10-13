@@ -52,7 +52,7 @@ async function sendOptional(sb: Db, who: Pref[], text: (p: Pref) => string): Pro
     if (lp.hour >= 22 || lp.hour < 8) continue;
     const count = p.push_day === lp.day ? p.push_count : 0;
     if (count >= 2) continue;
-    if (!(await send([p.id], "LateLotto", text(p)))) continue;
+    if (!(await send([p.id], "LateBet", text(p)))) continue;
     await sb.from("profiles").update({ push_day: lp.day, push_count: count + 1 }).eq("id", p.id);
     n++;
   }
@@ -101,10 +101,10 @@ export async function notifyResults(sb: Db): Promise<number> {
   for (const r of rows) {
     const loc = (r.profiles?.locale && r.profiles.locale in TEXT ? r.profiles.locale : "en-US") as keyof typeof TEXT;
     const t = TEXT[loc];
-    const what = r.kind === "parlay" ? t.parlay : String(r.markets?.params.routeName ?? r.markets?.params.headsign ?? r.markets?.params.label ?? (r.markets?.params.home ? `${r.markets.params.home} – ${r.markets.params.away}` : "LateLotto"));
+    const what = r.kind === "parlay" ? t.parlay : String(r.markets?.params.routeName ?? r.markets?.params.headsign ?? r.markets?.params.label ?? (r.markets?.params.home ? `${r.markets.params.home} – ${r.markets.params.away}` : "LateBet"));
     const body = r.status === "won" ? t.won(money(r.payout - r.stake, loc), what) : r.status === "lost" ? t.lost(what) : t.void(what);
     // Only mark as announced when OneSignal accepted it, so a wrong key or an outage retries within the 30-minute window.
-    if (!(await send([r.user_id], "LateLotto", body))) continue;
+    if (!(await send([r.user_id], "LateBet", body))) continue;
     await sb.from(r.kind === "bet" ? "bets" : "parlays").update({ notified: true }).eq("id", r.id);
     n++;
   }
@@ -122,16 +122,16 @@ export async function notifyModeration(sb: Db): Promise<number> {
   const label: Record<string, string> = { nickname: "Nickname bloccato", group: "Nome gruppo bloccato", existing: "Nome rimosso" };
   const last = rows[rows.length - 1]!;
   const body = rows.length === 1 ? `${label[last.source] ?? "Nome bloccato"}: «${last.text}» (${last.matched})` : `${rows.length} nomi bloccati o rimossi · ultimo: «${last.text}» (${last.matched})`;
-  if (!(await send(ids, "LateLotto · moderazione", body))) return 0; // not marked: retried next minute
+  if (!(await send(ids, "LateBet · moderazione", body))) return 0; // not marked: retried next minute
   await mark();
   return 1;
 }
 
 const INVITE = {
-  it: (who: string) => `${who} ti sfida a LateLotto: apri e scegli Sì o No`,
-  "en-US": (who: string) => `${who} challenged you on LateLotto: open it and pick Yes or No`,
-  "en-GB": (who: string) => `${who} challenged you on LateLotto: open it and pick Yes or No`,
-  ja: (who: string) => `${who}さんからLateLottoでチャレンジです。開いて「はい」か「いいえ」を選びましょう`,
+  it: (who: string) => `${who} ti sfida a LateBet: apri e scegli Sì o No`,
+  "en-US": (who: string) => `${who} challenged you on LateBet: open it and pick Yes or No`,
+  "en-GB": (who: string) => `${who} challenged you on LateBet: open it and pick Yes or No`,
+  ja: (who: string) => `${who}さんからLateBetでチャレンジです。開いて「はい」か「いいえ」を選びましょう`,
 } as const;
 const WHO = { it: "Un amico", "en-US": "A friend", "en-GB": "A friend", ja: "友達" } as const;
 
@@ -145,7 +145,7 @@ export async function notifyInvites(sb: Db): Promise<number> {
   for (const r of (data ?? []) as unknown as { challenge_id: string; user_id: string; friend_challenges: { code: string } | null; me: { locale: string } | null; by: { display_name: string | null } | null }[]) {
     const loc = (r.me?.locale && r.me.locale in INVITE ? r.me.locale : "en-US") as keyof typeof INVITE;
     const who = r.by?.display_name?.trim() || WHO[loc];
-    if (r.friend_challenges?.code && !(await send([r.user_id], "LateLotto", INVITE[loc](who), `https://latelotto.web.app/?c=${r.friend_challenges.code}`))) continue;
+    if (r.friend_challenges?.code && !(await send([r.user_id], "LateBet", INVITE[loc](who), `https://latelotto.web.app/?c=${r.friend_challenges.code}`))) continue;
     await sb.from("challenge_invites").update({ notified: true }).eq("challenge_id", r.challenge_id).eq("user_id", r.user_id);
     n++;
   }
@@ -153,10 +153,10 @@ export async function notifyInvites(sb: Db): Promise<number> {
 }
 
 const FRIEND_REQ = {
-  it: (who: string) => `${who} ti ha chiesto l'amicizia su LateLotto`,
-  "en-US": (who: string) => `${who} sent you a friend request on LateLotto`,
-  "en-GB": (who: string) => `${who} sent you a friend request on LateLotto`,
-  ja: (who: string) => `${who}さんからLateLottoで友だち申請が届きました`,
+  it: (who: string) => `${who} ti ha chiesto l'amicizia su LateBet`,
+  "en-US": (who: string) => `${who} sent you a friend request on LateBet`,
+  "en-GB": (who: string) => `${who} sent you a friend request on LateBet`,
+  ja: (who: string) => `${who}さんからLateBetで友だち申請が届きました`,
 } as const;
 
 /** Someone asked to be my friend: tell me (once). Marked as done only when OneSignal took it, so an outage retries within the hour. */
@@ -169,7 +169,7 @@ export async function notifyFriendRequests(sb: Db): Promise<number> {
   for (const r of (data ?? []) as unknown as { from_id: string; to_id: string; me: { locale: string } | null; by: { display_name: string | null } | null }[]) {
     const loc = (r.me?.locale && r.me.locale in FRIEND_REQ ? r.me.locale : "en-US") as keyof typeof FRIEND_REQ;
     const who = r.by?.display_name?.trim() || WHO[loc];
-    if (!(await send([r.to_id], "LateLotto", FRIEND_REQ[loc](who), "https://latelotto.web.app/?open=friends"))) continue;
+    if (!(await send([r.to_id], "LateBet", FRIEND_REQ[loc](who), "https://latelotto.web.app/?open=friends"))) continue;
     await sb.from("friend_requests").update({ notified: true }).eq("from_id", r.from_id).eq("to_id", r.to_id);
     n++;
   }
@@ -196,7 +196,7 @@ export async function notifyReminders(sb: Db): Promise<number> {
     if (hour >= 22 || hour < 8) continue;
     const q = r.markets.params.q as Record<string, string> | undefined, title = String(r.markets.params.label ?? "");
     const text = loc === "it" ? q?.it : loc === "ja" ? q?.ja : q?.en;
-    if (!(await send([r.user_id], "LateLotto", REMIND[loc](text ?? title)))) continue;
+    if (!(await send([r.user_id], "LateBet", REMIND[loc](text ?? title)))) continue;
     await sb.from("market_reminders").update({ sent: true }).eq("user_id", r.user_id).eq("market_id", r.market_id);
     n++;
   }
@@ -265,7 +265,7 @@ export async function notifyFriendWins(sb: Db): Promise<number> {
 /** One announcement to everybody who allowed notifications, sent once: it goes out when app_settings has broadcast_pending = <id> and broadcast_done is not that id yet. */
 const BROADCAST = {
   looks_v1: {
-    headings: { en: "LateLotto is watching 👀", it: "LateLotto ti sta guardando 👀", ja: "LateLottoは見ています👀" },
+    headings: { en: "LateBet is watching 👀", it: "LateBet ti sta guardando 👀", ja: "LateBetは見ています👀" },
     contents: {
       en: "New decorations, profile pictures and badges that are much, MUCH harder to get. Yes, even the ones you thought you already had. Go and look. It's not a threat. It's a fact, and facts can be scary.",
       it: "Nuove decorazioni, immagini profilo e distintivi MOLTO più difficili da ottenere. Sì, anche quelli che pensavi di avere già. Vai a dare un'occhiata. Non è una minaccia. È un fatto, e i fatti a volte fanno paura.",

@@ -49,7 +49,7 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
   const share = async () => {
     if (!c) return;
     const url = challengeLink(c.code), best = Math.max(winIf("yes"), winIf("no")), text = `${f.shareText} ${c.title}${c.stake > 0 ? ` ${f.shareStake(money(c.pot, p.locale), money(best, p.locale))}` : ""}`;
-    try { if (navigator.share) { await navigator.share({ title: "LateLotto", text, url }); return; } } catch { return; }
+    try { if (navigator.share) { await navigator.share({ title: "LateBet", text, url }); return; } } catch { return; }
     try { await navigator.clipboard.writeText(`${text} ${url}`); setCopied(true); setTimeout(() => setCopied(false), 2500); } catch { /* nothing */ }
   };
   const head = <div class="shead"><h2>{f.title}</h2><span class="grow" />{c && <button class="iconbtn" onClick={share} aria-label={f.share}><Share2 size={20} /></button>}<button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>;
