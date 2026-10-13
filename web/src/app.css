@@ -1319,3 +1319,8 @@ textarea.field { resize: vertical; min-height: 84px; }
 .installhint { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--brand-soft); border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent); color: var(--text); } .installhint > svg { color: var(--brand); flex: none; }
 .ihtxt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; } .ihtxt b { font-size: .9rem; } .ihtxt small { color: var(--muted); font-size: .78rem; }
 .ihbtn { padding: 6px 12px; min-height: 0; }
+/* Bank card (Profile) */
+.bankcard .srow { display: flex; align-items: center; gap: 12px; } .bankcard .stxt { display: flex; flex-direction: column; min-width: 0; }
+.bankcard .bankic { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--surface-2); color: var(--brand); flex: none; }
+.bankcard .bar { height: 8px; border-radius: 8px; background: var(--surface-2); overflow: hidden; } .bankcard .bar i { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--c-bus), var(--c-pop)); transition: width 400ms var(--ease); }
+.bankcard .bankrules { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }

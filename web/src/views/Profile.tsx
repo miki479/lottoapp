@@ -3,6 +3,7 @@ import type { LucideIcon } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Sheet } from "../components/Sheet.tsx";
 import { StreakCard } from "../components/StreakCard.tsx";
+import { BankCard } from "../components/BankCard.tsx";
 import { money } from "../lib/format.ts";
 import { LOCALES, TROPHY_IDS, TROPHY_RARITY, type Locale, type Messages, type TrophyId } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
@@ -67,6 +68,7 @@ export function ProfileView(p: {
 
           <StreakCard streak={p.profile?.streak ?? 0} freezes={p.profile?.freezes ?? 0} msg={p.msg} locale={p.locale} />
           {p.missionsNode}
+          {p.registered && <BankCard locale={p.locale} credits={p.profile?.credits} />}
           {p.push && (
             <section class="card stack">
               <label class="switchrow"><span class="swlabel"><Bell size={18} style="color:var(--brand);flex:none" /><span>{p.msg.push.active}</span></span><input type="checkbox" role="switch" checked={p.push.on} disabled={p.push.denied} onChange={p.push.toggle} /></label>
