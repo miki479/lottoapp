@@ -71,7 +71,7 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
     <Sheet onClose={p.onClose} label={m.title}>
       <div class="shead"><h2>{m.title}</h2><button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>
       <p class="hint">{m.hint}</p>
-      <div class="mkchips">
+      <div class="mkchips wrap">
         <button class="mkchip" onClick={p.onFriends}>{p.msg.friends.tab}</button>
         {(["weather", "crypto", "games", "culture"] as Tab[]).map((t) => <button key={t} class={`mkchip ${tab === t ? "on" : ""}`} onClick={() => setTab(t)}>{m.tabs[t as "weather"]}</button>)}
         <button class={`mkchip ${tab === "match" ? "on" : ""}`} onClick={() => setTab("match")}>{p.msg.matchmaker.tab}</button>
