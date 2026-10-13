@@ -4,7 +4,6 @@ import type { Locale, Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { countdown, type MarketRow } from "../lib/format.ts";
-import { offerOdds } from "../../../shared/offers.ts";
 import { Q } from "./Q.tsx";
 import "./PersonalOffer.css";
 
@@ -14,8 +13,6 @@ export interface Offer { id: string; market_id: string; multiplier: number; max_
 export interface OfferUse { id: string; mult: number; maxStake: number; expiresAt: string }
 export const OFFER_EVENT = "ll-offers";
 export const offerUse = (o: Offer): OfferUse => ({ id: o.id, mult: o.multiplier, maxStake: o.max_stake, expiresAt: o.expires_at });
-/** The odds the bet will be locked at (also shown in the sheet). */
-export const offerBetOdds = (base: number, mult: number) => offerOdds(base, mult);
 
 type Key = "it" | "en-US" | "en-GB" | "ja";
 const key = (l: Locale): Key => (l === "it" || l === "ja" || l === "en-GB" ? l : "en-US");

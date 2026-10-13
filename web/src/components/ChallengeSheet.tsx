@@ -2,6 +2,7 @@ import { Share2, X } from "lucide-preact";
 import { useCallback, useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
+import { useBusy } from "../lib/busy.ts";
 import { every } from "../lib/poll.ts";
 import { countdown, money } from "../lib/format.ts";
 import { FriendPicker } from "./FriendPicker.tsx";
@@ -21,29 +22,29 @@ export const challengeLink = (code: string) => `${location.origin}/?c=${code}`;
 export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale; now: number; registered: boolean; onClose: () => void; onAuth: () => void; onChanged: () => void; onDeleted: (text: string) => void }) {
   const f = p.msg.friends;
   const [c, setC] = useState<Challenge | null | undefined>(undefined);
-  const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null), [copied, setCopied] = useState(false);
+  const [busy, run] = useBusy(), [err, setErr] = useState<string | null>(null), [copied, setCopied] = useState(false);
   const looks = useLooks((c?.people ?? []).flatMap((x) => (x.uid ? [x.uid] : [])));
   const load = useCallback(async () => { const { data } = await sb.rpc("get_challenge", { p_code: p.code }); setC((data as Challenge | null) ?? null); }, [p.code]);
   useEffect(() => { load(); return every(load, 20_000); }, [load]);
   const fail = (e: { message?: string } | null) => { const key = Object.keys(f.errors).find((k) => e?.message?.includes(k)) as keyof typeof f.errors | undefined; const k2 = Object.keys(p.msg.fx.errors).find((k) => e?.message?.includes(k)) as keyof typeof p.msg.fx.errors | undefined; setErr(k2 ? p.msg.fx.errors[k2] : f.errors[key ?? "generic"]); };
-  const act = async (fn: string, args: Record<string, unknown>) => {
+  const oops = () => setErr(f.errors.generic);
+  const act = (fn: string, args: Record<string, unknown>) => run(async () => {
     if (!p.registered) { p.onAuth(); return; }
-    setBusy(true); setErr(null);
+    setErr(null);
     const { data, error } = await sb.rpc(fn, args);
-    setBusy(false);
     if (error) { fail(error); return; }
     setC(data as Challenge); p.onChanged();
-  };
+  }, oops);
   const [asking, setAsking] = useState(false);
-  const remove = async () => {
-    setBusy(true); setErr(null);
+  const remove = () => run(async () => {
+    setErr(null);
     const { data, error } = await sb.rpc("cancel_challenge", { p_code: p.code });
-    setBusy(false);
     if (error) { fail(error); return; }
     p.onChanged(); p.onDeleted(data === "deleted" ? f.deleted : f.voidedMsg);
-  };
+  }, oops);
   const [reported, setReported] = useState(false);
-  const report = async () => { if (!c) return; await sb.rpc("report_challenge", { p_code: c.code }); setReported(true); };
+  const [reporting, doReport] = useBusy();
+  const report = () => c ? doReport(async () => { const { error } = await sb.rpc("report_challenge", { p_code: c.code }); if (error) throw error; setReported(true); }, oops) : undefined;
   /** What one more player would take home on a side: the pot with their stake in it, split among everyone on that side. */
   const winIf = (side: "yes" | "no") => (c && c.stake > 0 ? Math.floor((c.pot + c.stake) / ((side === "yes" ? c.yes : c.no) + 1)) : 0);
   const share = async () => {
@@ -97,9 +98,9 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
       </>}
       {awaiting && c.judge_mode === "creator" && !c.is_creator && <p class="hint">{f.waitJudge}: {c.creator || p.msg.ticker.anon}</p>}
       {isOpen && c.is_creator && (asking
-        ? <div class="frask" role="alert"><span>{c.yes + c.no - (c.my_pick ? 1 : 0) > 0 ? f.askJoined : f.askSolo}</span><button class="btn secondary" disabled={busy} onClick={() => setAsking(false)}>{f.deleteNo}</button><button class="btn primary" disabled={busy} onClick={remove}>{f.deleteYes}</button></div>
+        ? <div class="frask" role="alert"><span>{c.yes + c.no - (c.my_pick ? 1 : 0) > 0 ? f.askJoined : f.askSolo}</span><button class="btn secondary" disabled={busy} onClick={() => setAsking(false)}>{f.deleteNo}</button><button class="btn primary" disabled={busy} aria-busy={busy} onClick={remove}>{f.deleteYes}</button></div>
         : <button class="btn secondary" onClick={() => setAsking(true)}>{f.deleteBtn}</button>)}
-      {c.visibility === "public" && !c.is_creator && <button class="btn secondary" disabled={reported} onClick={report}>{reported ? p.msg.fx.reported : p.msg.fx.report}</button>}
+      {c.visibility === "public" && !c.is_creator && <button class="btn secondary" disabled={reported || reporting} aria-busy={reporting} onClick={report}>{reported ? p.msg.fx.reported : p.msg.fx.report}</button>}
       {c.people.length > 0 && <div class="tickchart"><div class="tchead"><b>{f.people}</b></div>
         {[...c.people].sort((a, b) => (a.name === "?" ? "~" : a.name).localeCompare(b.name === "?" ? "~" : b.name, p.locale)).map((x, i) => (
           <div key={i} class="pplrow">

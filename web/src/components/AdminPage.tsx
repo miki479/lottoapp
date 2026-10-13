@@ -2,6 +2,7 @@ import { ArrowLeft, RefreshCw } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
+import { useBusy } from "../lib/busy.ts";
 
 interface Overview {
   feeds: { id: string; last_ok_at: string | null; last_attempt_at: string | null; last_error: string | null; last_error_at: string | null }[];
@@ -28,18 +29,21 @@ const ago = (iso: string | null, now: number) => { if (!iso) return "—"; const
 export function AdminPage({ msg, onBack }: { msg: Messages; onBack: () => void }) {
   const [data, setData] = useState<Overview | null>(null);
   const [err, setErr] = useState(false);
-  const load = async () => { const { data: d, error } = await sb.rpc("admin_overview"); if (error) setErr(true); else { setErr(false); setData(d as Overview); } };
+  const [loading, again] = useBusy();
+  const load = () => again(async () => { const { data: d, error } = await sb.rpc("admin_overview"); if (error) setErr(true); else { setErr(false); setData(d as Overview); } }, () => setErr(true));
   useEffect(() => { load(); }, []);
   const [house, setHouse] = useState<{ id: string; label: string; status: string; outcome: string | null; target_at: string; bets: number }[]>([]);
   const loadHouse = async () => { const { data: h } = await sb.rpc("admin_house_markets"); setHouse((h ?? []) as typeof house); };
   useEffect(() => { loadHouse(); }, []);
-  const settle = async (id: string, yes: boolean) => { await sb.rpc("admin_house_settle", { p_market: id, p_yes: yes }); loadHouse(); };
-  const resolve = async (id: string) => { await sb.rpc("admin_resolve_report", { p_id: id }); load(); };
+  const [acting, act] = useBusy();
+  const settle = (id: string, yes: boolean) => act(async () => { const { error } = await sb.rpc("admin_house_settle", { p_market: id, p_yes: yes }); if (error) setErr(true); await loadHouse(); }, () => setErr(true));
+  const resolve = (id: string) => act(async () => { const { error } = await sb.rpc("admin_resolve_report", { p_id: id }); if (error) setErr(true); await load(); }, () => setErr(true));
   const now = Date.now(), a = msg.admin;
   return (
     <div class="screen stack adminpage">
-      <div class="adminbar"><button class="iconbtn" onClick={onBack} aria-label={msg.common.back}><ArrowLeft size={22} /></button><h1>{a.title}</h1><button class="iconbtn" onClick={load} aria-label={a.refresh}><RefreshCw size={20} /></button></div>
+      <div class="adminbar"><button class="iconbtn" onClick={onBack} aria-label={msg.common.back}><ArrowLeft size={22} /></button><h1>{a.title}</h1><button class="iconbtn" disabled={loading} onClick={load} aria-label={a.refresh}><RefreshCw size={20} /></button></div>
       {err && <p class="formerr" role="alert">{a.forbidden}</p>}
+      {!data && !err && <div class="sk" />}
       {data && (<>
         <div class="admingrid">
           <div><span class="detail">{a.opened}</span><b class="num">{data.markets.open}</b></div>
@@ -65,7 +69,7 @@ export function AdminPage({ msg, onBack }: { msg: Messages; onBack: () => void }
         {house.length > 0 && <><h3>Domande della casa (GTA VI, Legalità)</h3>{house.map((h) => (
           <div class="adminrow" key={h.id}>
             <span class="grow"><b>{h.label}</b><small class="hint" style="display:block">{h.status}{h.outcome ? ` → ${h.outcome}` : ""} · {h.bets} puntate · {new Date(h.target_at).toLocaleString()}</small></span>
-            {h.status === "open" && Date.parse(h.target_at) <= now && <><button class="btn secondary" onClick={() => settle(h.id, false)}>No</button><button class="btn primary" onClick={() => settle(h.id, true)}>Sì</button></>}
+            {h.status === "open" && Date.parse(h.target_at) <= now && <><button class="btn secondary" disabled={acting} onClick={() => settle(h.id, false)}>No</button><button class="btn primary" disabled={acting} onClick={() => settle(h.id, true)}>Sì</button></>}
           </div>))}</>}
         <h3>{a.reports} ({data.reports.length})</h3>
         {data.reports.length === 0 ? <p class="hint">{a.noReports}</p> : data.reports.map((r) => (
@@ -74,7 +78,7 @@ export function AdminPage({ msg, onBack }: { msg: Messages; onBack: () => void }
               <small class="hint" style="display:block">{r.status ?? "?"}{r.outcome ? ` → ${r.outcome}` : ""}{r.void_reason ? ` (${r.void_reason})` : ""} · {ago(r.created_at, now)}</small>
               {r.evidence ? <small class="hint" style="display:block">{JSON.stringify(r.evidence).slice(0, 140)}</small> : null}
               {r.note ? <small style="display:block">{r.note}</small> : null}</span>
-            <button class="btn secondary" onClick={() => resolve(r.id)}>{a.resolve}</button>
+            <button class="btn secondary" disabled={acting} aria-busy={acting} onClick={() => resolve(r.id)}>{a.resolve}</button>
           </div>))}
       </>)}
     </div>

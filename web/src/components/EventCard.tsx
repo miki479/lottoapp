@@ -18,19 +18,13 @@ import { SportScene } from "./SportScene.tsx";
 
 const KIND = { bus: BusSide, train: TrainSide, weather: CloudRainSide, nature: Activity, strike: Megaphone, traffic: Car, finance: TrendingUp, culture: Clapperboard, sport: Trophy, law: Scale } as const;
 
-export function liveLabel(msg: Messages, l: LiveDelay) {
-  const sec = Math.abs(l.delay_sec), min = Math.round(l.delay_sec / 60);
-  const val = sec < 60 ? `${l.delay_sec} s` : `${min > 0 ? "+" : ""}${min} min`;
-  return `${l.is_forecast ? msg.card.forecast : msg.card.live} · ${val}`;
-}
-
-/** One event: what it is (detail row), the question (title), then two big, equal choices. */
 /** How full the bus is right now: five bars and a word. */
 export function OccMeter(p: { level: number; msg: Messages }) {
   const lv = Math.max(0, Math.min(5, p.level));
   return <div class={`occ lv${lv}`} role="img" aria-label={`${p.msg.occ.title}: ${p.msg.occ.levels[lv]}`}><span class="occbars">{[0, 1, 2, 3, 4].map((i) => <i key={i} class={i < lv ? "on" : ""} />)}</span><span class="occt">{p.msg.occ.title}: <b>{p.msg.occ.levels[lv]}</b></span></div>;
 }
 
+/** One event: what it is (detail row), the question (title), then two big, equal choices. */
 export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now: number; live?: LiveDelay; occ?: LiveOcc; index: number; top?: boolean; hasLadder?: boolean; mm?: number; friends?: number; showCity: boolean; onPick: (m: MarketRow, pick: Pick) => void }) {
   const { m, msg, locale, now, live } = p;
   const city = cityOf(m.city_id), Kind = m.category === "train" && isMetroLine(m.params.routeName) ? MetroSide : m.category === "train" && isIntercityLine(m.params.routeName) ? IntercitySide : KIND[m.category];

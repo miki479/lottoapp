@@ -61,8 +61,10 @@ function MatchInsight({ m, pick, msg }: { m: M; pick: "yes" | "no"; msg: Message
   const t = msg.insight, home = String(m.params.home ?? ""), away = String(m.params.away ?? "");
   const [h, setH] = useState<Game[] | null>(null), [a, setA] = useState<Game[] | null>(null);
   useEffect(() => {
-    sb.rpc("team_recent", { p_team: home }).then(({ data }) => setH((data ?? []) as Game[]));
-    sb.rpc("team_recent", { p_team: away }).then(({ data }) => setA((data ?? []) as Game[]));
+    let live = true;
+    sb.rpc("team_recent", { p_team: home }).then(({ data }) => { if (live) setH((data ?? []) as Game[]); });
+    sb.rpc("team_recent", { p_team: away }).then(({ data }) => { if (live) setA((data ?? []) as Game[]); });
+    return () => { live = false; };
   }, [home, away]);
   const [live, setLive] = useState<{ home_score: number; away_score: number; state: "in" | "post"; clock: string } | null>(null);
   useEffect(() => {

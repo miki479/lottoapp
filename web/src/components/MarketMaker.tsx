@@ -2,6 +2,7 @@ import { Minus, Plus, X } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { INTL_TAG } from "../i18n/index.ts";
+import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
 import type { MarketRow } from "../lib/format.ts";
 import { fmtOdds } from "../lib/format.ts";
@@ -23,7 +24,7 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
   const [place, setPlace] = useState(p.places[0]?.id ?? ""), [metric, setMetric] = useState<(typeof METRIC_LIST)[number]>("temp"), [dayOffset, setDayOffset] = useState(1), [hour, setHour] = useState(15);
   const [series, setSeries] = useState("btc"), [offset, setOffset] = useState(6), [wikiDay, setWikiDay] = useState(1);
   const [thr, setThr] = useState<number | null>(null), [pv, setPv] = useState<Preview | null>(null);
-  const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null);
+  const [busy, run] = useBusy(), [err, setErr] = useState<string | null>(null);
 
   const seriesList = tab === "crypto" ? Object.keys(CRYPTO) : tab === "games" ? Object.keys(STEAM).map((id) => `steam:${id}`) : WIKI_ARTICLES.map((a) => `wiki:${a}`);
   const label = (s: string) => (s === "btc" || s === "eth" ? CRYPTO[s].label : s.startsWith("steam:") ? STEAM[s.slice(6) as keyof typeof STEAM] : s.slice(5).replace(/_/g, " "));
@@ -53,17 +54,16 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
   }, [tab, place, metric, dayOffset, hour, series, offset, wikiDay, thr]);
 
   const step = pv?.step ?? 1;
-  const create = async () => {
+  const create = () => run(async () => {
     if (thr === null) return;
     if (!p.registered) { setErr(m.needAccount); return; }
-    setBusy(true); setErr(null);
+    setErr(null);
     const { data, error } = await sb.functions.invoke("market-offer", { body: body(thr, false) });
-    setBusy(false);
     if (data?.market) { p.onCreated(data.market as MarketRow); return; }
     let code = "generic";
     try { code = (await (error as { context?: Response })?.context?.json())?.error ?? "generic"; } catch { /* no body */ }
     setErr(code === "registration_required" ? m.needAccount : (m.errors[code as "generic"] ?? m.errors.generic));
-  };
+  }, () => setErr(m.errors.generic));
   const chips = (items: { k: string; t: string }[], cur: string, set: (k: string) => void) => (
     <div class="mkchips">{items.map((i) => <button key={i.k} class={`mkchip ${cur === i.k ? "on" : ""}`} onClick={() => set(i.k)} aria-pressed={cur === i.k}>{i.t}</button>)}</div>
   );
@@ -96,7 +96,7 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
         {pv && <p class="hint num">{pv.forecast !== undefined ? `${m.forecastLbl}: ${nf.format(pv.forecast)}` : `${m.now}: ${nf.format(pv.reference ?? 0)}`} · {m.odds}: {fmtOdds(pv.odds_yes, p.locale)} / {fmtOdds(pv.odds_no, p.locale)}</p>}
       </div>}
       {tab !== "match" && err && <p class="formerr" role="alert">{err}</p>}
-      {tab !== "match" && <button class="btn primary wide" disabled={busy || !pv} onClick={create}>{busy ? m.creating : m.create}</button>}
+      {tab !== "match" && <button class="btn primary wide" disabled={busy || !pv} aria-busy={busy} onClick={create}>{busy ? m.creating : m.create}</button>}
     </Sheet>
   );
 }

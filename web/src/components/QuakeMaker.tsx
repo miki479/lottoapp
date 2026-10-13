@@ -2,6 +2,7 @@ import { MapPin, Search, X } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { searchPlaces, type Place } from "../lib/places.ts";
+import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
 import type { MarketRow } from "../lib/format.ts";
 import { localDayStart } from "../../../shared/time.ts";
@@ -17,7 +18,7 @@ export function QuakeMaker(p: { msg: Messages; locale: Locale; onClose: () => vo
   const [found, setFound] = useState<Place[] | null>(null);
   const [place, setPlace] = useState<Place | null>(null);
   const [radius, setRadius] = useState(300), [mag, setMag] = useState(5), [day, setDay] = useState(0), [hour, setHour] = useState(20), [len, setLen] = useState(3);
-  const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null);
+  const [busy, run] = useBusy(), [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     if (q.trim().length < 2 || place) { setFound(null); return; }
     const ctl = new AbortController();
@@ -25,14 +26,13 @@ export function QuakeMaker(p: { msg: Messages; locale: Locale; onClose: () => vo
     return () => { clearTimeout(t); ctl.abort(); };
   }, [q, place]);
 
-  const create = async () => {
+  const create = () => run(async () => {
     if (!place) { setErr(m.pickPlace); return; }
     const now = Math.floor(Date.now() / 1000);
     const start = localDayStart(now + day * 86400, place.timezone) + hour * 3600;
     if (start < now + 35 * 60) { setErr(m.time); return; }
-    setBusy(true); setErr(null);
+    setErr(null);
     const { data, error } = await sb.functions.invoke("quake-offer", { body: { lat: place.lat, lon: place.lon, radiusKm: radius, minMag: mag, hours: len, startEpoch: start, place: place.name, tz: place.timezone } });
-    setBusy(false);
     if (error || !data?.market) {
       let code = "generic";
       try { code = (await (error as { context?: Response })?.context?.json())?.error ?? "generic"; } catch { /* no body */ }
@@ -40,7 +40,7 @@ export function QuakeMaker(p: { msg: Messages; locale: Locale; onClose: () => vo
       return;
     }
     p.onCreated(data.market as MarketRow);
-  };
+  }, () => setErr(p.msg.errors.generic!));
   const sel = (label: string, value: number, opts: number[], fmt: (n: number) => string, set: (n: number) => void) => (
     <label class="qmfield"><span class="detail">{label}</span><select class="field" value={value} onChange={(e) => set(Number((e.target as HTMLSelectElement).value))}>{opts.map((o) => <option key={o} value={o}>{fmt(o)}</option>)}</select></label>
   );
@@ -63,7 +63,7 @@ export function QuakeMaker(p: { msg: Messages; locale: Locale; onClose: () => vo
       </div>
       {place && <p class="hint">{m.local(place.timezone)}</p>}
       {err && <p class="formerr" role="alert">{err}</p>}
-      <button class="btn primary wide" disabled={busy} onClick={create}>{busy ? m.creating : m.create}</button>
+      <button class="btn primary wide" disabled={busy} aria-busy={busy} onClick={create}>{busy ? m.creating : m.create}</button>
       <p class="hint">{m.credit}</p>
     </Sheet>
   );

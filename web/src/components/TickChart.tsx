@@ -20,7 +20,9 @@ export function TickChart({ m, msg, locale }: { m: MarketRow; msg: Messages; loc
     });
     return () => { live = false; };
   }, [key]);
-  if (series.startsWith("alert:") || !pts || pts.length < 3) return null;
+  if (series.startsWith("alert:")) return null;
+  if (pts === null) return <div class="sk s" />;
+  if (pts.length < 3) return null;
   const thr = Number(m.params.threshold), W = 320, H = 96, pad = 6;
   const all = [...pts.map((p) => p.v), thr];
   const lo = kind === "price" ? Math.min(...all) : Math.min(0, ...all), hi = Math.max(...all), span = hi - lo || 1;

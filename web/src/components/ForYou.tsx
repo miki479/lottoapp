@@ -1,5 +1,5 @@
 import { Bus, MapPin, Swords, Trophy, X } from "lucide-preact";
-import { useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 import { cityName, cityOf } from "../lib/cities.ts";
@@ -17,7 +17,7 @@ const timeOf = (epoch: number, locale: Locale) => new Date(epoch * 1000).toLocal
 export function ForYou(p: { msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; registered: boolean; home: { lat: number; lon: number } | null; onPick: (m: MarketRow, pick: Pick) => void; onCreate: () => void }) {
   const t = p.msg.fy;
   const it = useIntent({ registered: p.registered, home: p.home });
-  const [busy, setBusy] = useState<string | null>(null), [err, setErr] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null), [err, setErr] = useState(false), going = useRef(false);
   if (!p.registered) return null;
 
   if (it.consent === "unset") {
@@ -31,13 +31,14 @@ export function ForYou(p: { msg: Messages; locale: Locale; now: number; markets:
   }
 
   const open = async (a: Arrival) => {
-    setBusy(a.tripId); setErr(false);
+    if (going.current) return;
+    going.current = true; setBusy(a.tripId); setErr(false);
     try {
       let row: MarketRow | null = null;
       if (a.marketId) row = ((await sb.from("markets").select("*").eq("id", a.marketId).maybeSingle()).data as MarketRow | null);
       else if (a.offerable) row = ((await sb.functions.invoke("stop-offer", { body: { feedId: a.feedId, tripId: a.tripId, stopId: a.stopId } })).data as { market?: MarketRow } | null)?.market ?? null;
       if (row) p.onPick(row, "yes"); else setErr(true);
-    } catch { setErr(true); } finally { setBusy(null); }
+    } catch { setErr(true); } finally { going.current = false; setBusy(null); }
   };
 
   if (it.consent === "on" && it.situation === "waiting") {

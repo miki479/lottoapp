@@ -1,5 +1,5 @@
 import { BarChart3, ChevronDown } from "lucide-preact";
-import { useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 
@@ -9,9 +9,13 @@ interface Stats { total: number; located: number; yes_pct: number | null; towns:
 export function AreaStats({ marketId, msg }: { marketId: string; msg: Messages }) {
   const n = msg.nearby;
   const [open, setOpen] = useState(false), [st, setSt] = useState<Stats | null | undefined>(undefined);
+  const asked = useRef(false);
   const toggle = async () => {
     const next = !open; setOpen(next);
-    if (next && st === undefined) { const { data } = await sb.rpc("market_area_stats", { p_market: marketId }); setSt((data as Stats | null) ?? null); }
+    if (next && !asked.current) {
+      asked.current = true; setSt(undefined);
+      try { const { data, error } = await sb.rpc("market_area_stats", { p_market: marketId }); if (error) throw error; setSt((data as Stats | null) ?? null); } catch { asked.current = false; setSt(null); }
+    }
   };
   const bar = (label: string, pct: number, count: number, extra?: string) => (
     <div class="asrow" key={label}><span class="aslbl">{label}{extra && <small>{extra}</small>}</span><span class="asbar"><i style={`width:${pct}%`} /></span><b class="num">{pct}% {n.yes}</b><small class="num">{count}</small></div>
@@ -22,6 +26,7 @@ export function AreaStats({ marketId, msg }: { marketId: string; msg: Messages }
       {open && <div class="asbody">
         <p class="hint">{n.statsIntro}</p>
         {st === undefined && <div class="sk" />}
+        {st === null && <p class="formerr" role="alert">{msg.errors.generic}</p>}
         {st && st.yes_pct === null && <p class="hint">{n.notEnough}</p>}
         {st && st.yes_pct !== null && bar(`${st.total} ${n.people}`, st.yes_pct, st.total)}
         {st && st.towns.length > 0 && <><span class="detail">{n.towns}</span>{st.towns.map((t) => bar(t.name, t.yes_pct, t.n, `${t.km} ${n.km}`))}</>}

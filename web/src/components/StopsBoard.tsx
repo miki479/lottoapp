@@ -53,7 +53,6 @@ const T: Record<Key, Text> = {
     kinds: { actual: "実際", forecast: "運行会社の予測", predicted: "予測" },
   },
 };
-export const stopsText = (l: Locale) => T[key(l)];
 
 type M = Pick<MarketRow, "id" | "kind" | "city_id" | "params">;
 const isDelay = (m: M) => (m.kind === "bus_delay_gt" || m.kind === "train_delay_gt") && typeof m.params.tripId === "string" && m.params.tripId !== "";

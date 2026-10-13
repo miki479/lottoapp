@@ -1,5 +1,5 @@
 import { Check, Gift, Rocket, Share2, Snowflake, X } from "lucide-preact";
-import { useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { money } from "../lib/format.ts";
 import type { FlashData, DailyMissionsData, Profile, QuestRow } from "../lib/types.ts";
@@ -20,7 +20,7 @@ export function untilReset(tz: string, nowMs: number): string {
 /** Everything that pays credits: today's missions, one-time quests and invites. Claiming is a button; the server checks every condition. */
 export function RewardsSheet(p: {
   msg: Messages; locale: Locale; now: number; profile: Profile | null; quests: QuestRow[]; referral: { code: string; invited: number; paid: number } | null; registered: boolean; flash: FlashData | null; onClaimFlash: () => Promise<void>; missions: DailyMissionsData | null; onClaimMission: (id: string) => Promise<void>; onClaimChest: () => Promise<void>;
-  onClaim: (id: string) => void; onGo: (id: string) => void; onShare: () => void; onClose: () => void;
+  onClaim: (id: string) => Promise<void> | void; onGo: (id: string) => void; onShare: () => void; onClose: () => void;
   /** Credits changed inside the sheet (daily bonus, pack): the app reloads the profile. */
   onChanged?: () => void;
 }) {
@@ -28,10 +28,16 @@ export function RewardsSheet(p: {
   const ht = hubText(p.locale);
   const m = p.msg.rewards;
   const once = p.quests.filter((q) => q.kind === "once");
+  const [claiming, setClaiming] = useState<string | null>(null), going = useRef(false);
+  const claim = async (id: string) => {
+    if (going.current) return;
+    going.current = true; setClaiming(id);
+    try { await p.onClaim(id); } catch { /* the app shows the error */ } finally { going.current = false; setClaiming(null); }
+  };
   const row = (q: QuestRow) => {
     const t = m.quest[q.id];
     const act = q.claimed ? <span class="qdone"><Check size={16} strokeWidth={2.6} />{m.claimed}</span>
-      : q.done ? <button class="btn primary qbtn" onClick={() => p.onClaim(q.id)}>{m.claim(money(q.reward, p.locale))}</button>
+      : q.done ? <button class="btn primary qbtn" disabled={claiming !== null} aria-busy={claiming === q.id} onClick={() => claim(q.id)}>{m.claim(money(q.reward, p.locale))}</button>
       : q.id === "o_nick" || q.id === "o_push" ? <button class="btn secondary qbtn" onClick={() => p.onGo(q.id)}>{m.go}</button>
       : <span class="qreward">+{money(q.reward, p.locale)}</span>;
     return (

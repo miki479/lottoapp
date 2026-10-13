@@ -19,10 +19,10 @@ const T: Record<string, { go: string; credits: (n: number) => string; boosts: (n
 export function Inbox({ registered, ok, locale }: { registered: boolean; ok: string; locale: Locale }) {
   const [list, setList] = useState<Msg[]>([]);
   const [me, setMe] = useState<MyProgress | null>(null);
-  useEffect(() => { if (registered) sb.rpc("my_messages").then(({ data }) => setList((data ?? []) as Msg[])); }, [registered]);
+  useEffect(() => { if (!registered) return; let live = true; sb.rpc("my_messages").then(({ data }) => { if (live) setList((data ?? []) as Msg[]); }); return () => { live = false; }; }, [registered]);
   const m = list[0];
   const gifted = !!m?.gifts && (m.gifts.credits || m.gifts.boosts || m.gifts.decoration);
-  useEffect(() => { if (gifted) void loadMyProgress().then(setMe); }, [gifted]);
+  useEffect(() => { if (!gifted) return; let live = true; void loadMyProgress().then((x) => { if (live) setMe(x); }); return () => { live = false; }; }, [gifted]);
   if (!m) return null;
   const done = () => { void sb.rpc("read_message", { p_id: m.id }); setList((l) => l.filter((x) => x.id !== m.id)); };
   if (!gifted) {

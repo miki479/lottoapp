@@ -1,7 +1,8 @@
-import { ArrowDown, ArrowUp, Check, Share2, Swords, Trophy, TrendingDown, TrendingUp, UserMinus, Users, X } from "lucide-preact";
+import { ArrowDown, ArrowUp, Trophy, TrendingDown, TrendingUp, Users } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Empty } from "../components/Empty.tsx";
 import type { Locale, Messages } from "../i18n/index.ts";
+import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
 import { seasonDaysLeft } from "../lib/format.ts";
 import type { GroupRow, LbRow, Profile } from "../lib/types.ts";
@@ -55,9 +56,9 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
     return () => { live = false; };
   }, [scope, key, p.registered, p.home?.id, board]);
 
-  const [gbusy, setGbusy] = useState(false);
-  const create = async () => { if (gbusy) return; setGbusy(true); const name = gname; setGname(""); const { data, error } = await sb.rpc("create_group", { p_name: name }); setGbusy(false); if (error) { setGname(name); return p.onToast(p.msg.errors[error.message.includes("nickname_not_allowed") ? "nickname_not_allowed" : error.message.includes("bad_nickname") ? "bad_nickname" : "registration_required"]!, "err"); } await loadGroups(); setGroup(String(data)); };
-  const join = async () => { if (gbusy) return; setGbusy(true); const c0 = code; setCode(""); const { data, error } = await sb.rpc("join_group", { p_code: c0 }); setGbusy(false); if (error) { setCode(c0); return p.onToast(p.msg.errors[error.message.includes("unknown_group") ? "unknown_group" : "generic"]!, "err"); } await loadGroups(); setGroup(String(data)); setTab("friends"); setFsub("groups"); };
+  const [gbusy, run] = useBusy();
+  const create = () => { const name = gname; return run(async () => { setGname(""); const { data, error } = await sb.rpc("create_group", { p_name: name }); if (error) { setGname(name); return p.onToast(p.msg.errors[error.message.includes("nickname_not_allowed") ? "nickname_not_allowed" : error.message.includes("bad_nickname") ? "bad_nickname" : "registration_required"]!, "err"); } await loadGroups(); setGroup(String(data)); }, () => { setGname(name); p.onToast(p.msg.errors.generic!, "err"); }); };
+  const join = () => { const c0 = code; return run(async () => { setCode(""); const { data, error } = await sb.rpc("join_group", { p_code: c0 }); if (error) { setCode(c0); return p.onToast(p.msg.errors[error.message.includes("unknown_group") ? "unknown_group" : "generic"]!, "err"); } await loadGroups(); setGroup(String(data)); setTab("friends"); setFsub("groups"); }, () => { setCode(c0); p.onToast(p.msg.errors.generic!, "err"); }); };
 
   if (!p.registered) return (
     <div class="screen stack"><h1>{m.title}</h1><div class="card"><Empty icon={Trophy} title={m.gate.title} body={m.gate.body} cta={m.gate.cta} onCta={p.onAuth} /></div></div>
@@ -103,8 +104,8 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
           {groups.length > 0 && <div class="chiprow">{groups.map((g) => <button key={g.code} class={`chip ${g.code === group ? "on" : ""}`} onClick={() => setGroup(g.code)}>{g.name}</button>)}</div>}
           {group && <button class="btn secondary" onClick={() => { navigator.clipboard?.writeText(group); p.onToast(p.msg.common.copied); }}><Users size={18} />{m.groups.yourCode(group)}</button>}
           {groups.length === 0 && <p class="hint">{m.groups.none}</p>}
-          <div style="display:flex;gap:8px"><input class="field" value={gname} placeholder={m.groups.namePh} maxLength={30} onInput={(e) => setGname((e.target as HTMLInputElement).value)} /><button class="btn secondary" disabled={gbusy || gname.trim().length < 2} onClick={create}>{m.groups.create}</button></div>
-          <div style="display:flex;gap:8px"><input class="field" value={code} placeholder={m.groups.codePh} maxLength={6} onInput={(e) => setCode((e.target as HTMLInputElement).value.toUpperCase())} /><button class="btn secondary" disabled={gbusy || code.length < 6} onClick={join}>{m.groups.join}</button></div>
+          <div style="display:flex;gap:8px"><input class="field" value={gname} placeholder={m.groups.namePh} maxLength={30} onInput={(e) => setGname((e.target as HTMLInputElement).value)} /><button class="btn secondary" aria-busy={gbusy} disabled={gbusy || gname.trim().length < 2} onClick={create}>{m.groups.create}</button></div>
+          <div style="display:flex;gap:8px"><input class="field" value={code} placeholder={m.groups.codePh} maxLength={6} onInput={(e) => setCode((e.target as HTMLInputElement).value.toUpperCase())} /><button class="btn secondary" aria-busy={gbusy} disabled={gbusy || code.length < 6} onClick={join}>{m.groups.join}</button></div>
         </section>
       )}
       {!board && rows === null && [0, 1, 2, 3].map((i) => <div class="sk s" key={i} />)}

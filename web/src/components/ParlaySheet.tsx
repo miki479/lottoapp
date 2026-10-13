@@ -1,5 +1,5 @@
 import { Rocket, Trash2, X } from "lucide-preact";
-import { useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { fmtOdds, isYesNo, money, question } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
@@ -25,9 +25,13 @@ export function ParlaySheet(p: {
   const cap = p.credits >= 10 ? Math.min(5000, Math.floor(p.credits)) : 500;
   const amount = Math.min(stake, cap);
   const m = p.msg;
+  const going = useRef(false);
   const place = async () => {
-    setBusy(true); setErr(null); haptic.tap();
-    const out = await p.onPlace(p.legs, amount, boost && p.boosts > 0);
+    if (going.current) return;
+    going.current = true; setBusy(true); setErr(null); haptic.tap();
+    let out: string | null;
+    try { out = await p.onPlace(p.legs, amount, boost && p.boosts > 0); } catch { out = m.errors.generic!; }
+    going.current = false;
     if (out) { setErr(out); setBusy(false); haptic.error(); } else haptic.success();
   };
   if (joining) return <JoinStep msg={m} locale={p.locale} googleOn={p.googleOn} stakeLabel={money(amount, p.locale)} onBack={() => setJoining(false)} onClose={p.onClose} onJoined={place} />;
@@ -53,7 +57,7 @@ export function ParlaySheet(p: {
       {p.boosts > 0 && <label class={`boosttoggle ${boost ? "on" : ""}`}><input type="checkbox" checked={boost} onChange={(e) => setBoost((e.target as HTMLInputElement).checked)} /><Rocket size={20} /><span><b>{m.boost.toggle}</b> · {m.boost.have(p.boosts)}<small>{m.boost.gain("+" + money(Math.floor(amount * odds) - amount, p.locale), "+" + money(boostedPayout(amount, odds) - amount, p.locale))} · {m.boost.hint}</small></span></label>}
       <p class="hint">{m.slip.maxWin}</p>
       {err && <p class="formerr" role="alert">{err}</p>}
-      <button class="btn primary wide" disabled={busy || p.legs.length < 2} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? m.sheet.confirming : `${m.slip.confirm} · ${money(amount, p.locale)}`}</button>
+      <button class="btn primary wide" disabled={busy || p.legs.length < 2} aria-busy={busy} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? m.sheet.confirming : `${m.slip.confirm} · ${money(amount, p.locale)}`}</button>
       <button class="btn secondary wide" onClick={p.onClear}>{m.slip.clear}</button>
     </Sheet>
   );

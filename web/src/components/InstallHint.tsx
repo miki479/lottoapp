@@ -36,7 +36,7 @@ export function InstallHint({ locale, invited = false }: { locale: Locale; invit
   if (!shown) return null;
   const t = T[locale] ?? T["en-US"]!, ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   const close = () => { store.set("install_hint", String(Date.now() + 7 * 864e5)); setShown(false); };
-  const install = async () => { if (!deferred) return; await deferred.prompt(); deferred = null; setCan(false); close(); };
+  const install = async () => { const e = deferred; if (!e) return; deferred = null; setCan(false); try { await e.prompt(); } catch { /* already used */ } close(); };
   return (
     <section class="installhint" role="note">
       <Download size={20} />

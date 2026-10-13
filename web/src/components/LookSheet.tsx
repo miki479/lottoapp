@@ -2,6 +2,7 @@ import { Check, Lock } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { AVATARS, DECORATIONS, levelProgress } from "../../../shared/looks";
 import type { Messages } from "../i18n/index.ts";
+import { useBusy } from "../lib/busy.ts";
 import { loadMyAvatars } from "../lib/shop.ts";
 import { DEFAULT_AVATARS } from "../../../shared/shop.ts";
 import "./RewardsHub.css";
@@ -13,16 +14,17 @@ import { XpInfo } from "./XpInfo.tsx";
 /** The "Decorations" sheet: preview on top, the character row, then the grid of rings with their padlocks. */
 export function LookSheet({ progress, msg, myId, onClose, onSaved }: { progress: MyProgress; msg: Messages; myId: string; onClose: () => void; onSaved: (p: MyProgress) => void }) {
   const t = msg.look;
-  const [xpOpen, setXpOpen] = useState(false), [av, setAv] = useState(progress.avatar), [deco, setDeco] = useState<string | null>(progress.decoration), [busy, setBusy] = useState(false), [ownedAv, setOwnedAv] = useState<string[] | null>(null);
-  useEffect(() => { loadMyAvatars().then(setOwnedAv); }, []);
+  const [xpOpen, setXpOpen] = useState(false), [av, setAv] = useState(progress.avatar), [deco, setDeco] = useState<string | null>(progress.decoration), [err, setErr] = useState(false), [ownedAv, setOwnedAv] = useState<string[] | null>(null);
+  const [busy, run] = useBusy();
+  useEffect(() => { let live = true; loadMyAvatars().then((x) => { if (live) setOwnedAv(x); }); return () => { live = false; }; }, []);
   const avOpen = (a: string) => (ownedAv ? ownedAv.includes(a) : DEFAULT_AVATARS.includes(a) || a === progress.avatar);
   const open = (d: (typeof DECORATIONS)[number]) => (d.level !== undefined && d.level <= progress.level) || progress.owned.includes(d.id);
   const changed = av !== progress.avatar || deco !== progress.decoration;
   const lp = levelProgress(progress.xp);
-  const apply = async () => {
-    setBusy(true);
-    if (await saveLook(av, deco)) { forgetLook(myId); const p = await loadMyProgress(); onSaved(p ?? { ...progress, avatar: av, decoration: deco }); onClose(); } else setBusy(false);
-  };
+  const apply = () => run(async () => {
+    setErr(false);
+    if (await saveLook(av, deco)) { forgetLook(myId); const p = await loadMyProgress(); onSaved(p ?? { ...progress, avatar: av, decoration: deco }); onClose(); } else setErr(true);
+  }, () => setErr(true));
   return (
     <Sheet onClose={onClose} label={t.title}>
       <div class="lkprev"><Look avatar={av} decoration={deco} size={150} label={t.title} /><b>{t.level(progress.level)}</b>
@@ -45,7 +47,8 @@ export function LookSheet({ progress, msg, myId, onClose, onSaved }: { progress:
           );
         })}
       </div>
-      <button class="btn primary wide" disabled={!changed || busy} onClick={apply}><Check size={18} />{t.apply}</button>
+      {err && <p class="formerr" role="alert">{msg.errors.generic}</p>}
+      <button class="btn primary wide" disabled={!changed || busy} aria-busy={busy} onClick={apply}><Check size={18} />{t.apply}</button>
     </Sheet>
   );
 }

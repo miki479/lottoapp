@@ -69,7 +69,8 @@ export function BetSheet(p: {
   const place = async () => {
     if (going.current) return; // a fast second tap must not send the bet twice
     going.current = true; setBusy(true); setErr(null); haptic.tap();
-    const out = await p.onPlace(p.m, pick, amount, !offer && boost && p.boosts > 0, !offer && p.m.params.occBonus ? bonus : null, !offer && vice && vicePct > 0 && pick === "yes", offer?.id ?? null);
+    let out: string | null;
+    try { out = await p.onPlace(p.m, pick, amount, !offer && boost && p.boosts > 0, !offer && p.m.params.occBonus ? bonus : null, !offer && vice && vicePct > 0 && pick === "yes", offer?.id ?? null); } catch { out = p.msg.errors.generic!; }
     going.current = false;
     if (out) { setErr(out); setBusy(false); haptic.error(); }
   };
@@ -124,7 +125,7 @@ export function BetSheet(p: {
       <StakeControl value={amount} onChange={setStake} cap={cap} balance={p.credits} odds={odds} boost={boost && p.boosts > 0} vice={vice && pick === "yes" ? vicePct : 0} fancy={exclusive} locale={p.locale} msg={p.msg} />
       {!offer && p.boosts > 0 && <label class={`boosttoggle ${boost ? "on" : ""}`}><input type="checkbox" checked={boost} onChange={(e) => setBoost((e.target as HTMLInputElement).checked)} /><Rocket size={20} /><span><b>{p.msg.boost.toggle}</b> · {p.msg.boost.have(p.boosts)}<small>{p.msg.boost.gain("+" + money(Math.floor(amount * odds) - amount, p.locale), "+" + money(boostedPayout(amount, odds) - amount, p.locale))} · {p.msg.boost.hint}</small></span></label>}
       {err && <p class="formerr" role="alert">{err}</p>}
-      <button class="btn primary wide" disabled={busy || !p.ready || decided} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? p.msg.sheet.confirming : `${p.msg.sheet.confirm} · ${money(amount, p.locale)}`}</button>
+      <button class="btn primary wide" disabled={busy || !p.ready || decided} aria-busy={busy} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? p.msg.sheet.confirming : `${p.msg.sheet.confirm} · ${money(amount, p.locale)}`}</button>
       {!offer && <button class="btn secondary wide" onClick={() => { p.onAddSlip(p.m, pick); haptic.tap(); }} disabled={p.inSlip}><Layers size={18} />{p.inSlip ? p.msg.slip.added : p.msg.slip.add}</button>}
       <ReportLink marketId={p.m.id} msg={p.msg} />
     </Sheet>

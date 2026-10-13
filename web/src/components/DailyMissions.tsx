@@ -1,6 +1,6 @@
 import { Zap, Activity, Bus, Check, Clapperboard, CloudRain, Coins, Crown, Droplet, Flame, Fuel, Gem, Gift, Globe, Layers, Moon, PackageOpen, Scale, Sparkles, Sunrise, Target, ThumbsDown, ThumbsUp, Ticket, Timer, TrainFront, Trophy, UserRound, Users } from "lucide-preact";
 import type { LucideIcon } from "lucide-preact";
-import { useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { money } from "../lib/format.ts";
 import type { DailyMissionsData, FlashData } from "../lib/types.ts";
@@ -16,10 +16,14 @@ const ICON: Record<string, LucideIcon> = {
 /** Three missions a day with progress bars and rewards, and a chest when all three are done. The server counts and pays; this only shows and presses "collect". */
 export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages; locale: Locale; now: number; tz: string; streak: number; onClaim: (id: string) => Promise<void>; onChest: () => Promise<void>; flash?: FlashData | null; onFlash?: () => Promise<void>; compact?: boolean }) {
   const t = p.msg.dm;
-  const [pop, setPop] = useState<string | null>(null);
+  const [pop, setPop] = useState<string | null>(null), [busy, setBusy] = useState<string | null>(null), going = useRef(false);
   if (!p.data) return <section class="card dm"><div class="sk s" /></section>;
   const ms = p.data.missions, doneN = ms.filter((m) => m.progress >= m.target).length, c = p.data.chest;
-  const burst = async (id: string, fn: () => Promise<void>) => { setPop(id); setTimeout(() => setPop((x) => (x === id ? null : x)), 1100); await fn(); };
+  const burst = async (id: string, fn: () => Promise<void>) => {
+    if (going.current) return;
+    going.current = true; setBusy(id); setPop(id); setTimeout(() => setPop((x) => (x === id ? null : x)), 1100);
+    try { await fn(); } catch { /* the owner of the handler shows the error */ } finally { going.current = false; setBusy(null); }
+  };
   return (
     <section class="card dm" aria-label={t.title}>
       <div class="dmhead">
@@ -37,7 +41,7 @@ export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages
                 <span class="dmbar" role="progressbar" aria-valuenow={m.progress} aria-valuemax={m.target}><i style={`width:${pct}%`} /></span></div>
               <span class="dmact">
                 {m.claimed ? <span class="dmok"><Check size={16} strokeWidth={3} />{t.done}</span>
-                  : done ? <button class="btn primary dmbtn" onClick={() => burst(m.id, () => p.onClaim(m.id))}><span>{t.claim}</span><b>+{money(m.reward, p.locale)}</b></button>
+                  : done ? <button class="btn primary dmbtn" disabled={busy !== null} aria-busy={busy === m.id} onClick={() => burst(m.id, () => p.onClaim(m.id))}><span>{t.claim}</span><b>+{money(m.reward, p.locale)}</b></button>
                   : <><em class="num">{m.progress}/{m.target}</em><span class="dmrew">+{money(m.reward, p.locale)}</span></>}
               </span>
             </li>
@@ -58,7 +62,7 @@ export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages
             </div>
             <span class="dmact">
               {st === "claimed" ? <span class="dmok"><Check size={16} strokeWidth={3} />{t.done}</span>
-                : st === "ready" ? <button class="btn primary dmbtn" onClick={() => burst("flash", async () => { await p.onFlash?.(); })}><span>{t.flash.claim}</span></button>
+                : st === "ready" ? <button class="btn primary dmbtn" disabled={busy !== null} aria-busy={busy === "flash"} onClick={() => burst("flash", async () => { await p.onFlash?.(); })}><span>{t.flash.claim}</span></button>
                 : st === "live" ? <><em class="num">{f.progress}/{f.target}</em><span class="dmcount num">{String(mm).padStart(2, "0")}:{String(ss).padStart(2, "0")}</span></>
                 : st === "soon" ? <span class="dmcount">{t.flash.soon(at)}</span> : <span class="dmmiss">{t.flash.missed}</span>}
             </span>
@@ -71,7 +75,7 @@ export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages
           <span class="dmdots" aria-hidden="true">{[0, 1, 2].map((i) => <i key={i} class={i < doneN ? "on" : ""} />)}</span></div>
         <span class="dmact">
           {c.claimed ? <span class="dmok"><Check size={16} strokeWidth={3} />{t.done}</span>
-            : c.ready ? <button class="btn primary dmbtn" onClick={() => burst("chest", p.onChest)}>{t.chestOpen}</button>
+            : c.ready ? <button class="btn primary dmbtn" disabled={busy !== null} aria-busy={busy === "chest"} onClick={() => burst("chest", p.onChest)}>{t.chestOpen}</button>
             : <em class="num">{t.chestLocked(3 - doneN)}</em>}
         </span>
       </div>

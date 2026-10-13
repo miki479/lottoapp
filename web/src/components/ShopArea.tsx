@@ -8,11 +8,12 @@ import { PackShop } from "./PackShop.tsx";
 export function ShopArea({ tab, locale, msg, credits, registered, onTab, onChanged, onAuth }: {
   tab: "shop" | "album"; locale: Locale; msg: Messages; credits: number; registered: boolean; onTab: (t: "shop" | "album") => void; onChanged: () => void; onAuth: () => void;
 }) {
-  const [album, setAlbum] = useState<AlbumData | null>(null);
-  const reload = useCallback(() => loadAlbum().then((a) => setAlbum(a)), []);
+  const [album, setAlbum] = useState<AlbumData | null | undefined>(undefined);
+  const reload = useCallback(() => loadAlbum().then((a) => setAlbum(a), () => setAlbum(null)), []);
+  const retry = useCallback(() => { setAlbum(undefined); reload(); }, [reload]);
   useEffect(() => { reload(); }, [reload]);
   const bought = (_: PackOpen) => { reload(); onChanged(); };
   return tab === "shop"
-    ? <PackShop locale={locale} msg={msg} album={album} credits={credits} registered={registered} onBought={bought} onAlbum={() => onTab("album")} onAuth={onAuth} />
-    : <Album locale={locale} msg={msg} data={album} onRetry={reload} />;
+    ? <PackShop locale={locale} msg={msg} album={album ?? null} credits={credits} registered={registered} onBought={bought} onAlbum={() => onTab("album")} onAuth={onAuth} />
+    : <Album locale={locale} msg={msg} data={album} onRetry={retry} />;
 }

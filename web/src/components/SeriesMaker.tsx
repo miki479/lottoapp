@@ -1,6 +1,7 @@
 import { Search, Star, X } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
+import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
 import { fmtOdds, type MarketRow } from "../lib/format.ts";
 import { episodesWindow, followedShows, searchShows, setFollowed, type EpisodeHit, type FollowedShow, type ShowHit } from "../lib/series.ts";
@@ -21,7 +22,7 @@ export function SeriesMaker(p: { msg: Messages; locale: Locale; initial?: Follow
   const [ep, setEp] = useState<EpisodeHit | null>(null);
   const [thr, setThr] = useState<number | null>(null);
   const [prev, setPrev] = useState<Preview | null>(null);
-  const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null);
+  const [busy, run] = useBusy(), [err, setErr] = useState<string | null>(null);
   const first = useRef(true);
   useEffect(() => {
     if (q.trim().length < 2 || show) { setHits(null); return; }
@@ -52,14 +53,13 @@ export function SeriesMaker(p: { msg: Messages; locale: Locale; initial?: Follow
     return () => { ctl.dead = true; clearTimeout(t); };
   }, [ep?.id, thr]);
   const toggleFollow = () => { if (!show) return; const on = follow.some((f) => f.id === show.id); const n = on ? follow.filter((f) => f.id !== show.id) : [...follow, show]; setFollow(n); setFollowed(n); };
-  const create = async () => {
+  const create = () => run(async () => {
     if (!ep || thr === null) return;
-    setBusy(true); setErr(null);
+    setErr(null);
     const { data, error } = await sb.functions.invoke("market-offer", { body: { type: "episode", episodeId: ep.id, threshold: thr } });
-    setBusy(false);
     if (error || !data?.market) { const c = await code(error); setErr(c === "limit" ? m.limit : c === "too_many_open" ? m.limit : c === "registration_required" ? m.register : c === "too_certain" ? m.certain : p.msg.errors.generic!); return; }
     p.onCreated(data.market as MarketRow);
-  };
+  }, () => setErr(p.msg.errors.generic!));
   const when = (iso: string) => new Intl.DateTimeFormat(INTL_TAG[p.locale], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
   const isFollowed = !!show && follow.some((f) => f.id === show.id);
   return (
@@ -85,7 +85,7 @@ export function SeriesMaker(p: { msg: Messages; locale: Locale; initial?: Follow
         {prev && <p class="hint">{m.priced(prev.reference.toFixed(1), Math.round(prev.chance * 100), fmtOdds(prev.odds_yes, p.locale), fmtOdds(prev.odds_no, p.locale))}</p>}
       </div>}
       {err && <p class="formerr" role="alert">{err}</p>}
-      <button class="btn primary wide" disabled={busy || !ep || !prev} onClick={create}>{busy ? m.creating : m.create}</button>
+      <button class="btn primary wide" disabled={busy || !ep || !prev} aria-busy={busy} onClick={create}>{busy ? m.creating : m.create}</button>
       <p class="hint">{m.credit}</p>
     </Sheet>
   );

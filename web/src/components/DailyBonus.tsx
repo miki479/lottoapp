@@ -1,6 +1,7 @@
 import { Check, Gift, Lock, Snowflake } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Locale } from "../i18n/index.ts";
+import { useBusy } from "../lib/busy.ts";
 import { haptic } from "../lib/haptics.ts";
 import { money } from "../lib/format.ts";
 import { claimDaily, errorCode, loadDaily, type DailyState } from "../lib/shop.ts";
@@ -14,18 +15,19 @@ import "./RewardsHub.css";
  */
 export function DailyBonus({ locale, now, tz, onPlay, onChanged }: { locale: Locale; now: number; tz: string; onPlay: () => void; onChanged: () => void }) {
   const t = hubText(locale), d = t.daily;
-  const [s, setS] = useState<DailyState | null>(null), [busy, setBusy] = useState(false), [pop, setPop] = useState(false), [err, setErr] = useState<string | null>(null);
-  const reload = () => loadDaily().then((x) => { if (x) setS(x); });
-  useEffect(() => { let live = true; loadDaily().then((x) => { if (live && x) setS(x); }); return () => { live = false; }; }, []);
-  if (!s) return <section class="card dbonus" aria-label={d.title}><div class="sk s" /></section>;
+  const [s, setS] = useState<DailyState | null>(null), [busy, run] = useBusy(), [pop, setPop] = useState(false), [err, setErr] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  const reload = () => loadDaily().then((x) => { if (x) { setS(x); setFailed(false); } else setFailed(true); });
+  useEffect(() => { let live = true; loadDaily().then((x) => { if (!live) return; if (x) setS(x); else setFailed(true); }); return () => { live = false; }; }, []);
+  if (!s) return <section class="card dbonus" aria-label={d.title}>{failed ? <><p class="dberr" role="alert">{t.shop.errors.generic}</p><button class="btn secondary" onClick={() => { setFailed(false); reload(); }}>{t.album.retry}</button></> : <div class="sk s" />}</section>;
   const cd = s.cycle_day, state = s.claimed ? "done" : s.ready ? "ready" : "lock";
-  const go = async () => {
-    setBusy(true); setErr(null);
+  const go = () => run(async () => {
+    setErr(null);
     const r = await claimDaily();
     if ("error" in r) setErr(t.shop.errors[errorCode(r.error, Object.keys(t.shop.errors))] ?? t.shop.errors.generic!);
     else { setPop(true); haptic.success(); setTimeout(() => setPop(false), 1100); onChanged(); }
-    await reload(); setBusy(false);
-  };
+    await reload();
+  }, () => setErr(t.shop.errors.generic!));
   return (
     <section class="card dbonus" aria-label={d.title}>
       <div class="dbhead"><Gift size={18} /><h2>{d.title}</h2><span class="dbreset">{d.resets(untilReset(tz, now))}</span></div>
@@ -43,7 +45,7 @@ export function DailyBonus({ locale, now, tz, onPlay, onChanged }: { locale: Loc
           );
         })}
       </ol>
-      {state === "ready" && <button class="btn primary wide dbbtn" disabled={busy} onClick={go}>{d.claim(money(s.amount, locale))}</button>}
+      {state === "ready" && <button class="btn primary wide dbbtn" disabled={busy} aria-busy={busy} onClick={go}>{d.claim(money(s.amount, locale))}</button>}
       {state === "done" && <p class="dbdone"><Check size={16} strokeWidth={3} />{d.claimed}</p>}
       {state === "lock" && <div class="dblock"><p>{d.locked(money(s.amount, locale))}</p><button class="btn secondary" onClick={onPlay}>{d.play}</button></div>}
       {err && <p class="dberr" role="alert">{err}</p>}

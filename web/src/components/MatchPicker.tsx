@@ -2,6 +2,7 @@ import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { INTL_TAG } from "../i18n/index.ts";
 import type { MatchBetKey } from "../i18n/types.ts";
+import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
 import { fmtOdds, type MarketRow } from "../lib/format.ts";
 
@@ -18,8 +19,9 @@ export function MatchPicker(p: { msg: Messages; locale: Locale; origin: { lat: n
   const t = p.msg.matchmaker, mk = p.msg.maker;
   const [fx, setFx] = useState<Fx[] | null>(null), [sel, setSel] = useState<string | null>(null), [bet, setBet] = useState<MatchBetKey>("home_win");
   const [q, setQ] = useState("");
-  const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null), [odds, setOdds] = useState<{ y: number; n: number } | null>(null);
+  const [busy, run] = useBusy(), [err, setErr] = useState<string | null>(null), [odds, setOdds] = useState<{ y: number; n: number } | null>(null);
   useEffect(() => {
+    let live = true;
     (async () => {
       const { data } = await sb.from("markets").select("params,lat,lon").eq("kind", "match_bet").eq("status", "open").gt("closes_at", new Date().toISOString()).order("closes_at").limit(400);
       const by = new Map<string, Fx>();
@@ -29,8 +31,10 @@ export function MatchPicker(p: { msg: Messages; locale: Locale; origin: { lat: n
         f.have.add(String(r.params.bet)); by.set(id, f);
       }
       const list = [...by.values()].sort((a, b) => (a.km ?? 1e6) - (b.km ?? 1e6) || a.kickoff - b.kickoff).slice(0, 60);
+      if (!live) return;
       setFx(list); if (list[0]) setSel(list[0].eventId);
-    })();
+    })().catch(() => { if (live) setFx([]); });
+    return () => { live = false; };
   }, []);
   const cur = fx?.find((f) => f.eventId === sel) ?? null;
   const exists = !!cur?.have.has(bet);
@@ -42,21 +46,21 @@ export function MatchPicker(p: { msg: Messages; locale: Locale; origin: { lat: n
     return () => { live = false; };
   }, [sel, bet]);
   const when = (e: number) => new Intl.DateTimeFormat(INTL_TAG[p.locale], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(e * 1000));
-  const go = async () => {
+  const go = () => run(async () => {
     if (!cur) return;
     if (!p.registered) { setErr(mk.needAccount); return; }
-    setBusy(true); setErr(null);
+    setErr(null);
     const { data, error } = await sb.functions.invoke("market-offer", { body: { type: "match", eventId: cur.eventId, bet } });
-    setBusy(false);
     if (data?.market) { p.onCreated(data.market as MarketRow); return; }
     let code = "generic";
     try { code = (await (error as { context?: Response })?.context?.json())?.error ?? "generic"; } catch { /* none */ }
     setErr(mk.errors[code as "generic"] ?? mk.errors.generic);
-  };
+  }, () => setErr(mk.errors.generic));
   return (
     <>
       <label class="searchbox"><input class="field" type="search" value={q} placeholder={p.msg.teamSearch} onInput={(e) => setQ((e.target as HTMLInputElement).value)} /></label>
       <span class="detail">{t.pick}</span>
+      {fx === null && <div class="sk s" />}
       {fx && fx.length === 0 && <p class="hint">{t.none}</p>}
       <div class="mkchips" style="flex-direction:column;align-items:stretch">
         {fx?.filter((f) => !q.trim() || `${f.home} ${f.away} ${f.league}`.toLowerCase().includes(q.trim().toLowerCase())).map((f) => <button key={f.eventId} class={`mkchip ${sel === f.eventId ? "on" : ""}`} style="text-align:left" aria-pressed={sel === f.eventId} onClick={() => setSel(f.eventId)}><b>{f.home} – {f.away}</b><br /><small>{f.league} · {when(f.kickoff)}{f.km !== null ? ` · ${Math.round(f.km)} km` : ""}</small></button>)}
@@ -68,7 +72,7 @@ export function MatchPicker(p: { msg: Messages; locale: Locale; origin: { lat: n
         {exists && <p class="hint">{t.exists}</p>}
       </>}
       {err && <p class="formerr" role="alert">{err}</p>}
-      <button class="btn primary wide" disabled={busy || !cur || (!odds && !exists)} onClick={go}>{busy ? mk.creating : exists ? t.open : mk.create}</button>
+      <button class="btn primary wide" disabled={busy || !cur || (!odds && !exists)} aria-busy={busy} onClick={go}>{busy ? mk.creating : exists ? t.open : mk.create}</button>
     </>
   );
 }

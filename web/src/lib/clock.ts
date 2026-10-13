@@ -6,7 +6,8 @@ const subs = new Map<(t: number) => void, { step: number; last: number }>();
 let timer: ReturnType<typeof setInterval> | null = null;
 function ensure() {
   if (timer) return;
-  timer = setInterval(() => { const t = Date.now(); subs.forEach((s, f) => { if (t - s.last >= s.step - 50) { s.last = t; f(t); } }); }, 1000);
+  // nothing to redraw in a hidden tab; the first tick back catches up
+  timer = setInterval(() => { if (document.visibilityState === "hidden") return; const t = Date.now(); subs.forEach((s, f) => { if (t - s.last >= s.step - 50) { s.last = t; f(t); } }); }, 1000);
 }
 
 /** Current time in ms, re-rendering the caller every `stepMs` (default every second). */

@@ -1,6 +1,7 @@
 import { ChevronDown, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
+import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
 import { Sheet } from "./Sheet.tsx";
 
@@ -29,22 +30,21 @@ export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: b
   const f = p.msg.friends;
   const [title, setTitle] = useState(""), [cat, setCat] = useState<CatKey>("friends"), [more, setMore] = useState(false), [close, setClose] = useState<CloseKey>("tomorrow"), [stake, setStake] = useState(0), [customStake, setCustomStake] = useState(""), [customAt, setCustomAt] = useState("");
   const [vis, setVis] = useState<"private" | "friends" | "public">("private"), [judge, setJudge] = useState<"creator" | "vote">("vote"), [world, setWorld] = useState(false);
-  const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null);
+  const [busy, run] = useBusy(), [err, setErr] = useState<string | null>(null);
   const pub = vis === "public";
   const when = closeAt(close, customAt), whenOk = Number.isFinite(when.getTime()) && when.getTime() >= Date.now() + 10 * 60_000 && when.getTime() <= Date.now() + 30 * 86_400_000;
   const local = (t: number) => { const d = new Date(t); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
-  const create = async () => {
+  const create = () => run(async () => {
     if (!p.registered) { p.onAuth(); return; }
-    setBusy(true); setErr(null);
+    setErr(null);
     const { data, error } = await sb.rpc("create_challenge", { p_title: title.trim(), p_category: cat, p_stake: pub ? 0 : stake, p_closes_at: when.toISOString(), p_judge: pub ? "vote" : judge, p_visibility: vis, p_world: pub && world });
-    setBusy(false);
     if (error || !data?.code) {
       const key = Object.keys(f.errors).find((k) => error?.message?.includes(k)) as keyof typeof f.errors | undefined;
       const k2 = Object.keys(p.msg.fx.errors).find((k) => error?.message?.includes(k)) as keyof typeof p.msg.fx.errors | undefined;
       setErr(k2 ? p.msg.fx.errors[k2] : f.errors[key ?? "generic"]); return;
     }
     p.onCreated(String(data.code));
-  };
+  }, () => setErr(f.errors.generic));
   const chip = (k: CatKey) => <button key={k} class={`mkchip ${cat === k ? "on" : ""}`} aria-pressed={cat === k} onClick={() => setCat(k)}>{f.cats[k]}</button>;
   return (
     <Sheet onClose={p.onClose} label={f.title}>
@@ -86,7 +86,7 @@ export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: b
       {!pub && stake > 0 && <p class="hint">{f.stakeNote}</p>}
       <p class="hint">{f.rules}</p>
       {err && <p class="formerr" role="alert">{err}</p>}
-      <button class="btn primary wide" disabled={busy || !whenOk || title.trim().length < 8 || (pub && !p.hasHome)} onClick={create}>{busy ? f.creating : f.create}</button>
+      <button class="btn primary wide" disabled={busy || !whenOk || title.trim().length < 8 || (pub && !p.hasHome)} aria-busy={busy} onClick={create}>{busy ? f.creating : f.create}</button>
     </Sheet>
   );
 }

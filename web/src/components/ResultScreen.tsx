@@ -3,7 +3,7 @@ import { Q } from "./Q.tsx";
 import { Check, RotateCcw, Share2, X } from "lucide-preact";
 import { useEffect } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
-import { fmtOdds, money, question, resultAmount } from "../lib/format.ts";
+import { fmtOdds, money, resultAmount } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { ReportLink } from "./ReportLink.tsx";

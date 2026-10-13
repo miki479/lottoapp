@@ -17,7 +17,7 @@ import { FrisbeeSoon } from "../components/FrisbeeSoon.tsx";
 import { GameGroup } from "../components/GameGroup.tsx";
 import { Flag } from "../components/Flag.tsx";
 import { TopCards, type TopItem } from "../components/TopCards.tsx";
-import { Car, Coins, Globe, ListChecks, MapPin, SlidersHorizontal, Sparkles, ThumbsUp, X } from "lucide-preact";
+import { Car, Coins, Globe, ListChecks, MapPin, Sparkles, ThumbsUp } from "lucide-preact";
 import { Fragment } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -26,9 +26,9 @@ import { ChevronDown, Flame, Plus, Search, Tv } from "lucide-preact";
 import { TrainBoard } from "../components/TrainBoard.tsx";
 import { LoadBar } from "../components/LoadBar.tsx";
 import { followedShows, type FollowedShow } from "../lib/series.ts";
-import { FEATURED_CITY_IDS, FEATURED_PLACES, type Place } from "../lib/places.ts";
+import { FEATURED_PLACES, type Place } from "../lib/places.ts";
 import type { MarketRow } from "../lib/format.ts";
-import type { LiveDelay, LiveOcc, Pick, Progress } from "../lib/types.ts";
+import type { LiveDelay, LiveOcc, Pick } from "../lib/types.ts";
 
 /** Categories tucked away under "More categories" so the main row stays short. */
 /** Only these depend on a place: the city chips are shown for them and nowhere else, so a global category is never emptied by a city. */

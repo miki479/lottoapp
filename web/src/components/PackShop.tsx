@@ -47,9 +47,12 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
   const packOf = (tier: number): PackDef => PACKS.find((p) => p.tier === tier) ?? PACKS[0]!;
   const full = (album?.opened_today ?? 0) >= (album?.daily_cap ?? 12);
 
+  const buying = useRef(false);
   const buy = async (tier: number) => {
-    setErr(null); setStage({ phase: "buying", tier });
-    const r = await buyPack(tier);
+    if (buying.current) return;
+    buying.current = true; setErr(null); setStage({ phase: "buying", tier });
+    let r: PackOpen | { error: string };
+    try { r = await buyPack(tier); } catch { r = { error: "generic" }; } finally { buying.current = false; }
     if ("error" in r) { setErr(s.errors[errorCode(r.error, Object.keys(s.errors))] ?? s.errors.generic!); setStage({ phase: "confirm", tier }); return; }
     pending.set(r); onBought(r); haptic.tap();
     setStage({ phase: "sealed", r, taps: 0 });
@@ -79,8 +82,8 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
         <p class="hint">{s.dupRule(REFUND_PCT, money(packRefund(pack.price), locale))}</p>
         {err && <p class="dberr" role="alert">{err}</p>}
         {!ok && credits < pack.price && <p class="dberr">{s.notEnough}</p>}
-        <button class="btn primary wide" disabled={!ok || stage.phase === "buying"} onClick={() => buy(pack.tier)}>{s.pay(money(pack.price, locale))}</button>
-        <button class="btn secondary wide" onClick={close}>{s.notNow}</button>
+        <button class="btn primary wide" disabled={!ok || stage.phase === "buying"} aria-busy={stage.phase === "buying"} onClick={() => buy(pack.tier)}>{s.pay(money(pack.price, locale))}</button>
+        <button class="btn secondary wide" disabled={stage.phase === "buying"} onClick={close}>{s.notNow}</button>
       </section>
     );
   }

@@ -14,9 +14,10 @@ import "./RewardsHub.css";
 type View = "home" | "looks" | CardCat;
 
 /** The collection: a cover with one tile per category, then the numbered cards of a category (owned or still a silhouette), then the looks. */
-export function Album({ locale, msg, data, onRetry }: { locale: Locale; msg: Messages; data: AlbumData | null; onRetry: () => void }) {
+export function Album({ locale, msg, data, onRetry }: { locale: Locale; msg: Messages; data: AlbumData | null | undefined; onRetry: () => void }) {
   const t = hubText(locale), a = t.album;
   const [view, setView] = useState<View>("home"), [zoom, setZoom] = useState<number | null>(null);
+  if (data === undefined) return <section class="stack"><div class="sk s" /><div class="sk s" /></section>;
   if (!data) return <section class="stack"><p class="hint">{a.loadError}</p><button class="btn secondary" onClick={onRetry}>{a.retry}</button></section>;
   const own = new Map(data.items.map((i) => [`${i.kind}:${i.id}`, i]));
   const has = (id: string) => own.get(`card:${id}`)?.owned ?? false;

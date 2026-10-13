@@ -1,5 +1,5 @@
 import { MapPin, Search, X } from "lucide-preact";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { FAMOUS_PLACES, FEATURED_PLACES, ITALY_CAPITALS, searchPlaces, type Place } from "../lib/places.ts";
 import { CITIES, cityName, enabledCategories } from "../lib/cities.ts";
@@ -19,9 +19,11 @@ export function PlacePicker(p: { msg: Messages; locale: Locale; recent: Place[];
     const t = setTimeout(() => searchPlaces(q.trim(), p.locale === "it" ? "it" : "en", ctl.signal).then(setFound).catch((e) => { if (e.name !== "AbortError") setErr(m.searchError); }), 300);
     return () => { clearTimeout(t); ctl.abort(); };
   }, [q]);
+  const going = useRef(false);
   const choose = async (pl: Omit<Place, "id">) => {
-    setBusy(pl.name); setErr(null);
-    try { await p.onPick({ ...pl, id: "" }); } finally { setBusy(null); }
+    if (going.current) return;
+    going.current = true; setBusy(pl.name); setErr(null);
+    try { await p.onPick({ ...pl, id: "" }); } catch { setErr(p.msg.errors.generic!); } finally { going.current = false; setBusy(null); }
   };
   const row = (pl: Omit<Place, "id">, key: string) => (
     <button key={key} class="placerow" disabled={busy !== null} onClick={() => choose(pl)}>

@@ -2,6 +2,7 @@ import { ChevronDown, MapPin } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
+import { every } from "../lib/poll.ts";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { fmtOdds, type MarketRow } from "../lib/format.ts";
 import type { Pick } from "../lib/types.ts";
@@ -19,23 +20,30 @@ export function NearbyBets(p: { msg: Messages; locale: Locale; now: number; orig
   const [open, setOpen] = useState(true), [km, setKm] = useState(25);
   const [chal, setChal] = useState<{ c: Challenge; km: number; players: number }[]>([]);
   const [rows, setRows] = useState<{ m: MarketRow; km: number; bettors: number }[] | null>(null);
+  // asked again every two minutes while the tab is in view (not on every tick of the clock)
   useEffect(() => {
     if (!p.origin) { setChal([]); return; }
-    sb.rpc("nearby_challenges", { p_lat: p.origin.lat, p_lon: p.origin.lon, p_country: p.country, p_limit: 8 }).then(({ data }) => setChal(((data ?? []) as { challenge: Challenge; km: number | string; players: number | string }[]).map((x) => ({ c: x.challenge, km: +x.km, players: +x.players }))));
-  }, [p.origin?.lat, p.origin?.lon, Math.floor(p.now / 60000)]);
+    let live = true;
+    const go = () => { sb.rpc("nearby_challenges", { p_lat: p.origin!.lat, p_lon: p.origin!.lon, p_country: p.country, p_limit: 8 }).then(({ data }) => { if (live) setChal(((data ?? []) as { challenge: Challenge; km: number | string; players: number | string }[]).map((x) => ({ c: x.challenge, km: +x.km, players: +x.players }))); }); };
+    go();
+    const stop = every(go, 120_000);
+    return () => { live = false; stop(); };
+  }, [p.origin?.lat, p.origin?.lon, p.country]);
   useEffect(() => {
     if (!p.origin) { setRows(null); return; }
     let live = true;
-    (async () => {
+    const go = async () => {
       const { data } = await sb.rpc("nearby_markets", { p_lat: p.origin!.lat, p_lon: p.origin!.lon, p_km: km, p_limit: 12 });
       const hits = (data ?? []) as { market_id: string; km: number | string; bettors: number | string }[];
       if (!hits.length) { if (live) setRows([]); return; }
       const { data: ms } = await sb.from("markets").select(COLS).in("id", hits.map((h) => h.market_id));
       const by = new Map(((ms ?? []) as unknown as MarketRow[]).map((m) => [m.id, m]));
       if (live) setRows(hits.flatMap((h) => { const m = by.get(h.market_id); return m ? [{ m, km: +h.km, bettors: +h.bettors }] : []; }));
-    })();
-    return () => { live = false; };
-  }, [p.origin?.lat, p.origin?.lon, km, Math.floor(p.now / 60000)]);
+    };
+    go().catch(() => { if (live) setRows((r) => r ?? []); });
+    const stop = every(() => { go().catch(() => {}); }, 120_000);
+    return () => { live = false; stop(); };
+  }, [p.origin?.lat, p.origin?.lon, km]);
   return (
     <section class="nearbets card">
       <button class="nbhead" onClick={() => setOpen(!open)} aria-expanded={open}><MapPin size={18} /><b>{n.title}</b>{p.origin && <small>{p.origin.name}</small>}<ChevronDown size={18} class={open ? "up" : ""} /></button>
@@ -45,6 +53,7 @@ export function NearbyBets(p: { msg: Messages; locale: Locale; now: number; orig
         {p.origin && <div class="mkchips">{RADII.map((r) => <button key={r} class={`mkchip ${km === r ? "on" : ""}`} aria-pressed={km === r} onClick={() => setKm(r)}>{r} {n.km}</button>)}</div>}
         {p.origin && chal.length > 0 && <span class="detail">{p.msg.fx.nearTitle}</span>}
         {chal.map(({ c, km: d, players }) => <button key={c.id} class="nbitem" onClick={() => p.onChallenge(c.code)}><span class="q"><b>{c.title}</b></span><span class="nbmeta"><span>{d < 1 ? "<1" : Math.round(d)} {n.km}</span><span>{players} {p.msg.fx.players}</span></span></button>)}
+        {p.origin && rows === null && <div class="sk s" />}
         {p.origin && rows && rows.length === 0 && chal.length === 0 && <p class="hint">{n.none}</p>}
         {p.origin && p.zone && p.popular.length > 0 && !p.fallback && <span class="detail">{p.zone}</span>}
         {p.origin && !p.fallback && p.popular.map(({ m, bets }) => {

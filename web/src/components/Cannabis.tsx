@@ -17,7 +17,7 @@ function leaflet(len: number, wid: number, teeth: number): string {
 }
 /** The seven leaflets: the middle one the longest, the others fanning out, the lowest two nearly sideways. */
 const FAN: [number, number][] = [[-100, 0.5], [-62, 0.78], [-29, 0.93], [0, 1], [29, 0.93], [62, 0.78], [100, 0.5]];
-const BLADE = leaflet(30, 3.6, 9), PATHS = FAN.map(([, l]) => leaflet(30 * l, 3.6 * (0.62 + 0.38 * l), 9));
+const PATHS = FAN.map(([, l]) => leaflet(30 * l, 3.6 * (0.62 + 0.38 * l), 9));
 
 export function Leaf({ x, y, s, rot = 0, dark = false, cls = "", onClick }: { x: number; y: number; s: number; rot?: number; dark?: boolean; cls?: string; onClick?: () => void }) {
   const fill = dark ? "url(#cn-dark)" : "url(#cn-lite)", edge = dark ? "#0b4d25" : "#10672f";
@@ -36,7 +36,6 @@ export function Leaf({ x, y, s, rot = 0, dark = false, cls = "", onClick }: { x:
     </g>
   );
 }
-void BLADE;
 
 export const DEFS = (
   <defs>

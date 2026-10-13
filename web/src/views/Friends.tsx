@@ -4,6 +4,7 @@ import { useEffect, useState } from "preact/hooks";
 import { Empty } from "../components/Empty.tsx";
 import { Look } from "../components/looks/Look.tsx";
 import type { Locale, Messages } from "../i18n/index.ts";
+import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
 import { countdown } from "../lib/format.ts";
 import { loadFriends, type FriendRow } from "../lib/friends.ts";
@@ -25,9 +26,10 @@ export function Friends(p: { locale: Locale; msg: Messages; registered: boolean;
   useEffect(() => { if (p.registered) loadReqs(); }, [p.registered, p.reqTick]);
   const looks = useLooks([...(friends ?? []).map((r) => r.user_id), ...reqs.map((r) => r.user_id)]);
   const face = (id: string) => { const l = looks[id]; return l ? <Look avatar={l.avatar} decoration={l.decoration} size={36} /> : <span class="lkph" />; };
-  const declineAll = async () => { await sb.rpc("decline_all_friend_requests"); await loadReqs(); p.onReqs?.(); };
-  const answer = async (id: string, ok: boolean) => { const { error } = await sb.rpc("respond_friend", { p_user: id, p_accept: ok }); if (error) { p.onToast(p.msg.errors.generic!, "err"); return; } if (ok) p.onToast(p.msg.look.nowFriends); await Promise.all([loadReqs(), refresh()]); p.onReqs?.(); };
-  const removeFriend = async (id: string) => { const { error } = await sb.rpc("remove_friend", { p_friend: id }); setAskId(null); if (error) { p.onToast(p.msg.errors.generic!, "err"); return; } p.onToast(f.removed); await refresh(); };
+  const [busy, run] = useBusy(), oops = () => p.onToast(p.msg.errors.generic!, "err");
+  const declineAll = () => run(async () => { const { error } = await sb.rpc("decline_all_friend_requests"); if (error) { oops(); return; } await loadReqs(); p.onReqs?.(); }, oops);
+  const answer = (id: string, ok: boolean) => run(async () => { const { error } = await sb.rpc("respond_friend", { p_user: id, p_accept: ok }); if (error) { oops(); return; } if (ok) p.onToast(p.msg.look.nowFriends); await Promise.all([loadReqs(), refresh()]); p.onReqs?.(); }, oops);
+  const removeFriend = (id: string) => run(async () => { const { error } = await sb.rpc("remove_friend", { p_friend: id }); setAskId(null); if (error) { oops(); return; } p.onToast(f.removed); await refresh(); }, () => { setAskId(null); oops(); });
 
   if (!p.registered) return <div class="screen stack"><h1>{p.msg.nav.friends}</h1><div class="card"><Empty icon={Users} title={p.msg.ranking.gate.title} body={p.msg.ranking.gate.body} cta={p.msg.ranking.gate.cta} onCta={p.onAuth} /></div></div>;
   return (
@@ -36,13 +38,13 @@ export function Friends(p: { locale: Locale; msg: Messages; registered: boolean;
       <LeaguePanel locale={p.locale} registered={p.registered} onProfile={p.onProfile} />
       {reqs.length > 0 && (
         <section class="card stack reqcard">
-          <div class="reqhead"><b>{p.msg.look.requests} · {reqs.length}</b>{reqs.length > 2 && <button class="linkbtn" onClick={declineAll}>{p.msg.look.declineAll}</button>}</div>
+          <div class="reqhead"><b>{p.msg.look.requests} · {reqs.length}</b>{reqs.length > 2 && <button class="linkbtn" disabled={busy} onClick={declineAll}>{p.msg.look.declineAll}</button>}</div>
           {(showAll ? reqs : reqs.slice(0, 5)).map((r) => (
             <div class="reqrow" key={r.user_id}>
               {face(r.user_id)}
               <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name || f.anon}</b></button>
-              <button class="iconbtn reqno" aria-label={p.msg.look.decline} onClick={() => answer(r.user_id, false)}><X size={18} /></button>
-              <button class="iconbtn reqyes" aria-label={p.msg.look.accept} onClick={() => answer(r.user_id, true)}><Check size={18} strokeWidth={3} /></button>
+              <button class="iconbtn reqno" disabled={busy} aria-label={p.msg.look.decline} onClick={() => answer(r.user_id, false)}><X size={18} /></button>
+              <button class="iconbtn reqyes" disabled={busy} aria-label={p.msg.look.accept} onClick={() => answer(r.user_id, true)}><Check size={18} strokeWidth={3} /></button>
             </div>
           ))}
           {reqs.length > 5 && <button class="btn secondary" onClick={() => setShowAll(!showAll)}>{showAll ? p.msg.look.showLess : p.msg.look.showMore(reqs.length - 5)}</button>}
@@ -74,7 +76,7 @@ export function Friends(p: { locale: Locale; msg: Messages; registered: boolean;
               {face(r.user_id)}
               <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name || f.anon}</b><PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} /></button>
               <button class="iconbtn frdx" aria-label={`${f.remove} ${r.display_name ?? ""}`} onClick={() => setAskId(askId === r.user_id ? null : r.user_id)}><UserMinus size={16} /></button>
-              {askId === r.user_id && <div class="frask" role="alert"><span>{f.removeAsk(r.display_name || f.anon)}</span><button class="btn secondary" onClick={() => setAskId(null)}>{f.removeNo}</button><button class="btn primary" onClick={() => removeFriend(r.user_id)}>{f.removeYes}</button></div>}
+              {askId === r.user_id && <div class="frask" role="alert"><span>{f.removeAsk(r.display_name || f.anon)}</span><button class="btn secondary" onClick={() => setAskId(null)}>{f.removeNo}</button><button class="btn primary" disabled={busy} aria-busy={busy} onClick={() => removeFriend(r.user_id)}>{f.removeYes}</button></div>}
             </div>
           ))}
         </div>
