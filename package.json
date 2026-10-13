@@ -10,6 +10,7 @@
     "web:dev": "vite web --host",
     "web:build": "vite build web",
     "web:preview": "vite preview web --host",
+    "deploy:functions": "node scripts/build-functions.mjs && supabase functions deploy --use-api --no-verify-jwt",
     "deploy:web": "npm run web:build && firebase deploy --only hosting"
   },
   "devDependencies": {

@@ -19,7 +19,7 @@ import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, bui
 import { bookPriors, buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, type Fixture, type Geo, type MatchBet, type TableRow } from "../_shared/shared/sport.ts";
 import { apiFootball, apiKey, fetchBookQuotes, fetchDetails, fetchPlayerFacts, loadTable } from "../_lib/football.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
-import { DEFAULT_YES_PROBABILITY, computeOdds, learnedPrior, liveYesProbability } from "../_shared/shared/odds.ts";
+import { DEFAULT_YES_PROBABILITY, computeOdds, delayContextAt, learnedPrior, liveYesProbability } from "../_shared/shared/odds.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
 
 const FETCH_TIMEOUT_MS = 25_000;
@@ -145,16 +145,6 @@ async function learnedPriors(sb: ReturnType<typeof db>, now: number): Promise<(c
  * A bus or train already running late is likely to still be late at the question's stop: the open delay markets follow the real delay
  * (bets placed keep their odds). Questions with no reading yet get the starting chance learned for their country, if they still carry an old price.
  */
-/** Local hour and weekday in a city, for the rush-hour effect on delays. */
-function delayCtx(tz: string | undefined, nowSec: number): { hour: number | null; weekday: boolean } {
-  if (!tz) return { hour: null, weekday: true };
-  try {
-    const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", minute: "numeric", hourCycle: "h23", weekday: "short" }).formatToParts(new Date(nowSec * 1000));
-    const g = (t: string) => parts.find((x) => x.type === t)?.value ?? "";
-    return { hour: Number(g("hour")) + Number(g("minute")) / 60, weekday: !["Sat", "Sun"].includes(g("weekday")) };
-  } catch { return { hour: null, weekday: true }; }
-}
-
 async function repriceDelays(sb: ReturnType<typeof db>): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   const priorOf = await learnedPriors(sb, now);
@@ -167,7 +157,7 @@ async function repriceDelays(sb: ReturnType<typeof db>): Promise<string> {
   for (const r of rows) {
     live.add(r.market_id);
     const prior = priorOf(r.city_id, r.kind);
-    const p = liveYesProbability(prior, r.delay_sec, r.threshold_sec, r.target_seq - r.obs_seq, r.kind === "train_delay_gt", delayCtx(tzOf.get(r.city_id), now));
+    const p = liveYesProbability(prior, r.delay_sec, r.threshold_sec, r.target_seq - r.obs_seq, r.kind === "train_delay_gt", delayContextAt(tzOf.get(r.city_id), now));
     const o = computeOdds(p);
     const cur = Number(r.odds_yes) / Math.max(1, Number(r.flash_multiplier));
     if (Math.abs(o.yes - cur) / cur < 0.03 && Math.abs(o.no - Number(r.odds_no)) < 0.03) continue;
@@ -744,11 +734,11 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     } catch (e) { notes.push(`nws: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
       const tideDue = [...need.keys()].filter(isTide).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
-      for (const { x, at } of tideDue) { const r = await fetchTide(x.slice(5) as TideKey, now); if (r && Math.abs(r.at - at) <= 12 * 60) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: r.v, fetched_at: fetchedAt }); }
+      for (const { x, at } of tideDue) { try { const r = await fetchTide(x.slice(5) as TideKey, now); if (r && Math.abs(r.at - at) <= 12 * 60) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: r.v, fetched_at: fetchedAt }); } catch (e) { notes.push(`${x}: ${String((e as Error).message ?? e).slice(0, 60)}`); } } // one gauge failing must not stop the others
     } catch (e) { notes.push(`tide: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
       const riverDue = [...need.keys()].filter(isRiver).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
-      for (const { x, at } of riverDue) { const v = await fetchRiver(x.slice(6) as RiverKey, now); if (v !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); }
+      for (const { x, at } of riverDue) { try { const v = await fetchRiver(x.slice(6) as RiverKey, now); if (v !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } catch (e) { notes.push(`${x}: ${String((e as Error).message ?? e).slice(0, 60)}`); } }
     } catch (e) { notes.push(`river: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
       // concert counts: the number is read within minutes of the instant (a small pause between calls keeps under the provider's rate limit)
@@ -776,7 +766,7 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
         const byDay = new Map<string, Awaited<ReturnType<typeof fetchFx>>>();
         for (const { x, at } of fxDue.slice(0, 12)) {
           const day = new Date((at - 86400) * 1000).toISOString().slice(0, 10);
-          if (!byDay.has(day)) byDay.set(day, await fetchFx(day));
+          if (!byDay.has(day)) byDay.set(day, await fetchFx(day).catch((e) => { notes.push(`fx ${day}: ${String((e as Error).message ?? e).slice(0, 60)}`); return null; }));
           const f = byDay.get(day), v = f?.date === day ? f.rates[x.slice(3) as FxKey] : undefined;
           if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt });
         }
@@ -787,7 +777,7 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
         const byDay = new Map<string, Record<number, number> | null>();
         for (const { x, at } of powDue.slice(0, 12)) {
           const day = isoDay(at);
-          if (!byDay.has(day)) byDay.set(day, await fetchPower(day, isoDay(at + 86400)));
+          if (!byDay.has(day)) byDay.set(day, await fetchPower(day, isoDay(at + 86400)).catch((e) => { notes.push(`power ${day}: ${String((e as Error).message ?? e).slice(0, 60)}`); return null; }));
           const v = byDay.get(day)?.[at];
           if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt });
         }
@@ -935,7 +925,7 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       const big = stormsNow.filter((x) => x.kt >= 96).sort((x, y) => y.kt - x.kt)[0];
       if (big && (await boostSeries(sb, "storm:%", "storm", String(big.kt)))) notes.push(`super storm ${big.kt}`);
     } catch (e) { notes.push(`super: ${String((e as Error).message ?? e).slice(0, 60)}`); }
-    if (extraHist.length) await sb.from("tick_history").upsert(extraHist, { onConflict: "series,at" });
+    if (extraHist.length) { const { error: eh } = await sb.from("tick_history").upsert(extraHist, { onConflict: "series,at" }); if (eh) notes.push(`history2: ${eh.message.slice(0, 60)}`); }
     // History for the charts: coin prices by the hour (last ~2 days), Kp by 3-hour window, page views by day.
     try {
       const hist: Record<string, unknown>[] = [];

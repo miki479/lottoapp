@@ -234,12 +234,15 @@ export function App() {
 
   // loadMarkets runs on a timer from the first render: it reads the player's current town, country and filter through a ref
   const envRef = useRef({ near, profile, filter }); envRef.current = { near, profile, filter };
+  const mkSeq = useRef(0); // calls overlap (timer, bets, filter changes): only the newest answer may replace the list
   const loadMarkets = useCallback(async () => {
+    const seq = ++mkSeq.current;
     const { data, error } = await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").not("city_id", "like", "p-%").gt("closes_at", new Date().toISOString()).order("closes_at").limit(300);
     // Markets of the towns this player picked are loaded separately so a long list of places never crowds out the real cities.
     const mine = placeIds.current.length ? (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("city_id", placeIds.current).gt("closes_at", new Date().toISOString()).order("closes_at").limit(160)).data ?? [] : [];
     // Questions that close far ahead (matches, daily page views, price lines) would fall off the first page: fetch them on their own.
-    const far = (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("category", ["sport", "finance", "culture", "nature", "law", "traffic"]).gt("closes_at", new Date().toISOString()).order("closes_at").limit(200)).data ?? [];
+    // One page per category: a single page of the soonest 200 across all of them (728 open at the last count) left the latest-closing ones out.
+    const far = (await Promise.all(["sport", "finance", "culture", "nature", "law", "traffic"].map((c) => sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").eq("category", c).gt("closes_at", new Date().toISOString()).order("closes_at").limit(c === "law" ? 60 : 200)))).flatMap((r) => r.data ?? []);
     // the questions we write ourselves close far ahead: always fetched on their own
     const house = (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").eq("kind", "tick_gt").like("params->>series", "house:%").gt("closes_at", new Date().toISOString()).order("closes_at").limit(60)).data ?? [];
     // the first page holds only what closes soonest: the town being looked at (and the country-wide train feeds of its country) are loaded in full
@@ -252,6 +255,7 @@ export function App() {
     const own = cc && ownIds.length + nationalIds.length ? (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("city_id", [...ownIds, ...nationalIds]).gt("closes_at", new Date().toISOString()).order("closes_at").limit(300)).data ?? [] : [];
     const seen = new Set([...(data ?? []), ...mine].map((x) => (x as { id: string }).id));
     const extra = [...far, ...house, ...here, ...own].filter((x) => { const id = (x as unknown as { id: string }).id; if (seen.has(id)) return false; seen.add(id); return true; });
+    if (seq !== mkSeq.current) return;
     if (!error) { const all = [...(data ?? []), ...mine, ...extra].filter((m) => testMode() || !(m.params as { testOnly?: boolean } | null)?.testOnly) as MarketRow[]; setMarkets(all); try { localStorage.setItem("mk1", JSON.stringify({ t: Date.now(), rows: all.slice(0, 250) })); } catch { /* storage full or unavailable */ } if (navigator.onLine) setOffline(false); }
     else if (/fetch|network|load failed/i.test(error.message)) setOffline(true);
     const { data: h } = await sb.from("feed_health").select("feed_id,last_ok_at");
