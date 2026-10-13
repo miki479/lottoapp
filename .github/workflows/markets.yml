@@ -4,6 +4,7 @@ name: Generate markets
 on:
   schedule:
     - cron: "17 */6 * * *"     # Tokyo buses + weather for every city
+    - cron: "47 */2 * * *"     # BusOne bus and train questions (Italy): every 2 hours
     - cron: "41 2 * * *"       # Dutch trains: once a day (the timetable is 259 MB, be gentle with OVapi)
   workflow_dispatch:
 jobs:
@@ -21,20 +22,20 @@ jobs:
       - run: npm ci
       - run: node scripts/sync-cities.mjs
       - name: Weather (all cities)
-        if: github.event.schedule != '41 2 * * *'
+        if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         run: |
           for c in tokyo rome amsterdam sanfrancisco oslo torino zurich paris madrid berlin helsinki boston romagna modena reggio-emilia piacenza friuli-venezia-giulia venezia bari mantova vicenza lazio cuneo alto-adige parma toscana trentino; do node scripts/generate-markets.mjs --city $c --weather --apply; done
       - name: Tokyo buses
-        if: github.event.schedule != '41 2 * * *'
+        if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         run: node scripts/generate-markets.mjs --city tokyo --feed toei-bus-vehicle --max 30 --apply
       - name: Spanish commuter trains (trips seen live)
-        if: github.event.schedule != '41 2 * * *'
+        if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         run: node scripts/generate-markets.mjs --city madrid --feed renfe-trip-update --max 30 --apply
       - name: Oslo buses
-        if: github.event.schedule != '41 2 * * *'
+        if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         run: node scripts/generate-markets.mjs --city oslo --feed entur-ruter-trip-update --max 30 --apply
       - name: Turin buses
-        if: github.event.schedule != '41 2 * * *'
+        if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         run: node scripts/generate-markets.mjs --city torino --feed gtt-trip-update --max 30 --apply
       - name: Dutch trains
         if: github.event.schedule == '41 2 * * *' || github.event_name == 'workflow_dispatch'
@@ -63,7 +64,7 @@ jobs:
           node scripts/generate-markets.mjs --city stavanger --feed entur-kol-trip-update --max 20 --apply
           node scripts/generate-markets.mjs --city adelaide --feed adelaide-metro-trip-update --max 20 --apply
       - name: Italian trains (unlicensed feed, needs ALLOW_UNVERIFIED_FEEDS and a reachable IP)
-        if: vars.ENABLE_VIAGGIATRENO == '1' && (github.event.schedule != '41 2 * * *')
+        if: vars.ENABLE_VIAGGIATRENO == '1' && (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         continue-on-error: true
         env:
           VIAGGIATRENO_BASE_URL: ${{ secrets.VIAGGIATRENO_BASE_URL }}
@@ -89,9 +90,9 @@ jobs:
       - run: node scripts/load-stops.mjs --apply
 
   # Bus and train questions from the BusOne GTFS / GTFS-Realtime feeds (non-commercial licence, see cities/*.json).
-  # Run every 6 hours: only routes with a tracked vehicle at that moment get questions.
+  # Run every 2 hours: only routes with a tracked vehicle at that moment get questions.
   busone:
-    if: github.event.schedule != '41 2 * * *'
+    if: github.event.schedule == '47 */2 * * *' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
