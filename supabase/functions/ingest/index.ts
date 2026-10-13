@@ -281,7 +281,7 @@ async function ingestMetrics(sb: ReturnType<typeof db>, now: number, last: numbe
   await sb.from("feed_health").upsert({ feed_id: "open-meteo-metrics", last_attempt_at: new Date(now * 1000).toISOString() });
   const targets: { id: string; lat: number; lon: number; tz: string }[] = [];
   for (const c of await loadCities()) if (c.categories.weather?.enabled && c.location) targets.push({ id: c.id, lat: c.location.lat, lon: c.location.lon, tz: c.timezone });
-  const { data: places } = await sb.from("places").select("id,lat,lon,timezone").gt("last_used_at", new Date((now - 3 * 86400) * 1000).toISOString()).order("last_used_at", { ascending: false }).limit(300);
+  const { data: places } = await sb.from("places").select("id,lat,lon,timezone").gt("last_used_at", new Date((now - 3 * 86400) * 1000).toISOString()).order("last_used_at", { ascending: false }).limit(500);
   for (const p of places ?? []) targets.push({ id: p.id as string, lat: Number(p.lat), lon: Number(p.lon), tz: p.timezone as string });
   let rows = 0, created = 0;
   try {
@@ -334,7 +334,7 @@ async function ingestMetrics(sb: ReturnType<typeof db>, now: number, last: numbe
 async function ingestPlaces(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
   if (now - last < 3600 - 5) return "not due";
   await sb.from("feed_health").upsert({ feed_id: "open-meteo-places", last_attempt_at: new Date(now * 1000).toISOString() });
-  const { data: places } = await sb.from("places").select("id,lat,lon").gt("last_used_at", new Date((now - 3 * 86400) * 1000).toISOString()).order("last_used_at", { ascending: false }).limit(300);
+  const { data: places } = await sb.from("places").select("id,lat,lon").gt("last_used_at", new Date((now - 3 * 86400) * 1000).toISOString()).order("last_used_at", { ascending: false }).limit(500);
   if (!places || places.length === 0) { await sb.from("feed_health").upsert({ feed_id: "open-meteo-places", last_ok_at: new Date().toISOString(), last_error: null }); return "ok 0"; }
   let rows = 0;
   try {
