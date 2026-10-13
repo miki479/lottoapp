@@ -39,8 +39,8 @@ import { countdown, setDayUnit, currencySymbol, dayIn, daysUntil, fmtOdds, isYes
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
 import { FAMOUS_PLACES, FEATURED_CITY_IDS, FEATURED_PLACES, ITALY_CAPITALS, ensurePlace, km, placeById, placeIdOf, recentPlaces, rememberPlace, type Place } from "./lib/places.ts";
-import { PushAsk } from "./components/PushAsk.tsx";
-import { disablePush, enablePush, pushAsked, pushAvailable, pushDenied, pushEnabled, rememberPush } from "./lib/push.ts";
+import { PushAsk, type PushVariant } from "./components/PushAsk.tsx";
+import { disablePush, enablePush, pushAsked, pushAvailable, pushDenied, pushEnabled, rememberPush, markNag, nagDue } from "./lib/push.ts";
 import { announce, setVoice, voiceEnabled, voiceSupported } from "./lib/voice.ts";
 import { makeProfileCard, makeResultCard, shareImage } from "./lib/share.ts";
 import type { FlashData, DailyMissionsData, QuestRow, ActivityRow, ParlayRow, SlipLeg, LiveDelay, LiveOcc, MyBet, MyStats, Pick, PopularRow, Profile, Progress, ResultRow } from "./lib/types.ts";
@@ -140,6 +140,7 @@ export function App() {
   const [rewardsOpen, setRewardsOpen] = useState(false);
   const [pushOn, setPushOn] = useState(false);
   const [askPush, setAskPush] = useState(false);
+  const [pushVariant, setPushVariant] = useState<PushVariant>("first"), nagN = useMemo(() => Math.floor(Date.now() / 86_400_000), []);
   const [slip, setSlip] = useState<SlipLeg[]>([]);
   const [parlayOpen, setParlayOpen] = useState(false);
   const [parlays, setParlays] = useState<ParlayRow[]>([]);
@@ -635,6 +636,17 @@ export function App() {
     try { const ok = await enablePush(uid); rememberPush(ok); setPushOn(ok); if (ok) { await sb.rpc("set_push_ok"); loadQuests(); } flash(ok ? msg.push.on : msg.push.denied, ok ? "ok" : "err"); } catch { flash(msg.errors.generic!, "err"); }
   };
   useEffect(() => { if (ready) pushEnabled().then(setPushOn).catch(() => {}); }, [ready]);
+  // Notifications are asked for right at the start; while they stay off a banner comes back now and then (every 2 days, 4 if the phone blocks them)
+  useEffect(() => {
+    if (!ready || !profile) return;
+    const t = setTimeout(async () => {
+      if (!pushAvailable()) return;
+      if (pushDenied()) { if (nagDue(4)) { setPushVariant("blocked"); setAskPush(true); } return; }
+      if (!pushAsked()) { setPushVariant("first"); setAskPush(true); return; }
+      if (!(await pushEnabled().catch(() => false)) && nagDue(2)) { setPushVariant("nag"); setAskPush(true); }
+    }, 3500);
+    return () => clearTimeout(t);
+  }, [ready, profile?.id]);
   useEffect(() => { if (new URLSearchParams(location.search).get("open") === "bets") { setScreen("bets"); history.replaceState(null, "", location.pathname); } }, []);
   const toggleVoice = () => { const on = !voiceOn; setVoice(on); setVoiceOn(on); flash(on ? msg.voice.on : msg.voice.off); if (on) announce("voice-on", msg.voice.on, locale, true); };
   const needJoin = needSignup && !registered;
@@ -688,7 +700,7 @@ export function App() {
       {quakeMaker && <QuakeMaker msg={msg} locale={locale} onClose={() => setQuakeMaker(false)} onCreated={(m) => { setQuakeMaker(false); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
       {placePicker && <PlacePicker msg={msg} locale={locale} recent={myPlaces} onPick={pickPlace} onCity={(id) => { store.set("filter", id); setFilter(id); setCatChosen(true); setPlacePicker(false); }} onClose={() => setPlacePicker(false)} />}
       {rewardsOpen && <RewardsSheet flash={flashM} onClaimFlash={claimFlash} missions={missions} onClaimMission={claimMission} onClaimChest={claimChest} msg={msg} locale={locale} now={now} profile={profile} quests={quests} referral={referral} registered={registered} onClaim={claimQuest} onGo={goQuest} onShare={shareReferral} onChanged={() => { loadProfile(); }} onClose={() => setRewardsOpen(false)} />}
-      {askPush && <PushAsk lifted={slip.length > 0} msg={msg} onYes={() => turnPush(true)} onNo={() => { rememberPush(false); setAskPush(false); }} />}
+      {askPush && <PushAsk variant={pushVariant} n={nagN} locale={locale} lifted={slip.length > 0} msg={msg} onYes={() => turnPush(true)} onNo={() => { if (pushVariant === "first") rememberPush(false); markNag(); setAskPush(false); }} />}
       <ParlayBar count={slip.length} odds={slipOdds(slip)} msg={msg} locale={locale} onOpen={() => setParlayOpen(true)} />
       {sheet && <BetSheet openBets={bets.filter((b) => b.status === "open").length} offer={sheet.offer} now={now} occ={occ[sheet.m.id]} mm={outlook[sheet.m.id]} boosts={profile?.boosts ?? 0} stakeFactor={profile?.stake_factor} key={sheet.m.id} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
       {parlayOpen && slip.length > 0 && <ParlaySheet boosts={profile?.boosts ?? 0} legs={slip} msg={msg} locale={locale} credits={profile?.credits ?? 0} needJoin={needJoin} googleOn={googleOn} onClose={() => setParlayOpen(false)} onRemove={(id) => setSlip((s) => s.filter((l) => l.m.id !== id))} onClear={() => { setSlip([]); setParlayOpen(false); }} onJoined={async () => {}} onPlace={placeParlay} />}

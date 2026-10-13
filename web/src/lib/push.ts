@@ -51,3 +51,13 @@ export async function pushEnabled(): Promise<boolean> {
 }
 export const rememberPush = (on: boolean) => { try { localStorage.setItem("push", on ? "1" : "0"); } catch { /* storage unavailable */ } };
 export const pushAsked = () => { try { return localStorage.getItem("push") !== null; } catch { return true; } };
+
+/** The reminder banner for people who have notifications off: due again after `days`; the very first time it only starts the clock (a person who just answered is not nagged at once). */
+export function nagDue(days: number): boolean {
+  try {
+    const last = Number(localStorage.getItem("pushNag") ?? 0);
+    if (!last) { localStorage.setItem("pushNag", String(Date.now())); return false; }
+    return Date.now() - last > days * 86_400_000;
+  } catch { return false; }
+}
+export const markNag = () => { try { localStorage.setItem("pushNag", String(Date.now())); } catch { /* storage unavailable */ } };
