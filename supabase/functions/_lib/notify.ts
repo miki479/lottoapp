@@ -273,6 +273,16 @@ const BROADCAST = {
     },
     url: "https://latelotto.web.app/?open=profile",
   },
+  // ready for the day the frisbee questions go live: set app_settings broadcast_pending = 'frisbee_v1'
+  frisbee_v1: {
+    headings: { en: "Frisbee has landed 🥏", it: "È arrivato il frisbee 🥏", ja: "フリスビーが登場 🥏" },
+    contents: {
+      en: "Ultimate frisbee questions are in. Yes, the sport where the referee is honour. Come and see if your gut feeling holds up in the wind.",
+      it: "Sono arrivate le domande sul frisbee. Sì, lo sport in cui l'arbitro è l'onore. Vieni a vedere se il tuo intuito regge anche col vento.",
+      ja: "アルティメットフリスビーの予想が登場。審判は「名誉」というあのスポーツです。風の中でも勘が当たるか試してみて。",
+    },
+    url: "https://latelotto.web.app/",
+  },
 } as const;
 export async function notifyBroadcast(sb: Db): Promise<number> {
   const { data } = await sb.from("app_settings").select("key,value").in("key", ["broadcast_pending", "broadcast_done"]);
