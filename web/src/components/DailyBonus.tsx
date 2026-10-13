@@ -1,0 +1,57 @@
+import { Check, Gift, Lock, Snowflake } from "lucide-preact";
+import { useEffect, useState } from "preact/hooks";
+import type { Locale } from "../i18n/index.ts";
+import { haptic } from "../lib/haptics.ts";
+import { money } from "../lib/format.ts";
+import { claimDaily, errorCode, loadDaily, type DailyState } from "../lib/shop.ts";
+import { hubText, milestoneList } from "../lib/shopText.ts";
+import { untilReset } from "./RewardsSheet.tsx";
+import "./RewardsHub.css";
+
+/**
+ * The seven-day calendar. It is the streak the game already keeps: streak day n pays 100 x n, claimed once per local day
+ * (once a bet has counted today). The server decides everything; this only shows the week and presses "claim".
+ */
+export function DailyBonus({ locale, now, tz, onPlay, onChanged }: { locale: Locale; now: number; tz: string; onPlay: () => void; onChanged: () => void }) {
+  const t = hubText(locale), d = t.daily;
+  const [s, setS] = useState<DailyState | null>(null), [busy, setBusy] = useState(false), [pop, setPop] = useState(false), [err, setErr] = useState<string | null>(null);
+  const reload = () => loadDaily().then((x) => { if (x) setS(x); });
+  useEffect(() => { let live = true; loadDaily().then((x) => { if (live && x) setS(x); }); return () => { live = false; }; }, []);
+  if (!s) return <section class="card dbonus" aria-label={d.title}><div class="sk s" /></section>;
+  const cd = s.cycle_day, state = s.claimed ? "done" : s.ready ? "ready" : "lock";
+  const go = async () => {
+    setBusy(true); setErr(null);
+    const r = await claimDaily();
+    if ("error" in r) setErr(t.shop.errors[errorCode(r.error, Object.keys(t.shop.errors))] ?? t.shop.errors.generic!);
+    else { setPop(true); haptic.success(); setTimeout(() => setPop(false), 1100); onChanged(); }
+    await reload(); setBusy(false);
+  };
+  return (
+    <section class="card dbonus" aria-label={d.title}>
+      <div class="dbhead"><Gift size={18} /><h2>{d.title}</h2><span class="dbreset">{d.resets(untilReset(tz, now))}</span></div>
+      <p class="hint">{d.sub}</p>
+      <ol class="dbgrid">
+        {s.amounts.map((a, i) => {
+          const n = i + 1, st = n < cd ? "past" : n === cd ? state : "future";
+          return (
+            <li key={n} class={`dbtile ${st} ${n === cd && pop ? "pop" : ""}`} aria-label={`${d.day(n)}: ${money(a, locale)}`} aria-current={n === cd ? "date" : undefined}>
+              <small>{n}</small>
+              <b class="num">{a}</b>
+              <span class="dbmark" aria-hidden="true">{st === "past" || st === "done" ? <Check size={14} strokeWidth={3} /> : st === "ready" ? <Gift size={14} /> : st === "lock" ? <Lock size={13} /> : null}</span>
+              {n === 7 && <span class="dbfreeze" title={d.freezeTile} aria-label={d.freezeTile}><Snowflake size={11} /></span>}
+            </li>
+          );
+        })}
+      </ol>
+      {state === "ready" && <button class="btn primary wide dbbtn" disabled={busy} onClick={go}>{d.claim(money(s.amount, locale))}</button>}
+      {state === "done" && <p class="dbdone"><Check size={16} strokeWidth={3} />{d.claimed}</p>}
+      {state === "lock" && <div class="dblock"><p>{d.locked(money(s.amount, locale))}</p><button class="btn secondary" onClick={onPlay}>{d.play}</button></div>}
+      {err && <p class="dberr" role="alert">{err}</p>}
+      {s.lapsed && state === "lock" && <p class="hint">{d.lapsed}</p>}
+      {s.uses_freeze && state === "lock" && <p class="hint dbnote"><Snowflake size={13} />{d.usesFreeze}</p>}
+      <p class="hint dbnote"><Snowflake size={13} />{d.freezeNote(s.freezes)}</p>
+      <p class="hint">{d.milestones(milestoneList(t, (n) => money(n, locale)))}</p>
+      <p class="hint">{d.refill}</p>
+    </section>
+  );
+}

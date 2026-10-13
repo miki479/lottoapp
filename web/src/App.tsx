@@ -23,6 +23,7 @@ import { ChallengeSheet, type Challenge } from "./components/ChallengeSheet.tsx"
 import { Sidebar, TabBar, type Screen } from "./components/Nav.tsx";
 import { NicknameSheet } from "./components/NicknameSheet.tsx";
 import { loadMyProgress, type MyProgress } from "./lib/looks.ts";
+import { useDailyReady } from "./lib/shop.ts";
 import { DECORATIONS } from "../../shared/looks";
 import { ResultScreen } from "./components/ResultScreen.tsx";
 import { Toast } from "./components/Toast.tsx";
@@ -610,7 +611,8 @@ export function App() {
     if (r.credits > 0) { flash(msg.dm.chestOpened(`+${money(r.credits, locale)}`, r.boosts)); haptic.success(); }
     await Promise.all([loadProfile(), loadQuests()]);
   };
-  const claimable = quests.filter((q) => q.done && !q.claimed).length + (missions ? missions.missions.filter((m) => m.progress >= m.target && !m.claimed).length + (missions.chest.ready && !missions.chest.claimed ? 1 : 0) : 0) + (flashM && flashM.progress >= flashM.target && !flashM.claimed ? 1 : 0);
+  const dailyReady = useDailyReady(profile);
+  const claimable = (dailyReady ? 1 : 0) + quests.filter((q) => q.done && !q.claimed).length + (missions ? missions.missions.filter((m) => m.progress >= m.target && !m.claimed).length + (missions.chest.ready && !missions.chest.claimed ? 1 : 0) : 0) + (flashM && flashM.progress >= flashM.target && !flashM.claimed ? 1 : 0);
   const turnPush = async (on: boolean) => {
     setAskPush(false);
     if (!on) { await disablePush().catch(() => {}); rememberPush(false); setPushOn(false); flash(msg.push.off); return; }
@@ -670,7 +672,7 @@ export function App() {
       {seriesMaker && <SeriesMaker msg={msg} locale={locale} initial={seriesMaker.show} onClose={() => setSeriesMaker(null)} onCreated={(m) => { setSeriesMaker(null); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
       {quakeMaker && <QuakeMaker msg={msg} locale={locale} onClose={() => setQuakeMaker(false)} onCreated={(m) => { setQuakeMaker(false); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
       {placePicker && <PlacePicker msg={msg} locale={locale} recent={myPlaces} onPick={pickPlace} onCity={(id) => { store.set("filter", id); setFilter(id); setCatChosen(true); setPlacePicker(false); }} onClose={() => setPlacePicker(false)} />}
-      {rewardsOpen && <RewardsSheet flash={flashM} onClaimFlash={claimFlash} missions={missions} onClaimMission={claimMission} onClaimChest={claimChest} msg={msg} locale={locale} now={now} profile={profile} quests={quests} referral={referral} registered={registered} onClaim={claimQuest} onGo={goQuest} onShare={shareReferral} onClose={() => setRewardsOpen(false)} />}
+      {rewardsOpen && <RewardsSheet flash={flashM} onClaimFlash={claimFlash} missions={missions} onClaimMission={claimMission} onClaimChest={claimChest} msg={msg} locale={locale} now={now} profile={profile} quests={quests} referral={referral} registered={registered} onClaim={claimQuest} onGo={goQuest} onShare={shareReferral} onChanged={() => { loadProfile(); }} onClose={() => setRewardsOpen(false)} />}
       {askPush && <PushAsk lifted={slip.length > 0} msg={msg} onYes={() => turnPush(true)} onNo={() => { rememberPush(false); setAskPush(false); }} />}
       <ParlayBar count={slip.length} odds={slipOdds(slip)} msg={msg} locale={locale} onOpen={() => setParlayOpen(true)} />
       {sheet && <BetSheet offer={sheet.offer} now={now} occ={occ[sheet.m.id]} mm={outlook[sheet.m.id]} boosts={profile?.boosts ?? 0} stakeFactor={profile?.stake_factor} key={sheet.m.id} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
