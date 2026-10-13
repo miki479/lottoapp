@@ -125,7 +125,7 @@ export interface Messages {
     feedTitle: string; feedEmpty: string; listTitle: string; by: string; noStake: string; credits: string; closesIn: string;
     boardTab: string; groupsTab: string; inviteTitle: string; inviteBody: string; inviteBtn: string; invitedCount: (n: number) => string;
     empty: string; emptyBody: string; anon: string; remove: string; removeAsk: (n: string) => string; removeYes: string; removeNo: string; removed: string; challenge: string; boardHint: string;
-    invTitle: string; invHint: string; invNoFriends: string; invSend: (n: number) => string; invSent: (n: number) => string; invNone: string; invDone: string;
+    invJoined: string; invTitle: string; invHint: string; invNoFriends: string; invSend: (n: number) => string; invSent: (n: number) => string; invNone: string; invDone: string;
     hot: string; friendsOn: (n: number) => string; inboxTitle: string; inboxFrom: (who: string) => string; inboxOpen: string; referralNote: string; errors: Record<"invite_limit" | "too_many_invites" | "not_in_challenge" | "generic", string>;
   };
 }
