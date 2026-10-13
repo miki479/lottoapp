@@ -290,3 +290,34 @@ describe("fx, carbon and fear & greed", () => {
     expect(buildFearGreedMarkets(null, MON)).toHaveLength(0);
   });
 });
+
+import { BIKES, bikesPlausible, buildBikesMarkets, buildNwsMarkets } from "../shared/ticks.ts";
+describe("bike-share systems and US weather alerts", () => {
+  const MON = Date.UTC(2026, 9, 12, 10, 0, 0) / 1000;
+  it("every bike system has an https GBFS station_status url, a label and a sane max", () => {
+    for (const [k, b] of Object.entries(BIKES)) {
+      expect(b.url).toMatch(/^https:\/\/.+station_status/); expect(b.label.length).toBeGreaterThan(3); expect(b.max).toBeGreaterThan(1000);
+      const d = tickDef(`bikes:${k}`)!; expect(d.category).toBe("traffic"); expect(d.max).toBe(b.max); expect(isSpot(`bikes:${k}`)).toBe(true);
+    }
+    for (const k of ["capital", "divvy", "baywheels", "bluebikes", "toronto", "oslo"]) expect(k in BIKES).toBe(true);
+  });
+  it("a reading outside 1..max is not believable", () => {
+    expect(bikesPlausible("capital", 6144)).toBe(true); expect(bikesPlausible("oslo", 1830)).toBe(true);
+    expect(bikesPlausible("oslo", 8001)).toBe(false); expect(bikesPlausible("divvy", 0)).toBe(false); expect(bikesPlausible("divvy", NaN)).toBe(false); expect(bikesPlausible("nowhere", 100)).toBe(false);
+  });
+  it("bikes markets: 06/12/18 UTC, friendly step, nothing for an implausible or tiny count", () => {
+    const m = buildBikesMarkets({ capital: 6144, oslo: 1830, bluebikes: 90_000, divvy: 300 }, MON);
+    expect(new Set(m.map((x) => x.params.series))).toEqual(new Set(["bikes:capital", "bikes:oslo"]));
+    for (const x of m) expect([6, 12, 18]).toContain(new Date(x.target_at).getUTCHours());
+    expect(m.find((x) => x.params.series === "bikes:capital")!.params.threshold).toBe(6000);
+    expect(m.find((x) => x.params.series === "bikes:oslo")!.params.threshold).toBe(1750);
+  });
+  it("nws: spot questions every 6 hours on a friendly step, nothing for a missing or absurd count", () => {
+    const m = buildNwsMarkets(182, MON);
+    expect(m.length).toBeGreaterThanOrEqual(4);
+    for (const x of m) { expect((Date.parse(x.target_at) / 1000) % (6 * 3600)).toBe(0); expect(x.params.series).toBe("nws:us"); expect(x.params.threshold).toBe(180); expect(x.odds_yes).toBeGreaterThan(1.1); }
+    expect(buildNwsMarkets(66, MON)[0]!.params.threshold).toBe(70);
+    expect(tickDef("nws:us")!.category).toBe("nature"); expect(isSpot("nws:us")).toBe(true);
+    for (const bad of [null, undefined, 0, -3, 50_000]) expect(buildNwsMarkets(bad, MON)).toHaveLength(0);
+  });
+});

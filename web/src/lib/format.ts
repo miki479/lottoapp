@@ -74,6 +74,7 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     if (series.startsWith("fx:")) return msg.question.tick({ kind: "fx", label: lab, value: nd.format(thr), time: "", from: "", to: "", day });
     if (series === "feargreed") return msg.question.tick({ kind: "feargreed", label: lab, value: nd.format(thr), time: "", from: "", to: "", day });
     if (series === "carbon:gb") return msg.question.tick({ kind: "carbon", label: lab, value: `${nd.format(thr)} g/kWh`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series === "nws:us") return msg.question.tick({ kind: "nws", label: lab, value: nd.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("oil:")) return msg.question.tick({ kind: "oil", label: lab, value: `${nd.format(thr)} $`, time: "", from: "", to: "", day });
     return msg.question.tick({ kind: "price", label: lab, value: `${nd.format(thr)} $`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
   }

@@ -13,7 +13,7 @@ import { tvReference, tvRating, tvUpcoming } from "../_lib/tv.ts";
 import { FX, buildCarbonMarkets, buildFearGreedMarkets, buildFxMarkets, isCarbon, isFearGreed, isFx, type FxKey } from "../_shared/shared/ticks.ts";
 import { TM_PLACES, buildTicketMarkets, buildTvMarket, isTicket, isTv, tmWindow, type TmPlace } from "../_shared/shared/ticks.ts";
 import { FUELS, METALS, OIL, buildFuelMarkets, buildMetalMarkets, buildOilMarkets, isFuel, isMetal, isOil, type FuelKey, type MetalKey, type OilKey } from "../_shared/shared/ticks.ts";
-import { LASTFM, buildLastfmMarkets, BIKES, buildBikesMarkets } from "../_shared/shared/ticks.ts";
+import { LASTFM, buildLastfmMarkets, BIKES, buildBikesMarkets, bikesPlausible, buildNwsMarkets, isNws } from "../_shared/shared/ticks.ts";
 import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildAlertMarkets, alertLevel, alertQueryDate, ALERT_AREAS, ALERT_HAZARDS, ALERT_URL, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
 import { bookPriors, buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, type Fixture, type Geo, type MatchBet, type TableRow } from "../_shared/shared/sport.ts";
 import { apiFootball, apiKey, fetchBookQuotes, fetchDetails, fetchPlayerFacts, loadTable } from "../_lib/football.ts";
@@ -498,15 +498,18 @@ async function lastfmCounts(): Promise<Record<string, number>> {
   return out;
 }
 
+/** Urban Sharing (Oslo) asks every client to say who it is. */
+const BIKES_HEADERS = { ...UA, "Client-Identifier": "latelotto-latelotto" };
+
 /** Bikes available in each bike-share system (stations that are renting). */
 async function bikeCounts(): Promise<Record<string, number>> {
   const out: Record<string, number> = {};
   for (const [id, b] of Object.entries(BIKES)) {
     try {
-      const j = await getJson(b.url);
+      const j = JSON.parse(new TextDecoder().decode(await fetchBytes(b.url, BIKES_HEADERS)));
       const st = (j?.data?.stations ?? []) as { num_bikes_available?: number; is_renting?: number | boolean }[];
       const n = st.filter((x) => x.is_renting === 1 || x.is_renting === true).reduce((a, x) => a + (Number(x.num_bikes_available) || 0), 0);
-      if (st.length > 50 && n > 0) out[id] = n;
+      if (st.length > 50 && bikesPlausible(id, n)) out[id] = n;
     } catch { /* skip this system */ }
   }
   return out;
@@ -557,6 +560,12 @@ async function fetchCarbon(now: number): Promise<number | null> {
   const j = await getJson("https://api.carbonintensity.org.uk/intensity");
   const d = j?.data?.[0], v = d?.intensity?.actual ?? d?.intensity?.forecast, to = Date.parse(String(d?.to ?? "")) / 1000;
   return typeof v === "number" && v > 0 && Number.isFinite(to) && now - to <= 3600 ? v : null;
+}
+
+/** US weather alerts in force on land zones (NWS, keyless; a User-Agent is required). */
+async function fetchNws(): Promise<number | null> {
+  const j = await getJson("https://api.weather.gov/alerts/active/count");
+  return typeof j?.land === "number" && j.land > 0 && j.land <= (j?.total ?? Infinity) ? j.land : null;
 }
 
 /** Crypto Fear & Greed Index (alternative.me), newest first, each at 00:00 UTC of its day. */
@@ -686,6 +695,10 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       if (carbonDue.length) { const v = await fetchCarbon(now); if (v !== null) for (const { x, at } of carbonDue) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); }
     } catch (e) { notes.push(`carbon: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
+      const nwsDue = [...need.keys()].filter(isNws).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (nwsDue.length) { const v = await fetchNws(); if (v !== null) for (const { x, at } of nwsDue) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); }
+    } catch (e) { notes.push(`nws: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
       // concert counts: the number is read within minutes of the instant (a small pause between calls keeps under the provider's rate limit)
       const tmDue = [...need.keys()].filter(isTicket).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
       for (const { x, at } of tmDue.slice(0, 8)) { const w = tmWindow(at), v = await tmCount(x.slice(3) as TmPlace, w.from, w.to); if (v !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); await new Promise((r) => setTimeout(r, 250)); }
@@ -778,6 +791,7 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     let metalsNow: Partial<Record<MetalKey, number>> = {};
     try { const mp = await fetchMetals(now); metalsNow = mp; markets.push(...buildMetalMarkets(mp, now)); for (const [k, v] of Object.entries(mp)) extraHist.push({ series: `metal:${k}`, at: hourIso, value: v }); ok++; } catch (e) { notes.push(`metals: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try { const c = await fetchCarbon(now); markets.push(...buildCarbonMarkets(c, now)); if (c !== null) extraHist.push({ series: "carbon:gb", at: hourIso, value: c }); ok++; } catch (e) { notes.push(`carbon: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { const c = await fetchNws(); markets.push(...buildNwsMarkets(c, now)); if (c !== null) extraHist.push({ series: "nws:us", at: hourIso, value: c }); ok++; } catch (e) { notes.push(`nws: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     let fuelNow: { date: string; avgs: Partial<Record<FuelKey, number>> } | null = null;
     if (Math.floor(now / 3600) % 6 === 1) {
       try { const f = await fetchFuel(); markets.push(...buildFuelMarkets(f.avgs, f.date, now)); fuelNow = f; for (const [k, v] of Object.entries(f.avgs)) extraHist.push({ series: `fuel:${k}`, at: `${f.date}T00:00:00Z`, value: v }); ok++; } catch (e) { notes.push(`fuel: ${String((e as Error).message ?? e).slice(0, 80)}`); }

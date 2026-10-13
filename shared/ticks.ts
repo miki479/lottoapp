@@ -27,12 +27,21 @@ export type LastfmKey = keyof typeof LASTFM;
 export const isLastfm = (s: string) => s.startsWith("lastfm:") && s.slice(7) in LASTFM;
 /** Bikes available in a whole public bike-share system (GBFS, open standard): a number that swings with the commute, asked at fixed hours. */
 export const BIKES = {
-  nyc: { label: "Citi Bike NYC", url: "https://gbfs.citibikenyc.com/gbfs/en/station_status.json" },
-  paris: { label: "Vélib' Paris", url: "https://velib-metropole-opendata.smovengo.cloud/opendata/Velib_Metropole/station_status.json" },
-  tokyo: { label: "docomo Bike Share Tokyo", url: "https://api-public.odpt.org/api/v4/gbfs/docomo-cycle-tokyo/station_status.json" },
+  nyc: { label: "Citi Bike NYC", url: "https://gbfs.citibikenyc.com/gbfs/en/station_status.json", max: 200_000 },
+  paris: { label: "Vélib' Paris", url: "https://velib-metropole-opendata.smovengo.cloud/opendata/Velib_Metropole/station_status.json", max: 200_000 },
+  tokyo: { label: "docomo Bike Share Tokyo", url: "https://api-public.odpt.org/api/v4/gbfs/docomo-cycle-tokyo/station_status.json", max: 200_000 },
+  // `max` = the most bikes the system could plausibly have available (fleet size with a wide margin): a reading above it is a broken feed, not a number.
+  capital: { label: "Capital Bikeshare DC", url: "https://gbfs.capitalbikeshare.com/gbfs/en/station_status.json", max: 25_000 },
+  divvy: { label: "Divvy Chicago", url: "https://gbfs.divvybikes.com/gbfs/en/station_status.json", max: 25_000 },
+  baywheels: { label: "Bay Wheels San Francisco", url: "https://gbfs.baywheels.com/gbfs/en/station_status.json", max: 20_000 },
+  bluebikes: { label: "Bluebikes Boston", url: "https://gbfs.bluebikes.com/gbfs/en/station_status.json", max: 20_000 },
+  toronto: { label: "Bike Share Toronto", url: "https://toronto.publicbikesystem.net/customer/ube/gbfs/v1/en/station_status", max: 25_000 },
+  oslo: { label: "Oslo Bysykkel", url: "https://gbfs.urbansharing.com/oslobysykkel.no/station_status.json", max: 8_000 },
 } as const;
 export type BikeKey = keyof typeof BIKES;
 export const isBikes = (s: string) => s.startsWith("bikes:") && s.slice(6) in BIKES;
+/** A reading is believable when there are some bikes and not more than the system's `max`. */
+export const bikesPlausible = (key: string, n: number): boolean => key in BIKES && Number.isFinite(n) && n > 0 && n <= BIKES[key as BikeKey].max;
 /** Numbers that exist only "right now": they must be read within minutes of the instant. */
 export const isStorm = (s: string) => s.startsWith("storm:");
 export const isAlert = (s: string) => s.startsWith("alert:");
@@ -47,6 +56,8 @@ export type FxKey = keyof typeof FX;
 export const isFx = (s: string) => s.startsWith("fx:") && s.slice(3) in FX;
 /** UK grid carbon intensity (National Grid ESO / Carbon Intensity API, CC BY 4.0), gCO2 per kWh, half-hourly. */
 export const isCarbon = (s: string) => s === "carbon:gb";
+/** Weather alerts in force on US land zones (National Weather Service, public domain): the "land" figure of api.weather.gov/alerts/active/count. */
+export const isNws = (s: string) => s === "nws:us";
 /** Crypto Fear & Greed Index (alternative.me), 0 to 100, one value a day at 00:00 UTC. */
 export const isFearGreed = (s: string) => s === "feargreed";
 /** Average self-service price in Italy (euro a litre) from the Ministry's daily list of every station. */
@@ -70,7 +81,7 @@ export function tmWindow(at: number): { from: string; to: string } {
 export const isTv = (s: string) => /^tv:\d+$/.test(s);
 /** A question we write ourselves ("house:gta6"): settled by an admin once the day has passed, refunded if nobody does. */
 export const isHouse = (s: string) => /^house:[a-z0-9_-]{2,30}$/.test(s);
-export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isLastfm(s) || isBikes(s) || isStorm(s) || isMetal(s) || isCarbon(s) || isTicket(s);
+export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isLastfm(s) || isBikes(s) || isStorm(s) || isMetal(s) || isCarbon(s) || isNws(s) || isTicket(s);
 
 /** Saffir-Simpson scale by sustained wind in knots (1 min average), as NHC reports it. */
 export const STORM_STEPS: { kt: number; label: string }[] = [{ kt: 34, label: "TS" }, { kt: 64, label: "Cat. 1" }, { kt: 83, label: "Cat. 2" }, { kt: 96, label: "Cat. 3" }, { kt: 113, label: "Cat. 4" }, { kt: 137, label: "Cat. 5" }];
@@ -83,13 +94,14 @@ export function tickDef(series: string): TickDef | null {
   if (isMetal(series)) return { category: "finance", label: METALS[series.slice(6) as MetalKey].label, unit: "$", min: 0.1, max: 100_000 };
   if (isFx(series)) { const c = FX[series.slice(3) as FxKey]; return { category: "finance", label: c.label, unit: "", min: c.min, max: c.max }; }
   if (isCarbon(series)) return { category: "nature", label: "UK grid carbon", unit: " g/kWh", min: 0, max: 800 };
+  if (isNws(series)) return { category: "nature", label: "US weather alerts", unit: "", min: 0, max: 20_000 };
   if (isFearGreed(series)) return { category: "finance", label: "Fear & Greed", unit: "", min: 0, max: 100 };
   if (isFuel(series)) return { category: "finance", label: FUELS[series.slice(5) as FuelKey].label, unit: "€/l", min: 0.5, max: 5 };
   if (isOil(series)) return { category: "finance", label: OIL[series.slice(4) as OilKey].label, unit: "$", min: 5, max: 400 };
   if (isAlert(series)) return { category: "nature", label: "Allerta", unit: "", min: 0, max: 3 };
   if (isStorm(series)) return { category: "nature", label: "Storm", unit: " kt", min: 0, max: 200 };
   if (isSteam(series)) return { category: "culture", label: STEAM[series.slice(6) as keyof typeof STEAM], unit: "", min: 0, max: 100_000_000 };
-  if (isBikes(series)) return { category: "traffic", label: BIKES[series.slice(6) as BikeKey].label, unit: "", min: 0, max: 200_000 };
+  if (isBikes(series)) return { category: "traffic", label: BIKES[series.slice(6) as BikeKey].label, unit: "", min: 0, max: BIKES[series.slice(6) as BikeKey].max };
   if (isLastfm(series)) return { category: "culture", label: LASTFM[series.slice(7) as LastfmKey], unit: "", min: 1000, max: 2_000_000_000 };
   if (isHouse(series)) return { category: "culture", label: "Esclusiva", unit: "", min: 0, max: 1 };
   if (isTv(series)) return { category: "culture", label: "Voto episodio", unit: "", min: 0.5, max: 10 };
@@ -204,7 +216,7 @@ export function buildLastfmMarkets(stats: Record<string, { listeners: number; pe
 export function buildBikesMarkets(counts: Record<string, number>, now: number): TickMarketInsert[] {
   const out: TickMarketInsert[] = [];
   for (const [key, n] of Object.entries(counts)) {
-    if (!(n > 500) || !(key in BIKES)) continue;
+    if (!(n > 500) || !bikesPlausible(key, n)) continue;
     const series = `bikes:${key}`, def = tickDef(series)!, step = n >= 20_000 ? 1000 : n >= 5000 ? 500 : 250, thr = Math.round(n / step) * step;
     for (let at = Math.floor(now / (6 * H)) * 6 * H + 6 * H; at <= now + 30 * H; at += 6 * H) {
       const hourUtc = (at % 86400) / H;
@@ -223,6 +235,7 @@ export function tickSigma(series: string, ref: number, hours: number): number {
   if (isMetal(series)) return ref * METALS[series.slice(6) as MetalKey].vol * Math.sqrt(Math.max(1, hours));
   if (isFx(series)) return ref * FX[series.slice(3) as FxKey].vol * Math.sqrt(Math.max(1, hours / 24));
   if (isCarbon(series)) return Math.max(12, ref * 0.2 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4));
+  if (isNws(series)) return Math.max(8, ref * 0.25 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4));
   if (isFearGreed(series)) return 5 * Math.sqrt(Math.max(1, hours / 24));
   if (isFuel(series)) return ref * 0.002 * Math.sqrt(Math.max(1, hours / 24));
   if (isOil(series)) return ref * 0.0185 * Math.sqrt(Math.max(1, hours / 24));
@@ -240,6 +253,7 @@ export function tickStep(series: string, ref: number): number {
   if (isMetal(series)) return METALS[series.slice(6) as MetalKey].step;
   if (isFx(series)) return FX[series.slice(3) as FxKey].step;
   if (isCarbon(series)) return 5;
+  if (isNws(series)) return ref >= 1000 ? 100 : ref >= 200 ? 25 : ref >= 50 ? 10 : 5;
   if (isFearGreed(series)) return 5;
   if (isFuel(series)) return 0.005;
   if (isOil(series)) return 0.5;
@@ -354,6 +368,20 @@ export function buildCarbonMarkets(intensity: number | null | undefined, now: nu
     if (at - 600 <= now + 300) continue;
     const hours = Math.max(1, (at - now) / H);
     out.push(withDigits(tickMarket(series, def, intensity, Math.round(intensity / 5) * 5, tickSigma(series, intensity, hours), at, at - 600, at + 3 * H), 0));
+  }
+  return out;
+}
+
+/** US land weather alerts in force now: a question every 6 hours (00, 06, 12, 18 UTC) for the next 30 hours, on a friendly step. */
+export function buildNwsMarkets(count: number | null | undefined, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  const def = tickDef("nws:us")!;
+  if (!(typeof count === "number" && count > 0 && count <= def.max)) return out;
+  const step = tickStep("nws:us", count), thr = Math.max(step, Math.round(count / step) * step);
+  for (let at = Math.floor(now / (6 * H)) * 6 * H + 6 * H; at <= now + 30 * H; at += 6 * H) {
+    if (at - 600 <= now + 300) continue;
+    const hours = Math.max(1, (at - now) / H);
+    out.push(withDigits(tickMarket("nws:us", def, count, thr, tickSigma("nws:us", count, hours), at, at - 600, at + 3 * H), 0));
   }
   return out;
 }
