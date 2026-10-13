@@ -1,5 +1,5 @@
 import { sb } from "../lib/api.ts";
-import { stakeCap } from "../../../shared/wallet.ts";
+import { FUN_STAKE, stakeCap } from "../../../shared/wallet.ts";
 import { Q } from "./Q.tsx";
 import { MarketVs, noOf, reasonOf } from "./MatchVs.tsx";
 import { Gift, Layers, Rocket, Share2, Sparkles, X } from "lucide-preact";
@@ -56,7 +56,7 @@ export function BetSheet(p: {
   // Upper limit: what the odds allow (all-but-certain picks are closed), or the whole balance when it is lower (the server checks it again).
   // a personal offer has its own small stake limit instead of the odds-based one, and still refuses a pick whose real quote has become all but certain
   const oddsCap = offer ? offer.maxStake : ["bus_delay_gt", "train_delay_gt", "bus_full"].includes(p.m.kind) ? Math.min(stakeCap(odds), 1000) : stakeCap(odds), cap = Math.max(10, p.credits >= 10 ? Math.min(oddsCap, Math.floor(p.credits)) : Math.min(oddsCap, 500));
-  const decided = offer ? baseOf(pick) < OFFER_MIN_BASE_ODDS : oddsCap === 0;
+  const decided = offer ? baseOf(pick) < OFFER_MIN_BASE_ODDS : false, nearly = !offer && oddsCap <= FUN_STAKE;
   const amount = Math.min(stake, cap);
   const place = async () => {
     setBusy(true); setErr(null); haptic.tap();
@@ -108,7 +108,7 @@ export function BetSheet(p: {
         </div>
       )}
       {!offer && vicePct > 0 && pick === "yes" && <label class={`boosttoggle vicetoggle ${vice ? "on" : ""}`}><input type="checkbox" checked={vice} onChange={(e) => setVice((e.target as HTMLInputElement).checked)} /><Sparkles size={20} /><span><b>{p.msg.house.viceTitle}</b> · +{vicePct}%<small>{p.msg.house.viceBody(vicePct)}</small></span></label>}
-      {decided && <p class="note warn" role="status">{p.msg.errors.odds_too_low}</p>}
+      {(decided || nearly) && <p class="note warn" role="status">{p.msg.errors.odds_too_low}</p>}
       <StakeControl value={amount} onChange={setStake} cap={cap} balance={p.credits} odds={odds} boost={boost && p.boosts > 0} vice={vice && pick === "yes" ? vicePct : 0} fancy={exclusive} locale={p.locale} msg={p.msg} />
       {!offer && p.boosts > 0 && <label class={`boosttoggle ${boost ? "on" : ""}`}><input type="checkbox" checked={boost} onChange={(e) => setBoost((e.target as HTMLInputElement).checked)} /><Rocket size={20} /><span><b>{p.msg.boost.toggle}</b> · {p.msg.boost.have(p.boosts)}<small>{p.msg.boost.gain("+" + money(Math.floor(amount * odds) - amount, p.locale), "+" + money(boostedPayout(amount, odds) - amount, p.locale))} · {p.msg.boost.hint}</small></span></label>}
       {err && <p class="formerr" role="alert">{err}</p>}

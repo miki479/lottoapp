@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "preact/hooks";
 import { boostedPayout } from "../../../shared/wallet.ts";
 import { useCountUp } from "../lib/anim.ts";
 import { haptic } from "../lib/haptics.ts";
@@ -29,14 +30,24 @@ export function StakeControl(p: { value: number; onChange: (n: number) => void; 
   const bal = p.balance !== undefined ? Math.floor(p.balance) : -1;
   const allIn = bal >= 100 && p.value >= bal && hi >= bal;
   const share = bal > 0 ? Math.round((p.value / bal) * 100) : 0;
+  // leaving All In plays the opposite: the words are sucked back into the number
+  const [leaving, setLeaving] = useState(false);
+  const was = useRef(false);
+  useEffect(() => {
+    const prev = was.current; was.current = allIn;
+    if (prev && !allIn) { setLeaving(true); const t = window.setTimeout(() => setLeaving(false), 800); return () => window.clearTimeout(t); }
+    if (allIn) setLeaving(false);
+  }, [allIn]);
   const warn = !allIn && share >= 50 && p.value >= 200;
   return (
     <div class={`stakectl ${allIn ? "allin" : ""}`}>
       <span class="detail">{p.msg.stake.label}</span>
-      <output class={`glow pop ${p.fancy && p.value >= hi ? "vicemax" : ""} ${allIn ? "isallin" : ""}`} key={allIn ? "a" : p.value} aria-live="polite" style={`--hot:${hot};--halo:${Math.round(10 + 26 * heat)}px`}>
+      <output class={`glow pop ${p.fancy && p.value >= hi ? "vicemax" : ""} ${allIn || leaving ? "isallin" : ""}`} key={allIn ? "a" : leaving ? "l" : p.value} aria-live="polite" style={`--hot:${hot};--halo:${Math.round(10 + 26 * heat)}px`}>
         {allIn
           ? <span class="aistack"><span class="ainum">{money(p.value, p.locale)}</span><span class="aiword" aria-label="All In">ALL IN<span class="aiburst" aria-hidden="true" /></span></span>
-          : money(p.value, p.locale)}
+          : leaving
+            ? <span class="aistack"><span class="ainum aiback">{money(p.value, p.locale)}</span><span class="aiword aisuck" aria-hidden="true">ALL IN</span></span>
+            : money(p.value, p.locale)}
       </output>
       {allIn && <div class="airain" aria-hidden="true">{COIN_RAIN.map((c, i) => <span key={i} style={`left:${c.left}%;animation-delay:${c.delay}s;animation-duration:${c.dur}s`}>{c.e}</span>)}</div>}
       <input class="range" type="range" min={0} max={1000} step={1} value={pos} aria-label={p.msg.stake.label}

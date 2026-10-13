@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MAX_ODDS, MIN_ODDS, computeOdds, historyAtThreshold, liveYesProbability, type DelayContext } from "../shared/odds.ts";
-import { stakeCap } from "../shared/wallet.ts";
+import { FUN_STAKE, stakeCap } from "../shared/wallet.ts";
 import { buildSteamMarkets, diurnalRatio, buildCryptoMarkets, buildCustomTick, buildFxMarkets, buildNwsMarkets, buildStormMarkets, buildTicketMarkets, tickAbove, tickChance, tickDef, tickGrain, tickInclusive, tickSigma, tickYes } from "../shared/ticks.ts";
 import { METRIC_IDS, metricOdds } from "../shared/metrics.ts";
 import { ALL_BETS, evalBet, evalMatch, matchMarket, matchPriors, twoWayPriors, LEAGUES, type Fixture, type MatchBet } from "../shared/sport.ts";
@@ -26,9 +26,9 @@ describe("computeOdds", () => {
     for (const p of range(0.1, 0.9, 0.05)) { const o = computeOdds(p); expect(1 / o.yes + 1 / o.no).toBeGreaterThan(1.07); expect(1 / o.yes + 1 / o.no).toBeLessThan(1.1); }
   });
   it("a side that is all but certain is not bettable (below the stake-cap floor)", () => {
-    expect(stakeCap(computeOdds(0.97).yes)).toBe(0);
-    expect(stakeCap(computeOdds(0.03).no)).toBe(0);
-    expect(stakeCap(computeOdds(0.9).yes)).toBe(0);
+    expect(stakeCap(computeOdds(0.97).yes)).toBe(FUN_STAKE);
+    expect(stakeCap(computeOdds(0.03).no)).toBe(FUN_STAKE);
+    expect(stakeCap(computeOdds(0.9).yes)).toBe(FUN_STAKE);
   });
 });
 
@@ -71,7 +71,7 @@ describe("live delay pricing", () => {
   it("a service well on time a few stops away has its Yes at a long price but its No cannot be staked", () => {
     for (const h of hists.filter((x) => x <= 0.3)) for (const n of [0, 1, 2, 3, 5, 8]) {
       const o = computeOdds(liveYesProbability(h, -60, 300, n, true));
-      expect(stakeCap(o.no), `n=${n} h=${h}`).toBe(0);
+      expect(stakeCap(o.no), `n=${n} h=${h}`).toBe(FUN_STAKE);
     }
   });
   it("a higher line (apology ladder) is priced from its own thinner tail, not from the standard line's history", () => {

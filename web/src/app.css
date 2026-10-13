@@ -1312,13 +1312,17 @@ textarea.field { resize: vertical; min-height: 84px; }
 .aimoney, .ailetters, .aiemo { display: none; }
 .airain { position: absolute; left: 0; right: 0; top: 18px; height: 70px; overflow: hidden; pointer-events: none; animation: aifade .3s .55s both; }
 .airain span { position: absolute; top: -16px; font-size: 12px; opacity: 0; animation: airain 2.4s linear infinite; }
+.ainum.aiback { animation: aiback .4s .3s ease-out both; }
+.aiword.aisuck { animation: aisuck .45s cubic-bezier(.6, 0, .9, .4) both; }
+@keyframes aisuck { 0% { opacity: 1; transform: scale(1); filter: blur(0); } 100% { opacity: 0; transform: scale(.08); filter: blur(10px); } }
+@keyframes aiback { from { opacity: 0; filter: blur(8px); transform: scale(.9); } to { opacity: 1; filter: blur(0); transform: scale(1); } }
 @keyframes aifadeout { from { opacity: 1; filter: blur(0); transform: scale(1); } to { opacity: 0; filter: blur(8px); transform: scale(.96); } }
 @keyframes aiboom { 0% { opacity: 0; transform: scale(.15); filter: blur(8px); } 60% { opacity: 1; transform: scale(1.18); filter: blur(0); } 100% { opacity: 1; transform: scale(1); } }
 @keyframes airing { 0% { opacity: .9; transform: scale(.5); } 100% { opacity: 0; transform: scale(9); } }
 @keyframes aifade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes aigold { to { background-position: -250% 0; } }
 @keyframes airain { 0% { opacity: 0; transform: translateY(0) rotate(0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(80px) rotate(40deg); } }
-@media (prefers-reduced-motion: reduce) { .ainum { animation: none; opacity: 0; } .aiword, .aiburst, .airain, .airain span { animation: none; opacity: 1; } .aiburst, .airain { display: none; } }
+@media (prefers-reduced-motion: reduce) { .ainum.aiback { animation: none; opacity: 1; } .aisuck { display: none; } .ainum { animation: none; opacity: 0; } .aiword, .aiburst, .airain, .airain span { animation: none; opacity: 1; } .aiburst, .airain { display: none; } }
 .legmini .legq { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; } .legmini .legq em { font-style: normal; font-weight: 800; color: var(--text); font-size: 13px; }
 .legmini li { align-items: flex-start; }
 .installhint { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--brand-soft); border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent); color: var(--text); } .installhint > svg { color: var(--brand); flex: none; }
