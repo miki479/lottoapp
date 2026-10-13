@@ -1,8 +1,9 @@
 /**
  * Monthly leagues. Five leagues named after the avatar-decoration metals. At the end of each month, among the players who
  * bet at least once, the top 10 of a league (by credits) and anyone with 1,000,000+ credits move up one league. Everyone's
- * balance restarts from a base that grows a little with the league. Nobody goes down. Fake credits only.
- * public.close_league_season() in supabase/migrations/0095_leagues.sql mirrors these rules.
+ * balance restarts from a base that grows a little with the league. A month without a single bet moves a player down one league
+ * (bronze stays bronze; the credits are kept, lifted to the new league's base if lower). Fake credits only.
+ * public.close_league_season() (latest: supabase/migrations/0111_league_demotion.sql, then 0113) mirrors these rules.
  */
 export const LEAGUES = ["bronze", "silver", "gold", "platinum", "diamond"] as const;
 export type LeagueId = (typeof LEAGUES)[number];

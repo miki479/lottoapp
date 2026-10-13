@@ -22,9 +22,34 @@ export function validateStake(stake: number, balance: number): "ok" | "not_integ
   return "ok";
 }
 
-/** Gross return for a winning bet (stake included). Always an integer number of credits. */
+/**
+ * Gross return for a winning bet (stake included). Always an integer number of credits, rounded down like the database
+ * (floor(stake * odds) on exact numerics). Odds are stored with two decimals, so the product is done in whole cents: in floating point
+ * 100 * 1.15 is 114.99999999999999 and would pay one credit less than the server does.
+ */
 export function payout(stake: number, odds: number): number {
-  return Math.floor(stake * odds);
+  if (!Number.isFinite(stake) || !Number.isFinite(odds)) return 0;
+  return Math.floor((Math.round(odds * 100) * stake) / 100);
+}
+
+/**
+ * Stake limit of a bet on a live delay / crowding question, on top of `stakeCap`: at most 1000 whatever the quote, and never more than 2000
+ * of profit (2000 / (odds - 1)), with a floor of FUN_STAKE. Mirrors place_bet (migration 0112) and the BetSheet.
+ */
+export const DELAY_KINDS: readonly string[] = ["bus_delay_gt", "train_delay_gt", "bus_full"];
+export function delayStakeCap(odds: number): number {
+  const sc = Math.min(stakeCap(odds), 1000);
+  return odds > 1 ? Math.max(FUN_STAKE, Math.min(sc, Math.floor(2000 / (odds - 1)))) : sc;
+}
+
+/** Parlays: 2 to 5 legs, stake 10..5000, combined odds are the product of the legs, rounded to cents and capped at 100. Mirrors place_parlay / settle_legs. */
+export const PARLAY_MIN_LEGS = 2;
+export const PARLAY_MAX_LEGS = 5;
+export const PARLAY_MAX_STAKE = 5000;
+export const PARLAY_MAX_ODDS = 100;
+export function parlayOdds(legOdds: readonly number[]): number {
+  const prod = legOdds.reduce((a, o) => a * (Number.isFinite(o) && o > 0 ? o : 1), 1);
+  return Math.min(PARLAY_MAX_ODDS, Math.round(prod * 100) / 100);
 }
 
 /**

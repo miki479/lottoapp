@@ -1,3 +1,4 @@
+import { payout } from "./wallet.ts";
 // Personal super-odds: pure rules, mirrored by public.make_personal_offers() and public.place_bet() (migration 0096).
 export type OfferReason = "absent" | "losses" | "random";
 export const OFFER_MULTIPLIERS = [5, 10] as const;
@@ -46,7 +47,7 @@ export function marketEligible(m: OfferMarket): boolean {
 /** The odds locked on the bet: base times multiplier, rounded to cents, never above 100. */
 export const offerOdds = (base: number, multiplier: number) => Math.min(OFFER_MAX_ODDS, Math.round(base * multiplier * 100) / 100);
 /** What the stake pays if it wins (as the settlement computes it). */
-export const offerPayout = (stake: number, base: number, multiplier: number) => Math.floor(stake * offerOdds(base, multiplier));
+export const offerPayout = (stake: number, base: number, multiplier: number) => payout(stake, offerOdds(base, multiplier));
 
 export type OfferError = "bad_offer" | "offer_used" | "offer_expired" | "stake_too_high" | "odds_too_low";
 export interface OfferRow { user_id: string; market_id: string; used_at: string | null; expires_at: string; max_stake: number }

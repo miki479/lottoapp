@@ -21,6 +21,7 @@ export function bankMatured(ageSec: number): boolean {
 
 /** Multiplier in basis points: 10000 at day 3, growing linearly to 15000 at day 14, flat after. */
 export function bankMultBps(ageSec: number): number {
+  if (!Number.isFinite(ageSec)) return 10000;
   const span = (BANK_FULL_DAYS - BANK_LOCK_DAYS) * DAY_SEC;
   const into = Math.min(span, Math.max(0, ageSec - BANK_LOCK_DAYS * DAY_SEC));
   return 10000 + Math.floor(((BANK_MAX_MULT_BPS - 10000) * into) / span);

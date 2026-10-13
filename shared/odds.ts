@@ -43,12 +43,13 @@ export interface Odds {
 
 export function computeOdds(pYes: number, flashMultiplier = 1): Odds {
   const mult = Math.min(FLASH_MAX_MULTIPLIER, Math.max(1, flashMultiplier));
-  const price = (p: number) => {
-    const raw = ((1 - HOUSE_MARGIN) / p) * mult;
-    const clamped = Math.min(MAX_ODDS * mult, Math.max(MIN_ODDS, raw));
+  const price = (p: number, m: number) => {
+    const raw = ((1 - HOUSE_MARGIN) / p) * m;
+    const clamped = Math.min(MAX_ODDS, Math.max(MIN_ODDS, raw));
     return Math.round(clamped * 100) / 100;
   };
-  return { yes: price(pYes), no: price(1 - pYes), pYes };
+  // A flash boosts the "yes" quote only and never past MAX_ODDS, exactly like run_flash() / apply_live_odds() in the database.
+  return { yes: price(pYes, mult), no: price(1 - pYes, 1), pYes };
 }
 
 /**
