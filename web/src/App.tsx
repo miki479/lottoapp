@@ -232,7 +232,7 @@ export function App() {
     // Questions that close far ahead (matches, daily page views, price lines) would fall off the first page: fetch them on their own.
     const far = (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("category", ["sport", "finance", "culture", "nature", "law"]).gt("closes_at", new Date().toISOString()).order("closes_at").limit(200)).data ?? [];
     // the questions we write ourselves close far ahead: always fetched on their own
-    const house = (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").eq("kind", "tick_gt").like("params->>series", "house:%").gt("closes_at", new Date().toISOString()).limit(10)).data ?? [];
+    const house = (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").eq("kind", "tick_gt").like("params->>series", "house:%").gt("closes_at", new Date().toISOString()).order("closes_at").limit(60)).data ?? [];
     const seen = new Set([...(data ?? []), ...mine].map((x) => (x as { id: string }).id));
     const extra = [...far, ...house].filter((x) => !seen.has((x as unknown as { id: string }).id));
     if (!error) { setMarkets([...(data ?? []), ...mine, ...extra].filter((m) => testMode() || !(m.params as { testOnly?: boolean } | null)?.testOnly) as MarketRow[]); if (navigator.onLine) setOffline(false); }
