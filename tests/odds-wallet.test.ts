@@ -87,3 +87,13 @@ describe("learned starting chance", () => {
     expect(learnedPrior(0, 500, 0.3)).toBe(0.03);
   });
 });
+
+import { balanceStakeCap } from "../shared/wallet.ts";
+describe("stake limit that follows the balance", () => {
+  it("all-in is possible for small balances, a quarter of the balance for big ones", () => {
+    expect(balanceStakeCap(800)).toBe(5000);
+    expect(balanceStakeCap(5000)).toBe(5000);
+    expect(balanceStakeCap(41_000)).toBe(10_250);
+    expect(balanceStakeCap(1_000_000)).toBe(250_000);
+  });
+});

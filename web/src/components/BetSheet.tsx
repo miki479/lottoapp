@@ -1,5 +1,5 @@
 import { sb } from "../lib/api.ts";
-import { FUN_STAKE, stakeCap } from "../../../shared/wallet.ts";
+import { FUN_STAKE, balanceStakeCap, stakeCap } from "../../../shared/wallet.ts";
 import { Q } from "./Q.tsx";
 import { MarketVs, noOf, reasonOf } from "./MatchVs.tsx";
 import { Gift, Layers, Rocket, Share2, Sparkles, X } from "lucide-preact";
@@ -58,7 +58,8 @@ export function BetSheet(p: {
   const factor = p.stakeFactor ?? 1;
   const baseCap = offer ? offer.maxStake : ["bus_delay_gt", "train_delay_gt", "bus_full"].includes(p.m.kind) ? Math.min(stakeCap(odds), 1000) : stakeCap(odds);
   // a reduced stake factor (someone who keeps cashing in on near-certain picks) shrinks the limit on such picks, as the server does
-  const oddsCap = !offer && baseCap > FUN_STAKE && factor < 1 ? Math.max(FUN_STAKE, Math.floor(baseCap * factor)) : baseCap;
+  const factored = !offer && baseCap > FUN_STAKE && factor < 1 ? Math.max(FUN_STAKE, Math.floor(baseCap * factor)) : baseCap;
+  const oddsCap = offer ? factored : Math.min(factored, balanceStakeCap(p.credits));
   const cap = Math.max(10, p.credits >= 10 ? Math.min(oddsCap, Math.floor(p.credits)) : Math.min(oddsCap, 500));
   const decided = offer ? baseOf(pick) < OFFER_MIN_BASE_ODDS : false, nearly = !offer && oddsCap <= FUN_STAKE;
   const amount = Math.min(stake, cap);
