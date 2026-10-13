@@ -429,15 +429,15 @@ export async function notifyComeback(sb: Db): Promise<number> {
   return n;
 }
 
-/** One-off messages to one player, queued by an admin as app_settings rows named "direct:<anything>" holding {user, heading, body, url?}. Sent once, then the row is removed. */
+/** One-off messages to one player, queued by an admin as app_settings rows named "direct:<anything>" holding {user, heading, body, url?, gifts?}. Sent once, then the row is removed. */
 export async function notifyDirect(sb: Db): Promise<number> {
   if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
   const { data } = await sb.from("app_settings").select("key,value").like("key", "direct:%").limit(20);
   let n = 0;
   for (const r of data ?? []) {
-    let m: { user?: string; heading?: string; body?: string; url?: string } | null = null;
+    let m: { user?: string; heading?: string; body?: string; url?: string; gifts?: { credits?: number; boosts?: number; decoration?: string } } | null = null;
     try { m = JSON.parse(r.value as string); } catch { /* removed below */ }
-    if (m?.user && m.heading && m.body && (await send([m.user], m.heading, m.body, m.url ?? "https://latelotto.web.app/?open=profile"))) { n++; await sb.from("user_messages").insert({ user_id: m.user, heading: m.heading, body: m.body }); }
+    if (m?.user && m.heading && m.body && (await send([m.user], m.heading, m.body, m.url ?? "https://latelotto.web.app/?open=profile"))) { n++; await sb.from("user_messages").insert({ user_id: m.user, heading: m.heading, body: m.body, gifts: m.gifts ?? null }); }
     else if (m?.user) continue; // not delivered: tried again next minute
     await sb.from("app_settings").delete().eq("key", r.key as string);
   }

@@ -109,7 +109,7 @@ export function Home(p: HomeProps) {
         </section>
       )}
       <div class="aside">
-        <Inbox registered={p.registered} ok={msg.common.close} />
+        <Inbox registered={p.registered} ok={msg.common.close} locale={p.locale} />
         <ForYou msg={msg} locale={p.locale} now={p.now} markets={p.markets} registered={p.registered} home={p.homePos ?? null} onPick={p.onPick} onCreate={p.onCreate} />
         {(p.top.length > 0 || p.italian) && (
           <section class="stack" style="gap:8px">
