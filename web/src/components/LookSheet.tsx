@@ -22,7 +22,7 @@ export function LookSheet({ progress, msg, myId, onClose, onSaved }: { progress:
     <Sheet onClose={onClose} label={t.title}>
       <div class="lkprev"><Look avatar={av} decoration={deco} size={150} label={t.title} /><b>{t.level(progress.level)}</b>
         <div class="xpbar" role="progressbar" aria-valuenow={Math.round(lp.ratio * 100)} aria-valuemin={0} aria-valuemax={100}><i style={`width:${Math.round(lp.ratio * 100)}%`} /></div>
-        <span class="hint num">{t.xp(lp.into, lp.need)}</span><button class="linkbtn" onClick={() => setXpOpen(true)}>{t.xpHow}</button></div>
+        <span class="hint num">{t.xp(lp.into, lp.need)}</span><button class="infodot" onClick={() => setXpOpen(true)} aria-label={t.xpHow}>i</button></div>
       {xpOpen && <XpInfo msg={msg} onClose={() => setXpOpen(false)} />}
       <h3 class="lkh">{t.avatars}</h3>
       <div class="lkavs">{AVATARS.map((a) => <button key={a} class={`lkav ${av === a ? "on" : ""}`} aria-pressed={av === a} aria-label={t.av[a]} onClick={() => setAv(a)}><Look avatar={a} size={52} /></button>)}</div>

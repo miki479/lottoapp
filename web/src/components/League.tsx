@@ -1,4 +1,4 @@
-import { HelpCircle, X } from "lucide-preact";
+import { X } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { LEAGUES, PROMOTE_CREDITS, PROMOTE_TOP, promotionGap, resetBalance } from "../../../shared/leagues.ts";
 import { INTL_TAG, type Locale, type Messages } from "../i18n/index.ts";
@@ -102,7 +102,7 @@ export function LeaguePanel(p: { locale: Locale; registered: boolean; onProfile:
         <div class="lgtop">
           <Badge league={d.league} />
           <div class="lgtxt"><b>{t.league(t.names[d.league]!)}</b><span class="hint">{d.rank != null ? t.rank(d.rank, d.players) : t.none}</span></div>
-          <button class="iconbtn" onClick={() => setHow(true)} aria-label={t.how}><HelpCircle size={22} /></button>
+          <button class="infodot" onClick={() => setHow(true)} aria-label={t.how}>i</button>
         </div>
         {d.rank != null && <><div class="lgbar" role="presentation"><i style={`width:${Math.round(progress * 100)}%`} /></div><span class="hint">{line}</span></>}
         <span class="detail">{t.days(d.days_left)}</span>

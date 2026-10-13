@@ -61,7 +61,7 @@ export function ProfileView(p: {
               {p.registered && <button class="iconbtn" onClick={p.onNickname} aria-label={m.nickname.title}><Pencil size={20} /></button>}
             </div>
             {p.look && (() => { const lp = levelProgress(p.look.xp); return <button class="lkxp" onClick={p.onLook}><span class="xpbar"><i style={`width:${Math.round(lp.ratio * 100)}%`} /></span><span class="hint num">{p.msg.look.level(lp.level)} · {p.msg.look.xp(lp.into, lp.need)}</span></button>; })()}
-            {p.look && <button class="linkbtn xphow" onClick={() => setXpOpen(true)}>{p.msg.look.xpHow}</button>}
+            {p.look && <button class="infodot" onClick={() => setXpOpen(true)} aria-label={p.msg.look.xpHow}>i</button>}
             {xpOpen && <XpInfo msg={p.msg} onClose={() => setXpOpen(false)} />}
             {!p.registered && <p class="hint">{m.guestHint}</p>}
             {!p.registered ? <button class="btn primary wide" onClick={p.onAuth}>{m.signIn}</button> : !p.profile?.display_name && <button class="btn secondary wide" onClick={p.onNickname}>{m.nickname.title}</button>}
