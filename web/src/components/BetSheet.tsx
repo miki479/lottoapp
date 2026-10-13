@@ -55,7 +55,7 @@ export function BetSheet(p: {
   const odds = shownOf(pick);
   // Upper limit: what the odds allow (all-but-certain picks are closed), or the whole balance when it is lower (the server checks it again).
   // a personal offer has its own small stake limit instead of the odds-based one, and still refuses a pick whose real quote has become all but certain
-  const oddsCap = offer ? offer.maxStake : stakeCap(odds), cap = Math.max(10, p.credits >= 10 ? Math.min(oddsCap, Math.floor(p.credits)) : Math.min(oddsCap, 500));
+  const oddsCap = offer ? offer.maxStake : ["bus_delay_gt", "train_delay_gt", "bus_full"].includes(p.m.kind) ? Math.min(stakeCap(odds), 1000) : stakeCap(odds), cap = Math.max(10, p.credits >= 10 ? Math.min(oddsCap, Math.floor(p.credits)) : Math.min(oddsCap, 500));
   const decided = offer ? baseOf(pick) < OFFER_MIN_BASE_ODDS : oddsCap === 0;
   const amount = Math.min(stake, cap);
   const place = async () => {

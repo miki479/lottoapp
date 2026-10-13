@@ -394,3 +394,10 @@ describe("rain priced from the forecast", () => {
     expect(rainYesProbability(null, 0.1, 5, 0.25)).toBe(0.25);
   });
 });
+
+describe("a train already far behind", () => {
+  it("is priced as nearly certain: no one can profit from the live delay", () => {
+    expect(liveYesProbability(0.14, 780, 300, 16, true)).toBeGreaterThan(0.85);
+    expect(liveYesProbability(0.14, 780, 300, 5, true)).toBeGreaterThan(0.93);
+  });
+});

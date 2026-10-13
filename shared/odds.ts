@@ -100,7 +100,8 @@ export function liveYesProbability(pHist: number, delaySec: number, thresholdSec
   const n = Math.max(0, stopsLeft);
   const crowd = crowding(ctx);
   // in the rush a late service keeps losing time (crowded platforms), at night it recovers faster
-  const recover = (train ? 20 : 10) * (crowd > 0 ? 0.3 : crowd < 0 ? 1.5 : 1), sd = (train ? 60 : 45) + (train ? 30 : 25) * Math.sqrt(n);
+  // a train that is late stays late: a few seconds recovered per stop at most (Italian regional/long-distance delays barely shrink over a run)
+  const recover = (train ? 6 : 10) * (crowd > 0 ? 0.3 : crowd < 0 ? 1.5 : 1), sd = (train ? 45 : 45) + (train ? 22 : 25) * Math.sqrt(n);
   // the rush-hour drift builds up with the delay already there (none at all on time), so it never jumps at 0
   const drift = crowd > 0 && delaySec > 0 ? (train ? 12 : 8) * n * Math.min(1, delaySec / 120) : 0;
   const mean = delaySec > 0 ? Math.max(0, delaySec - recover * n + drift) : delaySec;
@@ -112,7 +113,7 @@ export function liveYesProbability(pHist: number, delaySec: number, thresholdSec
   // A delay already past the line is persistent: a service 20 minutes late does not make it all up in a few stops. Whatever the history says,
   // the chance is the live one less a small allowance for the unexpected (a short-turn, a skipped stop), which grows with the stops left.
   // Taking the larger of the two keeps the quote monotone in the threshold (a line below the delay can only ever get the higher figure).
-  if (delaySec >= thresholdSec) p = Math.max(p, pLive * (1 - Math.min(0.3, (train ? 0.03 : 0.05) + (train ? 0.012 : 0.015) * n)));
+  if (delaySec >= thresholdSec) p = Math.max(p, pLive * (1 - Math.min(train ? 0.15 : 0.3, (train ? 0.02 : 0.05) + (train ? 0.006 : 0.015) * n)));
   return Math.min(0.97, Math.max(0.03, p));
 }
 
