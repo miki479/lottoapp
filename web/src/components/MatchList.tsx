@@ -96,8 +96,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
     const two = TWO_WAY_LEAGUES.includes(mt.league);
     if (!adv) return (
       <article class={`card matchrow simple ${fr(mt) > 0 ? "has-friends" : ""}`} key={mt.eventId}>
-        {fr(mt) > 0 && <span class="frbadge" title={p.msg.frd.friendsOn(fr(mt))} aria-label={p.msg.frd.friendsOn(fr(mt))}><Users size={13} />{fr(mt)}</span>}
-        <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span>{(!two || hasLines(mt)) && <button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button>}</div>
+        <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span><span class="mright">{fr(mt) > 0 && <span class="frbadge" title={p.msg.frd.friendsOn(fr(mt))} aria-label={p.msg.frd.friendsOn(fr(mt))}><Users size={13} />{fr(mt)}</span>}{(!two || hasLines(mt)) && <button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button>}</span></div>
         <MatchVs home={mt.home} away={mt.away} homeBadge={mt.homeBadge} awayBadge={mt.awayBadge} />
         <span class="reason">{u.wins(mt.home)}?</span>
         <div class="oddsrow two">
@@ -108,8 +107,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
     );
     return (
       <article class={`card matchrow ${fr(mt) > 0 ? "has-friends" : ""}`} key={mt.eventId}>
-        {fr(mt) > 0 && <span class="frbadge" title={p.msg.frd.friendsOn(fr(mt))} aria-label={p.msg.frd.friendsOn(fr(mt))}><Users size={13} />{fr(mt)}</span>}
-        <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span>{(!two || hasLines(mt)) && <button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button>}</div>
+        <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span><span class="mright">{fr(mt) > 0 && <span class="frbadge" title={p.msg.frd.friendsOn(fr(mt))} aria-label={p.msg.frd.friendsOn(fr(mt))}><Users size={13} />{fr(mt)}</span>}{(!two || hasLines(mt)) && <button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button>}</span></div>
         <MatchVs home={mt.home} away={mt.away} homeBadge={mt.homeBadge} awayBadge={mt.awayBadge} />
         <div class={`oddsrow ${two ? "two" : ""}`}>
           <OddsBtn label="1" odds={oddsOf(mt, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(mt, "home_win", "yes")} />

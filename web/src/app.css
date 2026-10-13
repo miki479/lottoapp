@@ -913,7 +913,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 .mkchips:not(.sheet *) { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .mkchips::-webkit-scrollbar { display: none; } .mkchips .mkchip { flex: none; }
 
 .card.event, .card.matchrow { position: relative; }
-.frbadge { position: absolute; top: 10px; right: 10px; z-index: 2; display: inline-flex; align-items: center; gap: 4px; min-height: 24px; padding: 0 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: 12px; font-weight: 800; border: 1px solid color-mix(in srgb, var(--brand) 35%, transparent); }
+.mright { display: inline-flex; align-items: center; gap: 8px; } .matchrow .frbadge { position: static; } .frbadge { position: absolute; top: 10px; right: 10px; z-index: 2; display: inline-flex; align-items: center; gap: 4px; min-height: 24px; padding: 0 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: 12px; font-weight: 800; border: 1px solid color-mix(in srgb, var(--brand) 35%, transparent); }
 .has-friends { border-color: color-mix(in srgb, var(--brand) 45%, var(--border)); }
 
 /* ---- daily missions ---- */
