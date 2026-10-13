@@ -27,6 +27,7 @@ import { StakeControl } from "./StakeControl.tsx";
 import { offerText, type OfferUse } from "./PersonalOffer.tsx";
 import { OFFER_MIN_BASE_ODDS, offerOdds } from "../../../shared/offers.ts";
 import { Remind } from "./Remind.tsx";
+import { StopsBoard } from "./StopsBoard.tsx";
 
 /** Bet slip for one event: pick, stake, then place it (guests do the "last step" sign-up right here when it is required). */
 export function BetSheet(p: {
@@ -81,6 +82,7 @@ export function BetSheet(p: {
       {(p.m.params as { house?: boolean }).house && <Remind id={p.m.id} msg={p.msg} />}
       {typeof p.m.params.by === "string" && p.m.params.by && <p class="byline">{p.msg.maker.by(p.m.params.by)}</p>}
       {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "traffic_speed_lt" ? <TrafficScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "match_bet" ? <SportScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "tick_gt" ? <TickScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" || p.m.kind === "strike_on" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : p.m.kind === "bus_full" ? <OccScene m={p.m} hint={pick} level={p.occ?.level} msg={p.msg} /> : <TripScene m={p.m} now={p.now} hint={pick} big />}
+      {(p.m.kind === "bus_delay_gt" || p.m.kind === "train_delay_gt") && <StopsBoard m={p.m} locale={p.locale} now={p.now} />}
       {(p.m.params.custom === "true" || p.m.params.local === "true") && <AreaStats marketId={p.m.id} msg={p.msg} />}
       {p.m.kind === "tick_gt" && !(p.m.params as { house?: boolean }).house && <TickChart m={p.m} msg={p.msg} locale={p.locale} />}
       <div>

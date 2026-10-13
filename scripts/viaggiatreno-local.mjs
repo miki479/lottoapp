@@ -55,11 +55,10 @@ async function poll() {
       const res = await fetch(`${BASE}/andamentoTreno/${t.codOrigine}/${t.numero}/${t.serviceDayMs}`, { headers: { "User-Agent": "LateLotto-private-test/0.1 (single user, pre-release)" }, signal: AbortSignal.timeout(20000) });
       const text = await res.text();
       if (!res.ok || /Access Denied/i.test(text)) { console.error(tripId, "HTTP", res.status); continue; }
-      // Every stop the train has reached is a fact. Keep the ones the markets ask about, plus the latest one, which tells "how late is it right now".
+      // Every stop the train has reached is a fact, and all of them are kept (a reading is stored once: same train, stop and time): the questions
+      // ask about some stops, "how late is it right now" about the latest, and the "Show stops" board draws them all.
       const seen = viaggiatrenoAdapter(JSON.parse(text), { feedId: FEED, fetchedAt: Math.floor(Date.now() / 1000), tripId });
-      const last = seen.reduce((m, o) => ((o.stopSequence ?? -1) > (m?.stopSequence ?? -1) ? o : m), null);
       for (const o of seen) {
-        if (!stops.has(o.stopId) && o !== last) continue;
         rows.push({ city_id: CITY, feed_id: FEED, route_id: o.routeId, trip_id: o.tripId, stop_id: o.stopId, stop_sequence: o.stopSequence ?? null, observed_at: new Date(o.observedAt * 1000).toISOString(), delay_sec: Math.round(o.delaySec), predicted_at: null });
       }
     } catch (e) { console.error(tripId, e.message); }

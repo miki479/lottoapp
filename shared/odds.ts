@@ -93,20 +93,31 @@ export function historyAtThreshold(pHist: number, thresholdSec: number, train: b
 }
 
 /**
+ * The delay expected `stopsLeft` stops after a reading of `delaySec` (negative = early): a late service recovers a little per stop, an early or
+ * punctual one stays as it is. The one recovery assumption of the app: it prices the live questions (`liveYesProbability`) and fills in the stops
+ * still ahead on the "stops" board.
+ */
+export function expectedDelay(delaySec: number, stopsLeft: number, train: boolean, ctx?: DelayContext): number {
+  const n = Math.max(0, stopsLeft);
+  const crowd = crowding(ctx);
+  // in the rush a late service keeps losing time (crowded platforms), at night it recovers faster
+  // a train that is late stays late: a few seconds recovered per stop at most (Italian regional/long-distance delays barely shrink over a run)
+  const recover = (train ? 6 : 10) * (crowd > 0 ? 0.3 : crowd < 0 ? 1.5 : 1);
+  // the rush-hour drift builds up with the delay already there (none at all on time), so it never jumps at 0
+  const drift = crowd > 0 && delaySec > 0 ? (train ? 12 : 8) * n * Math.min(1, delaySec / 120) : 0;
+  return delaySec > 0 ? Math.max(0, delaySec - recover * n + drift) : delaySec;
+}
+
+/**
  * Chance that the delay at the question's stop is above `thresholdSec`, given the delay read `stopsLeft` stops earlier.
  * Non-increasing in the threshold, non-decreasing in the delay.
  */
 export function liveYesProbability(pHist: number, delaySec: number, thresholdSec: number, stopsLeft: number, train: boolean, ctx?: DelayContext): number {
   const n = Math.max(0, stopsLeft);
-  const crowd = crowding(ctx);
-  // in the rush a late service keeps losing time (crowded platforms), at night it recovers faster
-  // a train that is late stays late: a few seconds recovered per stop at most (Italian regional/long-distance delays barely shrink over a run)
-  const recover = (train ? 6 : 10) * (crowd > 0 ? 0.3 : crowd < 0 ? 1.5 : 1), sd = (train ? 45 : 45) + (train ? 22 : 25) * Math.sqrt(n);
+  const sd = (train ? 45 : 45) + (train ? 22 : 25) * Math.sqrt(n);
   const growth = (train ? 0.12 : 0.08) * Math.max(0, delaySec); // a delay already large can still grow in proportion (only upwards: it recovers little)
-  // the rush-hour drift builds up with the delay already there (none at all on time), so it never jumps at 0
-  const drift = crowd > 0 && delaySec > 0 ? (train ? 12 : 8) * n * Math.min(1, delaySec / 120) : 0;
-  const mean = delaySec > 0 ? Math.max(0, delaySec - recover * n + drift) : delaySec;
-  const z = (thresholdSec + 0.5 - mean) / (thresholdSec + 0.5 > mean ? sd + growth : sd);
+  const mean = expectedDelay(delaySec, n, train, ctx);
+  const z =(thresholdSec + 0.5 - mean) / (thresholdSec + 0.5 > mean ? sd + growth : sd);
   const pLive = 1 - normalCdf(z);
   const h = historyAtThreshold(pHist, thresholdSec, train);
   const w = 10 / (10 + n);

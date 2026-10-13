@@ -143,7 +143,7 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
     }
     if (feed.kind === "vehicle_positions" || feed.kind === "trip_updates_times" || feed.kind === "trip_updates_seq") {
       const sd = `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
-      for (const s of stops) schedule.push({ feed_id: feed.id, trip_id: tid, stop_sequence: s.seq, stop_id: s.stopId, scheduled_time: s.time, service_date: sd });
+      for (const s of stops) schedule.push({ feed_id: feed.id, trip_id: tid, stop_sequence: s.seq, stop_id: s.stopId, scheduled_time: s.time, service_date: sd, stop_name: (stopNames.get(s.stopId) ?? "").slice(0, 120) || null });
     }
   }
   return { markets, schedule };
@@ -198,7 +198,7 @@ async function trainMarkets(feed) {
 
   const hist = await historyLookup();
   const priorYes = await learnedPriorYes("train");
-  const markets = [];
+  const markets = [], schedule = [];
   for (const [tripId, x] of shuffled) {
     if (markets.length >= max) break;
     const t = await vt(`andamentoTreno/${x.codOrigine}/${x.numeroTreno}/${x.dataPartenzaTreno}`).catch((e) => (console.error(e.message), null));
@@ -220,8 +220,16 @@ async function trainMarkets(feed) {
     const priced = buildDelayMarket({ ...common, history: hist(historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone)), priorYes });
     // Unlicensed source: private test markets, hidden from everyone but the owner (web/src/lib/testmode.ts).
     markets.push({ ...priced, params: { ...priced.params, ...(feed.licenseVerified ? {} : { testOnly: true }) }, deadline_at: new Date((targetAt + VT_TRAIN_DEADLINE_SEC) * 1000).toISOString() });
+    // every stop of the train (also the ones already passed) for the "Show stops" board; the market's own question is unaffected
+    const sd = `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
+    for (const f of t.fermate) {
+      if (!f.id || f.progressivo == null || !f.programmata) continue;
+      const secs = Math.floor(f.programmata / 1000) - base0;
+      if (secs < 0) continue;
+      schedule.push({ feed_id: feed.id, trip_id: tripId, stop_sequence: f.progressivo, stop_id: f.id, scheduled_time: hms(secs), service_date: sd, stop_name: String(f.stazione ?? "").slice(0, 120) || null });
+    }
   }
-  return { markets, schedule: [] };
+  return { markets, schedule };
 }
 
 let markets = [], schedule = [];
