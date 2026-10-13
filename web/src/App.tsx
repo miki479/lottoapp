@@ -330,7 +330,8 @@ export function App() {
     go(); return every(go, 300_000);
   }, [rainIds.join()]);
   // the main question of each trip first (the rungs of the apology ladder come after), so the live readings the boards need are never cut off by the cap
-  const trackable = useMemo(() => (markets ?? []).filter((m) => (m.category === "bus" || m.category === "train") && Date.parse(m.target_at) - Date.now() < (m.category === "train" ? 10 : 3) * 3600_000).sort((a, b) => Number(!!a.params.ladderOf) - Number(!!b.params.ladderOf)).slice(0, 400).map((m) => m.id), [markets]);
+  const trackRank = (m: { category: string; params: Record<string, unknown> }) => (m.category === "train" ? 0 : 1) + (m.params.ladderOf ? 2 : 0);
+  const trackable = useMemo(() => (markets ?? []).filter((m) => (m.category === "bus" || m.category === "train") && Date.parse(m.target_at) - Date.now() < (m.category === "train" ? 10 : 3) * 3600_000).sort((a, b) => trackRank(a) - trackRank(b)).slice(0, 400).map((m) => m.id), [markets]);
   useEffect(() => {
     if (trackable.length === 0) { setLive({}); return; }
     const go = () => sb.rpc("live_delays", { p_markets: trackable }).then(({ data }) => setLive(Object.fromEntries(((data ?? []) as LiveDelay[]).map((d) => [d.market_id, d]))));
