@@ -23,7 +23,7 @@
       "enabled": true
     },
     "train": {
-      "enabled": false
+      "enabled": true
     },
     "weather": {
       "enabled": true
@@ -76,6 +76,26 @@
       "routeTypes": [
         3
       ]
+    },
+    {
+      "id": "toei-train-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_times",
+      "url": "https://api-public.odpt.org/api/v4/gtfs/realtime/toei_odpt_train_trip_update",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "attribution": {
+        "name": "東京都交通局 (Bureau of Transportation, Tokyo Metropolitan Government): Toei Subway and Tokyo Sakura Tram",
+        "via": "公共交通オープンデータ協議会 (ODPT)",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://ckan.odpt.org/en/dataset/r_train_gtfs_rt-odpt_train-toei"
+      },
+      "licenseVerified": true,
+      "staticGtfsUrl": "https://api-public.odpt.org/api/v4/files/Toei/data/Toei-Train-GTFS.zip",
+      "note": "No delay field: delay = predicted time minus the scheduled time of the same stop_sequence. The timetable has whole-minute resolution, so the figure is biased by about +30 s; Toei is very punctual, most delay questions are near-certain No."
     },
     {
       "id": "open-meteo-tokyo",

@@ -45,7 +45,7 @@ describe("feed licence gate", () => {
     expect(usableFeeds(enabled, true).map((f) => f.id)).toContain("rome-trip-update");
   });
   it("does not use feeds of disabled categories", () => {
-    expect(usableFeeds(load("tokyo"), true).every((f) => f.category !== "traffic" && f.category !== "train")).toBe(true);
+    expect(usableFeeds(load("kumamoto"), true).every((f) => f.category !== "traffic" && f.category !== "train")).toBe(true);
   });
   it("only uses feeds whose licence has been read", () => {
     for (const n of ["tokyo", "amsterdam"]) expect(usableFeeds(load(n), false).length).toBeGreaterThan(0);

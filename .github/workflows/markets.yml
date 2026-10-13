@@ -24,7 +24,7 @@ jobs:
       - name: Weather (all cities)
         if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         run: |
-          for c in tokyo rome amsterdam sanfrancisco oslo torino zurich paris madrid berlin helsinki boston modena reggio-emilia piacenza venezia bari mantova vicenza cuneo parma napoli; do node scripts/generate-markets.mjs --city $c --weather --apply; done
+          for c in tokyo rome amsterdam sanfrancisco oslo torino zurich paris madrid berlin helsinki boston modena reggio-emilia piacenza venezia bari mantova vicenza cuneo parma napoli kumamoto toyama; do node scripts/generate-markets.mjs --city $c --weather --apply; done
       - name: Tokyo buses
         if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         run: node scripts/generate-markets.mjs --city tokyo --feed toei-bus-vehicle --max 30 --apply
@@ -63,6 +63,13 @@ jobs:
           node scripts/generate-markets.mjs --city trondheim --feed entur-atb-trip-update --max 20 --apply
           node scripts/generate-markets.mjs --city stavanger --feed entur-kol-trip-update --max 20 --apply
           node scripts/generate-markets.mjs --city adelaide --feed adelaide-metro-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city tokyo --feed toei-train-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city kumamoto --feed sanko-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city kumamoto --feed kumabus-trip-update --max 10 --apply
+          node scripts/generate-markets.mjs --city kumamoto --feed toshibus-trip-update --max 10 --apply
+          node scripts/generate-markets.mjs --city kumamoto --feed dentetsu-trip-update --max 10 --apply
+          node scripts/generate-markets.mjs --city toyama --feed toyama-tram-trip-update --max 15 --apply
+          node scripts/generate-markets.mjs --city toyama --feed manyo-tram-trip-update --max 8 --apply
       - name: Italian trains (unlicensed feed, needs ALLOW_UNVERIFIED_FEEDS and a reachable IP)
         if: vars.ENABLE_VIAGGIATRENO == '1' && (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         continue-on-error: true

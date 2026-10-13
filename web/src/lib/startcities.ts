@@ -21,7 +21,7 @@ const BY_COUNTRY: Record<string, string[]> = {
   FI: ["helsinki", "oslo", "berlin", "London"],
   NO: ["oslo", "helsinki", "London", "berlin"],
   SE: ["helsinki", "oslo", "berlin", "London"],
-  JP: ["tokyo", "Singapore", "Sydney", "Los Angeles", "New York"],
+  JP: ["tokyo", "kumamoto", "toyama", "Singapore", "Sydney", "Los Angeles", "New York"],
   AU: ["brisbane", "Sydney", "Singapore", "tokyo", "London"],
   BR: ["Rio de Janeiro", "Mexico City", "madrid", "New York"],
   MX: ["Mexico City", "Los Angeles", "New York", "madrid"],

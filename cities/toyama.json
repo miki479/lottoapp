@@ -1,0 +1,94 @@
+{
+  "id": "toyama",
+  "country": "JP",
+  "name": {
+    "it": "Toyama",
+    "en-US": "Toyama",
+    "en-GB": "Toyama",
+    "ja": "富山"
+  },
+  "timezone": "Asia/Tokyo",
+  "defaultLocale": "ja",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 36.6959,
+    "lon": 137.2137
+  },
+  "categories": {
+    "bus": {
+      "enabled": false
+    },
+    "train": {
+      "enabled": true
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "toyama-tram-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_times",
+      "url": "https://gtfs-rt-files.buscatch.jp/toyama/chitetsu_tram/TripUpdates.pb",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "attribution": {
+        "name": "富山地方鉄道 市内電車 (Toyama Chihō Railway city trams)",
+        "via": "GTFSデータリポジトリ (GTFS Data Repository)",
+        "license": "CC0 1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+        "url": "https://www.gtfs-data.jp/"
+      },
+      "licenseVerified": true,
+      "staticGtfsUrl": "https://api.gtfs-data.jp/v2/organizations/chitetsu/feeds/chitetsushinaidensha/files/feed.zip?rid=current",
+      "note": "Only predicted times (no delay field): delay = predicted time minus the scheduled time of the same stop_sequence. The static timetable marks the trams as route_type 3, so no route type filter."
+    },
+    {
+      "id": "manyo-tram-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_times",
+      "url": "https://gtfs-rt-files.buscatch.jp/toyama/manyo_line/TripUpdates.pb",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "attribution": {
+        "name": "万葉線 (Manyōsen)",
+        "via": "GTFSデータリポジトリ (GTFS Data Repository)",
+        "license": "CC0 1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+        "url": "https://www.gtfs-data.jp/"
+      },
+      "licenseVerified": true,
+      "staticGtfsUrl": "https://api.gtfs-data.jp/v2/organizations/manyosen/feeds/manyosen/files/feed.zip?rid=current",
+      "note": "Only predicted times (no delay field): delay = predicted time minus the scheduled time of the same stop_sequence. The static timetable marks the trams as route_type 3, so no route type filter."
+    },
+    {
+      "id": "open-meteo-toyama",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      },
+      "licenseVerified": true
+    }
+  ],
+  "futureFeeds": []
+}
