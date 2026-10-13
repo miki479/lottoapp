@@ -1264,3 +1264,4 @@ textarea.field { resize: vertical; min-height: 84px; }
 .fyhead { display: flex; align-items: center; gap: 8px; } .fyhead svg { color: var(--brand); flex: none; }
 .fyrow { display: flex; align-items: center; gap: 10px; } .fyrow .detail { display: block; }
 .fyactions { display: flex; gap: 8px; justify-content: flex-end; }
+.inslive { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; } .inslive b { font-size: 1.5rem; }

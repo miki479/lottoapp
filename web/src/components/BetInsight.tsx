@@ -64,14 +64,22 @@ function MatchInsight({ m, pick, msg }: { m: M; pick: "yes" | "no"; msg: Message
     sb.rpc("team_recent", { p_team: home }).then(({ data }) => setH((data ?? []) as Game[]));
     sb.rpc("team_recent", { p_team: away }).then(({ data }) => setA((data ?? []) as Game[]));
   }, [home, away]);
+  const [live, setLive] = useState<{ home_score: number; away_score: number; state: "in" | "post"; clock: string } | null>(null);
+  useEffect(() => {
+    const go = () => sb.from("live_scores").select("home_score,away_score,state,clock").eq("event_id", String(m.params.eventId ?? "")).maybeSingle().then(({ data }) => setLive((data as typeof live) ?? null));
+    if (!m.params.eventId) return;
+    go();
+    return every(go, 30_000);
+  }, [m.params.eventId]);
   const pr = (m.params.priors as Record<string, number> | undefined)?.[String(m.params.bet)];
   const chance = Number.isFinite(pr) ? Math.round((pick === "yes" ? pr! : 1 - pr!) * 100) : null;
   if (h === null || a === null) return <div class="sk s" />;
   return (
     <div class="insight">
+      {live && <div class="inslive"><b class="num">{live.home_score} – {live.away_score}</b><span class="detail">{live.state === "in" ? `${t.liveNow}${live.clock ? ` · ${live.clock}` : ""}` : t.finalScore}</span></div>}
       <div class="insgrid"><Form team={home} games={h} msg={msg} /><Form team={away} games={a} msg={msg} /></div>
       {chance !== null && <div class="insrow"><span class="detail">{t.chance}</span><b class="num">{chance}%</b></div>}
-      <p class="hint">{t.waitMatch}</p>
+      {!live && <p class="hint">{t.waitMatch}</p>}
     </div>
   );
 }

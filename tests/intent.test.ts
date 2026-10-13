@@ -119,3 +119,19 @@ describe("arrivals from a live feed", () => {
     expect(hms(3661)).toBe("01:01:01");
   });
 });
+
+import { matchGame, parseEspn, sameTeam } from "../shared/live.ts";
+describe("live scores", () => {
+  it("recognises the same team under different spellings", () => {
+    expect(sameTeam("AS Roma", "Roma")).toBe(true); expect(sameTeam("Inter", "Inter Milan")).toBe(true); expect(sameTeam("Hellas Verona", "Verona")).toBe(true);
+    expect(sameTeam("Lazio", "Juventus")).toBe(false);
+  });
+  it("parses a scoreboard and finds our match by teams and start time", () => {
+    const j = { events: [{ date: "2026-10-12T18:45Z", status: { type: { state: "in" }, period: 2, displayClock: "63'" }, competitions: [{ competitors: [{ homeAway: "home", score: "1", team: { displayName: "Juventus" } }, { homeAway: "away", score: "0", team: { displayName: "Cagliari" } }] }] }] };
+    const g = parseEspn(j);
+    expect(g).toHaveLength(1);
+    const f = matchGame(g, { home: "Juventus", away: "Cagliari", kickoff: Date.parse("2026-10-12T18:45Z") / 1000 });
+    expect(f?.hs).toBe(1); expect(f?.state).toBe("in");
+    expect(matchGame(g, { home: "Juventus", away: "Cagliari", kickoff: Date.parse("2026-10-13T18:45Z") / 1000 })).toBeNull();
+  });
+});
