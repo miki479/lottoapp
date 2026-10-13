@@ -30,10 +30,12 @@ import { Remind } from "./Remind.tsx";
 import { StopsBoard } from "./StopsBoard.tsx";
 
 /** Bet slip for one event: pick, stake, then place it (guests do the "last step" sign-up right here when it is required). */
+/** Shown near the limit of 25 open bets (closed ones that wait for their result count too), so a refusal never comes as a surprise. */
+const OPEN_HINT: Record<string, string> = { it: "Puntate aperte (contano anche quelle in attesa del risultato)", "en-US": "Open bets (those waiting for a result count too)", "en-GB": "Open bets (those waiting for a result count too)", ja: "未決着の予想（結果待ちを含む）" };
 export function BetSheet(p: {
   m: MarketRow; initial: Pick; msg: Messages; locale: Locale; credits: number; stakeFactor?: number; ready: boolean; needJoin: boolean; googleOn: boolean; inSlip: boolean; boosts: number; now: number; mm?: number; occ?: { level: number }; ladder: MarketRow[]; onSwitch: (m: MarketRow) => void;
   onClose: () => void; onAddSlip: (m: MarketRow, pick: Pick) => void; onJoined: () => Promise<void>; onPlace: (m: MarketRow, pick: Pick, stake: number, boost: boolean, bonus?: string | null, vice?: boolean, offerId?: string | null) => Promise<string | null>;
-  offer?: OfferUse;
+  offer?: OfferUse; openBets?: number;
 }) {
   const [pick, setPick] = useState<Pick>(p.initial);
   const [stake, setStake] = useState(50);
@@ -125,6 +127,7 @@ export function BetSheet(p: {
       <StakeControl value={amount} onChange={setStake} cap={cap} balance={p.credits} odds={odds} boost={boost && p.boosts > 0} vice={vice && pick === "yes" ? vicePct : 0} fancy={exclusive} locale={p.locale} msg={p.msg} />
       {!offer && p.boosts > 0 && <label class={`boosttoggle ${boost ? "on" : ""}`}><input type="checkbox" checked={boost} onChange={(e) => setBoost((e.target as HTMLInputElement).checked)} /><Rocket size={20} /><span><b>{p.msg.boost.toggle}</b> · {p.msg.boost.have(p.boosts)}<small>{p.msg.boost.gain("+" + money(Math.floor(amount * odds) - amount, p.locale), "+" + money(boostedPayout(amount, odds) - amount, p.locale))} · {p.msg.boost.hint}</small></span></label>}
       {err && <p class="formerr" role="alert">{err}</p>}
+      {(p.openBets ?? 0) >= 20 && <p class="hint" role="status">{OPEN_HINT[p.locale] ?? OPEN_HINT["en-US"]}: {p.openBets}/25</p>}
       <button class="btn primary wide" disabled={busy || !p.ready || decided} aria-busy={busy} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? p.msg.sheet.confirming : `${p.msg.sheet.confirm} · ${money(amount, p.locale)}`}</button>
       {!offer && <button class="btn secondary wide" onClick={() => { p.onAddSlip(p.m, pick); haptic.tap(); }} disabled={p.inSlip}><Layers size={18} />{p.inSlip ? p.msg.slip.added : p.msg.slip.add}</button>}
       <ReportLink marketId={p.m.id} msg={p.msg} />
