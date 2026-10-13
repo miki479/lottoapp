@@ -24,7 +24,7 @@ jobs:
       - name: Weather (all cities)
         if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         run: |
-          for c in tokyo rome amsterdam sanfrancisco oslo torino zurich paris madrid berlin helsinki boston romagna modena reggio-emilia piacenza friuli-venezia-giulia venezia bari mantova vicenza lazio cuneo alto-adige parma toscana trentino; do node scripts/generate-markets.mjs --city $c --weather --apply; done
+          for c in tokyo rome amsterdam sanfrancisco oslo torino zurich paris madrid berlin helsinki boston romagna modena reggio-emilia piacenza friuli-venezia-giulia venezia bari mantova vicenza lazio cuneo alto-adige parma toscana trentino napoli; do node scripts/generate-markets.mjs --city $c --weather --apply; done
       - name: Tokyo buses
         if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         run: node scripts/generate-markets.mjs --city tokyo --feed toei-bus-vehicle --max 30 --apply
@@ -108,6 +108,7 @@ jobs:
           - { city: venezia, feed: actv-aut-trip-updates, max: 30 }
           - { city: venezia, feed: actv-nav-trip-updates, max: 15 }
           - { city: bari, feed: amtab-trip-updates, max: 20 }
+          - { city: napoli, feed: anm-trip-updates, max: 20 }
           - { city: mantova, feed: apam-trip-updates, max: 20 }
           - { city: vicenza, feed: biv-trip-updates, max: 20 }
           - { city: lazio, feed: cotral-trip-updates, max: 30 }

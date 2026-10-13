@@ -113,15 +113,21 @@ export function expectedDelay(delaySec: number, stopsLeft: number, train: boolea
  * Chance that the delay at the question's stop is above `thresholdSec`, given the delay read `stopsLeft` stops earlier.
  * Non-increasing in the threshold, non-decreasing in the delay.
  */
+/** Train drift: seconds of delay added per stop still to run, and the number of stops ahead at which a reading counts as much as the history. */
+const TRAIN_DRIFT_SEC = 8, LIVE_WEIGHT_STOPS = 8;
 export function liveYesProbability(pHist: number, delaySec: number, thresholdSec: number, stopsLeft: number, train: boolean, ctx?: DelayContext): number {
   const n = Math.max(0, stopsLeft);
   const sd = (train ? 45 : 45) + (train ? 22 : 25) * Math.sqrt(n);
   const growth = (train ? 0.12 : 0.08) * Math.max(0, delaySec); // a delay already large can still grow in proportion (only upwards: it recovers little)
-  const mean = expectedDelay(delaySec, n, train, ctx);
+  // Italian trains pick up a little delay along the way even when they start on time: on the logged results (1,075 settled questions) a train read on time
+  // 45-90 minutes before the stop was more than 5 minutes late at the stop 23% of the time, and one read 90+ minutes ahead 37%, above what a flat model said.
+  // A train read on time or a little late is expected at the stop at least TRAIN_DRIFT_SEC x stops-left late (a floor, so the quote stays non-decreasing in the delay);
+  // a delay already large is priced as before.
+  const mean = train ? Math.max(expectedDelay(delaySec, n, train, ctx), TRAIN_DRIFT_SEC * n) : expectedDelay(delaySec, n, train, ctx);
   const z =(thresholdSec + 0.5 - mean) / (thresholdSec + 0.5 > mean ? sd + growth : sd);
   const pLive = 1 - normalCdf(z);
   const h = historyAtThreshold(pHist, thresholdSec, train);
-  const w = 10 / (10 + n);
+  const w = LIVE_WEIGHT_STOPS / (LIVE_WEIGHT_STOPS + n);
   let p = w * pLive + (1 - w) * h;
   // A delay already past the line is persistent: a service 20 minutes late does not make it all up in a few stops. Whatever the history says,
   // the chance is the live one less a small allowance for the unexpected (a short-turn, a skipped stop), which grows with the stops left.

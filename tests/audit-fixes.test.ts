@@ -79,3 +79,12 @@ describe("parlayStakeCap", () => {
   it("is limited by the safest leg", () => { expect(psc([1.05, 3])).toBe(20); expect(psc([1.2, 2])).toBe(200); });
   it("is limited by 20000 of profit and 5000", () => { expect(psc([2.5, 2.5])).toBe(3809); expect(psc([1.8, 1.8])).toBe(5000); expect(psc([6, 6, 6])).toBe(202); });
 });
+
+import { liveYesProbability as lyp } from "../shared/odds.ts";
+describe("train drift in live pricing", () => {
+  it("a train read on time far from its stop keeps a realistic chance of being late there", () => {
+    const far = lyp(0.25, 0, 300, 17, true); // 45-90 minutes ahead: 23% were late in the logged results
+    expect(far).toBeGreaterThan(0.18); expect(far).toBeLessThan(0.3);
+    expect(lyp(0.25, 0, 300, 30, true)).toBeGreaterThan(lyp(0.25, 0, 300, 3, true)); // further ahead, more chance
+  });
+});

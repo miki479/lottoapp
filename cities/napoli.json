@@ -1,0 +1,86 @@
+{
+  "id": "napoli",
+  "country": "IT",
+  "name": {
+    "it": "Napoli",
+    "en-US": "Naples",
+    "en-GB": "Naples",
+    "ja": "ナポリ"
+  },
+  "timezone": "Europe/Rome",
+  "defaultLocale": "it",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 40.8518,
+    "lon": 14.2681
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": false
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "anm-trip-updates",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_seq",
+      "url": "https://proxy.busone.app/anm/gtfs-rt/trip-updates.pb",
+      "headers": {
+        "X-BusOne-Client": "LateLotto (play-money game; https://latelotto.web.app)",
+        "X-BusOne-Use": "personal"
+      },
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 300,
+      "routeTypes": [
+        3
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "BusOne (https://busone.app) and ANM Napoli",
+        "license": "BusOne free non-commercial licence (individuals and nonprofits; attribution \"BusOne (https://busone.app) and the original data source\"), read 2026-10-13; the static timetable is ANM open data. The vehicle positions are real GPS fixes from the ANM AVM; the trip association, the delay and the stop predictions are computed by BusOne (not published by ANM), so they are estimates",
+        "licenseUrl": "https://proxy.busone.app/#data-terms",
+        "url": "https://proxy.busone.app/anm/readme"
+      },
+      "staticGtfsUrl": "https://proxy.busone.app/anm/gtfs.zip",
+      "note": "NON-COMMERCIAL ONLY: the BusOne terms allow individuals and nonprofits; any other organisation, or any commercial use, needs prior written permission (info@busone.app). Ask BusOne and ANM before a public or commercial launch. The delay of this feed is SYNTHETIC (derived by BusOne from GPS fixes): on 2026-10-13 half of the live trips showed more than 10 minutes of difference either way, so expect many noisy results and some void questions.",
+      "realtimeRoutesOnly": true,
+      "questionsHours": [
+        5,
+        23
+      ],
+      "vehiclesUrl": "https://proxy.busone.app/anm/gtfs-rt/vehicle-positions.pb"
+    },
+    {
+      "id": "open-meteo-napoli",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}
