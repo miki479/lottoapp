@@ -1276,3 +1276,4 @@ textarea.field { resize: vertical; min-height: 84px; }
 /* with the multiple bar open, a message sits above it instead of covering it */
 .toast.lift { bottom: calc(var(--tabbar-h) + 10px + var(--touch, 48px) + 28px + env(safe-area-inset-bottom)); }
 @media (min-width: 1024px) { .toast.lift { bottom: 84px; } }
+.inbox { border: 1px solid var(--brand); background: var(--brand-soft, var(--surface)); }

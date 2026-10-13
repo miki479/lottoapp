@@ -1,5 +1,6 @@
 import { catTiles } from "../lib/countrycats.ts";
 import { startChips } from "../lib/startcities.ts";
+import { Inbox } from "../components/Inbox.tsx";
 import { ForYou } from "../components/ForYou.tsx";
 import { CLASS_LABEL, trainClass, trainZone, type TrainClass } from "../lib/zones.ts";
 import { CloudRain } from "lucide-preact";
@@ -101,6 +102,7 @@ export function Home(p: HomeProps) {
         </section>
       )}
       <div class="aside">
+        <Inbox registered={p.registered} ok={msg.common.close} />
         <ForYou msg={msg} locale={p.locale} now={p.now} markets={p.markets} registered={p.registered} home={p.homePos ?? null} onPick={p.onPick} onCreate={p.onCreate} />
         {(p.top.length > 0 || p.italian) && (
           <section class="stack" style="gap:8px">

@@ -437,7 +437,7 @@ export async function notifyDirect(sb: Db): Promise<number> {
   for (const r of data ?? []) {
     let m: { user?: string; heading?: string; body?: string; url?: string } | null = null;
     try { m = JSON.parse(r.value as string); } catch { /* removed below */ }
-    if (m?.user && m.heading && m.body && (await send([m.user], m.heading, m.body, m.url ?? "https://latelotto.web.app/?open=profile"))) n++;
+    if (m?.user && m.heading && m.body && (await send([m.user], m.heading, m.body, m.url ?? "https://latelotto.web.app/?open=profile"))) { n++; await sb.from("user_messages").insert({ user_id: m.user, heading: m.heading, body: m.body }); }
     else if (m?.user) continue; // not delivered: tried again next minute
     await sb.from("app_settings").delete().eq("key", r.key as string);
   }
