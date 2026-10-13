@@ -1,15 +1,17 @@
 import { Minus, Plus, X } from "lucide-preact";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { INTL_TAG } from "../i18n/index.ts";
 import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
-import { ensurePlace, searchPlaces, type Place } from "../lib/places.ts";
+import { ensurePlace, placeById, searchPlaces, type Place } from "../lib/places.ts";
 import { Map as MapIcon, Search } from "lucide-preact";
 import { ItalyMapPicker, type MapCity } from "./ItalyMapPicker.tsx";
 import type { MarketRow } from "../lib/format.ts";
 import { fmtOdds } from "../lib/format.ts";
 import { Sheet } from "./Sheet.tsx";
+import { Flag } from "./Flag.tsx";
+import { CITIES } from "../lib/cities.ts";
 import { MatchPicker } from "./MatchPicker.tsx";
 import { STEAM, WIKI_ARTICLES, CRYPTO } from "../../../shared/ticks.ts";
 import { METRICS } from "../../../shared/metrics.ts";
@@ -37,6 +39,8 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
     const t = setTimeout(() => searchPlaces(q.trim(), p.locale === "it" ? "it" : "en", ctl.signal).then(setFound).catch(() => {}), 300);
     return () => { clearTimeout(t); ctl.abort(); };
   }, [q]);
+  const ccOf = (id: string) => CITIES.find((c) => c.id === id)?.country ?? placeById(id)?.country ?? extraCc.current[id];
+  const extraCc = useRef<Record<string, string>>({});
   const [mapOpen, setMapOpen] = useState(false), [mapRegion, setMapRegion] = useState<string | null>(null);
   // a town chosen on the map: find its exact position (the map only knows the province), then register it like any searched town
   const pickMapCity = async (c: MapCity) => {
@@ -54,7 +58,7 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
   const pickTown = async (pl: Place) => {
     if (picking) return;
     setPicking(true); setErr(null);
-    try { const id = await ensurePlace(pl); setExtra((x) => (x.some((y) => y.id === id) ? x : [...x, { id, name: pl.admin ? `${pl.name} (${pl.admin})` : pl.name }])); setPlace(id); setQ(""); setFound(null); }
+    try { const id = await ensurePlace(pl); extraCc.current[id] = pl.country; setExtra((x) => (x.some((y) => y.id === id) ? x : [...x, { id, name: pl.admin ? `${pl.name} (${pl.admin})` : pl.name }])); setPlace(id); setQ(""); setFound(null); }
     catch (e) { setErr(String((e as Error).message).includes("places_limit") ? p.msg.places.limit : p.msg.maker.errors.generic!); }
     setPicking(false);
   };
@@ -112,12 +116,12 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
       </div>
       {tab === "match" ? <MatchPicker msg={p.msg} locale={p.locale} origin={p.origin} registered={p.registered} onCreated={p.onCreated} /> : tab === "weather" ? <>
         <div class="qmfield"><span class="detail">{m.place}</span>
-          <div class="townrow"><b>{[...p.places, ...extra].find((x) => x.id === place)?.name ?? "—"}</b>
+          <div class="townrow"><b>{ccOf(place) && <Flag cc={ccOf(place)!} size={16} />} {[...p.places, ...extra].find((x) => x.id === place)?.name ?? "—"}</b>
             <button type="button" class="btn secondary" aria-expanded={mapOpen} onClick={() => setMapOpen(!mapOpen)}><MapIcon size={16} />{MAP_TXT[p.locale] ?? MAP_TXT["en-US"]}</button></div>
         </div>
         {mapOpen && <ItalyMapPicker locale={p.locale} initialRegion={mapRegion} onRegion={setMapRegion} onPick={pickMapCity} busy={picking} />}
         <label class="searchbox"><Search size={18} /><input class="field" value={q} placeholder={p.msg.places.search} aria-label={p.msg.places.search} onInput={(e) => setQ((e.target as HTMLInputElement).value)} /></label>
-        {found?.map((pl) => <button key={`${pl.lat},${pl.lon}`} class="placerow" disabled={picking} onClick={() => pickTown(pl)}><span class="pn"><b>{pl.name}</b>{pl.admin && <small>{pl.admin}</small>}</span></button>)}
+        {found?.map((pl) => <button key={`${pl.lat},${pl.lon}`} class="placerow" disabled={picking} onClick={() => pickTown(pl)}><Flag cc={pl.country} size={14} /><span class="pn"><b>{pl.name}</b>{pl.admin && <small>{pl.admin}</small>}</span></button>)}
         <span class="detail">{m.metric}</span>{chips(METRIC_LIST.map((k) => ({ k, t: p.msg.wx.names[k] })), metric, (k) => setMetric(k as typeof metric))}
         <div class="qmgrid">
           <label class="qmfield"><span class="detail">{m.day}</span><select class="field" value={dayOffset} onChange={(e) => setDayOffset(Number((e.target as HTMLSelectElement).value))}><option value={0}>{m.today}</option><option value={1}>{m.tomorrow}</option></select></label>

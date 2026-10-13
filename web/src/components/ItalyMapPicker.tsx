@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { Locale } from "../i18n/index.ts";
 import { haptic } from "../lib/haptics.ts";
+import { Flag } from "./Flag.tsx";
 import { ITALY_BOX, MAP_PROVINCES, MAP_REGIONS, type MapProvince, type MapRegion } from "../lib/italyMap.ts";
 
 export interface MapCity { name: string; region: string; lat: number; lon: number }
@@ -70,7 +71,7 @@ export function ItalyMapPicker(p: { locale: Locale; initialRegion?: string | nul
   return (
     <div class="itpick">
       <div class="ithead">
-        {reg ? <button type="button" class="iconbtn" onClick={() => go(null)} aria-label={t.back}><ArrowLeft size={20} /></button> : <span class="itdot" aria-hidden="true" />}
+        {reg ? <button type="button" class="iconbtn" onClick={() => go(null)} aria-label={t.back}><ArrowLeft size={20} /></button> : <Flag cc="IT" size={18} />}
         <b>{reg ? regionName(reg) : t.italy}</b>
         <span class="hint">{reg ? t.tapCity : t.tapRegion}</span>
       </div>
