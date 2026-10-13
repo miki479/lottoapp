@@ -11,6 +11,7 @@ import { CatChips, type CatId } from "../components/CatChips.tsx";
 import { Empty } from "../components/Empty.tsx";
 import { CrowdCard } from "../components/CrowdCard.tsx";
 import { EventCard } from "../components/EventCard.tsx";
+import { FrisbeeSoon } from "../components/FrisbeeSoon.tsx";
 import { GameGroup } from "../components/GameGroup.tsx";
 import { Flag } from "../components/Flag.tsx";
 import { TopCards, type TopItem } from "../components/TopCards.tsx";
@@ -167,6 +168,7 @@ export function Home(p: HomeProps) {
         </div>}
         {p.cat === "nature" && <button class="btn secondary quakecta" onClick={p.onQuakeMaker}><MapPin size={18} />{msg.quakeMaker.cta}</button>}
         {p.cat === "sport" && <label class="searchbox"><Search size={18} /><input class="field" type="search" value={teamQ} placeholder={msg.teamSearch} onInput={(e) => setTeamQ((e.target as HTMLInputElement).value)} /></label>}
+        {p.cat === "sport" && p.markets !== null && !sportQ && <FrisbeeSoon locale={p.locale} />}
         {p.cat === "sport" && p.markets !== null && <MatchList matches={groupMatches(shown)} msg={msg} locale={p.locale} onPick={p.onPick} registered={p.registered} onAuth={p.onAuth} details={p.details} friendBets={p.friendBets} />}
         {p.stale && <p class="note warn">{msg.feedWarning}</p>}
         <div class="cardgrid" style={p.cat === "sport" ? "display:none" : undefined}>

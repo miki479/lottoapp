@@ -1283,3 +1283,9 @@ textarea.field { resize: vertical; min-height: 84px; }
 .gghead em { font-style: normal; font-size: 12px; font-weight: 800; padding: 2px 9px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); }
 .ggimg { width: 92px; height: 43px; flex: none; border-radius: 8px; object-fit: cover; background: var(--surface-2); } .ggimg.ph { display: block; }
 .ggbody { padding: 0 10px 12px; }
+.soon { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 16px; border: 1px dashed var(--border-strong); background: var(--surface-2); }
+.soondisc { width: 40px; height: 40px; animation: soonspin 7s ease-in-out infinite; }
+.soontxt { flex: 1; min-width: 0; display: flex; flex-direction: column; } .soontxt b { font-weight: 800; } .soontxt small { color: var(--muted); font-size: 12px; line-height: 1.3; }
+.soon em { font-style: normal; font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); white-space: nowrap; }
+@keyframes soonspin { 0%, 100% { transform: rotate(-8deg) translateY(0); } 50% { transform: rotate(8deg) translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .soondisc { animation: none; } }
