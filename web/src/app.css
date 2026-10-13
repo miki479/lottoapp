@@ -1183,7 +1183,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 .trophy .ti.b3 { width: 56px; height: 56px; background: none; border-radius: 0; }
 
 /* the train board among the featured cards (phones and tablets); the full board stays in the side column on desktop */
-.led.full { display: none; }
+.led.full { display: block; }
 .led.ledcard { flex: 0 0 min(78%, 280px); scroll-snap-align: start; margin: 0; display: flex; }
 .led.ledcard .ledbezel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .led.ledcard .ledtabs { margin: 0 0 4px; }
@@ -1191,7 +1191,6 @@ textarea.field { resize: vertical; min-height: 84px; }
 .led.ledcard .ledmain { grid-template-columns: 22px max-content minmax(0, 1fr) 40px; }
 .led.ledcard .ledfoot.slim { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
 .topdiv { flex: none; width: 1px; align-self: stretch; margin: 10px 2px; background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, .16), transparent); }
-@media (min-width: 1024px) { .led.full { display: block; } .led.ledcard, .topdiv { display: none; } }
 
 .top-scroll .top-dup { display: block; width: 0; height: 0; flex: none; margin-left: calc(var(--gap) * -1); }
 .top-scroll:not(.looping) .top-dup, .top-scroll:not(.looping) .top-dup ~ * { display: none; }
