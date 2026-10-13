@@ -65,6 +65,33 @@
             "value": "default-src 'self'; script-src 'self' https://cdn.onesignal.com https://api.onesignal.com; style-src 'self'; img-src 'self' data: https://*.onesignal.com https://r2.thesportsdb.com https://www.thesportsdb.com https://tile.openstreetmap.org; font-src 'self'; connect-src 'self' https://api.tvmaze.com https://*.supabase.co https://geocoding-api.open-meteo.com https://onesignal.com https://*.onesignal.com; manifest-src 'self'; worker-src 'self'; frame-src https://*.onesignal.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
           }
         ]
+      },
+      {
+        "source": "/flags/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=2592000, stale-while-revalidate=604800"
+          }
+        ]
+      },
+      {
+        "source": "/fonts/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=2592000, stale-while-revalidate=604800"
+          }
+        ]
+      },
+      {
+        "source": "/icons/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=2592000, stale-while-revalidate=604800"
+          }
+        ]
       }
     ]
   }

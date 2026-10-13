@@ -12,21 +12,14 @@ import { ParlayBar } from "./components/ParlayBar.tsx";
 import { ParlaySheet, slipOdds } from "./components/ParlaySheet.tsx";
 import { Header } from "./components/Header.tsx";
 import { CROWD_SOURCE } from "./lib/crowding.ts";
-import { QuakeMaker } from "./components/QuakeMaker.tsx";
-import { SeriesMaker } from "./components/SeriesMaker.tsx";
 import type { FollowedShow } from "./lib/series.ts";
-import { MarketMaker } from "./components/MarketMaker.tsx";
 import { NearbyBets } from "./components/NearbyBets.tsx";
 import { HomePlaceField } from "./components/HomePlaceField.tsx";
 import { CityChip } from "./components/CityChip.tsx";
 import { loadHome, saveHome } from "./lib/home.ts";
-import { ChallengeMaker } from "./components/ChallengeMaker.tsx";
 import { ChallengeSheet, type Challenge } from "./components/ChallengeSheet.tsx";
-import { AdminPage } from "./components/AdminPage.tsx";
 import { Sidebar, TabBar, type Screen } from "./components/Nav.tsx";
 import { NicknameSheet } from "./components/NicknameSheet.tsx";
-import { LookSheet } from "./components/LookSheet.tsx";
-import { PublicProfile } from "./components/PublicProfile.tsx";
 import { loadMyProgress, type MyProgress } from "./lib/looks.ts";
 import { DECORATIONS } from "../../shared/looks";
 import { ResultScreen } from "./components/ResultScreen.tsx";
@@ -43,9 +36,7 @@ import { computeOdds } from "../../shared/odds.ts";
 import { countdown, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
-import { PlacePicker } from "./components/PlacePicker.tsx";
 import { FAMOUS_PLACES, FEATURED_CITY_IDS, FEATURED_PLACES, ITALY_CAPITALS, ensurePlace, km, placeById, placeIdOf, recentPlaces, rememberPlace, type Place } from "./lib/places.ts";
-import { RewardsSheet } from "./components/RewardsSheet.tsx";
 import { PushAsk } from "./components/PushAsk.tsx";
 import { disablePush, enablePush, pushAsked, pushAvailable, pushDenied, pushEnabled, rememberPush } from "./lib/push.ts";
 import { announce, setVoice, voiceEnabled, voiceSupported } from "./lib/voice.ts";
@@ -56,6 +47,20 @@ import { Home, type Trend } from "./views/Home.tsx";
 import { ProfileView } from "./views/Profile.tsx";
 import { Ranking } from "./views/Ranking.tsx";
 import { Friends } from "./views/Friends.tsx";
+import { Suspense, lazy } from "preact/compat";
+
+/** A component loaded only when it is first shown (these sheets are not needed to paint the home screen), each with its own empty fallback. */
+// deno-lint-ignore no-explicit-any
+const lazyNamed = <P,>(load: () => Promise<(p: P) => any>) => { const C = lazy(() => load().then((c) => ({ default: c }))) as unknown as (p: any) => any; return (p: P) => <Suspense fallback={null}><C {...p} /></Suspense>; };
+const QuakeMaker = lazyNamed<Parameters<typeof import("./components/QuakeMaker.tsx")["QuakeMaker"]>[0]>(() => import("./components/QuakeMaker.tsx").then((m) => m.QuakeMaker));
+const SeriesMaker = lazyNamed<Parameters<typeof import("./components/SeriesMaker.tsx")["SeriesMaker"]>[0]>(() => import("./components/SeriesMaker.tsx").then((m) => m.SeriesMaker));
+const MarketMaker = lazyNamed<Parameters<typeof import("./components/MarketMaker.tsx")["MarketMaker"]>[0]>(() => import("./components/MarketMaker.tsx").then((m) => m.MarketMaker));
+const ChallengeMaker = lazyNamed<Parameters<typeof import("./components/ChallengeMaker.tsx")["ChallengeMaker"]>[0]>(() => import("./components/ChallengeMaker.tsx").then((m) => m.ChallengeMaker));
+const AdminPage = lazyNamed<Parameters<typeof import("./components/AdminPage.tsx")["AdminPage"]>[0]>(() => import("./components/AdminPage.tsx").then((m) => m.AdminPage));
+const LookSheet = lazyNamed<Parameters<typeof import("./components/LookSheet.tsx")["LookSheet"]>[0]>(() => import("./components/LookSheet.tsx").then((m) => m.LookSheet));
+const PublicProfile = lazyNamed<Parameters<typeof import("./components/PublicProfile.tsx")["PublicProfile"]>[0]>(() => import("./components/PublicProfile.tsx").then((m) => m.PublicProfile));
+const PlacePicker = lazyNamed<Parameters<typeof import("./components/PlacePicker.tsx")["PlacePicker"]>[0]>(() => import("./components/PlacePicker.tsx").then((m) => m.PlacePicker));
+const RewardsSheet = lazyNamed<Parameters<typeof import("./components/RewardsSheet.tsx")["RewardsSheet"]>[0]>(() => import("./components/RewardsSheet.tsx").then((m) => m.RewardsSheet));
 
 const store = {
   get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -68,7 +73,7 @@ const PROFILE_COLS = "id,credits,city_id,locale,timezone,country,streak,best_str
 const BET_COLS = "id,pick,stake,odds,boosted,vice_pct,status,payout,bonus,bonus_hit,markets(id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,void_reason,outcome,evidence)";
 
 export function App() {
-  const now = useNow();
+  const now = useNow(5000);
   const [locale, setLocale] = useState<Locale>(() => (store.get("locale") as Locale) || pickLocale(navigator.languages ?? [navigator.language]));
   const [filter, setFilter] = useState<string>(() => store.get("filter") || "world");
   const [cat, setCat] = useState<CatId>("bus");
@@ -299,7 +304,7 @@ export function App() {
       const u = new URL(location.href); u.searchParams.delete("m"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
     });
   }, []);
-  useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = every(loadMarkets, 20_000), b = every(() => { loadResults(); loadActivity(); loadTrending(); }, 90_000); return () => { a(); b(); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
+  useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = every(loadMarkets, 45_000), b = every(() => { loadResults(); loadActivity(); loadTrending(); }, 90_000); return () => { a(); b(); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
   useEffect(() => { if (!ready) return; return every(() => { loadBets(); loadProfile(); loadQuests(); }, 60_000); }, [ready]);
 
   const rainIds = useMemo(() => (markets ?? []).filter((m) => m.kind === "rain_at").map((m) => m.id), [markets]);

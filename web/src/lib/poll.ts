@@ -4,9 +4,14 @@
  */
 export function every(fn: () => void, ms: number): () => void {
   let last = Date.now();
-  const tick = () => { if (document.visibilityState === "visible") { last = Date.now(); fn(); } };
+  // a page left open and untouched for five minutes stops asking the server; the first touch brings it back, up to date
+  const tick = () => { if (document.visibilityState === "visible" && Date.now() - lastTouch < IDLE_MS) { last = Date.now(); fn(); } };
   const id = setInterval(tick, ms);
-  const onVis = () => { if (document.visibilityState === "visible" && Date.now() - last >= ms) tick(); };
-  document.addEventListener("visibilitychange", onVis);
-  return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
+  const catchUp = () => { if (document.visibilityState === "visible" && Date.now() - last >= ms) { last = Date.now(); fn(); } };
+  const onTouch = () => { lastTouch = Date.now(); catchUp(); };
+  document.addEventListener("visibilitychange", catchUp);
+  for (const e of TOUCH) document.addEventListener(e, onTouch, { passive: true });
+  return () => { clearInterval(id); document.removeEventListener("visibilitychange", catchUp); for (const e of TOUCH) document.removeEventListener(e, onTouch); };
 }
+const IDLE_MS = 5 * 60_000, TOUCH = ["pointerdown", "keydown", "scroll", "touchstart"] as const;
+let lastTouch = Date.now();

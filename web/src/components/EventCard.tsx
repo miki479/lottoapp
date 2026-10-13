@@ -1,6 +1,7 @@
 import { Q } from "./Q.tsx";
 import { Activity, Car, Clapperboard, Trophy, TrendingUp, Megaphone, Clock, Star, Zap, Users, Scale } from "lucide-preact";
 import { cityName, cityOf } from "../lib/cities.ts";
+import { Countdown } from "./Countdown.tsx";
 import { countdown, fmtOdds, isYesNo, money, per10, question, superText, type MarketRow } from "../lib/format.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { LiveDelay, LiveOcc, Pick } from "../lib/types.ts";
@@ -48,7 +49,7 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
         <span class="detail">{who}</span>
         {p.showCity && m.city_id !== "world" && <Flag cc={city.country} size={13} />}
         {(p.friends ?? 0) > 0 && <span class="frbadge" title={msg.frd.friendsOn(p.friends!)} aria-label={msg.frd.friendsOn(p.friends!)}><Users size={13} />{p.friends}</span>}
-        <span class={`timer ${left < 300_000 ? "hot" : ""}`}><Clock size={12} style="vertical-align:-1px;margin-right:4px" />{countdown(left)}</span>
+        <span class={`timer ${left < 300_000 ? "hot" : ""}`}><Clock size={12} style="vertical-align:-1px;margin-right:4px" /><Countdown to={Date.parse(m.closes_at)} /></span>
       </div>
       <p class="q"><Q m={m} msg={msg} locale={locale} city={cityName(city, locale)} tz={city.timezone} now={new Date(now)} /></p>
       {typeof m.params.by === "string" && m.params.by && <p class="byline">{msg.maker.by(m.params.by)}</p>}
