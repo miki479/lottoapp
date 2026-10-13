@@ -14,7 +14,7 @@ export type MatchBetKey = import("../../../shared/sport.ts").MatchBet;
 export interface MatchQ { bet: MatchBetKey; home: string; away: string; time: string }
 export interface ConcertsQ { place: string; from: string; to: string; value: string; time: string }
 export interface EpisodeQ { show: string; ep: string; value: string; date: string }
-export interface TickQ { kind: "price" | "kp" | "wiki" | "players" | "listeners" | "bikes" | "storm" | "alert" | "fuel" | "oil" | "fx" | "carbon" | "feargreed" | "nws"; label: string; value: string; time: string; from: string; to: string; day: string }
+export interface TickQ { kind: "price" | "kp" | "wiki" | "players" | "listeners" | "bikes" | "storm" | "alert" | "fuel" | "oil" | "fx" | "carbon" | "feargreed" | "nws" | "power" | "tide" | "river"; label: string; value: string; time: string; from: string; to: string; day: string }
 export interface FullQ { occ: "empty" | "few" | "standing"; route: string; stop: string; time: string }
 export interface TrafficQ { site: string; toward: string; from: string; to: string; kmh: number }
 export interface StrikeQ { date: string; day: string; who: string; hours: string }
@@ -34,7 +34,7 @@ export interface Messages {
   insight: { liveNow: string; finalScore: string; how: string; noReadings: string; delayNow: string; chartLabel: string; line: (n: number) => string; goingWell: string; goingBad: string; updated: (n: number) => string; forecast: string; noForm: string; res: { w: string; d: string; l: string }; goalsFor: string; goalsAgainst: string; pointsFor: string; pointsAgainst: string; chance: string; waitMatch: string };
   common: { loading: string; backOnline: string; close: string; cancel: string; save: string; retry: string; soon: string; offline: string; install: string; language: string; credits: string; copied: string; back: string };
   tabs: { law: string; bus: string; train: string; weather: string; nature: string; strike: string; traffic: string; finance: string; culture: string; sport: string; gov: string; soon: string };
-  wx: { filter: string; all: string; rain: string; world: string; regions: Record<string, string>; localTime: string; names: Record<MetricKey | "crypto" | "metals" | "oil" | "fuel" | "fx", string>; forecast: (v: string) => string; quakeArt: string };
+  wx: { filter: string; all: string; rain: string; world: string; regions: Record<string, string>; localTime: string; names: Record<MetricKey | "crypto" | "metals" | "oil" | "fuel" | "fx" | "power", string>; forecast: (v: string) => string; quakeArt: string };
   world: string;
   quakeMaker: { cta: string; title: string; body: string; place: string; search: string; radius: string; mag: string; day: string; today: string; tomorrow: string; hour: string; length: string; hours: (n: number) => string; km: (n: number) => string; create: string; creating: string; pickPlace: string; local: (tz: string) => string; limit: string; full: string; usgs: string; time: string; credit: string };
   traffic: { threshold: (kmh: number) => string; jam: string; flow: string };

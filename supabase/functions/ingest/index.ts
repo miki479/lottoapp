@@ -10,6 +10,7 @@ import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/a
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
 import { tvReference, tvRating, tvUpcoming } from "../_lib/tv.ts";
+import { RIVERS, TIDES, buildPowerMarkets, buildRiverMarkets, buildTideMarkets, isPower, isRiver, isTide, type RiverKey, type TideKey } from "../_shared/shared/ticks.ts";
 import { FX, buildCarbonMarkets, buildFearGreedMarkets, buildFxMarkets, isCarbon, isFearGreed, isFx, type FxKey } from "../_shared/shared/ticks.ts";
 import { TM_PLACES, buildTicketMarkets, buildTvMarket, isTicket, isTv, tmWindow, type TmPlace } from "../_shared/shared/ticks.ts";
 import { FUELS, METALS, OIL, buildFuelMarkets, buildMetalMarkets, buildOilMarkets, isFuel, isMetal, isOil, type FuelKey, type MetalKey, type OilKey } from "../_shared/shared/ticks.ts";
@@ -568,6 +569,38 @@ async function fetchNws(): Promise<number | null> {
   return typeof j?.land === "number" && j.land > 0 && j.land <= (j?.total ?? Infinity) ? j.land : null;
 }
 
+/** Day-ahead power price of the Italian north zone (Energy-Charts, CC BY 4.0) for the days `from`..`to` (YYYY-MM-DD), by unix second of each 15-minute slot. Refused if the response does not state CC BY 4.0. */
+async function fetchPower(from: string, to: string): Promise<Record<number, number> | null> {
+  const j = await getJson(`https://api.energy-charts.info/price?bzn=IT-North&start=${from}&end=${to}`);
+  if (!/CC BY 4\.0/.test(String(j?.license_info ?? "")) || !Array.isArray(j?.unix_seconds) || !Array.isArray(j?.price)) return null;
+  const out: Record<number, number> = {};
+  (j.unix_seconds as number[]).forEach((t, i) => { const v = j.price[i]; if (typeof t === "number" && typeof v === "number") out[t] = v; });
+  return out;
+}
+const isoDay = (t: number) => new Date(t * 1000).toISOString().slice(0, 10);
+
+/** NOAA CO-OPS: the latest water-level reading of a gauge (metres above MLLW, GMT) and its time; a reading older than 30 minutes is not used. */
+async function fetchTide(k: TideKey, now: number): Promise<{ at: number; v: number } | null> {
+  const j = await getJson(`https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=water_level&application=LateLotto&station=${TIDES[k].station}&date=latest&datum=MLLW&units=metric&time_zone=gmt&format=json`);
+  const d = j?.data?.[0], v = Number(d?.v), at = Date.parse(`${String(d?.t ?? "").replace(" ", "T")}:00Z`) / 1000;
+  return Number.isFinite(v) && Number.isFinite(at) && now - at <= 1800 ? { at, v } : null;
+}
+/** NOAA CO-OPS hourly tide predictions (metres above MLLW, GMT) from the start of yesterday to the end of tomorrow, by unix second. */
+async function fetchTidePred(k: TideKey, now: number): Promise<Record<number, number>> {
+  const ymd = (t: number) => isoDay(t).replace(/-/g, "");
+  const j = await getJson(`https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=LateLotto&station=${TIDES[k].station}&begin_date=${ymd(now - 86400)}&end_date=${ymd(now + 2 * 86400)}&datum=MLLW&units=metric&time_zone=gmt&interval=h&format=json`);
+  const out: Record<number, number> = {};
+  for (const r of (j?.predictions ?? []) as { t: string; v: string }[]) { const at = Date.parse(`${r.t.replace(" ", "T")}:00Z`) / 1000, v = Number(r.v); if (Number.isFinite(at) && Number.isFinite(v)) out[at] = v; }
+  return out;
+}
+
+/** WSV Pegelonline: the current water level of a federal gauge in cm; a reading older than 45 minutes is not used. */
+async function fetchRiver(k: RiverKey, now: number): Promise<number | null> {
+  const j = await getJson(`https://www.pegelonline.wsv.de/webservices/rest-api/v2/stations/${encodeURIComponent(RIVERS[k].station)}/W/currentmeasurement.json`);
+  const at = Date.parse(String(j?.timestamp ?? "")) / 1000;
+  return typeof j?.value === "number" && Number.isFinite(at) && now - at <= 2700 ? j.value : null;
+}
+
 /** Crypto Fear & Greed Index (alternative.me), newest first, each at 00:00 UTC of its day. */
 async function fetchFearGreed(limit = 1): Promise<{ ts: number; value: number }[]> {
   const j = await getJson(`https://api.alternative.me/fng/?limit=${limit}`);
@@ -699,6 +732,14 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       if (nwsDue.length) { const v = await fetchNws(); if (v !== null) for (const { x, at } of nwsDue) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); }
     } catch (e) { notes.push(`nws: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
+      const tideDue = [...need.keys()].filter(isTide).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      for (const { x, at } of tideDue) { const r = await fetchTide(x.slice(5) as TideKey, now); if (r && Math.abs(r.at - at) <= 12 * 60) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: r.v, fetched_at: fetchedAt }); }
+    } catch (e) { notes.push(`tide: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const riverDue = [...need.keys()].filter(isRiver).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      for (const { x, at } of riverDue) { const v = await fetchRiver(x.slice(6) as RiverKey, now); if (v !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); }
+    } catch (e) { notes.push(`river: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
       // concert counts: the number is read within minutes of the instant (a small pause between calls keeps under the provider's rate limit)
       const tmDue = [...need.keys()].filter(isTicket).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
       for (const { x, at } of tmDue.slice(0, 8)) { const w = tmWindow(at), v = await tmCount(x.slice(3) as TmPlace, w.from, w.to); if (v !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); await new Promise((r) => setTimeout(r, 250)); }
@@ -729,6 +770,17 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
           if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt });
         }
       } catch (e) { notes.push(`fx: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+      try {
+        // day-ahead price of the 15-minute slot the question is about (already public by then)
+        const powDue = [...need.keys()].filter(isPower).flatMap((x) => todo(x).map((at) => ({ x, at })));
+        const byDay = new Map<string, Record<number, number> | null>();
+        for (const { x, at } of powDue.slice(0, 12)) {
+          const day = isoDay(at);
+          if (!byDay.has(day)) byDay.set(day, await fetchPower(day, isoDay(at + 86400)));
+          const v = byDay.get(day)?.[at];
+          if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt });
+        }
+      } catch (e) { notes.push(`power: ${String((e as Error).message ?? e).slice(0, 80)}`); }
       try {
         const fgDue = [...need.keys()].filter(isFearGreed).flatMap((x) => todo(x).map((at) => ({ x, at })));
         if (fgDue.length) { const h = await fetchFearGreed(10); for (const { x, at } of fgDue) { const v = h.find((r) => r.ts === at - 3600)?.value; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
@@ -792,6 +844,26 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     try { const mp = await fetchMetals(now); metalsNow = mp; markets.push(...buildMetalMarkets(mp, now)); for (const [k, v] of Object.entries(mp)) extraHist.push({ series: `metal:${k}`, at: hourIso, value: v }); ok++; } catch (e) { notes.push(`metals: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try { const c = await fetchCarbon(now); markets.push(...buildCarbonMarkets(c, now)); if (c !== null) extraHist.push({ series: "carbon:gb", at: hourIso, value: c }); ok++; } catch (e) { notes.push(`carbon: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try { const c = await fetchNws(); markets.push(...buildNwsMarkets(c, now)); if (c !== null) extraHist.push({ series: "nws:us", at: hourIso, value: c }); ok++; } catch (e) { notes.push(`nws: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const pw = await fetchPower(isoDay(now - 86400), isoDay(now + 2 * 86400));
+      markets.push(...buildPowerMarkets(pw, now));
+      if (pw) for (const [t, v] of Object.entries(pw)) { const hr = (Number(t) % 86400) / 3600; if (hr === 12 || hr === 18) extraHist.push({ series: "power:it", at: new Date(Number(t) * 1000).toISOString(), value: v }); }
+      ok++;
+    } catch (e) { notes.push(`power: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const g: Parameters<typeof buildTideMarkets>[0] = {};
+      for (const k of Object.keys(TIDES) as TideKey[]) {
+        const [obs, pred] = await Promise.all([fetchTide(k, now).catch(() => null), fetchTidePred(k, now).catch(() => ({}))]);
+        if (Object.keys(pred).length) g[k] = { pred, obs };
+        if (obs) extraHist.push({ series: `tide:${k}`, at: hourIso, value: obs.v });
+      }
+      markets.push(...buildTideMarkets(g, now)); ok++;
+    } catch (e) { notes.push(`tide: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const lv: Partial<Record<RiverKey, number>> = {};
+      for (const k of Object.keys(RIVERS) as RiverKey[]) { const v = await fetchRiver(k, now).catch(() => null); if (v !== null) { lv[k] = v; extraHist.push({ series: `river:${k}`, at: hourIso, value: v }); } }
+      markets.push(...buildRiverMarkets(lv, now)); ok++;
+    } catch (e) { notes.push(`river: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     let fuelNow: { date: string; avgs: Partial<Record<FuelKey, number>> } | null = null;
     if (Math.floor(now / 3600) % 6 === 1) {
       try { const f = await fetchFuel(); markets.push(...buildFuelMarkets(f.avgs, f.date, now)); fuelNow = f; for (const [k, v] of Object.entries(f.avgs)) extraHist.push({ series: `fuel:${k}`, at: `${f.date}T00:00:00Z`, value: v }); ok++; } catch (e) { notes.push(`fuel: ${String((e as Error).message ?? e).slice(0, 80)}`); }

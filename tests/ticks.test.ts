@@ -178,7 +178,7 @@ describe("player bets", () => {
   });
 });
 
-import { buildFuelMarkets, buildMetalMarkets, buildOilMarkets, buildFxMarkets, buildCarbonMarkets, buildFearGreedMarkets, tickDef, isSpot } from "../shared/ticks.ts";
+import { buildFuelMarkets, buildMetalMarkets, buildOilMarkets, buildFxMarkets, buildCarbonMarkets, buildFearGreedMarkets, buildPowerMarkets, buildTideMarkets, buildRiverMarkets, tickDef, isSpot, FX } from "../shared/ticks.ts";
 describe("metals, fuel and oil", () => {
   const MON = Date.UTC(2026, 9, 12, 10, 0, 0) / 1000; // Monday 10:00 UTC
   it("metals: weekday questions at 12 and 18 UTC on a friendly step, priced from the current price", () => {
@@ -319,5 +319,47 @@ describe("bike-share systems and US weather alerts", () => {
     expect(buildNwsMarkets(66, MON)[0]!.params.threshold).toBe(70);
     expect(tickDef("nws:us")!.category).toBe("nature"); expect(isSpot("nws:us")).toBe(true);
     for (const bad of [null, undefined, 0, -3, 50_000]) expect(buildNwsMarkets(bad, MON)).toHaveLength(0);
+  });
+});
+
+describe("power price, tides, rivers and more fx pairs", () => {
+  const MON = Date.UTC(2026, 9, 12, 10, 0, 0) / 1000; // Monday 10:00 UTC
+  const day = (d: number) => Date.UTC(2026, 9, d) / 1000;
+  it("power: asks about 12 and 18 UTC of days whose prices are not out yet, closing at 09:00 UTC the day before", () => {
+    const prices: Record<number, number> = { [day(12) + 12 * 3600]: 212.4, [day(12) + 18 * 3600]: 248.9 };
+    const m = buildPowerMarkets(prices, MON);
+    expect(m.length).toBe(2); // Tuesday's questions closed today 09:00 (already past): only Wednesday's 12 and 18 UTC remain
+    for (const x of m) { expect(new Date(x.closes_at).getUTCHours()).toBe(9); expect(Date.parse(x.closes_at)).toBeGreaterThan(MON * 1000); expect(x.params.threshold % 5).toBe(0); expect(x.params.series).toBe("power:it"); }
+    expect(tickDef("power:it")!.category).toBe("finance"); expect(isSpot("power:it")).toBe(false);
+  });
+  it("power: nothing without both reference slots, and negative prices are fine", () => {
+    expect(buildPowerMarkets({ [day(12) + 12 * 3600]: 200 }, MON)).toHaveLength(0);
+    expect(buildPowerMarkets(null, MON)).toHaveLength(0);
+    const neg = buildPowerMarkets({ [day(13) + 12 * 3600]: -4.2, [day(13) + 18 * 3600]: 120 }, MON);
+    expect(neg.length).toBeGreaterThan(0);
+    expect(neg.some((x) => x.params.threshold <= 0)).toBe(true);
+  });
+  it("tides: every 3 hours from the prediction plus half the surge, spot-read", () => {
+    const pred: Record<number, number> = {};
+    for (let t = day(12); t < day(14); t += 3600) pred[t] = 0.8 + 0.7 * Math.sin((t / 3600) * 0.5);
+    const obs = { at: MON - 300, v: 0.5 + pred[Math.floor((MON - 300) / 3600) * 3600]! - 0.8 + 0.8 };
+    const m = buildTideMarkets({ nyc: { pred, obs } }, MON);
+    expect(m.length).toBeGreaterThanOrEqual(7);
+    for (const x of m) { expect((Date.parse(x.target_at) / 1000) % (3 * 3600)).toBe(0); expect(Math.round(x.params.threshold * 10) / 10).toBe(x.params.threshold); expect(x.params.digits).toBe(1); expect(x.odds_yes).toBeGreaterThan(1.1); }
+    expect(isSpot("tide:nyc")).toBe(true); expect(isSpot("tide:xxx")).toBe(false); expect(tickDef("tide:bos")!.category).toBe("nature");
+    expect(buildTideMarkets({ sea: { pred: {}, obs: null } }, MON)).toHaveLength(0);
+  });
+  it("rivers: 00 and 12 UTC for 36 hours on a 5 cm step, rejects absurd readings", () => {
+    const m = buildRiverMarkets({ koeln: 61, kaub: 20, dresden: 99999 }, MON);
+    expect(m.filter((x) => x.params.series === "river:dresden")).toHaveLength(0);
+    expect(m.filter((x) => x.params.series === "river:koeln").length).toBe(3);
+    for (const x of m) { expect(x.params.threshold % 5).toBe(0); expect((Date.parse(x.target_at) / 1000) % (12 * 3600)).toBe(0); }
+    expect(isSpot("river:koeln")).toBe(true);
+  });
+  it("fx: the extra pairs are defined and priced", () => {
+    expect(Object.keys(FX)).toEqual(expect.arrayContaining(["chf", "cad", "cny"]));
+    const m = buildFxMarkets({ chf: { date: "2026-10-09", value: 0.9312 }, cny: { date: "2026-10-09", value: 7.4832 } }, MON);
+    expect(m.length).toBe(4);
+    expect(m.find((x) => x.params.series === "fx:chf")!.params.threshold).toBeCloseTo(0.93, 6);
   });
 });

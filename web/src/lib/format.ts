@@ -74,6 +74,9 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     if (series.startsWith("fx:")) return msg.question.tick({ kind: "fx", label: lab, value: nd.format(thr), time: "", from: "", to: "", day });
     if (series === "feargreed") return msg.question.tick({ kind: "feargreed", label: lab, value: nd.format(thr), time: "", from: "", to: "", day });
     if (series === "carbon:gb") return msg.question.tick({ kind: "carbon", label: lab, value: `${nd.format(thr)} g/kWh`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series === "power:it") return msg.question.tick({ kind: "power", label: lab, value: `${nd.format(thr)} €/MWh`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series.startsWith("tide:")) return msg.question.tick({ kind: "tide", label: lab, value: `${nd.format(thr)} m`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series.startsWith("river:")) return msg.question.tick({ kind: "river", label: lab, value: `${nd.format(thr)} cm`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series === "nws:us") return msg.question.tick({ kind: "nws", label: lab, value: nd.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("oil:")) return msg.question.tick({ kind: "oil", label: lab, value: `${nd.format(thr)} $`, time: "", from: "", to: "", day });
     return msg.question.tick({ kind: "price", label: lab, value: `${nd.format(thr)} $`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });

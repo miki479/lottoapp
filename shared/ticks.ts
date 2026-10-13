@@ -51,7 +51,7 @@ export const METALS = { xau: { sym: "XAU", label: "Gold", step: 10, vol: 0.0013,
 export type MetalKey = keyof typeof METALS;
 export const isMetal = (s: string) => s.startsWith("metal:") && s.slice(6) in METALS;
 /** ECB euro reference rates (Frankfurter), one fixing per working day around 16:00 CET: euros in the quoted currency. `vol` = typical move per square-root-day. */
-export const FX = { usd: { label: "EUR/USD", step: 0.005, vol: 0.0045, digits: 3, min: 0.2, max: 3 }, gbp: { label: "EUR/GBP", step: 0.005, vol: 0.004, digits: 3, min: 0.2, max: 3 }, jpy: { label: "EUR/JPY", step: 0.5, vol: 0.006, digits: 2, min: 50, max: 400 } } as const;
+export const FX = { usd: { label: "EUR/USD", step: 0.005, vol: 0.0045, digits: 3, min: 0.2, max: 3 }, gbp: { label: "EUR/GBP", step: 0.005, vol: 0.004, digits: 3, min: 0.2, max: 3 }, jpy: { label: "EUR/JPY", step: 0.5, vol: 0.006, digits: 2, min: 50, max: 400 }, chf: { label: "EUR/CHF", step: 0.005, vol: 0.003, digits: 3, min: 0.5, max: 2 }, cad: { label: "EUR/CAD", step: 0.01, vol: 0.0045, digits: 3, min: 0.5, max: 3 }, cny: { label: "EUR/CNY", step: 0.05, vol: 0.0045, digits: 2, min: 3, max: 15 } } as const;
 export type FxKey = keyof typeof FX;
 export const isFx = (s: string) => s.startsWith("fx:") && s.slice(3) in FX;
 /** UK grid carbon intensity (National Grid ESO / Carbon Intensity API, CC BY 4.0), gCO2 per kWh, half-hourly. */
@@ -60,6 +60,16 @@ export const isCarbon = (s: string) => s === "carbon:gb";
 export const isNws = (s: string) => s === "nws:us";
 /** Crypto Fear & Greed Index (alternative.me), 0 to 100, one value a day at 00:00 UTC. */
 export const isFearGreed = (s: string) => s === "feargreed";
+/** Day-ahead electricity price of the Italian north zone (Energy-Charts, data from Bundesnetzagentur | SMARD.de, CC BY 4.0), euro per MWh, 15-minute slots; the next day's prices are published around noon UTC the day before. */
+export const isPower = (s: string) => s === "power:it";
+/** NOAA CO-OPS tide gauges (public domain): water level in metres above MLLW, read every 6 minutes. */
+export const TIDES = { nyc: { label: "The Battery, New York", station: "8518750" }, bos: { label: "Boston", station: "8443970" }, sea: { label: "Seattle", station: "9447130" } } as const;
+export type TideKey = keyof typeof TIDES;
+export const isTide = (s: string) => s.startsWith("tide:") && s.slice(5) in TIDES;
+/** German federal river gauges (WSV Pegelonline, DL-DE-Zero-2.0): water level in cm on the gauge, every 15 minutes. */
+export const RIVERS = { koeln: { label: "Rhine at Köln", station: "KÖLN" }, kaub: { label: "Rhine at Kaub", station: "KAUB" }, dresden: { label: "Elbe at Dresden", station: "DRESDEN" } } as const;
+export type RiverKey = keyof typeof RIVERS;
+export const isRiver = (s: string) => s.startsWith("river:") && s.slice(6) in RIVERS;
 /** Average self-service price in Italy (euro a litre) from the Ministry's daily list of every station. */
 export const FUELS = { benzina: { label: "Benzina", csv: "Benzina" }, gasolio: { label: "Gasolio", csv: "Gasolio" } } as const;
 export type FuelKey = keyof typeof FUELS;
@@ -81,7 +91,7 @@ export function tmWindow(at: number): { from: string; to: string } {
 export const isTv = (s: string) => /^tv:\d+$/.test(s);
 /** A question we write ourselves ("house:gta6"): settled by an admin once the day has passed, refunded if nobody does. */
 export const isHouse = (s: string) => /^house:[a-z0-9_-]{2,30}$/.test(s);
-export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isLastfm(s) || isBikes(s) || isStorm(s) || isMetal(s) || isCarbon(s) || isNws(s) || isTicket(s);
+export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isLastfm(s) || isBikes(s) || isStorm(s) || isMetal(s) || isCarbon(s) || isNws(s) || isTide(s) || isRiver(s) || isTicket(s);
 
 /** Saffir-Simpson scale by sustained wind in knots (1 min average), as NHC reports it. */
 export const STORM_STEPS: { kt: number; label: string }[] = [{ kt: 34, label: "TS" }, { kt: 64, label: "Cat. 1" }, { kt: 83, label: "Cat. 2" }, { kt: 96, label: "Cat. 3" }, { kt: 113, label: "Cat. 4" }, { kt: 137, label: "Cat. 5" }];
@@ -96,6 +106,9 @@ export function tickDef(series: string): TickDef | null {
   if (isCarbon(series)) return { category: "nature", label: "UK grid carbon", unit: " g/kWh", min: 0, max: 800 };
   if (isNws(series)) return { category: "nature", label: "US weather alerts", unit: "", min: 0, max: 20_000 };
   if (isFearGreed(series)) return { category: "finance", label: "Fear & Greed", unit: "", min: 0, max: 100 };
+  if (isPower(series)) return { category: "finance", label: "Italy power price", unit: " €/MWh", min: -500, max: 4000 };
+  if (isTide(series)) return { category: "nature", label: TIDES[series.slice(5) as TideKey].label, unit: " m", min: -5, max: 15 };
+  if (isRiver(series)) return { category: "nature", label: RIVERS[series.slice(6) as RiverKey].label, unit: " cm", min: -100, max: 2000 };
   if (isFuel(series)) return { category: "finance", label: FUELS[series.slice(5) as FuelKey].label, unit: "€/l", min: 0.5, max: 5 };
   if (isOil(series)) return { category: "finance", label: OIL[series.slice(4) as OilKey].label, unit: "$", min: 5, max: 400 };
   if (isAlert(series)) return { category: "nature", label: "Allerta", unit: "", min: 0, max: 3 };
@@ -237,6 +250,9 @@ export function tickSigma(series: string, ref: number, hours: number): number {
   if (isCarbon(series)) return Math.max(12, ref * 0.2 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4));
   if (isNws(series)) return Math.max(8, ref * 0.25 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4));
   if (isFearGreed(series)) return 5 * Math.sqrt(Math.max(1, hours / 24));
+  if (isPower(series)) return Math.max(15, Math.abs(ref) * 0.15) * Math.sqrt(Math.max(1, hours / 24));
+  if (isTide(series)) return 0.1 * Math.sqrt(Math.min(Math.max(1, hours), 24) / 6 + 1);
+  if (isRiver(series)) return Math.max(3, Math.abs(ref) * 0.03 * Math.sqrt(Math.min(Math.max(1, hours), 48) / 12));
   if (isFuel(series)) return ref * 0.002 * Math.sqrt(Math.max(1, hours / 24));
   if (isOil(series)) return ref * 0.0185 * Math.sqrt(Math.max(1, hours / 24));
   if (isSteam(series)) return ref * 0.07 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4);
@@ -255,6 +271,9 @@ export function tickStep(series: string, ref: number): number {
   if (isCarbon(series)) return 5;
   if (isNws(series)) return ref >= 1000 ? 100 : ref >= 200 ? 25 : ref >= 50 ? 10 : 5;
   if (isFearGreed(series)) return 5;
+  if (isPower(series)) return 5;
+  if (isTide(series)) return 0.1;
+  if (isRiver(series)) return 5;
   if (isFuel(series)) return 0.005;
   if (isOil(series)) return 0.5;
   if (isTv(series)) return 0.1;
@@ -382,6 +401,60 @@ export function buildNwsMarkets(count: number | null | undefined, now: number): 
     if (at - 600 <= now + 300) continue;
     const hours = Math.max(1, (at - now) / H);
     out.push(withDigits(tickMarket("nws:us", def, count, thr, tickSigma("nws:us", count, hours), at, at - 600, at + 3 * H), 0));
+  }
+  return out;
+}
+
+/** `prices` = day-ahead prices by unix second of the 15-minute slot. Questions about the price at 12:00 and 18:00 UTC of the one and two days after the newest day that has both, priced from that day's own values; they close at 09:00 UTC the day before (the next day's prices come out around noon). */
+export function buildPowerMarkets(prices: Record<number, number> | null | undefined, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  if (!prices) return out;
+  const series = "power:it", def = tickDef(series)!, today = Math.floor(now / 86400) * 86400;
+  let refDay = -1;
+  for (let d = today + 86400; d >= today - 86400; d -= 86400) if ([12, 18].every((h) => Number.isFinite(prices[d + h * H]))) { refDay = d; break; }
+  if (refDay < 0) return out;
+  for (let k = 1; k <= 2; k++) {
+    const day = refDay + k * 86400, closes = day - 86400 + 9 * H;
+    if (closes <= now + 600) continue;
+    for (const h of [12, 18]) {
+      const ref = prices[refDay + h * H]!;
+      if (!(ref >= def.min && ref <= def.max)) continue;
+      out.push(withDigits(tickMarket(series, def, ref, Math.round(ref / 5) * 5, tickSigma(series, ref, k * 24), day + h * H, closes, day + h * H + 10 * 86400), 0));
+    }
+  }
+  return out;
+}
+
+/** Tide gauges: `pred` = hourly predictions by unix second (metres), `obs` = the latest reading. A question every 3 hours for the next 24: the prediction at that hour plus half of the surge seen now (reading minus prediction). */
+export function buildTideMarkets(g: Partial<Record<TideKey, { pred: Record<number, number>; obs: { at: number; v: number } | null }>>, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const [k, x] of Object.entries(g) as [TideKey, { pred: Record<number, number>; obs: { at: number; v: number } | null }][]) {
+    if (!TIDES[k] || !x) continue;
+    const series = `tide:${k}`, def = tickDef(series)!, h0 = Math.floor((x.obs?.at ?? now) / H) * H, p0 = x.pred[h0], p1 = x.pred[h0 + H];
+    const atObs = x.obs && Number.isFinite(p0) && Number.isFinite(p1) ? p0! + (p1! - p0!) * ((x.obs.at - h0) / H) : null;
+    const surge = x.obs && atObs !== null && Math.abs(x.obs.v - atObs) < 1.5 && now - x.obs.at < 3 * H ? x.obs.v - atObs : 0;
+    for (let at = Math.floor(now / (3 * H)) * 3 * H + 3 * H; at <= now + 24 * H; at += 3 * H) {
+      const pr = x.pred[at];
+      if (!Number.isFinite(pr) || at - 600 <= now + 300) continue;
+      const fc = pr! + surge * 0.5, hours = Math.max(1, (at - now) / H);
+      if (!(fc >= def.min && fc <= def.max)) continue;
+      out.push(withDigits(tickMarket(series, def, fc, Math.round(fc * 10) / 10, tickSigma(series, fc, hours), at, at - 600, at + 3 * H), 1));
+    }
+  }
+  return out;
+}
+
+/** River gauges (cm): a question at 00 and 12 UTC for the next 36 hours, on a 5 cm step around the level now. */
+export function buildRiverMarkets(levels: Partial<Record<RiverKey, number>>, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const [k, v] of Object.entries(levels) as [RiverKey, number][]) {
+    if (!RIVERS[k]) continue;
+    const series = `river:${k}`, def = tickDef(series)!;
+    if (!(typeof v === "number" && v >= def.min && v <= def.max)) continue;
+    for (let at = Math.floor(now / (12 * H)) * 12 * H + 12 * H; at <= now + 36 * H; at += 12 * H) {
+      if (at - 600 <= now + 300) continue;
+      out.push(withDigits(tickMarket(series, def, v, Math.round(v / 5) * 5, tickSigma(series, v, Math.max(1, (at - now) / H)), at, at - 600, at + 3 * H), 0));
+    }
   }
   return out;
 }
