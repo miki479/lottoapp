@@ -64,6 +64,7 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     if (series.startsWith("alert:")) return msg.question.tick({ kind: "alert", label: String(m.params.label), value: msg.alertNames[String(m.params.note) as "yellow"] ?? String(m.params.note), time: "", from: "", to: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(new Date(Date.parse(at) - 3600_000)) });
     if (series.startsWith("storm:")) return msg.question.tick({ kind: "storm", label: String(m.params.label), value: `${thr} kt${m.params.note ? ` (${m.params.note})` : ""}`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("lastfm:")) return msg.question.tick({ kind: "listeners", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series.startsWith("bikes:")) return msg.question.tick({ kind: "bikes", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("steam:")) return msg.question.tick({ kind: "players", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series === "kp") return msg.question.tick({ kind: "kp", label: "Kp", value: String(thr), time: "", from: formatWhen(new Date(Date.parse(at) - 3 * 3600_000).toISOString(), locale, own, now), to: formatWhen(at, locale, own, now), day: "" });
     if (series.startsWith("wiki:")) return msg.question.tick({ kind: "wiki", label: String(m.params.label), value: nf.format(thr), time: "", from: "", to: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3600_000)) });
@@ -174,7 +175,7 @@ export function quip(m: MarketRow, msg: Messages): string {
   const series = String(m.params.series ?? "");
   const g: keyof Messages["quips"] =
     m.kind === "bus_delay_gt" || m.kind === "bus_full" ? "bus" : m.kind === "train_delay_gt" ? "train" : m.kind === "rain_at" ? "rain" : m.kind === "quake_m" ? "quake" : m.kind === "strike_on" ? "strike" : m.kind === "traffic_speed_lt" ? "traffic"
-    : m.kind === "tick_gt" ? (series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("steam:") ? "game" : series.startsWith("lastfm:") ? "wiki" : series.startsWith("storm:") ? "storm" : series.startsWith("alert:") ? "alert" : series.startsWith("metal:") ? "metal" : series.startsWith("fuel:") ? "fuel" : series.startsWith("oil:") ? "oil" : "price") : (String(m.params.metric) as keyof Messages["quips"]);
+    : m.kind === "tick_gt" ? (series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("steam:") ? "game" : series.startsWith("lastfm:") || series.startsWith("bikes:") ? "wiki" : series.startsWith("storm:") ? "storm" : series.startsWith("alert:") ? "alert" : series.startsWith("metal:") ? "metal" : series.startsWith("fuel:") ? "fuel" : series.startsWith("oil:") ? "oil" : "price") : (String(m.params.metric) as keyof Messages["quips"]);
   const list = msg.quips[g] ?? [];
   if (!list.length) return "";
   const h = [...m.id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);

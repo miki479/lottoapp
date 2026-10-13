@@ -58,6 +58,10 @@ jobs:
           node scripts/generate-markets.mjs --city brisbane --feed translink-seq-train-trip-update --max 10 --apply
           node scripts/generate-markets.mjs --city germany --feed gtfsde-rv-trip-update --max 30 --apply
           node scripts/generate-markets.mjs --city germany --feed gtfsde-fv-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city szczecin --feed zditm-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city trondheim --feed entur-atb-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city stavanger --feed entur-kol-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city adelaide --feed adelaide-metro-trip-update --max 20 --apply
       - name: Italian trains (unlicensed feed, needs ALLOW_UNVERIFIED_FEEDS and a reachable IP)
         if: vars.ENABLE_VIAGGIATRENO == '1' && (github.event.schedule != '41 2 * * *')
         continue-on-error: true

@@ -12,7 +12,7 @@ import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts
 import { tvReference, tvRating, tvUpcoming } from "../_lib/tv.ts";
 import { TM_PLACES, buildTicketMarkets, buildTvMarket, isTicket, isTv, tmWindow, type TmPlace } from "../_shared/shared/ticks.ts";
 import { FUELS, METALS, OIL, buildFuelMarkets, buildMetalMarkets, buildOilMarkets, isFuel, isMetal, isOil, type FuelKey, type MetalKey, type OilKey } from "../_shared/shared/ticks.ts";
-import { LASTFM, buildLastfmMarkets } from "../_shared/shared/ticks.ts";
+import { LASTFM, buildLastfmMarkets, BIKES, buildBikesMarkets } from "../_shared/shared/ticks.ts";
 import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildAlertMarkets, alertLevel, alertQueryDate, ALERT_AREAS, ALERT_HAZARDS, ALERT_URL, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
 import { bookPriors, buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, type Fixture, type Geo, type MatchBet, type TableRow } from "../_shared/shared/sport.ts";
 import { apiFootball, apiKey, fetchBookQuotes, fetchDetails, fetchPlayerFacts, loadTable } from "../_lib/football.ts";
@@ -497,6 +497,20 @@ async function lastfmCounts(): Promise<Record<string, number>> {
   return out;
 }
 
+/** Bikes available in each bike-share system (stations that are renting). */
+async function bikeCounts(): Promise<Record<string, number>> {
+  const out: Record<string, number> = {};
+  for (const [id, b] of Object.entries(BIKES)) {
+    try {
+      const j = await getJson(b.url);
+      const st = (j?.data?.stations ?? []) as { num_bikes_available?: number; is_renting?: number | boolean }[];
+      const n = st.filter((x) => x.is_renting === 1 || x.is_renting === true).reduce((a, x) => a + (Number(x.num_bikes_available) || 0), 0);
+      if (st.length > 50 && n > 0) out[id] = n;
+    } catch { /* skip this system */ }
+  }
+  return out;
+}
+
 async function kpSeries(): Promise<{ observed: Map<number, number>; predicted: Map<number, number> }> {
   const rows = (await getJson(KP_URL)) as { time_tag: string; kp: number; observed: string }[];
   const observed = new Map<number, number>(), predicted = new Map<number, number>();
@@ -615,6 +629,10 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       if (lfDue.length) { const c = await lastfmCounts(); for (const { x, at } of lfDue) { const v = c[x.slice(7)]; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
     } catch (e) { notes.push(`lastfm: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
+      const bkDue = [...need.keys()].filter((x) => x.startsWith("bikes:")).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (bkDue.length) { const c = await bikeCounts(); for (const { x, at } of bkDue) { const v = c[x.slice(6)]; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
+    } catch (e) { notes.push(`bikes: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
       const stormDue = [...need.keys()].filter((x) => x.startsWith("storm:")).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
       if (stormDue.length) {
         // a storm that is no longer on the list has weakened below tracking: its wind counts as 0
@@ -688,6 +706,8 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     try { stormsNow = await activeStorms(); markets.push(...buildStormMarkets(stormsNow, now)); ok++; } catch (e) { notes.push(`storms: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     let steamNow: Record<string, number> = {};
     try { steamNow = await steamCounts(); markets.push(...buildSteamMarkets(steamNow, now)); ok++; } catch (e) { notes.push(`steam: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    let bikesNow: Record<string, number> = {};
+    try { bikesNow = await bikeCounts(); markets.push(...buildBikesMarkets(bikesNow, now)); ok++; } catch (e) { notes.push(`bikes: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     let lastfmNow: Record<string, number> = {};
     try {
       lastfmNow = await lastfmCounts();
@@ -775,6 +795,7 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
         for (const [at, value] of byHour) hist.push({ series: `px:${k}`, at: new Date(at * 1000).toISOString(), value: Math.round(value * 100) / 100 });
       }
       for (const st of stormsNow) hist.push({ series: `storm:${st.id}`, at: new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString(), value: st.kt });
+      for (const [id, n] of Object.entries(bikesNow)) hist.push({ series: `bikes:${id}`, at: new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString(), value: n });
       for (const [id, n] of Object.entries(lastfmNow)) hist.push({ series: `lastfm:${id}`, at: new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString(), value: n });
       for (const [id, n] of Object.entries(steamNow)) hist.push({ series: `steam:${id}`, at: new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString(), value: n });
       const { observed } = await kpSeries();

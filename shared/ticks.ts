@@ -3,7 +3,7 @@ import { normalCdf } from "./metrics.ts";
 import { addDays, localDateString, zonedEpoch } from "./time.ts";
 
 /** Questions about a single number at a given instant, for the whole world: coin prices, the Kp index, Wikipedia page views. */
-export type TickCategory = "finance" | "nature" | "culture";
+export type TickCategory = "finance" | "nature" | "culture" | "traffic";
 
 export interface TickDef {
   category: TickCategory;
@@ -25,6 +25,14 @@ export const isSteam = (s: string) => s.startsWith("steam:") && s.slice(6) in ST
 export const LASTFM = { taylorswift: "Taylor Swift", billieeilish: "Billie Eilish", drake: "Drake", theweeknd: "The Weeknd", dualipa: "Dua Lipa", badbunny: "Bad Bunny", maneskin: "Måneskin", sferaebbasta: "Sfera Ebbasta" } as const;
 export type LastfmKey = keyof typeof LASTFM;
 export const isLastfm = (s: string) => s.startsWith("lastfm:") && s.slice(7) in LASTFM;
+/** Bikes available in a whole public bike-share system (GBFS, open standard): a number that swings with the commute, asked at fixed hours. */
+export const BIKES = {
+  nyc: { label: "Citi Bike NYC", url: "https://gbfs.citibikenyc.com/gbfs/en/station_status.json" },
+  paris: { label: "Vélib' Paris", url: "https://velib-metropole-opendata.smovengo.cloud/opendata/Velib_Metropole/station_status.json" },
+  tokyo: { label: "docomo Bike Share Tokyo", url: "https://api-public.odpt.org/api/v4/gbfs/docomo-cycle-tokyo/station_status.json" },
+} as const;
+export type BikeKey = keyof typeof BIKES;
+export const isBikes = (s: string) => s.startsWith("bikes:") && s.slice(6) in BIKES;
 /** Numbers that exist only "right now": they must be read within minutes of the instant. */
 export const isStorm = (s: string) => s.startsWith("storm:");
 export const isAlert = (s: string) => s.startsWith("alert:");
@@ -54,7 +62,7 @@ export function tmWindow(at: number): { from: string; to: string } {
 export const isTv = (s: string) => /^tv:\d+$/.test(s);
 /** A question we write ourselves ("house:gta6"): settled by an admin once the day has passed, refunded if nobody does. */
 export const isHouse = (s: string) => /^house:[a-z0-9_-]{2,30}$/.test(s);
-export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isLastfm(s) || isStorm(s) || isMetal(s) || isTicket(s);
+export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isLastfm(s) || isBikes(s) || isStorm(s) || isMetal(s) || isTicket(s);
 
 /** Saffir-Simpson scale by sustained wind in knots (1 min average), as NHC reports it. */
 export const STORM_STEPS: { kt: number; label: string }[] = [{ kt: 34, label: "TS" }, { kt: 64, label: "Cat. 1" }, { kt: 83, label: "Cat. 2" }, { kt: 96, label: "Cat. 3" }, { kt: 113, label: "Cat. 4" }, { kt: 137, label: "Cat. 5" }];
@@ -70,6 +78,7 @@ export function tickDef(series: string): TickDef | null {
   if (isAlert(series)) return { category: "nature", label: "Allerta", unit: "", min: 0, max: 3 };
   if (isStorm(series)) return { category: "nature", label: "Storm", unit: " kt", min: 0, max: 200 };
   if (isSteam(series)) return { category: "culture", label: STEAM[series.slice(6) as keyof typeof STEAM], unit: "", min: 0, max: 100_000_000 };
+  if (isBikes(series)) return { category: "traffic", label: BIKES[series.slice(6) as BikeKey].label, unit: "", min: 0, max: 200_000 };
   if (isLastfm(series)) return { category: "culture", label: LASTFM[series.slice(7) as LastfmKey], unit: "", min: 1000, max: 2_000_000_000 };
   if (isHouse(series)) return { category: "culture", label: "Esclusiva", unit: "", min: 0, max: 1 };
   if (isTv(series)) return { category: "culture", label: "Voto episodio", unit: "", min: 0.5, max: 10 };
@@ -180,6 +189,22 @@ export function buildLastfmMarkets(stats: Record<string, { listeners: number; pe
   return out;
 }
 
+/** Bikes available at 06 and 12 and 18 UTC for the next 30 hours; the line is today's number rounded to a friendly step. */
+export function buildBikesMarkets(counts: Record<string, number>, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const [key, n] of Object.entries(counts)) {
+    if (!(n > 500) || !(key in BIKES)) continue;
+    const series = `bikes:${key}`, def = tickDef(series)!, step = n >= 20_000 ? 1000 : n >= 5000 ? 500 : 250, thr = Math.round(n / step) * step;
+    for (let at = Math.floor(now / (6 * H)) * 6 * H + 6 * H; at <= now + 30 * H; at += 6 * H) {
+      const hourUtc = (at % 86400) / H;
+      if (![6, 12, 18].includes(hourUtc) || at - 600 <= now + 300) continue;
+      const hours = Math.max(1, (at - now) / H);
+      out.push(tickMarket(series, def, n, thr, n * 0.1 * Math.sqrt(Math.min(hours, 12) / 4), at, at - 600, at + 3 * H));
+    }
+  }
+  return out;
+}
+
 /** Typical error of "what it is now" as a forecast `hours` ahead, used to price player-made questions. */
 export function tickSigma(series: string, ref: number, hours: number): number {
   if (isStorm(series)) return Math.max(8, 11 * Math.sqrt(Math.max(1, hours) / 12));
@@ -188,6 +213,7 @@ export function tickSigma(series: string, ref: number, hours: number): number {
   if (isFuel(series)) return ref * 0.002 * Math.sqrt(Math.max(1, hours / 24));
   if (isOil(series)) return ref * 0.0185 * Math.sqrt(Math.max(1, hours / 24));
   if (isSteam(series)) return ref * 0.07 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4);
+  if (isBikes(series)) return ref * 0.1 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4);
   if (isLastfm(series)) return ref * 0.0004 * Math.sqrt(Math.max(1, hours) / 24);
   if (isTv(series)) return 0.45;
   if (isTicket(series)) return Math.max(1.2, ref * 0.02 * Math.sqrt(Math.max(1, hours) / 24));
