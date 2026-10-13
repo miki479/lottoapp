@@ -1,7 +1,7 @@
 import { METRICS } from "./metrics.ts";
 import { OCC_LEVELS, OCC_WINDOW_SEC, occupancyYes } from "./occupancy.ts";
 import { evalMatch, FINISHED, TWO_WAY_LEAGUES, type MatchObservation } from "./sport.ts";
-import { CRYPTO_GRACE_SEC, isSpot, tickDef } from "./ticks.ts";
+import { CRYPTO_GRACE_SEC, isSpot, tickDef, tickYes } from "./ticks.ts";
 import { MIN_VEHICLES, MIN_WINDOW_SEC } from "./traffic.ts";
 import type {
   DelayEvent,
@@ -177,7 +177,7 @@ function tickReading(event: TickEvent, input: ResolveInput): Reading {
   if (!obs || obs.fetchedAt < event.targetAt || (isSpot(event.series) && obs.fetchedAt > event.targetAt + CRYPTO_GRACE_SEC)) return { kind: "none" };
   const def = tickDef(event.series);
   if (!def || !Number.isFinite(obs.value) || obs.value < def.min || obs.value > def.max) return { kind: "implausible" };
-  return { kind: "ok", yes: obs.value >= event.threshold, evidence: { series: event.series, value: obs.value, threshold: event.threshold } };
+  return { kind: "ok", yes: tickYes(event.series, obs.value, event.threshold), evidence: { series: event.series, value: obs.value, threshold: event.threshold } };
 }
 
 function trafficReading(event: TrafficEvent, input: ResolveInput): Reading {

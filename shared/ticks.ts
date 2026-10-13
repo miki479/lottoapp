@@ -131,12 +131,53 @@ export interface TickMarketInsert {
   closes_at: string; target_at: string; deadline_at: string; odds_yes: number; odds_no: number; dedupe_key: string;
 }
 
+/**
+ * How a threshold is read. A question worded "at least" (a storm's wind, an alert level, Kp, concert count, an episode rating) is yes when the number is
+ * `>=` the line; all the others ("above", "more than", "will exceed") are yes only when it is strictly `>`: a reading exactly on the line is a No.
+ */
+export const tickInclusive = (series: string): boolean => isStorm(series) || isAlert(series) || series === "kp" || isTicket(series) || isTv(series);
+
+/** Float noise in a computed line (1.1650000000000003) must not decide a reading that is exactly on it. */
+const fix = (x: number) => Math.round(x * 1e6) / 1e6;
+
+/** Whether a measured value settles the question on Yes. */
+export function tickYes(series: string, value: number, threshold: number): boolean {
+  const v = fix(value), t = fix(threshold);
+  return tickInclusive(series) ? v >= t : v > t;
+}
+
+/** Smallest step between two possible readings of a series: 0 when it is a fine-grained (effectively continuous) number. */
+export function tickGrain(series: string): number {
+  if (series === "kp") return 1 / 3;
+  if (isStorm(series)) return 5;
+  if (isAlert(series) || isNws(series) || isRiver(series) || isCarbon(series) || isFearGreed(series) || isTicket(series) || isBikes(series) || isSteam(series) || isLastfm(series) || series.startsWith("wiki:")) return 1;
+  if (isTv(series)) return 0.1;
+  if (isFuel(series) || isTide(series)) return 0.001;
+  if (isPower(series) || isOil(series)) return 0.01;
+  if (isFx(series)) return series === "fx:jpy" ? 0.01 : 0.0001;
+  return 0;
+}
+
+/**
+ * The chance that a reading, normal around `forecast` with spread `sigma`, settles the question on Yes. A number that can only take whole
+ * values (or steps of a third, or five knots) is shifted by half a step so that the line itself is counted on the right side.
+ */
+export function tickAbove(series: string, forecast: number, threshold: number, sigma: number): number {
+  const g = tickGrain(series);
+  let cut = threshold;
+  if (g > 0) {
+    const k = tickInclusive(series) ? Math.ceil(threshold / g - 1e-9) : Math.floor(threshold / g + 1e-9) + 1;
+    cut = (k - 0.5) * g;
+  }
+  return 1 - normalCdf((cut - forecast) / sigma);
+}
+
 function tickMarket(series: string, def: TickDef, forecast: number, threshold: number, sigma: number, at: number, closesAt: number, deadlineAt: number, note?: string): TickMarketInsert {
-  const p = 1 - normalCdf((threshold - forecast) / sigma);
+  const p = tickAbove(series, forecast, threshold, sigma);
   const odds = computeOdds(Math.min(0.9, Math.max(0.1, p)));
   return {
     city_id: "world", category: def.category, kind: "tick_gt", feed_id: `tick-${series}`,
-    params: { series, label: def.label, threshold, unit: def.unit, forecast: Math.round(forecast * 100) / 100, at, ...(note ? { note } : {}) },
+    params: { series, label: def.label, threshold: fix(threshold), unit: def.unit, forecast: Math.round(forecast * 100) / 100, at, ...(note ? { note } : {}) },
     closes_at: new Date(closesAt * 1000).toISOString(), target_at: new Date(at * 1000).toISOString(), deadline_at: new Date(deadlineAt * 1000).toISOString(),
     odds_yes: odds.yes, odds_no: odds.no, dedupe_key: `world|tick_${series}|${at}|${threshold}`,
   };
@@ -191,19 +232,19 @@ export function buildWikiMarkets(means: Record<string, number>, now: number): Ti
   return out;
 }
 
-/** Players online on Steam at 12 and 18 UTC for the next 30 hours; the line is today's count rounded to a friendly step. */
+/** Players online on Steam at 12 and 18 UTC for the next 30 hours; the line is the count expected at that hour (today's count carried along the daily shape) on a friendly step. */
 export function buildSteamMarkets(counts: Record<string, number>, now: number): TickMarketInsert[] {
   const out: TickMarketInsert[] = [];
   for (const [id, n] of Object.entries(counts)) {
     if (!(n > 1000)) continue;
     const series = `steam:${id}`, def = tickDef(series)!;
     const step = n >= 500_000 ? 25_000 : n >= 100_000 ? 10_000 : n >= 20_000 ? 1_000 : 500;
-    const thr = Math.round(n / step) * step;
     for (let at = Math.floor(now / (6 * H)) * 6 * H + 6 * H; at <= now + 30 * H; at += 6 * H) {
       const hourUtc = (at % 86400) / H;
       if ((hourUtc !== 12 && hourUtc !== 18) || at - 600 <= now + 300) continue;
-      const hours = Math.max(1, (at - now) / H);
-      out.push(tickMarket(series, def, n, thr, n * 0.07 * Math.sqrt(Math.min(hours, 12) / 4), at, at - 600, at + 3 * H));
+      const hours = Math.max(1, (at - now) / H), forecast = n * diurnalRatio(series, now, at), line = Math.round(forecast / step) * step;
+      if (!(line > 0)) continue;
+      out.push(tickMarket(series, def, forecast, line, tickSigma(series, forecast, hours), at, at - 600, at + 3 * H));
     }
   }
   return out;
@@ -241,6 +282,23 @@ export function buildBikesMarkets(counts: Record<string, number>, now: number): 
   return out;
 }
 
+/**
+ * Players online on Steam follow the sun: the trough (about 23-04 UTC) is roughly 0.4 times the peak (about 13 UTC), far more than the few percent a
+ * question 6-24 hours ahead was priced to allow. Mean-normalised hour-of-day shape of five games (Counter-Strike 2, Dota 2, PUBG, GTA V, Elden Ring)
+ * over a day of our own readings, shrunk a fifth towards flat because it is a single day. UTC hour -> factor.
+ */
+const STEAM_SHAPE = [0.67, 0.66, 0.67, 0.67, 0.68, 0.70, 0.73, 0.82, 0.90, 0.91, 1.0, 1.19, 1.46, 1.72, 1.65, 1.57, 1.41, 1.32, 1.28, 1.23, 1.06, 0.88, 0.77, 0.68]
+  .map((x) => 1 + 0.8 * (x - 1));
+function shapeAt(series: string, epoch: number): number {
+  if (!isSteam(series)) return 1;
+  const h = (((epoch % 86400) + 86400) % 86400) / 3600, i = Math.floor(h), f = h - i;
+  return STEAM_SHAPE[i]! * (1 - f) + STEAM_SHAPE[(i + 1) % 24]! * f;
+}
+/** What a reading taken at `fromEpoch` is worth at `toEpoch` for a series with a daily rhythm (1 for the others). */
+export function diurnalRatio(series: string, fromEpoch: number, toEpoch: number): number {
+  return shapeAt(series, toEpoch) / shapeAt(series, fromEpoch);
+}
+
 /** Typical error of "what it is now" as a forecast `hours` ahead, used to price player-made questions. */
 export function tickSigma(series: string, ref: number, hours: number): number {
   if (isStorm(series)) return Math.max(8, 11 * Math.sqrt(Math.max(1, hours) / 12));
@@ -255,7 +313,7 @@ export function tickSigma(series: string, ref: number, hours: number): number {
   if (isRiver(series)) return Math.max(3, Math.abs(ref) * 0.03 * Math.sqrt(Math.min(Math.max(1, hours), 48) / 12));
   if (isFuel(series)) return ref * 0.002 * Math.sqrt(Math.max(1, hours / 24));
   if (isOil(series)) return ref * 0.0185 * Math.sqrt(Math.max(1, hours / 24));
-  if (isSteam(series)) return ref * 0.07 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4);
+  if (isSteam(series)) return ref * Math.sqrt(0.07 ** 2 * Math.min(Math.max(1, hours), 12) / 4 + 0.08 ** 2); // the second term: the daily shape is itself an estimate
   if (isBikes(series)) return ref * 0.1 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4);
   if (isLastfm(series)) return ref * 0.0004 * Math.sqrt(Math.max(1, hours) / 24);
   if (isTv(series)) return 0.45;
@@ -285,14 +343,15 @@ export function tickStep(series: string, ref: number): number {
 
 /** Player-made questions are refused when the outcome is too certain: the chance of "yes" must stay inside this band. */
 export const FAIR_MIN = 0.08, FAIR_MAX = 0.92;
-export function tickChance(series: string, ref: number, threshold: number, hours: number): number {
-  return 1 - normalCdf((threshold - ref) / tickSigma(series, ref, hours));
+export function tickChance(series: string, ref: number, threshold: number, hours: number, now = Date.now() / 1000): number {
+  const forecast = ref * diurnalRatio(series, now, now + hours * H);
+  return tickAbove(series, forecast, threshold, tickSigma(series, forecast, hours));
 }
 
 /** A player-made question about a series, priced with that series' own error. */
 export function buildCustomTick(series: string, ref: number, threshold: number, at: number, now: number): TickMarketInsert {
-  const def = tickDef(series)!, wiki = series.startsWith("wiki:"), hours = Math.max(0.6, (at - now) / H);
-  return tickMarket(series, def, ref, threshold, tickSigma(series, ref, hours), at, wiki ? at - 12 * H : at - 600, at + (wiki ? 30 : 3) * H);
+  const def = tickDef(series)!, wiki = series.startsWith("wiki:"), hours = Math.max(0.6, (at - now) / H), forecast = ref * diurnalRatio(series, now, at);
+  return tickMarket(series, def, forecast, threshold, tickSigma(series, forecast, hours), at, wiki ? at - 12 * H : at - 600, at + (wiki ? 30 : 3) * H);
 }
 
 const withDigits = (m: TickMarketInsert, digits: number): TickMarketInsert => ({ ...m, params: { ...m.params, digits } });
@@ -327,7 +386,7 @@ export function buildFuelMarkets(avgs: Partial<Record<FuelKey, number>>, extract
       const sigma = avg * 0.002 * Math.sqrt(ahead);
       const t0 = Math.round(avg / 0.005) * 0.005;
       for (const thr of [t0, t0 + 0.01]) {
-        const p = 1 - normalCdf((thr - avg) / sigma);
+        const p = tickAbove(series, avg, thr, sigma);
         if (p < 0.12 || p > 0.88) continue;
         out.push(withDigits(tickMarket(series, def, avg, Math.round(thr * 1000) / 1000, sigma, at, closes, at + 36 * H), 3));
       }

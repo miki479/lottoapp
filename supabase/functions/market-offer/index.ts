@@ -121,7 +121,7 @@ Deno.serve(safe(async (req) => {
     }
     if (ref === null) return json({ error: "source_unavailable" }, 503);
     const step = tickStep(series, ref), thr = Math.round(threshold / step) * step;
-    const chance = Math.round(tickChance(series, ref, thr, Math.max(0.6, (target - now) / 3600)) * 100) / 100;
+    const chance = Math.round(tickChance(series, ref, thr, Math.max(0.6, (target - now) / 3600), now) * 100) / 100;
     const info = { reference: ref, step, chance };
     if (thr <= 0 || chance < FAIR_MIN || chance > FAIR_MAX) return json({ error: "too_certain", ...info }, 422);
     const m = buildCustomTick(series, ref, thr, target, now);

@@ -70,19 +70,50 @@ export function crowding(ctx?: DelayContext): -1 | 0 | 1 {
   return h >= 22 || h < 5 ? -1 : 0;
 }
 
+/** Local hour and weekday in a time zone at an instant, for the rush-hour effect on delays (unknown zone: no effect). */
+export function delayContextAt(tz: string | undefined, nowSec: number): DelayContext {
+  if (!tz) return { hour: null, weekday: true };
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", minute: "numeric", hourCycle: "h23", weekday: "short" }).formatToParts(new Date(nowSec * 1000));
+    const g = (t: string) => parts.find((x) => x.type === t)?.value ?? "";
+    return { hour: Number(g("hour")) + Number(g("minute")) / 60, weekday: !["Sat", "Sun"].includes(g("weekday")) };
+  } catch { return { hour: null, weekday: true }; }
+}
+
+/** The question each service asks by default (seconds late): a train is late past 5 minutes, a bus past 3. */
+export const DELAY_BASE_THRESHOLD = { train: 300, bus: 180 } as const;
+
+/**
+ * `pHist` is the chance of being later than the standard threshold (5 min for a train, 3 for a bus). A higher line (the "Ci scusiamo per il disagio" rungs)
+ * is far less likely on history alone: the tail thins out by a factor e every 10 minutes (train) or 6 (bus).
+ */
+export function historyAtThreshold(pHist: number, thresholdSec: number, train: boolean): number {
+  const base = train ? DELAY_BASE_THRESHOLD.train : DELAY_BASE_THRESHOLD.bus;
+  return pHist * Math.exp(-Math.max(0, thresholdSec - base) / (train ? 600 : 360));
+}
+
+/**
+ * Chance that the delay at the question's stop is above `thresholdSec`, given the delay read `stopsLeft` stops earlier.
+ * Non-increasing in the threshold, non-decreasing in the delay.
+ */
 export function liveYesProbability(pHist: number, delaySec: number, thresholdSec: number, stopsLeft: number, train: boolean, ctx?: DelayContext): number {
   const n = Math.max(0, stopsLeft);
   const crowd = crowding(ctx);
   // in the rush a late service keeps losing time (crowded platforms), at night it recovers faster
   const recover = (train ? 20 : 10) * (crowd > 0 ? 0.3 : crowd < 0 ? 1.5 : 1), sd = (train ? 60 : 45) + (train ? 30 : 25) * Math.sqrt(n);
-  const drift = crowd > 0 && delaySec > 0 ? (train ? 12 : 8) * n : 0;
+  // the rush-hour drift builds up with the delay already there (none at all on time), so it never jumps at 0
+  const drift = crowd > 0 && delaySec > 0 ? (train ? 12 : 8) * n * Math.min(1, delaySec / 120) : 0;
   const mean = delaySec > 0 ? Math.max(0, delaySec - recover * n + drift) : delaySec;
   const z = (thresholdSec + 0.5 - mean) / sd;
   const pLive = 1 - normalCdf(z);
-  // a delay already past the line is persistent: the live reading counts for more even far from the stop
-  let w = 10 / (10 + n);
-  if (delaySec >= thresholdSec) w = Math.max(w, train ? 0.7 : 0.55);
-  return Math.min(0.97, Math.max(0.03, w * pLive + (1 - w) * pHist));
+  const h = historyAtThreshold(pHist, thresholdSec, train);
+  const w = 10 / (10 + n);
+  let p = w * pLive + (1 - w) * h;
+  // A delay already past the line is persistent: a service 20 minutes late does not make it all up in a few stops. Whatever the history says,
+  // the chance is the live one less a small allowance for the unexpected (a short-turn, a skipped stop), which grows with the stops left.
+  // Taking the larger of the two keeps the quote monotone in the threshold (a line below the delay can only ever get the higher figure).
+  if (delaySec >= thresholdSec) p = Math.max(p, pLive * (1 - Math.min(0.3, (train ? 0.03 : 0.05) + (train ? 0.012 : 0.015) * n)));
+  return Math.min(0.97, Math.max(0.03, p));
 }
 
 function normalCdf(z: number): number {

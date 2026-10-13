@@ -6,7 +6,7 @@ import type { FeedConfig } from "./cities.ts";
 import { delayFromTripUpdate, MAX_EARLY_SEC, MAX_LATE_SEC } from "./delay.ts";
 import { roundCoord, validPoint } from "./geo.ts";
 import { buildDelayMarket, type MarketInsert } from "./generator.ts";
-import { computeOdds, liveYesProbability, yesProbability, type History } from "./odds.ts";
+import { computeOdds, delayContextAt, liveYesProbability, yesProbability, type History } from "./odds.ts";
 import { gtfsDayStart, zonedEpoch } from "./time.ts";
 
 export const MAX_STOPS = 3;
@@ -244,7 +244,7 @@ export function buildStopMarket(a: StopMarketArgs): MarketInsert & { dedupe_key:
   const targetAt = Date.parse(base.target_at) / 1000;
   const pHist = yesProbability(a.history, a.priorYes);
   const minutes = Math.max(0, (targetAt - a.now) / 60);
-  const p = a.delaySec === null ? pHist : liveYesProbability(pHist, a.delaySec, thresholdSec, Math.min(15, Math.max(1, Math.round(minutes / 2))), a.category === "train");
+  const p = a.delaySec === null ? pHist : liveYesProbability(pHist, a.delaySec, thresholdSec, Math.min(15, Math.max(1, Math.round(minutes / 2))), a.category === "train", delayContextAt(a.tz, a.now));
   const odds = computeOdds(p);
   const params: Record<string, unknown> = { ...base.params, nearby: true, pPrior: Math.round(a.priorYes * 1000) / 1000, stopLat: a.stopLat, stopLon: a.stopLon };
   if (a.stopSequence === null) delete params.stopSequence;
