@@ -1,3 +1,4 @@
+import { startChips } from "../lib/startcities.ts";
 import { trainZone } from "../lib/zones.ts";
 import { CloudRain } from "lucide-preact";
 import { FilterSheet, filterLabel, ICON as KIND_ICON } from "../components/FilterSheet.tsx";
@@ -29,7 +30,7 @@ const safe = { get: (k: string) => { try { return localStorage.getItem(k); } cat
 export interface Trend { id: string; name: string; country: string; place?: Place }
 export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>; occ: Record<string, LiveOcc>;
-  cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null;
+  cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null; country?: string | null;
   onQuakeMaker: () => void; onSeries: (s?: FollowedShow) => void; onCreate: () => void; registered: boolean; onAuth: () => void; italian: boolean; nearNode?: preact.ComponentChildren; nearbyNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
   stale?: boolean; details: boolean; friendBets: Record<string, number>;
   attributions: { name: string; via?: string; license: string; licenseUrl: string; url: string }[]; installEvt: Event | null;
@@ -110,8 +111,9 @@ export function Home(p: HomeProps) {
           <div class="chiprow" role="tablist">
             <button class={`chip ${p.filter === "world" ? "on" : ""}`} role="tab" aria-selected={p.filter === "world"} onClick={() => p.onFilter("world")}><Globe size={16} />{msg.world}</button>
             {p.mine && <button class={`chip ${p.filter === "mine" ? "on" : ""}`} role="tab" aria-selected={p.filter === "mine"} onClick={() => p.onFilter("mine")}><Flag cc={p.mine} size={13} />{msg.near.title}</button>}
-            {cities.filter((c) => FEATURED_CITY_IDS.includes(c.id)).map((c) => <button key={c.id} class={`chip ${p.filter === c.id ? "on" : ""}`} role="tab" aria-selected={p.filter === c.id} onClick={() => p.onFilter(c.id)}><Flag cc={c.country} size={13} />{cityName(c, p.locale)}</button>)}
-            {FEATURED_PLACES.map((pl) => <button key={pl.id} class={`chip ${p.filter === pl.id ? "on" : ""}`} role="tab" aria-selected={p.filter === pl.id} onClick={() => p.onPlace(pl)}><Flag cc={pl.country} size={13} />{pl.name}</button>)}
+            {startChips(p.country, p.locale).map((ch) => { const pl = ch.place; return ch.city
+              ? <button key={ch.city.id} class={`chip ${p.filter === ch.city.id ? "on" : ""}`} role="tab" aria-selected={p.filter === ch.city.id} onClick={() => p.onFilter(ch.city!.id)}><Flag cc={ch.city.country} size={13} />{cityName(ch.city, p.locale)}</button>
+              : <button key={pl!.id} class={`chip ${p.filter === pl!.id ? "on" : ""}`} role="tab" aria-selected={p.filter === pl!.id} onClick={() => p.onPlace(pl!)}><Flag cc={pl!.country} size={13} />{pl!.name}</button>; })}
             {p.trending.filter((t) => !cities.find((c) => c.id === t.id)?.region).map((t) => <button key={t.id} class={`chip trend ${p.filter === t.id ? "on" : ""}`} role="tab" aria-selected={p.filter === t.id} onClick={() => (t.place ? p.onPlace(t.place) : p.onFilter(t.id))}><Flag cc={t.country} size={13} />{t.name}<Flame size={13} /></button>)}
             {p.places.filter((pl) => !FEATURED_PLACES.some((f) => f.id === pl.id) && !p.trending.some((t) => t.id === pl.id)).map((pl) => <button key={pl.id} class="chip on" role="tab" aria-selected><Flag cc={pl.country} size={13} />{pl.name}</button>)}
             <button class="chip more" onClick={p.onMorePlaces}><Plus size={16} />{msg.places.more}</button>

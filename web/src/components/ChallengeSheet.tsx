@@ -43,9 +43,11 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
   };
   const [reported, setReported] = useState(false);
   const report = async () => { if (!c) return; await sb.rpc("report_challenge", { p_code: c.code }); setReported(true); };
+  /** What one more player would take home on a side: the pot with their stake in it, split among everyone on that side. */
+  const winIf = (side: "yes" | "no") => (c && c.stake > 0 ? Math.floor((c.pot + c.stake) / ((side === "yes" ? c.yes : c.no) + 1)) : 0);
   const share = async () => {
     if (!c) return;
-    const url = challengeLink(c.code), text = `${f.shareText} ${c.title}`;
+    const url = challengeLink(c.code), best = Math.max(winIf("yes"), winIf("no")), text = `${f.shareText} ${c.title}${c.stake > 0 ? ` ${f.shareStake(money(c.pot, p.locale), money(best, p.locale))}` : ""}`;
     try { if (navigator.share) { await navigator.share({ title: "LateLotto", text, url }); return; } } catch { return; }
     try { await navigator.clipboard.writeText(`${text} ${url}`); setCopied(true); setTimeout(() => setCopied(false), 2500); } catch { /* nothing */ }
   };
@@ -69,9 +71,9 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
       {c.status === "void" && <p class="resultline"><b>{f.voided}</b></p>}
       {isOpen && !c.my_pick && c.judge_mode === "creator" && c.is_creator && <p class="hint">{p.msg.fx.judgeCant}</p>}
       {isOpen && !c.my_pick && !(c.judge_mode === "creator" && c.is_creator) && <>
-        <span class="detail">{f.join}</span>
+        <span class="detail">{p.registered ? f.join : f.joinToo}</span>
         <div class="actions2">
-          {(["yes", "no"] as const).map((k) => <button key={k} class={`opt ${k}`} disabled={busy} onClick={() => act("pick_challenge", { p_code: c.code, p_pick: k })}><span class="l">{k === "yes" ? f.yes : f.no}</span></button>)}
+          {(["yes", "no"] as const).map((k) => <button key={k} class={`opt ${k}`} disabled={busy} onClick={() => act("pick_challenge", { p_code: c.code, p_pick: k })}><span class="l">{k === "yes" ? f.yes : f.no}</span>{c.stake > 0 && <small class="num">{f.potential}: {money(winIf(k), p.locale)}</small>}</button>)}
         </div>
       </>}
       {isOpen && c.my_pick && <p class="hint"><b>{c.my_pick === "yes" ? f.yes : f.no}</b></p>}
