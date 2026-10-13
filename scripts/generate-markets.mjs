@@ -88,6 +88,8 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
     if (feed.routeTypes && !feed.routeTypes.includes(Number(r.route_type || 3))) continue;
     routes.set(r.route_id, r.route_short_name || r.route_long_name || r.route_id);
   }
+  /** Trains of the national feeds are all called "REG" or "MET": the train number from the trip id tells them apart. */
+  const nameOf = (trip) => { const base = routes.get(trip.route_id) ?? ""; if (feed.category !== "train" || /\d/.test(base)) return base; const num = String(trip.trip_id).match(/-(\d{3,5})-/)?.[1] ?? String(trip.trip_id).match(/^NTV-(\d{3,5})/)?.[1]; return num ? `${base} ${num}` : base; };
   const allTrips = await readAll(join(dir, "trips.txt"));
   // routes found through the static timetable (some feeds carry no route id): a route is live when one of its trips is in the real-time feed
   let liveRoutes = null;
@@ -124,18 +126,18 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
     if (!tid) continue;
     const stop = pickTargetStop(stops, rand);
     if (!stop) continue;
-    const draft = buildDelayMarket({ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold, history: null, priorYes });
+    const draft = buildDelayMarket({ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: nameOf(trip), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold, history: null, priorYes });
     const targetAt = Date.parse(draft.target_at) / 1000;
     if (feed.questionsHours) { const h = Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: city.timezone }).format(new Date(targetAt * 1000))); if (h < feed.questionsHours[0] || h >= feed.questionsHours[1]) continue; }
     if (Date.parse(draft.closes_at) / 1000 <= now + 300 || targetAt > now + 30 * 3600) continue; // bettable window
     // Re-price with real history now that the event exists.
     const key = historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone);
-    const priced = buildDelayMarket({ ...{ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold }, history: hist(key), priorYes });
+    const priced = buildDelayMarket({ ...{ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: nameOf(trip), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold }, history: hist(key), priorYes });
     markets.push(withExtras(priced, stop.stopId));
     // Buses that report how full they are: one more question on the same trip (empty / few seats left / standing room), a third of the time or so.
     if (feed.occupancy && rand() < 0.5) {
       const r = rand(), occ = r < 0.4 ? "empty" : r < 0.75 ? "few" : "standing";
-      const oargs = { cityId: city.id, tz: city.timezone, feedId: feed.id, routeId: trip.route_id, routeName: routes.get(trip.route_id), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, kind: occ };
+      const oargs = { cityId: city.id, tz: city.timezone, feedId: feed.id, routeId: trip.route_id, routeName: nameOf(trip), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, kind: occ };
       const od = buildOccupancyMarket({ ...oargs, history: null });
       markets.push(withExtras(buildOccupancyMarket({ ...oargs, history: hist(historyKey(marketToEvent({ ...od, id: "x" }), city.timezone)) }), stop.stopId));
     }
