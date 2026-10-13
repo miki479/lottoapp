@@ -79,7 +79,8 @@ export function App() {
   const [cat, setCat] = useState<CatId>("bus");
   const [catChosen, setCatChosen] = useState(false);
   const [screen, setScreen] = useState<Screen>("home");
-  const [markets, setMarkets] = useState<MarketRow[] | null>(null);
+  // what was on screen last time is shown at once (only if it is recent) while the fresh list is on its way
+  const [markets, setMarkets] = useState<MarketRow[] | null>(() => { try { const c = JSON.parse(localStorage.getItem("mk1") ?? "null") as { t: number; rows: MarketRow[] } | null; return c && Date.now() - c.t < 10 * 60_000 ? c.rows : null; } catch { return null; } });
   const [live, setLive] = useState<Record<string, LiveDelay>>({});
   const [occ, setOcc] = useState<Record<string, LiveOcc>>({});
   const [popular, setPopular] = useState<PopularRow[]>([]);
@@ -241,9 +242,14 @@ export function App() {
     // the first page holds only what closes soonest: the town being looked at (and the country-wide train feeds of its country) are loaded in full
     const f0 = envRef.current.filter;
     const here = f0 && f0 !== "world" && f0 !== "mine" && !placeIds.current.includes(f0) ? (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("city_id", [f0, ...[...NATIONAL].filter((id) => CITIES.find((c) => c.id === id)?.country === (CITIES.find((c) => c.id === f0)?.country ?? placeById(f0)?.country))]).gt("closes_at", new Date().toISOString()).order("closes_at").limit(400)).data ?? [] : [];
+    // the towns of the player's own country are loaded too: with a long list of open questions, the ones closing soonest may all belong to another country
+    const cc = envRef.current.near?.country ?? envRef.current.profile?.country ?? region();
+    const ownIds = CITIES.filter((c) => c.country === cc && !c.region).map((c) => c.id);
+    const nationalIds = [...NATIONAL].filter((id) => CITIES.find((c) => c.id === id)?.country === cc);
+    const own = cc && ownIds.length + nationalIds.length ? (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("city_id", [...ownIds, ...nationalIds]).gt("closes_at", new Date().toISOString()).order("closes_at").limit(300)).data ?? [] : [];
     const seen = new Set([...(data ?? []), ...mine].map((x) => (x as { id: string }).id));
-    const extra = [...far, ...house, ...here].filter((x) => { const id = (x as unknown as { id: string }).id; if (seen.has(id)) return false; seen.add(id); return true; });
-    if (!error) { setMarkets([...(data ?? []), ...mine, ...extra].filter((m) => testMode() || !(m.params as { testOnly?: boolean } | null)?.testOnly) as MarketRow[]); if (navigator.onLine) setOffline(false); }
+    const extra = [...far, ...house, ...here, ...own].filter((x) => { const id = (x as unknown as { id: string }).id; if (seen.has(id)) return false; seen.add(id); return true; });
+    if (!error) { const all = [...(data ?? []), ...mine, ...extra].filter((m) => testMode() || !(m.params as { testOnly?: boolean } | null)?.testOnly) as MarketRow[]; setMarkets(all); try { localStorage.setItem("mk1", JSON.stringify({ t: Date.now(), rows: all.slice(0, 250) })); } catch { /* storage full or unavailable */ } if (navigator.onLine) setOffline(false); }
     else if (/fetch|network|load failed/i.test(error.message)) setOffline(true);
     const { data: h } = await sb.from("feed_health").select("feed_id,last_ok_at");
     const nowMs = Date.now();

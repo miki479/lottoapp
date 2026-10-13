@@ -1,6 +1,7 @@
 // Push notifications through OneSignal. The REST key lives only in the function's secrets (ONESIGNAL_REST_API_KEY),
 // never in the app. A player receives a message only if they allowed notifications in the app (OneSignal knows
 // them by external_id = their user id). Nothing is sent without the secrets: results are then simply not announced.
+import { DECORATIONS } from "../_shared/shared/looks.ts";
 type Db = ReturnType<typeof import("./common.ts").db>;
 
 const CURRENCY: Record<string, string> = { it: "EUR", "en-US": "USD", "en-GB": "GBP", ja: "JPY" };
@@ -290,4 +291,130 @@ export async function notifyBroadcast(sb: Db): Promise<number> {
   });
   if (!r.ok) { lastNotifyError.msg = `broadcast ${r.status} ${(await r.text()).slice(0, 160)}`; console.error(lastNotifyError.msg); return 0; }
   return 1;
+}
+
+// ---- more pushes: rewards, live delay, Sunday recap, coming back ----
+// All of them go through sendOptional: at most 2 a day per player, never between 22:00 and 08:00 local time, and only for players who kept those alerts on.
+type Loc = "it" | "en-US" | "en-GB" | "ja";
+const L = (l: string): Loc => (l === "it" || l === "ja" || l === "en-GB" ? l : "en-US");
+const MORE = {
+  it: {
+    level: (n: number, deco: boolean) => (deco ? `Livello ${n}: sbloccata una nuova decorazione. Il tuo profilo ringrazia.` : `Livello ${n}. Nessuno ha chiesto un applauso, ma te lo sei guadagnato.`),
+    trophy: "Nuovo trofeo sbloccato. Passa a vederlo, è anche bello.",
+    both: (n: number) => `Livello ${n} e un nuovo trofeo. Oggi il tuo profilo è in forma.`,
+    live: (route: string, d: number, line: number) => `Il tuo ${route} ha ${d} min di ritardo (la soglia è ${line}). Ti teniamo informato.`,
+    recap: (n: number, w: number) => `Il riepilogo della settimana: ${n} puntate chiuse, ${w} azzeccate. Niente di cui lamentarsi.`,
+    back7: "È una settimana che non ci vediamo. Nessun debito, nessuna colpa: c'è una domanda nuova sul tuo bus.",
+    back21: "Sono tre settimane. Se non ti va più, nessun problema: l'app resta qui, tranquilla.",
+  },
+  "en-US": {
+    level: (n: number, deco: boolean) => (deco ? `Level ${n}: a new decoration unlocked. Your profile says thanks.` : `Level ${n}. Nobody asked for applause, but you earned it.`),
+    trophy: "New trophy unlocked. Come and look, it is rather nice.",
+    both: (n: number) => `Level ${n} and a new trophy. Your profile is in good shape today.`,
+    live: (route: string, d: number, line: number) => `Your ${route} is ${d} min late (the line is ${line}). We will keep you posted.`,
+    recap: (n: number, w: number) => `Your week: ${n} bets settled, ${w} right. Nothing to complain about.`,
+    back7: "It has been a week. No debt, no guilt: there is a new question about your bus.",
+    back21: "Three weeks now. If it is not for you any more, no problem: the app will wait quietly.",
+  },
+  "en-GB": {
+    level: (n: number, deco: boolean) => (deco ? `Level ${n}: a new decoration unlocked. Your profile says thanks.` : `Level ${n}. Nobody asked for applause, but you earned it.`),
+    trophy: "New trophy unlocked. Pop in and have a look, it is rather nice.",
+    both: (n: number) => `Level ${n} and a new trophy. Your profile is in good shape today.`,
+    live: (route: string, d: number, line: number) => `Your ${route} is ${d} min late (the line is ${line}). We will keep you posted.`,
+    recap: (n: number, w: number) => `Your week: ${n} bets settled, ${w} right. Nothing to grumble about.`,
+    back7: "It has been a week. No debt, no guilt: there is a new question about your bus.",
+    back21: "Three weeks now. If it is not for you any more, no problem: the app will wait quietly.",
+  },
+  ja: {
+    level: (n: number, deco: boolean) => (deco ? `レベル${n}：新しいデコレーションが解放されました。` : `レベル${n}に到達しました。`),
+    trophy: "新しいトロフィーを獲得しました。見に来てください。",
+    both: (n: number) => `レベル${n}と新しいトロフィーを獲得しました。`,
+    live: (route: string, d: number, line: number) => `あなたの${route}は${d}分遅れです（基準は${line}分）。`,
+    recap: (n: number, w: number) => `今週のまとめ：${n}件が確定、${w}件的中。`,
+    back7: "1週間ぶりです。気軽にどうぞ。あなたのバスについて新しい質問があります。",
+    back21: "3週間たちました。もう必要なければ大丈夫。アプリはここで静かに待っています。",
+  },
+} as const;
+
+const PCOLS2 = `${PCOLS},level`;
+type PrefL = Pref & { level?: number; level_pushed?: number | null; rewards_pushed_at?: string | null; comeback_stage?: number; recap_week?: string | null };
+async function prefsOf(sb: Db, ids: string[], flag: "push_streak" | "push_ok", extra = ""): Promise<PrefL[]> {
+  if (ids.length === 0) return [];
+  const { data } = await sb.from("profiles").select(`${PCOLS2}${extra}`).eq(flag, true).in("id", ids).limit(500);
+  return (data ?? []) as unknown as PrefL[];
+}
+
+/** A level reached or a trophy won since the last look: one friendly push each time, merged. */
+export async function notifyRewards(sb: Db): Promise<number> {
+  if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
+  const { data: lv } = await sb.from("profiles").select(`${PCOLS2},level_pushed,rewards_pushed_at`).eq("push_streak", true).not("level_pushed", "is", null).limit(2000);
+  const { data: tr } = await sb.from("trophies").select("user_id,earned_at").gt("earned_at", new Date(Date.now() - 6 * 3600_000).toISOString()).limit(500);
+  const trophyUsers = new Set<string>();
+  const byUser = new Map(((lv ?? []) as unknown as PrefL[]).map((p) => [p.id, p]));
+  for (const t of tr ?? []) { const p = byUser.get(t.user_id as string); if (p && (!p.rewards_pushed_at || Date.parse(t.earned_at as string) > Date.parse(p.rewards_pushed_at))) trophyUsers.add(p.id); }
+  const todo = [...byUser.values()].filter((p) => (p.level ?? 1) > (p.level_pushed ?? 1) || trophyUsers.has(p.id));
+  if (todo.length === 0) return 0;
+  const sent = await sendOptional(sb, todo, (p) => {
+    const m = MORE[L(p.locale)], up = (p.level ?? 1) > (p.level_pushed ?? 1), deco = DECORATIONS.some((d) => d.level !== undefined && d.level > (p.level_pushed ?? 1) && d.level <= (p.level ?? 1));
+    return up && trophyUsers.has(p.id) ? m.both(p.level ?? 1) : up ? m.level(p.level ?? 1, deco) : m.trophy;
+  });
+  // whether or not the daily cap let it through, it is handled: a push about something old is worse than none
+  for (const p of todo) await sb.from("profiles").update({ level_pushed: p.level ?? 1, rewards_pushed_at: new Date().toISOString() }).eq("id", p.id);
+  return sent;
+}
+
+/** A train or bus the player bet on is already past the line of the question: once per bet. */
+export async function notifyLiveDelay(sb: Db): Promise<number> {
+  if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
+  const { data } = await sb.rpc("live_bet_alerts");
+  const rows = (data ?? []) as { bet_id: string; user_id: string; route: string; delay_min: number; line_min: number }[];
+  if (rows.length === 0) return 0;
+  const prefs = new Map((await prefsOf(sb, [...new Set(rows.map((r) => r.user_id))], "push_ok")).map((p) => [p.id, p]));
+  let n = 0;
+  const done = new Set<string>(), seenUser = new Set<string>();
+  for (const r of rows) {
+    done.add(r.bet_id);
+    const p = prefs.get(r.user_id);
+    if (!p || seenUser.has(r.user_id)) continue; // one push per player per run, whatever the number of bets
+    seenUser.add(r.user_id);
+    n += await sendOptional(sb, [p], (x) => MORE[L(x.locale)].live(r.route || "—", r.delay_min, r.line_min));
+  }
+  if (done.size) await sb.from("bets").update({ live_alerted: true }).in("id", [...done]);
+  return n;
+}
+
+const isoWeek = (d: Date) => { const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())); const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day); const y = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return `${t.getUTCFullYear()}-W${Math.ceil(((t.getTime() - y.getTime()) / 86400000 + 1) / 7)}`; };
+
+/** Sunday between 18:00 and 18:59 local: the week in one line, only for players who finished at least one bet. */
+export async function notifyRecap(sb: Db): Promise<number> {
+  if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
+  const { data } = await sb.from("profiles").select(`${PCOLS2},recap_week`).eq("push_streak", true).limit(2000);
+  const week = isoWeek(new Date());
+  const due = ((data ?? []) as unknown as PrefL[]).filter((p) => { const d = new Date(new Date().toLocaleString("en-US", { timeZone: p.timezone })); return d.getDay() === 0 && d.getHours() === 18 && p.recap_week !== week; });
+  let n = 0;
+  for (const p of due) {
+    const { data: r } = await sb.rpc("week_recap", { p_user: p.id });
+    const row = (r as { n: number; won: number }[] | null)?.[0];
+    await sb.from("profiles").update({ recap_week: week }).eq("id", p.id);
+    if (!row || row.n < 1) continue;
+    n += await sendOptional(sb, [p], (x) => MORE[L(x.locale)].recap(row.n, row.won));
+  }
+  return n;
+}
+
+/** Nobody played for 7 days, and again after 21: a light, guilt-free note, then silence until they come back. */
+export async function notifyComeback(sb: Db): Promise<number> {
+  if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
+  const { data } = await sb.from("profiles").select(`${PCOLS2},comeback_stage`).eq("push_streak", true).not("last_play_date", "is", null).limit(3000);
+  const day = (s: string) => Date.parse(`${s}T00:00:00Z`);
+  let n = 0;
+  for (const p of (data ?? []) as unknown as PrefL[]) {
+    const lp = localParts(p.timezone), idle = Math.floor((day(lp.day) - day(p.last_play_date!)) / 86400000), stage = p.comeback_stage ?? 0;
+    if (idle <= 3 && stage > 0) { await sb.from("profiles").update({ comeback_stage: 0 }).eq("id", p.id); continue; }
+    const next = idle >= 21 && stage < 2 ? 2 : idle >= 7 && idle < 21 && stage < 1 ? 1 : 0;
+    if (!next || lp.hour < 11 || lp.hour > 18) continue;
+    const sent = await sendOptional(sb, [p], (x) => (next === 2 ? MORE[L(x.locale)].back21 : MORE[L(x.locale)].back7));
+    if (sent > 0) { await sb.from("profiles").update({ comeback_stage: next }).eq("id", p.id); n++; }
+  }
+  return n;
 }
