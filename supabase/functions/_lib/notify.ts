@@ -273,6 +273,16 @@ const BROADCAST = {
     },
     url: "https://latelotto.web.app/?open=profile",
   },
+  // everybody who allowed notifications; the in-app gift (credits and boosts) is written first, see scripts/send-bomb.sql
+  bomb_v1: {
+    headings: { en: "A 💣 is waiting for you", it: "C'è una 💣 che ti aspetta", ja: "💣があなたを待っています" },
+    contents: {
+      en: "The others are already playing a round. We left a 💣 inside the app for you: 1,500 pretend credits and 2 boosts. Come and have a game, there is a fresh question on your bus.",
+      it: "Gli altri stanno già facendo la loro partita. Ti abbiamo lasciato una 💣 nell'app: 1.500 crediti finti e 2 boost. Vieni a farti una partita, c'è una domanda fresca sul tuo bus.",
+      ja: "みんなはもう一局始めています。アプリの中に💣を置いておきました：ニセクレジット1,500と、ブースト2つ。ひと勝負どうぞ。あなたのバスに新しい予想があります。",
+    },
+    url: "https://latelotto.web.app/",
+  },
   // ready for the day the frisbee questions go live: set app_settings broadcast_pending = 'frisbee_v1'
   frisbee_v1: {
     headings: { en: "Frisbee has landed 🥏", it: "È arrivato il frisbee 🥏", ja: "フリスビーが登場 🥏" },
