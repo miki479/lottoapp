@@ -23,7 +23,7 @@ export function HomePlaceField(p: { msg: Messages; locale: Locale; value: Place 
       <span class="detail">{n.home}</span>
       <p class="hint">{n.homeHint}</p>
       <label class="searchbox"><Search size={18} /><input class="field" value={q} placeholder={n.homeSearch} onInput={(e) => setQ((e.target as HTMLInputElement).value)} /></label>
-      {found?.map((pl) => <button key={`${pl.lat},${pl.lon}`} class="placerow" onClick={() => { p.onChange(pl); setQ(""); setFound(null); }}><Flag cc={pl.country} size={14} /><span class="pn"><b>{pl.name}</b>{pl.admin && <small>{pl.admin}</small>}</span><MapPin size={16} /></button>)}
+      <div class="placeres">{found?.map((pl) => <button key={`${pl.lat},${pl.lon}`} class="placerow" onClick={() => { p.onChange(pl); setQ(""); setFound(null); }}><Flag cc={pl.country} size={14} /><span class="pn"><b>{pl.name}</b>{pl.admin && <small>{pl.admin}</small>}</span><MapPin size={16} /></button>)}</div>
     </div>
   );
 }

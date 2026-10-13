@@ -17,6 +17,22 @@ export function TrainSide(p: P) {
   );
 }
 
+/** Intercity "Blues" hybrid train: white/grey body, blue lower band and nose with a sharp angular front, facing right. Same size contract as TrainSide. */
+export function IntercitySide(p: P) {
+  const h = p.size ?? 24;
+  return (
+    <svg width={h * 3} height={h} viewBox="0 0 48 16" class={p.class} style={p.style} aria-hidden="true">
+      <path d="M2 4.200Q2 2 4.200 2H31L41 3.600Q44 4.200 45 6.800L46.600 11.400Q46.800 12 46 12H4.200Q2 12 2 9.800Z" fill="#e9edf2" />
+      <path d="M2 7.600H30L36 12H4.200Q2 12 2 9.800Z" fill="#1f6fe0" />
+      <path d="M30 7.600H38.500L45.600 9.600L46.600 11.400Q46.800 12 46 12H36Z" fill="#1f6fe0" />
+      <path d="M33.500 3.400H40.400Q43 3.800 43.800 6.200H34.200Z" fill="#1c212b" />
+      <g fill="#1c212b"><rect x="5" y="3.800" width="3.600" height="2.600" rx=".6" /><rect x="10" y="3.800" width="3.600" height="2.600" rx=".6" /><rect x="15" y="3.800" width="3.600" height="2.600" rx=".6" /><rect x="20" y="3.800" width="3.600" height="2.600" rx=".6" /><rect x="25" y="3.800" width="3.600" height="2.600" rx=".6" /></g>
+      <path d="M2.600 5.900H31" stroke="#9aa6b5" stroke-width=".8" />
+      <path d="M3 12H44.500V13.300Q44.500 14 43.800 14H3.700Q3 14 3 13.300Z" fill="#1c212b" /><rect x="7" y="13.300" width="9" height="1.500" rx=".7" fill="#1c212b" /><rect x="30" y="13.300" width="9" height="1.500" rx=".7" fill="#1c212b" />
+    </svg>
+  );
+}
+
 /** Urban train (S-Bahn / U-Bahn / metro): two short cars joined by a gangway, facing right. Same size contract as TrainSide (`size` is the height, the width is 3x). */
 export function MetroSide(p: P) {
   const h = p.size ?? 24;
@@ -35,6 +51,7 @@ export function MetroSide(p: P) {
 }
 
 /** Which train drawing a question gets: the two-car urban train for S/U/M lines (Berlin S7, U9, Helsinki M1…), the long one otherwise. */
+export const isIntercityLine = (routeName: unknown) => /^(IC|ICN)\b/i.test(String(routeName ?? "").trim());
 export const isMetroLine = (routeName: unknown) => /^[SUM]\d/i.test(String(routeName ?? ""));
 
 /** Illustrated side-view bus (amber), same drawing style as the train. `size` is the height; the width is 2.4x. */

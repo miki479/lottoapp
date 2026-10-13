@@ -25,19 +25,25 @@ export function TrainBoard(p: { variant?: "full" | "card"; markets: MarketRow[];
   const [q, setQ] = useState("");
   const rows = useMemo(() => {
     const seen = new Set<string>();
-    const out: { m: MarketRow; delay: number; trend: number }[] = [];
+    const out: { m: MarketRow; delay: number; trend: number }[] = [], spare: { m: MarketRow; delay: number; trend: number }[] = [];
     for (const m of p.markets) {
       if (m.category !== "train" || m.kind !== "train_delay_gt" || m.params.ladderOf || m.city_id !== "italia" || Date.parse(m.closes_at) <= p.now) continue;
       const l = p.live[m.id];
-      if (!l || l.is_forecast) continue;
       const key = String(m.params.tripId ?? m.id);
       if (seen.has(key)) continue;
-      seen.add(key);
-      out.push({ m, delay: l.delay_sec, trend: l.prev_delay_sec === null ? 0 : l.delay_sec - l.prev_delay_sec });
+      if (l && !l.is_forecast) { seen.add(key); out.push({ m, delay: l.delay_sec, trend: l.prev_delay_sec === null ? 0 : l.delay_sec - l.prev_delay_sec }); }
+      else if (p.variant !== "card") spare.push({ m, delay: 0, trend: 0 });
+    }
+    // The full board is always there: if too few trains have a reading yet it is filled with the next departures.
+    for (const r of spare.sort((a, b) => Date.parse(a.m.target_at) - Date.parse(b.m.target_at))) {
+      if (out.length >= 8) break;
+      const key = String(r.m.params.tripId ?? r.m.id);
+      if (seen.has(key)) continue;
+      seen.add(key); out.push(r);
     }
     return out;
   }, [p.markets, p.live, Math.floor(p.now / 20_000)]);
-  if (rows.length < 3) return null;
+  if (p.variant === "card" ? rows.length < 3 : rows.length === 0) return p.variant === "card" ? null : <section class="led full" aria-label={msg.board.title}><div class="ledbezel"><header class="ledtop"><b>{msg.board.title}</b></header><p class="hint" style="padding:14px">{msg.board.marquee}</p></div></section>;
   const late5 = rows.filter((r) => r.delay > 300).length;
   const avg = Math.max(0, Math.round(rows.reduce((a, r) => a + Math.max(0, r.delay), 0) / rows.length / 60));
   const needle = q.trim().toLowerCase();

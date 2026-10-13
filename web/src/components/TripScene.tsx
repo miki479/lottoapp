@@ -1,14 +1,14 @@
 import { Hourglass, MapPin } from "lucide-preact";
 import { useEffect, useRef } from "preact/hooks";
 import type { MarketRow } from "../lib/format.ts";
-import { BusSide, isMetroLine, MetroSide, TrainSide } from "./Vehicles.tsx";
+import { BusSide, IntercitySide, isIntercityLine, isMetroLine, MetroSide, TrainSide } from "./Vehicles.tsx";
 
 /**
  * The little trip of a bus/train question: the vehicle shows where the trip is now and, while a choice is hovered or selected,
  * plays it out ("on time" = nitro run, "late" = a slow crawl). Used on the cards and inside the bet slip.
  */
 export function TripScene({ m, now, hint, big }: { m: MarketRow; now: number; hint: "yes" | "no" | null; big?: boolean }) {
-  const Kind = m.category === "train" ? (isMetroLine(m.params.routeName) ? MetroSide : TrainSide) : BusSide;
+  const Kind = m.category === "train" ? (isMetroLine(m.params.routeName) ? MetroSide : isIntercityLine(m.params.routeName) ? IntercitySide : TrainSide) : BusSide;
   // Moved by CSS transitions starting from wherever the vehicle is right now, so switching from "on time" to "late" brakes and rolls back.
   const rider = useRef<HTMLSpanElement>(null);
   useEffect(() => {

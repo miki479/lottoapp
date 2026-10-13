@@ -5,7 +5,7 @@ import { Countdown } from "./Countdown.tsx";
 import { countdown, fmtOdds, isYesNo, money, per10, question, superText, type MarketRow } from "../lib/format.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { LiveDelay, LiveOcc, Pick } from "../lib/types.ts";
-import { BusSide, CloudRainSide, isMetroLine, MetroSide, TrainSide } from "./Vehicles.tsx";
+import { BusSide, CloudRainSide, IntercitySide, isIntercityLine, isMetroLine, MetroSide, TrainSide } from "./Vehicles.tsx";
 import { Sky, useHint } from "./Sky.tsx";
 import { OccScene } from "./OccScene.tsx";
 import { TripScene } from "./TripScene.tsx";
@@ -33,7 +33,7 @@ export function OccMeter(p: { level: number; msg: Messages }) {
 
 export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now: number; live?: LiveDelay; occ?: LiveOcc; index: number; top?: boolean; hasLadder?: boolean; mm?: number; friends?: number; showCity: boolean; onPick: (m: MarketRow, pick: Pick) => void }) {
   const { m, msg, locale, now, live } = p;
-  const city = cityOf(m.city_id), Kind = m.category === "train" && isMetroLine(m.params.routeName) ? MetroSide : KIND[m.category];
+  const city = cityOf(m.city_id), Kind = m.category === "train" && isMetroLine(m.params.routeName) ? MetroSide : m.category === "train" && isIntercityLine(m.params.routeName) ? IntercitySide : KIND[m.category];
   const { hint, show, clear } = useHint();
   const left = Date.parse(m.closes_at) - now;
   const isRain = isYesNo(m.kind);
