@@ -1,3 +1,4 @@
+import { LeaguePanel } from "../components/League.tsx";
 import { Check, Share2, Swords, UserMinus, Users, X } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Empty } from "../components/Empty.tsx";
@@ -32,6 +33,7 @@ export function Friends(p: { locale: Locale; msg: Messages; registered: boolean;
   return (
     <div class="screen stack" style="max-width:720px;margin:0 auto;width:100%">
       <h1>{p.msg.nav.friends}</h1>
+      <LeaguePanel locale={p.locale} registered={p.registered} onProfile={p.onProfile} />
       {reqs.length > 0 && (
         <section class="card stack reqcard">
           <div class="reqhead"><b>{p.msg.look.requests} · {reqs.length}</b>{reqs.length > 2 && <button class="linkbtn" onClick={declineAll}>{p.msg.look.declineAll}</button>}</div>

@@ -11,7 +11,6 @@ import { loadFriends, type FriendRow } from "../lib/friends.ts";
 import { Look } from "../components/looks/Look.tsx";
 import { PlayerTitle } from "../components/PlayerTitle.tsx";
 import { useLooks } from "../lib/looks.ts";
-import { LeaguePanel } from "../components/League.tsx";
 
 type Tab = "world" | "local" | "friends";
 type Local = "near" | "city" | "country";
@@ -67,7 +66,6 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
     <div class="screen stack" style="max-width:720px;margin:0 auto;width:100%">
       <h1>{m.title}</h1>
       <p class="detail">{m.season(seasonDaysLeft())}</p>
-      <LeaguePanel locale={p.locale} registered={p.registered} onProfile={p.onProfile} />
       {!p.profile?.display_name && <button class="card pressable" style="text-align:left" onClick={p.onNickname}><b>{p.msg.profile.nickname.title}</b><p class="hint">{p.msg.profile.nickname.label}</p></button>}
       <div class="seg" role="tablist">{(["world", "local", "friends"] as Tab[]).map((x) => <button key={x} role="tab" class={tab === x ? "on" : ""} aria-selected={tab === x} onClick={() => setTab(x)}>{p.msg.rankTabs[x]}</button>)}</div>
       {tab === "local" && (

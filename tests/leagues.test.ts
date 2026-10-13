@@ -37,10 +37,11 @@ describe("leagues", () => {
     expect(get(r, "d").newCredits).toBe(1600);
     expect(get(r, "s").leagueAfter).toBe(3);
   });
-  it("inactive players keep their league and are never reduced below their credits", () => {
+  it("inactive players drop one league (bronze stays) and are never reduced below their credits", () => {
     const r = closeSeason([P("i1", 2, 400, false), P("i2", 2, 90_000, false), P("p", 2, 10)]);
-    expect(get(r, "i1")).toMatchObject({ leagueAfter: 2, newCredits: 1000, rank: null });
+    expect(get(r, "i1")).toMatchObject({ leagueAfter: 1, newCredits: 1150, rank: null });
     expect(get(r, "i2").newCredits).toBe(90_000);
+    expect(closeSeason([P("b", 0, 300, false)])[0]).toMatchObject({ leagueAfter: 0, newCredits: 1000 });
     expect(get(r, "p").rank).toBe(1); // inactive players do not count in the ranking
   });
   it("promotion gap", () => {

@@ -54,6 +54,12 @@ function useMyLeague(registered: boolean): My | null {
   return d;
 }
 
+const DEMOTE: Record<string, string> = {
+  it: "Un mese intero senza puntare ti fa scendere di una lega (il Bronzo non scende): i crediti restano tuoi. Basta giocare per tenere il posto.",
+  "en-US": "A whole month without a bet drops you one league (Bronze stays Bronze): your credits stay yours. Just keep playing to hold your place.",
+  "en-GB": "A whole month without a bet drops you one league (Bronze stays Bronze): your credits stay yours. Just keep playing to hold your place.",
+  ja: "1か月まったく予想しないと1つ下のリーグに下がります（ブロンズは下がりません）。クレジットはそのままです。遊び続ければ順位を保てます。",
+};
 const tx = (l: Locale) => T[l] ?? T["en-US"];
 const metal = (i: number) => M[LEAGUES[Math.min(4, Math.max(0, i))]!]!;
 export function Badge({ league, size = 44 }: { league: number; size?: number }) {
@@ -115,7 +121,7 @@ export function LeaguePanel(p: { locale: Locale; registered: boolean; onProfile:
       {how && (
         <Sheet onClose={() => setHow(false)} label={t.how}>
           <div class="shead"><h2>{t.how}</h2><button class="iconbtn" onClick={() => setHow(false)} aria-label={t.close}><X size={22} /></button></div>
-          <ul class="xplist">{t.rows(nf.format(resetBalance(0))).map((r) => <li key={r}>{r}</li>)}</ul>
+          <ul class="xplist">{[...t.rows(nf.format(resetBalance(0))), DEMOTE[p.locale] ?? DEMOTE["en-US"]!].map((r) => <li key={r}>{r}</li>)}</ul>
           <div class="mkchips">{LEAGUES.map((_, i) => <span class="lgchip" key={i}><Badge league={i} size={22} />{t.names[i]} · {nf.format(resetBalance(i))}</span>)}</div>
           <p class="hint">{t.note}</p>
         </Sheet>

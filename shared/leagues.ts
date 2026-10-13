@@ -29,8 +29,10 @@ export function closeSeason(players: SeasonPlayer[]): SeasonResult[] {
   for (const p of players) {
     const before = clampLeague(p.league);
     if (!p.played) {
-      // inactive players keep their league; they are only lifted to the base, never reduced
-      out.push({ id: p.id, leagueBefore: before, leagueAfter: before, credits: p.credits, rank: null, newCredits: Math.max(p.credits, BASE_CREDITS) });
+      // inactive players drop one league (bronze stays) and keep their credits
+      // a month without a single bet moves you down one league (bronze stays bronze); the credits are kept, lifted to the new league's base if lower
+      const after = Math.max(0, before - 1);
+      out.push({ id: p.id, leagueBefore: before, leagueAfter: after, credits: p.credits, rank: null, newCredits: Math.max(p.credits, resetBalance(after)) });
       continue;
     }
     const rank = 1 + players.filter((o) => o.played && clampLeague(o.league) === before && o.credits > p.credits).length;
