@@ -1,4 +1,5 @@
 import { sb } from "../lib/api.ts";
+import { oddsWord } from "../lib/oddsWord.ts";
 import { FUN_STAKE, balanceStakeCap, stakeCap } from "../../../shared/wallet.ts";
 import { Q } from "./Q.tsx";
 import { MarketVs, noOf, reasonOf } from "./MatchVs.tsx";
@@ -113,6 +114,7 @@ export function BetSheet(p: {
         </div>
       )}
       {!offer && vicePct > 0 && pick === "yes" && <label class={`boosttoggle vicetoggle ${vice ? "on" : ""}`}><input type="checkbox" checked={vice} onChange={(e) => setVice((e.target as HTMLInputElement).checked)} /><Sparkles size={20} /><span><b>{p.msg.house.viceTitle}</b> · +{vicePct}%<small>{p.msg.house.viceBody(vicePct)}</small></span></label>}
+      <p class="oddsword">{fmtOdds(shownOf(pick), p.locale)}× · {oddsWord(shownOf(pick), p.locale)}</p>
       {(decided || nearly) && <p class="note warn" role="status">{p.msg.errors.odds_too_low}</p>}
       <StakeControl value={amount} onChange={setStake} cap={cap} balance={p.credits} odds={odds} boost={boost && p.boosts > 0} vice={vice && pick === "yes" ? vicePct : 0} fancy={exclusive} locale={p.locale} msg={p.msg} />
       {!offer && p.boosts > 0 && <label class={`boosttoggle ${boost ? "on" : ""}`}><input type="checkbox" checked={boost} onChange={(e) => setBoost((e.target as HTMLInputElement).checked)} /><Rocket size={20} /><span><b>{p.msg.boost.toggle}</b> · {p.msg.boost.have(p.boosts)}<small>{p.msg.boost.gain("+" + money(Math.floor(amount * odds) - amount, p.locale), "+" + money(boostedPayout(amount, odds) - amount, p.locale))} · {p.msg.boost.hint}</small></span></label>}

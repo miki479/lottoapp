@@ -11,6 +11,7 @@ const WARN: Record<string, (pct: number) => string> = {
   "en-GB": (n) => `You are betting ${n}% of your credits.`,
   ja: (n) => `クレジットの${n}%を賭けようとしています。`,
 };
+const ALL: Record<string, string> = { it: "Tutto", "en-US": "All", "en-GB": "All", ja: "全額" };
 const COIN_RAIN = Array.from({ length: 16 }, (_, i) => ({ left: (i * 37 + 8) % 96, delay: ((i * 53) % 100) / 70, dur: 1.8 + ((i * 29) % 10) / 6, e: i % 2 ? "🤩" : "💸" }));
 
 /** Big glowing stake number + slider. The number warms up (violet -> magenta -> orange) and pops as the stake grows. At the whole balance it turns into "All In". */
@@ -53,6 +54,11 @@ export function StakeControl(p: { value: number; onChange: (n: number) => void; 
       <input class="range" type="range" min={0} max={1000} step={1} value={pos} aria-label={p.msg.stake.label}
         style={`--fill:${fill}%;--hot:${hot}`}
         onInput={(e) => { p.onChange(fromSlider(Number((e.target as HTMLInputElement).value))); haptic.tap(); }} />
+      <div class="quickstake" role="group">
+        {[10, 50, 100].filter((v) => v < hi).map((v) => <button key={v} type="button" class={p.value === v ? "on" : ""} onClick={() => { p.onChange(v); haptic.tap(); }}>{money(v, p.locale)}</button>)}
+        <button type="button" class={p.value >= hi ? "on" : ""} onClick={() => { p.onChange(hi); haptic.tap(); }}>{ALL[p.locale] ?? ALL["en-US"]}</button>
+        {bal > 0 && <span class="pctbal">{Math.min(100, Math.round((p.value / bal) * 100))}%</span>}
+      </div>
       <div class="rangelabels"><span>{money(lo, p.locale)}</span><span>{p.msg.stake.max(money(hi, p.locale))}</span></div>
       {warn && <p class="stakewarn" role="status">{(WARN[p.locale] ?? WARN["en-US"]!)(share)}</p>}
       <div class="summary"><span>{p.msg.stake.ifRight}</span><b class="num shine" data-moving={win !== gross ? "1" : undefined}>{money(win, p.locale)}</b></div>

@@ -1340,3 +1340,5 @@ textarea.field { resize: vertical; min-height: 84px; }
 
 /* Japanese: break between phrases, not in the middle of a word (イベ/ントを選ぶ) */
 :lang(ja) body { word-break: auto-phrase; line-break: strict; }
+.oddsword { margin: 0; text-align: center; font-weight: 700; font-size: .85rem; color: var(--muted); }
+.quickstake { display: flex; gap: 8px; align-items: center; margin: 4px 0 6px; } .quickstake button { flex: 1; padding: 7px 4px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-weight: 800; font-size: .85rem; } .quickstake button.on { border-color: var(--brand); color: var(--brand); background: var(--brand-soft); } .quickstake .pctbal { font-size: .78rem; font-weight: 800; color: var(--muted); min-width: 36px; text-align: right; }
