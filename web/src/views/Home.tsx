@@ -19,7 +19,7 @@ import { Flag } from "../components/Flag.tsx";
 import { TopCards, type TopItem } from "../components/TopCards.tsx";
 import { Car, Coins, Globe, ListChecks, MapPin, Sparkles, ThumbsUp } from "lucide-preact";
 import { Fragment } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
 import { ChevronDown, Flame, Plus, Search, Tv } from "lucide-preact";
@@ -27,6 +27,8 @@ import { TrainBoard } from "../components/TrainBoard.tsx";
 import { LoadBar } from "../components/LoadBar.tsx";
 import { followedShows, type FollowedShow } from "../lib/series.ts";
 import { FEATURED_PLACES, type Place } from "../lib/places.ts";
+import { isRegionFilter, regionLabel, regionOfCity, regionOfPoint, REGION_FILTER, TOP_REGIONS } from "../lib/regions.ts";
+import { RegionPanel } from "../components/RegionPanel.tsx";
 import type { MarketRow } from "../lib/format.ts";
 import type { LiveDelay, LiveOcc, Pick } from "../lib/types.ts";
 
@@ -35,9 +37,11 @@ import type { LiveDelay, LiveOcc, Pick } from "../lib/types.ts";
 const LOCAL_CATS: CatId[] = ["bus", "train", "weather", "traffic"];
 const safe = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
 export interface Trend { id: string; name: string; country: string; place?: Place }
+const REG_MORE: Record<string, string> = { it: "Regioni", "en-US": "Regions", "en-GB": "Regions", ja: "地域" };
+const NEAR_WIDE: Record<string, string> = { it: "Niente entro 50 km: ecco le più vicine nel tuo paese.", "en-US": "Nothing within 50 km: here is the closest in your country.", "en-GB": "Nothing within 50 km: here is the closest in your country.", ja: "50km以内にはありません。お住まいの国で一番近いものを表示します。" };
 export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>; occ: Record<string, LiveOcc>;
-  cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null; country?: string | null; homePos?: { lat: number; lon: number } | null;
+  cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null; radiusKm?: number | null; mineWide?: boolean; country?: string | null; homePos?: { lat: number; lon: number } | null;
   onQuakeMaker: () => void; onSeries: (s?: FollowedShow) => void; onCreate: () => void; registered: boolean; onAuth: () => void; italian: boolean; nearNode?: preact.ComponentChildren; nearbyNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
   stale?: boolean; details: boolean; friendBets: Record<string, number>; onOffer?: (m: MarketRow, o: OfferUse) => void;
   attributions: { name: string; via?: string; license: string; licenseUrl: string; url: string }[]; installEvt: Event | null;
@@ -95,6 +99,11 @@ export function Home(p: HomeProps) {
   const placeName = (() => { const c = CITIES.find((x) => x.id === p.filter); if (c) return cityName(c, p.locale); return [...p.places, ...FEATURED_PLACES, ...p.trending.map((t) => t.place).filter((x): x is Place => !!x)].find((x) => x.id === p.filter)?.name ?? p.filter; })();
   /** What does exist in the chosen place: offered as buttons so nothing switches by itself. */
   const alt = tiles.filter((t) => !t.disabled && t.id !== p.cat && t.count > 0).slice(0, 4);
+  // Italian players pick a region (up to five chips: their own first, then the biggest) or open the full alphabetical list
+  const [regOpen, setRegOpen] = useState(false);
+  const homeRegion = p.homePos ? regionOfPoint(p.homePos.lat, p.homePos.lon) : null, curRegion = isRegionFilter(p.filter) ? p.filter.slice(REGION_FILTER.length) : null;
+  const regionChips = p.italian ? [...new Set([curRegion, homeRegion, ...TOP_REGIONS].filter((x): x is string => !!x))].slice(0, 5) : [];
+  const regionCounts = useMemo(() => { const out: Record<string, number> = {}; if (regOpen) for (const m of p.markets ?? []) if (m.category === p.cat && Date.parse(m.closes_at) > p.now) { const r = regionOfCity(m.city_id); if (r) out[r] = (out[r] ?? 0) + 1; } return out; }, [regOpen, p.markets, p.cat]);
   return (
     <div class="home screen">
       <section class="hero" aria-label={msg.home.hero.title}>
@@ -131,8 +140,11 @@ export function Home(p: HomeProps) {
         {LOCAL_CATS.includes(p.cat) && (
           <div class="chiprow" role="tablist">
             <button class={`chip ${p.filter === "world" ? "on" : ""}`} role="tab" aria-selected={p.filter === "world"} onClick={() => p.onFilter("world")}><Globe size={16} />{msg.world}</button>
-            {p.mine && <button class={`chip ${p.filter === "mine" ? "on" : ""}`} role="tab" aria-selected={p.filter === "mine"} onClick={() => p.onFilter("mine")}><Flag cc={p.mine} size={13} />{msg.near.title}</button>}
-            {startChips(p.country, p.locale).map((ch) => { const pl = ch.place; return ch.city
+            {p.mine && <button class={`chip ${p.filter === "mine" ? "on" : ""}`} role="tab" aria-selected={p.filter === "mine"} onClick={() => p.onFilter("mine")}><Flag cc={p.mine} size={13} />{msg.near.title}{p.radiusKm ? ` · ${p.radiusKm} km` : ""}</button>}
+            {regionChips.map((r) => <button key={r} class={`chip ${p.filter === REGION_FILTER + r ? "on" : ""}`} role="tab" aria-selected={p.filter === REGION_FILTER + r} onClick={() => p.onFilter(REGION_FILTER + r)}>{regionLabel(r, p.locale)}</button>)}
+            {p.italian && <button class="chip more" aria-haspopup="dialog" onClick={() => setRegOpen(true)}><ChevronDown size={16} />{REG_MORE[p.locale] ?? REG_MORE["en-US"]}</button>}
+            {p.italian && p.filter !== "world" && p.filter !== "mine" && !isRegionFilter(p.filter) && <button class="chip on" role="tab" aria-selected><Flag cc="IT" size={13} />{placeName}</button>}
+            {(p.italian ? [] : startChips(p.country, p.locale)).map((ch) => { const pl = ch.place; return ch.city
               ? <button key={ch.city.id} class={`chip ${p.filter === ch.city.id ? "on" : ""}`} role="tab" aria-selected={p.filter === ch.city.id} onClick={() => p.onFilter(ch.city!.id)}><Flag cc={ch.city.country} size={13} />{cityName(ch.city, p.locale)}</button>
               : <button key={pl!.id} class={`chip ${p.filter === pl!.id ? "on" : ""}`} role="tab" aria-selected={p.filter === pl!.id} onClick={() => p.onPlace(pl!)}><Flag cc={pl!.country} size={13} />{pl!.name}</button>; })}
             {p.trending.filter((t) => !cities.find((c) => c.id === t.id)?.region && !startChips(p.country, p.locale).some((ch) => (ch.city?.id ?? ch.place?.id) === t.id)).map((t) => <button key={t.id} class={`chip trend ${p.filter === t.id ? "on" : ""}`} role="tab" aria-selected={p.filter === t.id} onClick={() => (t.place ? p.onPlace(t.place) : p.onFilter(t.id))}><Flag cc={t.country} size={13} />{t.name}<Flame size={13} /></button>)}
@@ -176,6 +188,7 @@ export function Home(p: HomeProps) {
         {p.cat === "sport" && p.markets !== null && <MatchList matches={groupMatches(shown)} msg={msg} locale={p.locale} onPick={p.onPick} registered={p.registered} onAuth={p.onAuth} details={p.details} friendBets={p.friendBets} />}
         {p.stale && <p class="note warn">{msg.feedWarning}</p>}
         <div class="cardgrid" style={p.cat === "sport" ? "display:none" : undefined}>
+          {p.filter === "mine" && p.mineWide && p.markets !== null && shown.length > 0 && <p class="hint" style="grid-column:1/-1;margin:0" role="note">{NEAR_WIDE[p.locale] ?? NEAR_WIDE["en-US"]}</p>}
           {p.markets === null && <div style="grid-column:1/-1"><LoadBar label={msg.common.loading} /></div>}
           {p.markets === null && [0, 1].map((i) => <div class="sk" key={i} />)}
           {p.markets !== null && p.cat === "traffic" && shown.length === 0 && <div style="grid-column:1/-1"><Empty icon={Car} title={msg.tabs.traffic} body={msg.home.trafficSoon} /></div>}
@@ -198,6 +211,7 @@ export function Home(p: HomeProps) {
           </details>
         </footer>
       </div>
+      {regOpen && <RegionPanel locale={p.locale} current={curRegion} counts={regionCounts} onPick={(id) => { setRegOpen(false); p.onFilter(REGION_FILTER + id); }} onClose={() => setRegOpen(false)} />}
     </div>
   );
 }

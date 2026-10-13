@@ -39,6 +39,8 @@ import { countdown, setDayUnit, currencySymbol, dayIn, daysUntil, fmtOdds, isYes
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
 import { FAMOUS_PLACES, FEATURED_CITY_IDS, FEATURED_PLACES, ITALY_CAPITALS, ensurePlace, km, placeById, placeIdOf, recentPlaces, rememberPlace, type Place } from "./lib/places.ts";
+import { distanceM } from "../../shared/geo.ts";
+import { isRegionFilter, locOf, regionOfCity } from "./lib/regions.ts";
 import { PushAsk, type PushVariant } from "./components/PushAsk.tsx";
 import { disablePush, enablePush, pushAsked, pushAvailable, pushDenied, pushEnabled, rememberPush, markNag, nagDue } from "./lib/push.ts";
 import { announce, setVoice, voiceEnabled, voiceSupported } from "./lib/voice.ts";
@@ -69,6 +71,9 @@ const store = {
   set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
 };
 /** Country-wide feeds (all Italian trains, all German regional trains): they show up under every town of that country, not only under a city of their own. */
+/** How far "Near you" reaches, and how far a whole-region question is allowed to be (a region has no single point). */
+const RADIUS_KM = 50, REGION_KM = 120;
+const REGION_IDS = new Set(CITIES.filter((c) => c.region).map((c) => c.id));
 const NATIONAL = new Set(CITIES.filter((c) => c.id === "italia" || c.id === "germany").map((c) => c.id));
 const region = () => { try { return new Intl.Locale(navigator.language).maximize().region ?? null; } catch { return null; } };
 const PROFILE_COLS = "id,credits,city_id,locale,timezone,country,streak,best_streak,freezes,boosts,push_flash,push_streak,push_friends,display_name,last_play_date,stake_factor";
@@ -259,7 +264,7 @@ export function App() {
       Promise.all(["sport", "finance", "culture", "nature", "law", "traffic"].map((c) => open().eq("category", c).order("closes_at").limit(c === "law" ? 60 : 200))),
       // the questions we write ourselves close far ahead: always fetched on their own
       open().eq("kind", "tick_gt").like("params->>series", "house:%").order("closes_at").limit(60),
-      f0 && f0 !== "world" && f0 !== "mine" && !placeIds.current.includes(f0) ? open().in("city_id", [f0, ...[...NATIONAL].filter((id) => CITIES.find((c) => c.id === id)?.country === (CITIES.find((c) => c.id === f0)?.country ?? placeById(f0)?.country))]).order("closes_at").limit(400) : none,
+      f0 && f0 !== "world" && f0 !== "mine" && !isRegionFilter(f0) && !placeIds.current.includes(f0) ? open().in("city_id", [f0, ...[...NATIONAL].filter((id) => CITIES.find((c) => c.id === id)?.country === (CITIES.find((c) => c.id === f0)?.country ?? placeById(f0)?.country))]).order("closes_at").limit(400) : none,
       cc && ownIds.length + nationalIds.length ? open().in("city_id", [...ownIds, ...nationalIds]).order("closes_at").limit(300) : none,
     ]);
     const { data, error } = first, mine = mineR.data ?? [], far = farR.flatMap((r) => r.data ?? []), house = houseR.data ?? [], here = hereR.data ?? [], own = ownR.data ?? [];
@@ -276,7 +281,7 @@ export function App() {
     try {
       const env = envRef.current;
       const nearIds = CITIES.filter((c) => c.country === (env.near?.country ?? env.profile?.country ?? region())).map((c) => c.id);
-      const here = env.near?.id ?? (env.filter !== "world" && env.filter !== "mine" ? env.filter : null);
+      const here = env.near?.id ?? (env.filter !== "world" && env.filter !== "mine" && !isRegionFilter(env.filter) ? env.filter : null);
       const { data: tr } = await sb.rpc("trending_markets", { p_place: here, p_near: nearIds, p_limit: 6 });
       const ids = ((tr ?? []) as { market_id: string; bettors: number | string }[]);
       if (ids.length) {
@@ -367,7 +372,13 @@ export function App() {
   const myCountry = near?.country ?? profile?.country ?? region();
   const countryOf = (id: string) => CITIES.find((c) => c.id === id)?.country ?? placeById(id)?.country ?? (near?.id === id ? near.country : undefined);
   const hasMine = !!myCountry && open.some((m) => m.category !== "nature" && m.category !== "strike" && m.category !== "finance" && m.category !== "culture" && m.category !== "sport" && m.category !== "law" && countryOf(m.city_id) === myCountry);
-  const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter || m.category === "nature" || m.category === "strike" || m.category === "finance" || m.category === "culture" || m.category === "sport" || m.category === "law" || (m.category === "traffic" && m.city_id === "world") || (filter === "mine" && countryOf(m.city_id) === myCountry) || (NATIONAL.has(m.city_id) && countryOf(filter) === countryOf(m.city_id))), [open, filter, myCountry, near?.id]);
+  /** "Near you": what is within RADIUS_KM of the player's town (the town they set, or the one they were located in); with no town known, the whole country. */
+  const originPt = home ? { lat: home.lat, lon: home.lon } : near ? locOf(near.id) : null;
+  const withinRadius = (m: MarketRow) => { const l = originPt ? locOf(m.city_id) : null; return !!(originPt && l) && distanceM(originPt.lat, originPt.lon, l.lat, l.lon) / 1000 <= (REGION_IDS.has(m.city_id) ? REGION_KM : RADIUS_KM); };
+  // a local category with nothing inside the radius falls back to the player's country, and says so (trains are national anyway)
+  const mineWide = useMemo(() => { const s = new Set<string>(); if (filter === "mine" && originPt) for (const c of ["bus", "weather", "traffic"]) if (!open.some((m) => m.category === c && withinRadius(m))) s.add(c); return s; }, [open, filter, home?.id, near?.id]);
+  const mineMatch = (m: MarketRow) => (originPt ? withinRadius(m) || (countryOf(m.city_id) === myCountry && (mineWide.has(m.category) || (m.category === "train" && NATIONAL.has(m.city_id)))) : countryOf(m.city_id) === myCountry);
+  const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter || m.category === "nature" || m.category === "strike" || m.category === "finance" || m.category === "culture" || m.category === "sport" || m.category === "law" || (m.category === "traffic" && m.city_id === "world") || (filter === "mine" && mineMatch(m)) || (isRegionFilter(filter) && (regionOfCity(m.city_id) === filter.slice(4) || (m.category === "train" && NATIONAL.has(m.city_id) && countryOf(m.city_id) === "IT"))) || (NATIONAL.has(m.city_id) && countryOf(filter) === countryOf(m.city_id))), [open, filter, myCountry, near?.id, home?.id, mineWide]);
   useEffect(() => { if (hasMine && filter === "world" && !store.get("filter")) setFilter("mine"); }, [hasMine]);
   // a question already bet on leaves the lists (it stays in "My bets"), so it cannot be played twice by mistake
   const betOn = useMemo(() => new Set(bets.filter((b) => b.status === "open").map((b) => b.markets.id)), [bets]);
@@ -683,7 +694,7 @@ export function App() {
         <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
         <Ticker items={tickerItems} />
         <main class="content">
-          {screen === "home" && <Home onOffer={(m, o) => setSheet({ m, pick: "yes", offer: o })} onSeries={(s) => setSeriesMaker({ show: s ?? null })} occ={occ} friendBets={friendBets} details={detailsOn} stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} country={myCountry} homePos={home ? { lat: home.lat, lon: home.lon } : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
+          {screen === "home" && <Home onOffer={(m, o) => setSheet({ m, pick: "yes", offer: o })} onSeries={(s) => setSeriesMaker({ show: s ?? null })} occ={occ} friendBets={friendBets} details={detailsOn} stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} radiusKm={originPt ? RADIUS_KM : null} mineWide={filter === "mine" && mineWide.has(cat)} country={myCountry} homePos={home ? { lat: home.lat, lon: home.lon } : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets canMore={bets.length >= betsLimit} onMore={() => setBetsLimit((n) => n + 60)} invites={invites} challenges={myChallenges} onChallenge={(code) => setChallengeCode(code)} parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "friends" && <Friends reqTick={reqTick} onReqs={loadReqs} onProfile={setPubUser} referral={referral} onShareReferral={shareReferral} onChallenge={() => (registered ? setChallengeMaker(true) : setAuth(true))} onOpen={(code) => setChallengeCode(code)} locale={locale} msg={msg} registered={registered} onToast={flash} onAuth={() => setAuth(true)} now={now} />}
           {screen === "ranking" && <Ranking onProfile={setPubUser} home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}

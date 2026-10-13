@@ -1388,3 +1388,11 @@ textarea.field { resize: vertical; min-height: 84px; }
 .itlist .mkchip { min-height: 36px; padding: 6px 12px; font-size: .84rem; }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .itreg { --l: 58%; } }
 .townrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .townrow b { flex: 1; min-width: 0; font-size: 1.05rem; overflow-wrap: anywhere; } .townrow .btn { min-height: 40px; padding: 0 12px; gap: 6px; }
+/* Region panel */
+.regionlist { display: flex; flex-direction: column; gap: 2px; max-height: min(56dvh, 460px); overflow-y: auto; overscroll-behavior: contain; margin: 0 -4px; padding: 0 4px 6px; }
+.rletter { position: sticky; top: 0; z-index: 1; padding: 6px 4px 2px; font-size: .78rem; font-weight: 800; letter-spacing: .1em; color: var(--muted); background: var(--surface); }
+.regionrow { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 12px; border-radius: var(--radius-control); border: 1px solid transparent; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.regionrow:active, .regionrow:hover { background: var(--surface-2); }
+.regionrow.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); }
+.regionrow .rn { flex: 1; min-width: 0; display: flex; flex-direction: column; } .regionrow .rn small { color: var(--muted); font-size: .8rem; }
+.regionrow em { font-style: normal; font-size: .78rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
