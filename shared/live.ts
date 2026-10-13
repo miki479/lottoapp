@@ -2,7 +2,8 @@
 /** Our league names → the ESPN scoreboard path. Leagues without an entry simply have no live score. */
 export const ESPN_PATH: Record<string, string> = {
   "Serie A": "soccer/ita.1", "Serie B": "soccer/ita.2", "Premier League": "soccer/eng.1", "La Liga": "soccer/esp.1", "Bundesliga": "soccer/ger.1", "Ligue 1": "soccer/fra.1",
-  "Champions League": "soccer/uefa.champions", "Europa League": "soccer/uefa.europa", "NBA": "basketball/nba", "NHL": "hockey/nhl", "NFL": "football/nfl", "MLB": "baseball/mlb",
+  "Champions League": "soccer/uefa.champions", "Europa League": "soccer/uefa.europa", "Conference League": "soccer/uefa.europa.conf",
+  "Eredivisie": "soccer/ned.1", "Primeira Liga": "soccer/por.1", "Scottish Premiership": "soccer/sco.1", "NBA": "basketball/nba", "NHL": "hockey/nhl", "NFL": "football/nfl", "MLB": "baseball/mlb",
 };
 
 export interface LiveGame { home: string; away: string; hs: number; as: number; state: "pre" | "in" | "post"; period: number | null; clock: string; startMs: number }

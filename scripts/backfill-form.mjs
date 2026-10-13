@@ -3,7 +3,8 @@
 //   SUPABASE_ACCESS_TOKEN=... SUPABASE_URL=<ref> node scripts/backfill-form.mjs [fromDate] [toDate]
 import { projectRef } from "./lib-env.mjs";
 
-const LEAGUES = [["4332", "Serie A"], ["4394", "Serie B"], ["5340", "Serie C - A"], ["5339", "Serie C - B"], ["5341", "Serie C - C"], ["4387", "NBA"], ["4546", "EuroLeague"], ["4380", "NHL"], ["4391", "NFL"], ["4424", "MLB"], ["4328", "Premier League"], ["4335", "La Liga"], ["4331", "Bundesliga"], ["4334", "Ligue 1"], ["4480", "Champions League"], ["4481", "Europa League"]];
+const LEAGUES = [["4332", "Serie A"], ["4394", "Serie B"], ["5340", "Serie C - A"], ["5339", "Serie C - B"], ["5341", "Serie C - C"], ["4387", "NBA"], ["4546", "EuroLeague"], ["4380", "NHL"], ["4391", "NFL"], ["4424", "MLB"], ["4328", "Premier League"], ["4335", "La Liga"], ["4331", "Bundesliga"], ["4334", "Ligue 1"], ["4480", "Champions League"], ["4481", "Europa League"], ["5071", "Conference League"], ["4337", "Eredivisie"], ["4344", "Primeira Liga"], ["4330", "Scottish Premiership"]];
+// NB: the free TheSportsDB tier returns only 3 matches per day per league, so this stores a sample; the European strengths used for pricing come from the ESPN standings (shared/form.ts).
 const ONLY = process.env.ONLY?.split(",");
 const from = new Date(`${process.argv[2] ?? "2026-08-15"}T00:00:00Z`), to = new Date(`${process.argv[3] ?? new Date().toISOString().slice(0, 10)}T00:00:00Z`);
 const FINISHED = new Set(["FT", "AET", "PEN", "Match Finished"]);

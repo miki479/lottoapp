@@ -1,6 +1,6 @@
 import { METRICS } from "./metrics.ts";
 import { OCC_LEVELS, OCC_WINDOW_SEC, occupancyYes } from "./occupancy.ts";
-import { evalMatch, FINISHED, TWO_WAY_LEAGUES, type MatchObservation } from "./sport.ts";
+import { evalMatch, EXTRA_TIME, FINISHED, TWO_WAY_LEAGUES, type MatchObservation } from "./sport.ts";
 import { CRYPTO_GRACE_SEC, isSpot, tickDef, tickYes } from "./ticks.ts";
 import { MIN_VEHICLES, MIN_WINDOW_SEC } from "./traffic.ts";
 import type {
@@ -152,6 +152,8 @@ function matchReading(event: MatchEvent, input: ResolveInput): Reading {
   const o = input.match;
   // Only a final score counts: a live or postponed match stays pending, then is voided at the deadline.
   if (!o || !FINISHED.has(o.status) || o.homeGoals === null || o.awayGoals === null) return { kind: "none" };
+  // a cup tie decided in extra time or on penalties: the score is not the 90-minute result the bets are about, so they stay pending and are voided at the deadline
+  if (EXTRA_TIME.has(o.status) && !(event.league && TWO_WAY_LEAGUES.includes(event.league))) return { kind: "none" };
   const top = event.league && TWO_WAY_LEAGUES.includes(event.league) ? 250 : 30;
   if (o.homeGoals < 0 || o.awayGoals < 0 || o.homeGoals > top || o.awayGoals > top) return { kind: "implausible" };
   const bad = (x: number | null | undefined, max: number) => x !== null && x !== undefined && (!Number.isFinite(x) || x < 0 || x > max);

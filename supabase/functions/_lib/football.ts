@@ -108,3 +108,84 @@ export async function fetchBookQuotes(apiId: string): Promise<{ books: import(".
   const books = ((r.json?.response ?? [])[0] as { bookmakers?: import("../_shared/shared/sport.ts").BookQuotes } | undefined)?.bookmakers ?? [];
   return { books, remaining: r.remaining };
 }
+
+// ---- European football: the free TheSportsDB tier lists only 3 matches a day, so fixtures are also read from the ESPN scoreboard and strengths from the ESPN standings. ----
+import { ESPN_PATH, parseEspn, sameTeam, type LiveGame } from "../_shared/shared/live.ts";
+import { alignNames, findRow, FORM_SOURCES, mergeForm, parseEspnTable, UEFA_SLUG } from "../_shared/shared/form.ts";
+import type { Fixture, LeagueCfg } from "../_shared/shared/sport.ts";
+
+const ESPN_UA = { "User-Agent": "LateLotto/0.1 (play-money game; https://latelotto.web.app)" };
+const tableCache = new Map<string, { at: number; rows: TableRow[] }>();
+/** One ESPN standings table (cached for 20 minutes; empty when the source does not answer). */
+export async function espnTable(slug: string): Promise<TableRow[]> {
+  const hit = tableCache.get(slug);
+  if (hit && Date.now() - hit.at < 20 * 60_000) return hit.rows;
+  try {
+    const r = await fetch(`https://site.api.espn.com/apis/v2/sports/soccer/${slug}/standings`, { headers: ESPN_UA, signal: AbortSignal.timeout(8000) });
+    const rows = r.ok ? parseEspnTable(await r.json()) : [];
+    if (rows.length) tableCache.set(slug, { at: Date.now(), rows });
+    return rows.length ? rows : hit?.rows ?? [];
+  } catch { return hit?.rows ?? []; }
+}
+
+/** Strengths of the clubs of a league's fixtures: a UEFA competition adds the cup games to the club's domestic ones; a domestic league uses its own full table. Empty when the source is down. */
+export async function deepTable(league: LeagueCfg, names: string[]): Promise<TableRow[]> {
+  if (league.euro) {
+    const [cup, ...dom] = await Promise.all([espnTable(UEFA_SLUG[league.name]!), ...FORM_SOURCES.map((s) => espnTable(s.slug))]);
+    return mergeForm(names, [{ rows: cup ?? [], tier: 1 }, ...dom.map((rows, i) => ({ rows, tier: FORM_SOURCES[i]!.tier }))]);
+  }
+  const path = ESPN_PATH[league.name];
+  return path ? alignNames(await espnTable(path.replace("soccer/", "")), names) : [];
+}
+
+/** Is this club in the Italian top flight (for the "nearby" list: a foreign fixture is local at the Italian club's town)? */
+export async function isItalianClub(name: string): Promise<boolean> { return !!findRow(name, await espnTable("ita.1")); }
+
+/**
+ * Fixtures of the next 7 days that the day-by-day listing (3 matches a day on the free tier) did not show: the ESPN scoreboard names them, and the next
+ * match of either club (a free TheSportsDB call per club) gives the real event with its id and crests. Games that already have a market are skipped.
+ */
+// deno-lint-ignore no-explicit-any
+export async function discoverFixtures(sb: Db, base: string, league: LeagueCfg, now: number, known: Fixture[], getJson: (u: string) => Promise<any>, maxCalls = 30): Promise<{ fixtures: Fixture[]; seen: number; missing: string[] }> {
+  const path = ESPN_PATH[league.name];
+  if (!path) return { fixtures: [], seen: 0, missing: [] };
+  const games: LiveGame[] = [];
+  for (let d = 0; d < 7; d++) {
+    const day = new Date((now + d * 86400) * 1000).toISOString().slice(0, 10).replaceAll("-", "");
+    try { const r = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard?dates=${day}`, { headers: ESPN_UA, signal: AbortSignal.timeout(8000) }); if (r.ok) games.push(...parseEspn(await r.json())); } catch { /* next day */ }
+  }
+  const todo = games.filter((g) => g.state === "pre" && g.startMs / 1000 > now + 900 && g.startMs / 1000 < now + 7 * 86400 && !known.some((f) => Math.abs(f.kickoff - g.startMs / 1000) <= 6 * 3600 && sameTeam(f.home, g.home) && sameTeam(f.away, g.away)));
+  const { data: ids } = await sb.from("team_ids").select("team,sportsdb_id,tried_at");
+  const idOf = new Map<string, string | null>();
+  for (const r of ids ?? []) if (r.sportsdb_id || Date.now() - Date.parse(r.tried_at as string) < 3 * 86400_000) idOf.set(r.team as string, (r.sportsdb_id as string | null) ?? null);
+  let calls = 0;
+  const pause = () => new Promise((r) => setTimeout(r, 150));
+  const teamId = async (name: string): Promise<string | null> => {
+    if (idOf.has(name)) return idOf.get(name)!;
+    if (calls >= maxCalls) return null;
+    calls++; await pause();
+    const cands = ((await getJson(`${base}/searchteams.php?t=${encodeURIComponent(name)}`))?.teams ?? []) as Record<string, string>[];
+    const soccer = cands.filter((c) => c.strSport === "Soccer" && !/\b(women|ladies|u\d\d|ii|b)\b/i.test(c.strTeam ?? ""));
+    const row = findRow(name, soccer.map((c) => ({ team: c.strTeam!, played: 0, points: 0, goalsFor: 0, goalsAgainst: 0 })));
+    const id = row ? soccer.find((c) => c.strTeam === row.team)?.idTeam ?? null : null;
+    idOf.set(name, id);
+    await sb.from("team_ids").upsert({ team: name, sportsdb_id: id, tried_at: new Date().toISOString() });
+    return id;
+  };
+  const out: Fixture[] = [], missing: string[] = [];
+  for (const g of todo) {
+    let found: Fixture | null = null;
+    for (const side of [g.home, g.away]) {
+      try {
+        const id = await teamId(side);
+        if (!id || calls >= maxCalls) continue;
+        calls++; await pause();
+        const evs = ((await getJson(`${base}/eventsnext.php?id=${id}`))?.events ?? []) as Record<string, string>[];
+        const e = evs.find((x) => sameTeam(x.strHomeTeam ?? "", g.home) && sameTeam(x.strAwayTeam ?? "", g.away) && Math.abs(Date.parse(`${x.strTimestamp}Z`) - g.startMs) <= 6 * 3600_000);
+        if (e?.idEvent) { found = { eventId: e.idEvent, league: league.name, home: e.strHomeTeam!, away: e.strAwayTeam!, kickoff: Date.parse(`${e.strTimestamp}Z`) / 1000, ...(e.idAPIfootball ? { apiId: e.idAPIfootball } : {}), ...(e.strHomeTeamBadge ? { homeBadge: e.strHomeTeamBadge } : {}), ...(e.strAwayTeamBadge ? { awayBadge: e.strAwayTeamBadge } : {}) }; break; }
+      } catch { /* the other club, or next time */ }
+    }
+    if (found) out.push(found); else missing.push(`${g.home}-${g.away}`);
+  }
+  return { fixtures: out, seen: games.length, missing };
+}

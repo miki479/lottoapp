@@ -16,8 +16,8 @@ import { TM_PLACES, buildTicketMarkets, buildTvMarket, isTicket, isTv, tmWindow,
 import { FUELS, METALS, OIL, buildFuelMarkets, buildMetalMarkets, buildOilMarkets, isFuel, isMetal, isOil, type FuelKey, type MetalKey, type OilKey } from "../_shared/shared/ticks.ts";
 import { LASTFM, buildLastfmMarkets, BIKES, buildBikesMarkets, bikesPlausible, buildNwsMarkets, isNws } from "../_shared/shared/ticks.ts";
 import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildAlertMarkets, alertLevel, alertQueryDate, ALERT_AREAS, ALERT_HAZARDS, ALERT_URL, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
-import { bookPriors, buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, type Fixture, type Geo, type MatchBet, type TableRow } from "../_shared/shared/sport.ts";
-import { apiFootball, apiKey, fetchBookQuotes, fetchDetails, fetchPlayerFacts, loadTable } from "../_lib/football.ts";
+import { bookPriors, buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, MIN_FORM_GAMES, type Fixture, type Geo, type MatchBet, type TableRow } from "../_shared/shared/sport.ts";
+import { apiFootball, apiKey, deepTable, discoverFixtures, fetchBookQuotes, fetchDetails, fetchPlayerFacts, isItalianClub, loadTable } from "../_lib/football.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { DEFAULT_YES_PROBABILITY, computeOdds, delayContextAt, learnedPrior, liveYesProbability, rainYesProbability } from "../_shared/shared/odds.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
@@ -1089,24 +1089,36 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
           }
         }
         if (played.length) await sb.from("team_form").upsert(played, { onConflict: "event_id" });
+        // European football: the day listing shows only 3 matches a day, the rest comes from the ESPN scoreboard
+        if (league.deep) {
+          const { data: openM } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").eq("params->>league", league.name).limit(600);
+          const have = new Map<string, Fixture>();
+          for (const m of openM ?? []) { const p = m.params as { eventId: string; home: string; away: string; kickoff: number }; have.set(String(p.eventId), { eventId: String(p.eventId), league: league.name, home: p.home, away: p.away, kickoff: Number(p.kickoff) }); }
+          const more = await discoverFixtures(sb, base, league, now, [...fixtures, ...have.values()], getJson);
+          for (const f of more.fixtures) if (!fixtures.some((x) => x.eventId === f.eventId)) fixtures.push(f);
+          if (more.fixtures.length || more.missing.length) notes.push(`${league.name}: +${more.fixtures.length} found, ${more.missing.length} not matched${more.missing.length ? ` (${more.missing.slice(0, 2).join(", ")})` : ""}`);
+        }
         if (fixtures.length === 0) continue;
         // strengths from the matches already played; the free league table (five teams) only when nothing is stored yet
-        let table: TableRow[] = await loadTable(sb, league.name).catch(() => []);
+        let table: TableRow[] = league.deep ? await deepTable(league, fixtures.flatMap((f) => [f.home, f.away])).catch(() => []) : [];
+        if (table.length < 8 && !league.euro) table = await loadTable(sb, league.name).catch(() => []);
         if (table.length < 8) { try { table = (((await getJson(`${base}/lookuptable.php?l=${league.id}&s=${season}`))?.table ?? []) as Record<string, string>[]).map((r) => ({ team: r.strTeam!, played: Number(r.intPlayed), points: Number(r.intPoints), goalsFor: Number(r.intGoalsFor), goalsAgainst: Number(r.intGoalsAgainst) })); } catch { /* priors fall back to averages */ } }
-        // town of every home team, geocoded once and remembered
+        // town of every home team, geocoded once and remembered (a foreign fixture is local at the Italian club's town, home or away)
         const geo = new Map<string, Geo>();
         for (const f of fixtures) {
-          if (!league.two && !geoCache.has(f.home) && geocoded < 10) {
+          const gt = league.two ? null : league.deep ? ((await isItalianClub(f.home)) ? f.home : (await isItalianClub(f.away)) ? f.away : null) : f.home;
+          if (!gt) continue;
+          if (!geoCache.has(gt) && geocoded < 10) {
             geocoded++;
             let g: Geo | null = null;
             try {
-              const town = CLUB_TOWN[f.home] ?? f.home;
+              const town = CLUB_TOWN[gt] ?? gt;
               const r = (await getJson(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(town)}&count=1&language=it&country_code=IT`))?.results?.[0];
               if (r && typeof r.latitude === "number") g = { lat: r.latitude, lon: r.longitude };
             } catch { /* try again next hour */ g = undefined as unknown as null; }
-            if (g !== (undefined as unknown as null)) { geoCache.set(f.home, g); await sb.from("team_geo").upsert({ team: f.home, lat: g?.lat ?? null, lon: g?.lon ?? null, tried_at: new Date().toISOString() }); }
+            if (g !== (undefined as unknown as null)) { geoCache.set(gt, g); await sb.from("team_geo").upsert({ team: gt, lat: g?.lat ?? null, lon: g?.lon ?? null, tried_at: new Date().toISOString() }); }
           }
-          const g = geoCache.get(f.home); if (g) geo.set(f.home, g);
+          const g = geoCache.get(gt); if (g) geo.set(league.deep ? f.eventId : f.home, g);
         }
         // what bookmakers quote for the matches in the next day (one API-Football call each, refreshed every 8 hours, never past the daily quota)
         const book = new Map<string, Partial<Record<MatchBet, number>>>();
@@ -1129,7 +1141,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
             }
           }
         }
-        const markets = buildMatchMarkets(fixtures, table, now, false, geo, league.top, league.two, book);
+        const markets = buildMatchMarkets(fixtures, table, now, false, geo, league.top, league.two, book, league.euro ? MIN_FORM_GAMES : 0);
         if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
         // keep the figures of the not-yet-opened bets (and the data-source id) of already open matches current
         const seen = new Set<string>();

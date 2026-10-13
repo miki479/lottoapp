@@ -45,9 +45,15 @@ export const AUTO_BETS_LOWER: MatchBet[] = AUTO_BETS;
 
 /** `two` = no draw (basketball, hockey, American football, baseball): the bets are "home wins" and "away wins" only. */
 export interface TwoWayCfg { sd: number; /** spread of the total points of a game */ tsd: number; home: number; avg: number; lenSec: number }
-export const LEAGUES: { id: string; name: string; top: boolean; two?: TwoWayCfg }[] = [
+/** `deep` = the free TheSportsDB tier lists only 3 matches a day, so the ingest also reads the fixtures from the ESPN scoreboard (see discoverFixtures). `euro` = a UEFA competition: strengths come from the standings of the cup and of the clubs' own leagues. */
+export interface LeagueCfg { id: string; name: string; top: boolean; two?: TwoWayCfg; deep?: boolean; euro?: boolean }
+export const LEAGUES: LeagueCfg[] = [
   { id: "4332", name: "Serie A", top: true }, { id: "4394", name: "Serie B", top: false },
   { id: "5340", name: "Serie C - A", top: false }, { id: "5339", name: "Serie C - B", top: false }, { id: "5341", name: "Serie C - C", top: false },
+  // European football: the Italian clubs' nights (Champions, Europa, Conference League) and the big leagues
+  { id: "4480", name: "Champions League", top: true, deep: true, euro: true }, { id: "4481", name: "Europa League", top: true, deep: true, euro: true }, { id: "5071", name: "Conference League", top: false, deep: true, euro: true },
+  { id: "4328", name: "Premier League", top: true, deep: true }, { id: "4335", name: "La Liga", top: true, deep: true }, { id: "4331", name: "Bundesliga", top: true, deep: true }, { id: "4334", name: "Ligue 1", top: true, deep: true },
+  { id: "4337", name: "Eredivisie", top: false, deep: true }, { id: "4344", name: "Primeira Liga", top: false, deep: true }, { id: "4330", name: "Scottish Premiership", top: false, deep: true },
   // sd = spread of the final margin, home = home advantage in points, avg = points per team per game, lenSec = how long until the result is final
   { id: "4387", name: "NBA", top: true, two: { sd: 12, tsd: 18, home: 2.5, avg: 113, lenSec: 3 * 3600 } },
   { id: "4546", name: "EuroLeague", top: false, two: { sd: 11, tsd: 16, home: 3, avg: 82, lenSec: 3 * 3600 } },
@@ -56,6 +62,10 @@ export const LEAGUES: { id: string; name: string; top: boolean; two?: TwoWayCfg 
   { id: "4424", name: "MLB", top: true, two: { sd: 4.4, tsd: 4.4, home: 0.3, avg: 4.5, lenSec: 4 * 3600 } },
 ];
 export const TWO_WAY_LEAGUES: string[] = LEAGUES.filter((l) => l.two).map((l) => l.name);
+/** A UEFA fixture is only offered when both clubs have at least this many games of form (cup + domestic): never a price from nothing. */
+export const MIN_FORM_GAMES = 2;
+/** Full-time statuses after extra time or penalties: the 90-minute result is not what the score shows (cup ties), so the 1X2 and goal bets are voided rather than guessed. */
+export const EXTRA_TIME = new Set(["AET", "PEN", "AP"]);
 
 export interface Fixture { eventId: string; league: string; home: string; away: string; kickoff: number; apiId?: string; lenSec?: number; homeBadge?: string; awayBadge?: string }
 export interface TableRow { team: string; played: number; points: number; goalsFor: number; goalsAgainst: number }
@@ -233,16 +243,18 @@ export function bookPriors(books: BookQuotes): Partial<Record<MatchBet, number>>
   return out;
 }
 
-export function buildMatchMarkets(fixtures: Fixture[], table: TableRow[], now: number, testOnly: boolean, geo: Map<string, Geo>, top: boolean, two?: TwoWayCfg, book?: Map<string, Partial<Record<MatchBet, number>>>): MatchMarketInsert[] {
+/** `geo` is looked up by event id first (a fixture of a foreign league is "local" at the Italian club's town, home or away), then by home team. `minPlayed`: skip fixtures of clubs with less form than that. */
+export function buildMatchMarkets(fixtures: Fixture[], table: TableRow[], now: number, testOnly: boolean, geo: Map<string, Geo>, top: boolean, two?: TwoWayCfg, book?: Map<string, Partial<Record<MatchBet, number>>>, minPlayed = 0): MatchMarketInsert[] {
   const by = new Map(table.map((r) => [r.team, r]));
   const avg = leagueAverage(table);
   const out: MatchMarketInsert[] = [];
   for (const f of fixtures) {
     if (f.kickoff - 600 <= now + 300 || f.kickoff > now + 7 * 86400) continue;
+    if (minPlayed > 0 && ((by.get(f.home)?.played ?? 0) < minPlayed || (by.get(f.away)?.played ?? 0) < minPlayed)) continue;
     const modelPri = two ? twoWayPriors(by.get(f.home), by.get(f.away), two) : matchPriors(by.get(f.home), by.get(f.away), avg, top);
     const pri = { ...modelPri, ...(book?.get(f.eventId) ?? {}) } as typeof modelPri;
     const fx = two ? { ...f, lenSec: two.lenSec } : f;
-    for (const bet of two ? (["home_win", "away_win"] as MatchBet[]) : top ? AUTO_BETS : AUTO_BETS_LOWER) out.push(matchMarket(fx, bet, pri, geo.get(f.home), testOnly));
+    for (const bet of two ? (["home_win", "away_win"] as MatchBet[]) : top ? AUTO_BETS : AUTO_BETS_LOWER) out.push(matchMarket(fx, bet, pri, geo.get(f.eventId) ?? geo.get(f.home), testOnly));
   }
   return out;
 }
