@@ -11,13 +11,13 @@ interface BankState { on: boolean; cap: number; locked: number; matured: number;
 
 const T = {
   it: { title: "Banca", locked: "Bloccati", matured: "Maturi", claimable: "Ritirabile ora", claim: "Ritira", next: (d: string) => `Prossima scadenza: ${d}`, mult: "Moltiplicatore", how: "Come funziona", empty: "Il salvadanaio è vuoto.", off: "La banca non è ancora attiva.", claimed: (a: string) => `Ritirati ${a}`,
-    rules: ["Su ogni vincita la banca trattiene il 3% del profitto (vincita meno puntata).", `Ogni importo resta bloccato 3 giorni; non si può ritirare prima.`, "Dal terzo giorno il moltiplicatore sale da 1,00x a 1,50x al giorno 14, poi resta fermo: aspettare rende un po' di più.", `Nel salvadanaio possono stare al massimo ${BANK_CAP} crediti; oltre, nulla viene trattenuto.`, "Sono crediti finti, nessun valore reale."] },
+    rules: ["Cosa fa: su ogni puntata vinta, il 3% del guadagno (vincita meno puntata) non va subito nel saldo ma in banca.", "Giorni 1-3: i crediti sono bloccati e non si possono ritirare.", "Dal giorno 3 si possono ritirare. Ritirati al giorno 3 tornano uguali (1,00x); poi valgono un po' di più ogni giorno, fino a 1,50x al giorno 14. Dopo il giorno 14 il valore non cresce più, quindi conviene ritirare.", "Esempio: hai un guadagno di 600, in banca vanno 18. Ritirati al giorno 3 sono 18, al giorno 14 sono 27.", `Limite: in banca possono esserci al massimo ${BANK_CAP} crediti; oltre, non viene trattenuto nulla.`, "I giorni si contano da quando quella vincita è entrata in banca. Sono crediti finti, senza valore reale."] },
   "en-US": { title: "Bank", locked: "Locked", matured: "Matured", claimable: "Claimable now", claim: "Claim", next: (d: string) => `Next maturity: ${d}`, mult: "Multiplier", how: "How it works", empty: "The vault is empty.", off: "The bank is not active yet.", claimed: (a: string) => `Claimed ${a}`,
-    rules: ["On every win the bank sets aside 3% of the profit (payout minus stake).", "Each amount stays locked for 3 days; no early withdrawal.", "From day 3 the multiplier grows from 1.00x to 1.50x at day 14, then stays flat: waiting pays a little more.", `The vault holds at most ${BANK_CAP} credits; beyond that nothing is set aside.`, "These are play credits with no real value."] },
+    rules: ["What it does: on every winning bet, 3% of the profit (payout minus stake) does not go to your balance straight away but to the bank.", "Days 1-3: the credits are locked and cannot be claimed.", "From day 3 you can claim them. Claimed on day 3 they come back unchanged (1.00x); after that they are worth a little more each day, up to 1.50x on day 14. After day 14 the value stops growing, so it makes sense to claim.", "Example: you make a profit of 600, 18 go to the bank. Claimed on day 3 that is 18, on day 14 it is 27.", `Limit: the bank holds at most ${BANK_CAP} credits; beyond that nothing is set aside.`, "Days are counted from when that win entered the bank. These are play credits with no real value."] },
   "en-GB": { title: "Bank", locked: "Locked", matured: "Matured", claimable: "Claimable now", claim: "Claim", next: (d: string) => `Next maturity: ${d}`, mult: "Multiplier", how: "How it works", empty: "The vault is empty.", off: "The bank is not active yet.", claimed: (a: string) => `Claimed ${a}`,
-    rules: ["On every win the bank sets aside 3% of the profit (payout minus stake).", "Each amount stays locked for 3 days; no early withdrawal.", "From day 3 the multiplier grows from 1.00x to 1.50x at day 14, then stays flat: waiting pays a little more.", `The vault holds at most ${BANK_CAP} credits; beyond that nothing is set aside.`, "These are play credits with no real value."] },
+    rules: ["What it does: on every winning bet, 3% of the profit (payout minus stake) does not go to your balance straight away but to the bank.", "Days 1-3: the credits are locked and cannot be claimed.", "From day 3 you can claim them. Claimed on day 3 they come back unchanged (1.00x); after that they are worth a little more each day, up to 1.50x on day 14. After day 14 the value stops growing, so it makes sense to claim.", "Example: you make a profit of 600, 18 go to the bank. Claimed on day 3 that is 18, on day 14 it is 27.", `Limit: the bank holds at most ${BANK_CAP} credits; beyond that nothing is set aside.`, "Days are counted from when that win entered the bank. These are play credits with no real value."] },
   ja: { title: "バンク", locked: "ロック中", matured: "満期", claimable: "今すぐ受け取れる額", claim: "受け取る", next: (d: string) => `次の満期: ${d}`, mult: "倍率", how: "しくみ", empty: "金庫は空です。", off: "バンクはまだ有効ではありません。", claimed: (a: string) => `${a} を受け取りました`,
-    rules: ["勝つたびに、利益(払戻額から賭け金を引いた額)の3%を金庫に預けます。", "預けた分は3日間ロックされ、それより前には引き出せません。", "3日目から倍率が上がり、14日目に1.00倍から1.50倍へ。以後は一定です。待つとほんの少し増えます。", `金庫に入るのは最大${BANK_CAP}クレジットまで。それ以上は預けません。`, "これはゲーム用のクレジットで、実際の価値はありません。"] },
+    rules: ["しくみ: 勝った予想ごとに、利益(払戻額から賭け金を引いた額)の3%はすぐ残高に入らず、バンクに預けられます。", "1〜3日目: ロックされていて受け取れません。", "3日目から受け取れます。3日目に受け取ると同じ額(1.00倍)、その後は日ごとに少しずつ増え、14日目に1.50倍になります。14日目を過ぎると増えないので、受け取るのがおすすめです。", "例: 利益が600なら18がバンクへ。3日目に受け取ると18、14日目なら27です。", `上限: バンクに入るのは最大${BANK_CAP}クレジットまで。それ以上は預けません。`, "日数は、その勝ち分がバンクに入った時点から数えます。これはゲーム用のクレジットで、実際の価値はありません。"] },
 } as const;
 
 /** The savings vault: what is locked, what has matured, the multiplier ramp and the claim button. All amounts come from my_bank(). */
@@ -45,7 +45,10 @@ export function BankCard({ locale, credits }: { locale: Locale; credits?: number
       <div class="srow">
         <span class="bankic"><Landmark size={22} /></span>
         <div class="stxt"><span class="detail">{t.title}</span><b class="num">{money(st.locked + st.matured, locale)}</b></div>
+        <span class="grow" />
+        <button class="infodot" aria-label={t.how} aria-expanded={how} onClick={() => setHow(!how)}>i</button>
       </div>
+      {how && <ul class="hint bankrules">{t.rules.map((r) => <li key={r}>{r}</li>)}</ul>}
       {st.deposits.length === 0 ? <p class="hint">{t.empty}</p> : (
         <>
           <div class="facts"><div><span class="detail">{t.locked}</span><b class="num">{money(st.locked, locale)}</b></div><div><span class="detail">{t.matured}</span><b class="num">{money(st.matured, locale)}</b></div></div>
@@ -57,8 +60,6 @@ export function BankCard({ locale, credits }: { locale: Locale; credits?: number
       )}
       {note && <p class="hint" role="status">{note}</p>}
       {!st.on && <p class="hint">{t.off}</p>}
-      <button class="linkbtn" aria-expanded={how} onClick={() => setHow(!how)}>{t.how}</button>
-      {how && <ul class="hint bankrules">{t.rules.map((r) => <li key={r}>{r}</li>)}</ul>}
     </section>
   );
 }
