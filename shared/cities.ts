@@ -51,6 +51,11 @@ export interface FeedConfig {
   /** A big feed (Berlin, ~6 MB): polled in its own scheduled call so it cannot slow the others down. */
   heavy?: boolean;
   /**
+   * "What is about to pass near me" for a feed whose TripUpdates only number the stops (trip_updates_seq / trip_updates_times): the loader keeps
+   * the stops' timetable for the next days in gtfs_departures. Opt-in because it is a lot of rows; feeds of kind trip_updates need nothing.
+   */
+  nearbyTimetable?: boolean;
+  /**
    * True only after someone has read the CURRENT licence/terms of the provider.
    * Unverified feeds are skipped in production unless ALLOW_UNVERIFIED_FEEDS=1.
    */

@@ -151,8 +151,8 @@ export function parseVehiclePositions(feed: RtFeed, fetchedAt: number): { tripId
 }
 
 /** GTFS-RT ScheduleRelationship: a trip is CANCELED (3) or DELETED (6); one stop is SKIPPED (1). The decoder gives numbers or names, both are read. */
-const isTripGone = (v: number | string | null | undefined) => v === 3 || v === 6 || v === "CANCELED" || v === "DELETED";
-const isStopSkipped = (v: number | string | null | undefined) => v === 1 || v === "SKIPPED";
+export const isTripGone = (v: number | string | null | undefined) => v === 3 || v === 6 || v === "CANCELED" || v === "DELETED";
+export const isStopSkipped = (v: number | string | null | undefined) => v === 1 || v === "SKIPPED";
 
 /** Cancelled trips and skipped stops announced by the TripUpdates of a feed. */
 export function cancellationsFromTripUpdates(feed: RtFeed, tripKey?: "route_dir_start", schedule?: (tripId: string, seq: number) => { stopId: string } | null): Cancellation[] {

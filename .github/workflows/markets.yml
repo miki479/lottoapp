@@ -66,6 +66,24 @@ jobs:
           RELAY_SECRET: ${{ secrets.RELAY_SECRET }}
         run: node scripts/generate-markets.mjs --city italia --feed it-train-viaggiatreno --max 30 --apply
 
+  # "What is about to pass near me": stops and routes of the real-time feeds (and the stops' timetable for the feeds marked "nearbyTimetable"), once a day.
+  # A feed that fails to download is reported and skipped; what is already in the tables stays.
+  stops:
+    if: github.event.schedule == '41 2 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: node scripts/load-stops.mjs --apply
+
   # Bus and train questions from the BusOne GTFS / GTFS-Realtime feeds (non-commercial licence, see cities/*.json).
   # Run every 6 hours: only routes with a tracked vehicle at that moment get questions.
   busone:

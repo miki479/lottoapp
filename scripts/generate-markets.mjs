@@ -6,12 +6,7 @@
 // Without --gtfs-dir the feed's staticGtfsUrl is downloaded and unzipped to a temp dir.
 // Without --apply it only prints what it would create. Needs SUPABASE_URL and
 // SUPABASE_SERVICE_ROLE_KEY for --apply and for reading odds history.
-import { createWriteStream, existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { spawn, spawnSync } from "node:child_process";
-import { createInterface } from "node:readline";
-import { Readable } from "node:stream";
-import { pipeline } from "node:stream/promises";
-import { tmpdir } from "node:os";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { unzipSync } from "fflate";
 import { validateCity } from "../shared/cities.ts";
@@ -24,7 +19,8 @@ import { trainTripId } from "../shared/adapters/viaggiatreno.ts";
 import { historyKey } from "../shared/market.ts";
 import { marketToEvent } from "../shared/market.ts";
 import { supabaseUrl } from "./lib-env.mjs";
-import { readAll, readTable, splitCsv } from "./lib-csv.mjs";
+import { readAll } from "./lib-csv.mjs";
+import { downloadGtfs, hdrs, stopTimes } from "./lib-gtfs.mjs";
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((acc, a, i, all) => (a.startsWith("--") ? [...acc, [a.slice(2), all[i + 1]?.startsWith("--") || all[i + 1] === undefined ? true : all[i + 1]]] : acc), []));
 const city = validateCity(JSON.parse(readFileSync(new URL(`../cities/${args.city}.json`, import.meta.url), "utf8")));
@@ -57,45 +53,9 @@ async function historyLookup() {
   return (k) => m.get(`${k.kind}|${k.routeId}|${k.hourOfDay}|${k.threshold}`) ?? null;
 }
 
-/** Request headers of a feed; BusOne wants the client to say how to reach it (the contact comes from the environment). */
-function hdrs(feed) {
-  const h = { ...(feed.headers ?? {}) };
-  if (h["X-BusOne-Client"] && process.env.CONTACT_EMAIL) h["X-BusOne-Client"] += `; contact: ${process.env.CONTACT_EMAIL}`;
-  return h;
-}
-
 async function gtfsDir(feed) {
   if (args["gtfs-dir"]) return args["gtfs-dir"];
-  if (!feed.staticGtfsUrl) throw new Error(`feed ${feed.id} has no staticGtfsUrl: pass --gtfs-dir`);
-  const res = await fetch(feed.staticGtfsUrl, { redirect: "follow", headers: { "User-Agent": "LateLotto/0.1 (play-money game)", ...hdrs(feed) }, signal: AbortSignal.timeout(600000) });
-  if (!res.ok) throw new Error(`GTFS download failed: ${res.status}`);
-  const dir = mkdtempSync(join(tmpdir(), "gtfs-"));
-  // The archive goes to disk and the big table is streamed out of it with `unzip -p`: national feeds (Switzerland: ~300 MB zipped)
-  // do not fit in memory. Small tables are extracted next to it.
-  const zip = join(dir, "feed.zip");
-  await pipeline(Readable.fromWeb(res.body), createWriteStream(zip));
-  const names = ["agency.txt", "routes.txt", "trips.txt", "stops.txt", "calendar.txt", "calendar_dates.txt"];
-  const x = spawnSync("unzip", ["-o", "-qq", zip, ...names, "-d", dir], { stdio: "inherit" });
-  if (x.status !== 0 && x.status !== 11) throw new Error(`unzip failed (${x.status})`); // 11: an optional file (calendar.txt) is absent
-  return dir;
-}
-
-/** stop_times rows, streamed from the archive (or from a plain file when --gtfs-dir points at an extracted feed). */
-async function* stopTimes(dir) {
-  const zip = join(dir, "feed.zip");
-  if (!existsSync(zip)) { yield* readTable(join(dir, "stop_times.txt")); return; }
-  const p = spawn("unzip", ["-p", zip, "stop_times.txt"], { stdio: ["ignore", "pipe", "inherit"] });
-  const rl = createInterface({ input: p.stdout, crlfDelay: Infinity });
-  let header = null;
-  for await (const raw of rl) {
-    const line = header === null ? raw.replace(/^\uFEFF/, "") : raw;
-    if (!line) continue;
-    const cells = splitCsv(line);
-    if (header === null) { header = cells; continue; }
-    const row = {};
-    for (let i = 0; i < header.length; i++) row[header[i]] = (cells[i] ?? "").trim();
-    yield row;
-  }
+  return downloadGtfs(feed);
 }
 
 async function delayMarkets(feed) {
