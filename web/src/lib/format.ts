@@ -71,6 +71,9 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     const dg = typeof m.params.digits === "number" ? m.params.digits : 0, nd = new Intl.NumberFormat(INTL_TAG[locale], { minimumFractionDigits: dg, maximumFractionDigits: dg }), lab = msg.cm[String(m.params.label)] ?? String(m.params.label);
     const day = new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3600_000));
     if (series.startsWith("fuel:")) return msg.question.tick({ kind: "fuel", label: lab, value: `${nd.format(thr)} €`, time: "", from: "", to: "", day });
+    if (series.startsWith("fx:")) return msg.question.tick({ kind: "fx", label: lab, value: nd.format(thr), time: "", from: "", to: "", day });
+    if (series === "feargreed") return msg.question.tick({ kind: "feargreed", label: lab, value: nd.format(thr), time: "", from: "", to: "", day });
+    if (series === "carbon:gb") return msg.question.tick({ kind: "carbon", label: lab, value: `${nd.format(thr)} g/kWh`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("oil:")) return msg.question.tick({ kind: "oil", label: lab, value: `${nd.format(thr)} $`, time: "", from: "", to: "", day });
     return msg.question.tick({ kind: "price", label: lab, value: `${nd.format(thr)} $`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
   }

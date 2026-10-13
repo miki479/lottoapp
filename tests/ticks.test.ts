@@ -178,7 +178,7 @@ describe("player bets", () => {
   });
 });
 
-import { buildFuelMarkets, buildMetalMarkets, buildOilMarkets, tickDef, isSpot } from "../shared/ticks.ts";
+import { buildFuelMarkets, buildMetalMarkets, buildOilMarkets, buildFxMarkets, buildCarbonMarkets, buildFearGreedMarkets, tickDef, isSpot } from "../shared/ticks.ts";
 describe("metals, fuel and oil", () => {
   const MON = Date.UTC(2026, 9, 12, 10, 0, 0) / 1000; // Monday 10:00 UTC
   it("metals: weekday questions at 12 and 18 UTC on a friendly step, priced from the current price", () => {
@@ -259,4 +259,34 @@ describe("bookmaker priors", () => {
     expect(pr.over_2_5).toBeGreaterThan(0.4); expect(pr.over_2_5).toBeLessThan(0.5); expect(pr.btts).toBeCloseTo(0.5, 1);
   });
   it("needs at least three bookmakers", () => { expect(bookPriors([book("2", "3", "4", "2", "1.8", "1.8", "1.9")])).toEqual({}); });
+});
+
+describe("fx, carbon and fear & greed", () => {
+  const MON = Date.UTC(2026, 9, 12, 10, 0, 0) / 1000; // Monday 10:00 UTC
+  it("fx: two weekday fixings per pair, closing at noon UTC, on a friendly step", () => {
+    const m = buildFxMarkets({ usd: { date: "2026-10-09", value: 1.1632 }, jpy: { date: "2026-10-09", value: 181.37 } }, MON);
+    expect(m.length).toBe(4);
+    for (const x of m) { const d = new Date(Date.parse(x.target_at) - 86400_000); expect([0, 6]).not.toContain(d.getUTCDay()); expect(new Date(x.closes_at).getUTCHours()).toBe(12); expect(x.odds_yes).toBeGreaterThan(1.1); }
+    expect(m.find((x) => x.params.series === "fx:usd")!.params.threshold).toBeCloseTo(1.165, 6);
+    expect(m.find((x) => x.params.series === "fx:jpy")!.params.threshold % 0.5).toBe(0);
+    expect(tickDef("fx:usd")!.category).toBe("finance"); expect(isSpot("fx:usd")).toBe(false);
+  });
+  it("fx: a stale fixing or a bad value gives nothing", () => {
+    expect(buildFxMarkets({ usd: { date: "2026-09-20", value: 1.16 } }, MON)).toHaveLength(0);
+    expect(buildFxMarkets({ gbp: { date: "2026-10-09", value: 0 } }, MON)).toHaveLength(0);
+  });
+  it("carbon: spot questions every 6 hours on a 5 g step", () => {
+    const m = buildCarbonMarkets(137, MON);
+    expect(m.length).toBeGreaterThanOrEqual(4);
+    for (const x of m) { expect((Date.parse(x.target_at) / 1000) % (6 * 3600)).toBe(0); expect(x.params.threshold % 5).toBe(0); expect(x.params.series).toBe("carbon:gb"); expect(x.odds_yes).toBeGreaterThan(1.1); }
+    expect(isSpot("carbon:gb")).toBe(true); expect(tickDef("carbon:gb")!.category).toBe("nature");
+    expect(buildCarbonMarkets(null, MON)).toHaveLength(0);
+  });
+  it("feargreed: asks about the next midnights' value, closing an hour before it appears", () => {
+    const m = buildFearGreedMarkets({ ts: Date.UTC(2026, 9, 12) / 1000, value: 38 }, MON);
+    expect(m.length).toBe(2);
+    for (const x of m) { expect(Date.parse(x.target_at) / 1000 % 86400).toBe(3600); expect(Date.parse(x.target_at) - Date.parse(x.closes_at)).toBe(2 * 3600_000); expect(x.params.threshold % 5).toBe(0); expect(x.params.threshold).toBe(40); }
+    expect(buildFearGreedMarkets({ ts: Date.UTC(2026, 9, 1) / 1000, value: 38 }, MON)).toHaveLength(0);
+    expect(buildFearGreedMarkets(null, MON)).toHaveLength(0);
+  });
 });

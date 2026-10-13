@@ -10,6 +10,7 @@ import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/a
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
 import { tvReference, tvRating, tvUpcoming } from "../_lib/tv.ts";
+import { FX, buildCarbonMarkets, buildFearGreedMarkets, buildFxMarkets, isCarbon, isFearGreed, isFx, type FxKey } from "../_shared/shared/ticks.ts";
 import { TM_PLACES, buildTicketMarkets, buildTvMarket, isTicket, isTv, tmWindow, type TmPlace } from "../_shared/shared/ticks.ts";
 import { FUELS, METALS, OIL, buildFuelMarkets, buildMetalMarkets, buildOilMarkets, isFuel, isMetal, isOil, type FuelKey, type MetalKey, type OilKey } from "../_shared/shared/ticks.ts";
 import { LASTFM, buildLastfmMarkets, BIKES, buildBikesMarkets } from "../_shared/shared/ticks.ts";
@@ -541,6 +542,29 @@ async function fetchMetals(now: number): Promise<Partial<Record<MetalKey, number
   return out;
 }
 
+/** ECB reference rates (Frankfurter, no key) for one date, or the latest fixing when `date` is omitted; the date of the rates is returned (a holiday gives the previous working day's). */
+async function fetchFx(date?: string): Promise<{ date: string; rates: Partial<Record<FxKey, number>> } | null> {
+  const syms = (Object.keys(FX) as FxKey[]).map((k) => k.toUpperCase()).join(",");
+  const j = await getJson(`https://api.frankfurter.dev/v1/${date ?? "latest"}?base=EUR&symbols=${syms}`);
+  if (typeof j?.date !== "string") return null;
+  const rates: Partial<Record<FxKey, number>> = {};
+  for (const k of Object.keys(FX) as FxKey[]) { const v = j?.rates?.[k.toUpperCase()]; if (typeof v === "number" && v > 0) rates[k] = v; }
+  return { date: j.date, rates };
+}
+
+/** UK grid carbon intensity (gCO2/kWh, actual or else forecast); a half hour that ended over an hour ago is stale and not used. */
+async function fetchCarbon(now: number): Promise<number | null> {
+  const j = await getJson("https://api.carbonintensity.org.uk/intensity");
+  const d = j?.data?.[0], v = d?.intensity?.actual ?? d?.intensity?.forecast, to = Date.parse(String(d?.to ?? "")) / 1000;
+  return typeof v === "number" && v > 0 && Number.isFinite(to) && now - to <= 3600 ? v : null;
+}
+
+/** Crypto Fear & Greed Index (alternative.me), newest first, each at 00:00 UTC of its day. */
+async function fetchFearGreed(limit = 1): Promise<{ ts: number; value: number }[]> {
+  const j = await getJson(`https://api.alternative.me/fng/?limit=${limit}`);
+  return ((j?.data ?? []) as { value: string; timestamp: string }[]).map((r) => ({ ts: Number(r.timestamp), value: Number(r.value) })).filter((r) => Number.isFinite(r.ts) && Number.isFinite(r.value));
+}
+
 /** The Ministry's daily list of every station's prices: the simple average of the self-service price per fuel, and the date the list refers to. */
 async function fetchFuel(): Promise<{ date: string; avgs: Partial<Record<FuelKey, number>> }> {
   const text = new TextDecoder().decode(await fetchBytes("https://www.mimit.gov.it/images/exportCSV/prezzo_alle_8.csv", UA));
@@ -658,6 +682,10 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       if (metalDue.length) { const pr = await fetchMetals(now); for (const { x, at } of metalDue) { const v = pr[x.slice(6) as MetalKey]; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
     } catch (e) { notes.push(`metals: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
+      const carbonDue = [...need.keys()].filter(isCarbon).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (carbonDue.length) { const v = await fetchCarbon(now); if (v !== null) for (const { x, at } of carbonDue) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); }
+    } catch (e) { notes.push(`carbon: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
       // concert counts: the number is read within minutes of the instant (a small pause between calls keeps under the provider's rate limit)
       const tmDue = [...need.keys()].filter(isTicket).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
       for (const { x, at } of tmDue.slice(0, 8)) { const w = tmWindow(at), v = await tmCount(x.slice(3) as TmPlace, w.from, w.to); if (v !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); await new Promise((r) => setTimeout(r, 250)); }
@@ -677,6 +705,21 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
         const oilDue = [...need.keys()].filter(isOil).flatMap((x) => todo(x).map((at) => ({ x, at })));
         if (oilDue.length) { const o = await fetchOil(); for (const { x, at } of oilDue) { const day = new Date((at - 86400) * 1000).toISOString().slice(0, 10), v = o[x.slice(4) as OilKey]?.find((r) => r.date === day)?.value; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
       } catch (e) { notes.push(`oil: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+      try {
+        // ECB fixing of the day the question is about (the rate's own date must match: a holiday has no fixing)
+        const fxDue = [...need.keys()].filter(isFx).flatMap((x) => todo(x).map((at) => ({ x, at })));
+        const byDay = new Map<string, Awaited<ReturnType<typeof fetchFx>>>();
+        for (const { x, at } of fxDue.slice(0, 12)) {
+          const day = new Date((at - 86400) * 1000).toISOString().slice(0, 10);
+          if (!byDay.has(day)) byDay.set(day, await fetchFx(day));
+          const f = byDay.get(day), v = f?.date === day ? f.rates[x.slice(3) as FxKey] : undefined;
+          if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt });
+        }
+      } catch (e) { notes.push(`fx: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+      try {
+        const fgDue = [...need.keys()].filter(isFearGreed).flatMap((x) => todo(x).map((at) => ({ x, at })));
+        if (fgDue.length) { const h = await fetchFearGreed(10); for (const { x, at } of fgDue) { const v = h.find((r) => r.ts === at - 3600)?.value; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
+      } catch (e) { notes.push(`feargreed: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     }
     // Wikimedia publishes a day's count some hours after midnight: look every 10 minutes, not every minute.
     for (const series of Math.floor(now / 60) % 10 === 0 ? [...need.keys()].filter((s) => s.startsWith("wiki:")) : []) {
@@ -734,9 +777,20 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     const hourIso = new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString();
     let metalsNow: Partial<Record<MetalKey, number>> = {};
     try { const mp = await fetchMetals(now); metalsNow = mp; markets.push(...buildMetalMarkets(mp, now)); for (const [k, v] of Object.entries(mp)) extraHist.push({ series: `metal:${k}`, at: hourIso, value: v }); ok++; } catch (e) { notes.push(`metals: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { const c = await fetchCarbon(now); markets.push(...buildCarbonMarkets(c, now)); if (c !== null) extraHist.push({ series: "carbon:gb", at: hourIso, value: c }); ok++; } catch (e) { notes.push(`carbon: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     let fuelNow: { date: string; avgs: Partial<Record<FuelKey, number>> } | null = null;
     if (Math.floor(now / 3600) % 6 === 1) {
       try { const f = await fetchFuel(); markets.push(...buildFuelMarkets(f.avgs, f.date, now)); fuelNow = f; for (const [k, v] of Object.entries(f.avgs)) extraHist.push({ series: `fuel:${k}`, at: `${f.date}T00:00:00Z`, value: v }); ok++; } catch (e) { notes.push(`fuel: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+      try {
+        const f = await fetchFx(); const latest: Partial<Record<FxKey, { date: string; value: number }>> = {};
+        if (f) for (const [k, v] of Object.entries(f.rates) as [FxKey, number][]) { latest[k] = { date: f.date, value: v }; extraHist.push({ series: `fx:${k}`, at: `${f.date}T00:00:00Z`, value: v }); }
+        markets.push(...buildFxMarkets(latest, now)); ok++;
+      } catch (e) { notes.push(`fx: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+      try {
+        const g = await fetchFearGreed(7);
+        for (const r of g) extraHist.push({ series: "feargreed", at: new Date(r.ts * 1000).toISOString(), value: r.value });
+        markets.push(...buildFearGreedMarkets(g[0], now)); ok++;
+      } catch (e) { notes.push(`feargreed: ${String((e as Error).message ?? e).slice(0, 80)}`); }
       try {
         const o = await fetchOil(); const latest: Partial<Record<OilKey, { date: string; value: number }>> = {};
         for (const [k, rows2] of Object.entries(o) as [OilKey, { date: string; value: number }[]][]) { if (rows2[0]) latest[k] = rows2[0]; for (const r of rows2) extraHist.push({ series: `oil:${k}`, at: `${r.date}T00:00:00Z`, value: r.value }); }

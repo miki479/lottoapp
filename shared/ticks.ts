@@ -41,6 +41,14 @@ export const isAlert = (s: string) => s.startsWith("alert:");
 export const METALS = { xau: { sym: "XAU", label: "Gold", step: 10, vol: 0.0013, digits: 0 }, xag: { sym: "XAG", label: "Silver", step: 0.25, vol: 0.0026, digits: 2 }, xpt: { sym: "XPT", label: "Platinum", step: 10, vol: 0.0021, digits: 0 }, hg: { sym: "HG", label: "Copper", step: 0.05, vol: 0.0016, digits: 2 } } as const;
 export type MetalKey = keyof typeof METALS;
 export const isMetal = (s: string) => s.startsWith("metal:") && s.slice(6) in METALS;
+/** ECB euro reference rates (Frankfurter), one fixing per working day around 16:00 CET: euros in the quoted currency. `vol` = typical move per square-root-day. */
+export const FX = { usd: { label: "EUR/USD", step: 0.005, vol: 0.0045, digits: 3, min: 0.2, max: 3 }, gbp: { label: "EUR/GBP", step: 0.005, vol: 0.004, digits: 3, min: 0.2, max: 3 }, jpy: { label: "EUR/JPY", step: 0.5, vol: 0.006, digits: 2, min: 50, max: 400 } } as const;
+export type FxKey = keyof typeof FX;
+export const isFx = (s: string) => s.startsWith("fx:") && s.slice(3) in FX;
+/** UK grid carbon intensity (National Grid ESO / Carbon Intensity API, CC BY 4.0), gCO2 per kWh, half-hourly. */
+export const isCarbon = (s: string) => s === "carbon:gb";
+/** Crypto Fear & Greed Index (alternative.me), 0 to 100, one value a day at 00:00 UTC. */
+export const isFearGreed = (s: string) => s === "feargreed";
 /** Average self-service price in Italy (euro a litre) from the Ministry's daily list of every station. */
 export const FUELS = { benzina: { label: "Benzina", csv: "Benzina" }, gasolio: { label: "Gasolio", csv: "Gasolio" } } as const;
 export type FuelKey = keyof typeof FUELS;
@@ -62,7 +70,7 @@ export function tmWindow(at: number): { from: string; to: string } {
 export const isTv = (s: string) => /^tv:\d+$/.test(s);
 /** A question we write ourselves ("house:gta6"): settled by an admin once the day has passed, refunded if nobody does. */
 export const isHouse = (s: string) => /^house:[a-z0-9_-]{2,30}$/.test(s);
-export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isLastfm(s) || isBikes(s) || isStorm(s) || isMetal(s) || isTicket(s);
+export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isLastfm(s) || isBikes(s) || isStorm(s) || isMetal(s) || isCarbon(s) || isTicket(s);
 
 /** Saffir-Simpson scale by sustained wind in knots (1 min average), as NHC reports it. */
 export const STORM_STEPS: { kt: number; label: string }[] = [{ kt: 34, label: "TS" }, { kt: 64, label: "Cat. 1" }, { kt: 83, label: "Cat. 2" }, { kt: 96, label: "Cat. 3" }, { kt: 113, label: "Cat. 4" }, { kt: 137, label: "Cat. 5" }];
@@ -73,6 +81,9 @@ export const WIKI_ARTICLES = ["Taylor_Swift", "Cristiano_Ronaldo", "Lionel_Messi
 export function tickDef(series: string): TickDef | null {
   if (isCrypto(series)) return { category: "finance", label: CRYPTO[series].label, unit: "$", min: 1, max: 10_000_000 };
   if (isMetal(series)) return { category: "finance", label: METALS[series.slice(6) as MetalKey].label, unit: "$", min: 0.1, max: 100_000 };
+  if (isFx(series)) { const c = FX[series.slice(3) as FxKey]; return { category: "finance", label: c.label, unit: "", min: c.min, max: c.max }; }
+  if (isCarbon(series)) return { category: "nature", label: "UK grid carbon", unit: " g/kWh", min: 0, max: 800 };
+  if (isFearGreed(series)) return { category: "finance", label: "Fear & Greed", unit: "", min: 0, max: 100 };
   if (isFuel(series)) return { category: "finance", label: FUELS[series.slice(5) as FuelKey].label, unit: "€/l", min: 0.5, max: 5 };
   if (isOil(series)) return { category: "finance", label: OIL[series.slice(4) as OilKey].label, unit: "$", min: 5, max: 400 };
   if (isAlert(series)) return { category: "nature", label: "Allerta", unit: "", min: 0, max: 3 };
@@ -210,6 +221,9 @@ export function tickSigma(series: string, ref: number, hours: number): number {
   if (isStorm(series)) return Math.max(8, 11 * Math.sqrt(Math.max(1, hours) / 12));
   if (isCrypto(series)) return ref * 0.005 * Math.sqrt(Math.max(1, hours));
   if (isMetal(series)) return ref * METALS[series.slice(6) as MetalKey].vol * Math.sqrt(Math.max(1, hours));
+  if (isFx(series)) return ref * FX[series.slice(3) as FxKey].vol * Math.sqrt(Math.max(1, hours / 24));
+  if (isCarbon(series)) return Math.max(12, ref * 0.2 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4));
+  if (isFearGreed(series)) return 5 * Math.sqrt(Math.max(1, hours / 24));
   if (isFuel(series)) return ref * 0.002 * Math.sqrt(Math.max(1, hours / 24));
   if (isOil(series)) return ref * 0.0185 * Math.sqrt(Math.max(1, hours / 24));
   if (isSteam(series)) return ref * 0.07 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4);
@@ -224,6 +238,9 @@ export function tickSigma(series: string, ref: number, hours: number): number {
 export function tickStep(series: string, ref: number): number {
   if (isCrypto(series)) return CRYPTO[series].step;
   if (isMetal(series)) return METALS[series.slice(6) as MetalKey].step;
+  if (isFx(series)) return FX[series.slice(3) as FxKey].step;
+  if (isCarbon(series)) return 5;
+  if (isFearGreed(series)) return 5;
   if (isFuel(series)) return 0.005;
   if (isOil(series)) return 0.5;
   if (isTv(series)) return 0.1;
@@ -303,6 +320,55 @@ export function buildOilMarkets(latest: Partial<Record<OilKey, { date: string; v
       const gap = Math.max(1, Math.round((day - last) / 86400));
       out.push(withDigits(tickMarket(series, def, l.value, Math.round(l.value / 0.5) * 0.5, l.value * 0.0185 * Math.sqrt(gap), at, closes, at + 10 * 86400), 2));
     }
+  }
+  return out;
+}
+
+/** `latest[k]` = the newest ECB fixing and its date. Questions about the next two weekdays' fixings (published ~15:00 UTC, so they close at 12:00 UTC of that day); a fixing older than a week is not trusted. */
+export function buildFxMarkets(latest: Partial<Record<FxKey, { date: string; value: number }>>, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const [k, l] of Object.entries(latest) as [FxKey, { date: string; value: number }][]) {
+    const last = Date.parse(`${l.date}T00:00:00Z`) / 1000, cfg = FX[k];
+    if (!cfg || !(l.value > 0) || !Number.isFinite(last) || now - last > 7 * 86400) continue;
+    const series = `fx:${k}`, def = tickDef(series)!;
+    let made = 0;
+    for (let d = 0; d <= 8 && made < 2; d++) {
+      const day = Math.floor(now / 86400) * 86400 + d * 86400, dow = new Date(day * 1000).getUTCDay();
+      if (dow === 0 || dow === 6) continue;
+      const at = day + 86400, closes = day + 12 * H;
+      if (closes <= now + 600) continue;
+      made++;
+      const gap = Math.max(1, Math.round((day - last) / 86400));
+      out.push(withDigits(tickMarket(series, def, l.value, Math.round(l.value / cfg.step) * cfg.step, l.value * cfg.vol * Math.sqrt(gap), at, closes, at + 10 * 86400), cfg.digits));
+    }
+  }
+  return out;
+}
+
+/** UK grid carbon intensity now (gCO2/kWh): a question every 6 hours (00, 06, 12, 18 UTC) for the next 30 hours, on a 5 g step. */
+export function buildCarbonMarkets(intensity: number | null | undefined, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  if (!(typeof intensity === "number" && intensity > 0)) return out;
+  const series = "carbon:gb", def = tickDef(series)!;
+  for (let at = Math.floor(now / (6 * H)) * 6 * H + 6 * H; at <= now + 30 * H; at += 6 * H) {
+    if (at - 600 <= now + 300) continue;
+    const hours = Math.max(1, (at - now) / H);
+    out.push(withDigits(tickMarket(series, def, intensity, Math.round(intensity / 5) * 5, tickSigma(series, intensity, hours), at, at - 600, at + 3 * H), 0));
+  }
+  return out;
+}
+
+/** `latest` = the newest index value and its timestamp (00:00 UTC of its day). Questions about the values of the next two days, which appear at 00:00 UTC; they close an hour before. A value older than two days is not trusted. */
+export function buildFearGreedMarkets(latest: { ts: number; value: number } | null | undefined, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  if (!latest || !(latest.value >= 0 && latest.value <= 100) || !Number.isFinite(latest.ts) || now - latest.ts > 2 * 86400 + 3 * H) return out;
+  const series = "feargreed", def = tickDef(series)!;
+  for (let ahead = 1; ahead <= 3 && out.length < 2; ahead++) {
+    const day = Math.floor(now / 86400) * 86400 + ahead * 86400, closes = day - H;
+    if (closes <= now + 600) continue;
+    const gap = Math.max(1, Math.round((day - latest.ts) / 86400));
+    const thr = Math.min(95, Math.max(5, Math.round(latest.value / 5) * 5));
+    out.push(withDigits(tickMarket(series, def, latest.value, thr, 5 * Math.sqrt(gap), day + H, closes, day + 10 * 86400), 0));
   }
   return out;
 }
