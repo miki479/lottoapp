@@ -1097,7 +1097,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 .ledtabs { margin-left: auto; display: inline-flex; gap: 4px; } .ledtabs button { white-space: nowrap; font: inherit; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: #a86f00; background: transparent; border: 1px solid #4a3a10; border-radius: 4px; padding: 3px 6px; cursor: pointer; } .ledtabs button.on { color: #ffb000; border-color: #ffb000; background: rgba(255,176,0,.1); }
 .ledcols { display: grid; grid-template-columns: 88px minmax(0, 1fr) 54px; gap: 6px; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: #8a5d00; padding: 0 2px 3px; border-bottom: 1px solid #2a2208; } .ledcols span:last-child { text-align: right; }
 .ledrows { list-style: none; margin: 0; padding: 0; } .ledrow { padding: 5px 0 6px; border-bottom: 1px dashed #231c06; } .ledrow:last-child { border-bottom: 0; }
-.ledmain { display: grid; grid-template-columns: 24px 64px minmax(0, 1fr) 54px; gap: 6px; align-items: baseline; width: 100%; background: transparent; border: 0; padding: 0 2px; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ledmain { display: grid; grid-template-columns: 26px max-content minmax(0, 1fr) 40px; gap: 6px; align-items: baseline; width: 100%; background: transparent; border: 0; padding: 0 2px; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .ledkind { font-size: 9px; letter-spacing: .04em; border: 1px solid #6b4a00; border-radius: 3px; padding: 0 2px; text-align: center; color: #d99200; } .lednum { font-size: 15px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
 .leddest { font-size: 13px; letter-spacing: .06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .leddelay { font-size: 15px; font-weight: 700; text-align: right; display: inline-flex; justify-content: flex-end; align-items: center; gap: 4px; }
@@ -1188,7 +1188,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 .led.ledcard .ledbezel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .led.ledcard .ledtabs { margin: 0 0 4px; }
 .led.ledcard .ledrows { flex: 1; }
-.led.ledcard .ledmain { grid-template-columns: 22px 46px minmax(0, 1fr) 44px; }
+.led.ledcard .ledmain { grid-template-columns: 22px max-content minmax(0, 1fr) 40px; }
 .led.ledcard .ledfoot.slim { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
 .topdiv { flex: none; width: 1px; align-self: stretch; margin: 10px 2px; background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, .16), transparent); }
 @media (min-width: 1024px) { .led.full { display: block; } .led.ledcard, .topdiv { display: none; } }
@@ -1351,3 +1351,8 @@ textarea.field { resize: vertical; min-height: 84px; }
 .pplname .ptitle { font-size: 10.5px; }
 .frchip .fn > .ptitle { font-weight: 500; }
 .lgemblem { display: block; flex: none; filter: drop-shadow(0 2px 3px rgba(0,0,0,.25)); } .lgemblem.l4 { filter: drop-shadow(0 0 6px rgba(122,215,245,.7)); } .lgemblem .lgsparkle { transform-box: fill-box; transform-origin: center; animation: twinkle 2s ease-in-out infinite; } @media (prefers-reduced-motion: reduce) { .lgemblem .lgsparkle { animation: none; } }
+
+.ledkind.k-hs { border-color: #ff5a4a; color: #ff8a7a; background: rgba(255, 90, 74, .14); } .ledkind.k-ic { border-color: #4aa3ff; color: #8cc4ff; background: rgba(74, 163, 255, .14); }
+.led.full .ledmain { grid-template-columns: 26px max-content minmax(0, 1fr) 36px 64px; }
+.ledtrend { font-size: 12px; font-weight: 800; text-align: right; white-space: nowrap; } .ledtrend.worse { color: #ff5a4a; text-shadow: 0 0 6px rgba(255, 90, 74, .6); } .ledtrend.better { color: #4ade80; text-shadow: 0 0 6px rgba(74, 222, 128, .5); } .ledtrend.steady { color: #8a7a4a; }
+.ledsearch { width: 100%; box-sizing: border-box; margin: 4px 0 6px; padding: 6px 10px; border-radius: 6px; border: 1px solid #4a3a10; background: #0c0a02; color: #ffb000; font: inherit; font-size: 13px; } .ledsearch::placeholder { color: #7a6420; }

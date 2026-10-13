@@ -8,11 +8,11 @@ const CLOCK = new Intl.DateTimeFormat("it-IT", { hour: "2-digit", minute: "2-dig
 const MAX_ROWS = 6, MAX_ROWS_PHONE = 4;
 
 /** "FR 9516" / "REG 3935": the kind of train from the code in front of the number. */
-function kindOf(routeName: unknown, msg: Messages): { short: string; num: string } {
+function kindOf(routeName: unknown, msg: Messages): { short: string; num: string; cls: "hs" | "ic" | "rg" } {
   const [code = "", ...rest] = String(routeName ?? "").trim().split(/\s+/);
   const up = code.toUpperCase();
   const cls = /^(FR|FA|FB|ES|ITA|NTV|EC|EN)/.test(up) ? "hs" : /^(IC|ICN)/.test(up) ? "ic" : "rg";
-  return { short: msg.board.short[cls as "hs"], num: rest.join(" ") || code };
+  return { short: msg.board.short[cls as "hs"], num: rest.join(" ") || code, cls: cls as "hs" | "ic" | "rg" };
 }
 
 /**
@@ -22,6 +22,7 @@ function kindOf(routeName: unknown, msg: Messages): { short: string; num: string
 export function TrainBoard(p: { variant?: "full" | "card"; markets: MarketRow[]; live: Record<string, LiveDelay>; msg: Messages; locale: Locale; now: number; onPick: (m: MarketRow, pick: Pick) => void }) {
   const { msg } = p;
   const [tab, setTab] = useState<"late" | "odds">("late");
+  const [q, setQ] = useState("");
   const rows = useMemo(() => {
     const seen = new Set<string>();
     const out: { m: MarketRow; delay: number; trend: number }[] = [];
@@ -39,7 +40,9 @@ export function TrainBoard(p: { variant?: "full" | "card"; markets: MarketRow[];
   if (rows.length < 3) return null;
   const late5 = rows.filter((r) => r.delay > 300).length;
   const avg = Math.max(0, Math.round(rows.reduce((a, r) => a + Math.max(0, r.delay), 0) / rows.length / 60));
-  const sorted = [...rows].sort((a, b) => (tab === "late" ? b.delay - a.delay : Math.max(Number(b.m.odds_yes), Number(b.m.odds_no)) - Math.max(Number(a.m.odds_yes), Number(a.m.odds_no)))).slice(0, p.variant === "card" ? 3 : typeof matchMedia === "function" && matchMedia("(max-width: 720px)").matches ? MAX_ROWS_PHONE : MAX_ROWS);
+  const needle = q.trim().toLowerCase();
+  const matches = needle ? rows.filter((r) => `${r.m.params.routeName ?? ""} ${r.m.params.headsign ?? ""} ${r.m.params.stopName ?? ""}`.toLowerCase().includes(needle)) : rows;
+  const sorted = [...matches].sort((a, b) => (tab === "late" ? b.delay - a.delay : Math.max(Number(b.m.odds_yes), Number(b.m.odds_no)) - Math.max(Number(a.m.odds_yes), Number(a.m.odds_no)))).slice(0, p.variant === "card" ? 3 : needle ? 30 : 12);
   const clock = CLOCK.format(new Date(p.now));
   if (p.variant === "card") {
     // The small version that sits among the featured cards: same width as they are, just the trains, the time and the share of late ones.
@@ -56,7 +59,7 @@ export function TrainBoard(p: { variant?: "full" | "card"; markets: MarketRow[];
                 return (
                   <li key={m.id} class={`ledrow ${delay > 300 ? "late" : ""}`}>
                     <button class="ledmain" onClick={() => p.onPick(m, "yes")} aria-label={`${k.short} ${k.num} ${dir} ${min} min`}>
-                      <span class="ledkind">{k.short}</span><span class="lednum">{k.num}</span><span class="leddest">{dir}</span>
+                      <span class={`ledkind k-${k.cls}`}>{k.short}</span><span class="lednum">{k.num}</span><span class="leddest">{dir}</span>
                       <span class="leddelay">{tab === "late" ? (min > 0 ? `${min}’` : "—") : `×${fmtOdds(best, p.locale)}`}</span>
                     </button>
                   </li>
@@ -77,7 +80,8 @@ export function TrainBoard(p: { variant?: "full" | "card"; markets: MarketRow[];
           <b>{msg.board.title}</b>
           <span class="ledtabs" role="tablist">{(["late", "odds"] as const).map((k) => <button key={k} role="tab" aria-selected={tab === k} class={tab === k ? "on" : ""} onClick={() => setTab(k)}>{msg.board[k]}</button>)}</span>
         </header>
-        <div class="ledcols" aria-hidden="true"><span>{msg.board.heads.train}</span><span>{msg.board.heads.to}</span><span>{msg.board.heads.delay}</span></div>
+        <input class="ledsearch" type="search" value={q} placeholder="🔍 ·" aria-label={msg.board.heads.train} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
+        <div class="ledcols" aria-hidden="true"><span>{msg.board.heads.train}</span><span>{msg.board.heads.to}</span><span>{msg.board.heads.delay}</span><span /></div>
         <ul class="ledrows">
           {sorted.map(({ m, delay, trend }) => {
             const k = kindOf(m.params.routeName, msg);
@@ -86,9 +90,10 @@ export function TrainBoard(p: { variant?: "full" | "card"; markets: MarketRow[];
             return (
               <li key={m.id} class={`ledrow ${delay > 300 ? "late" : ""}`}>
                 <button class="ledmain" onClick={() => p.onPick(m, "yes")} aria-label={`${k.short} ${k.num} ${dir} ${min} min`}>
-                  <span class="ledkind">{k.short}</span><span class="lednum">{k.num}</span>
+                  <span class={`ledkind k-${k.cls}`}>{k.short}</span><span class="lednum">{k.num}</span>
                   <span class="leddest">{dir}</span>
-                  <span class="leddelay">{min > 0 ? `${min}’` : "—"}{trend > 60 && <i class="leddot" title={msg.board.worse} />}</span>
+                  <span class="leddelay">{min > 0 ? `${min}’` : "—"}</span>
+                  <span class={`ledtrend ${trend > 60 ? "worse" : trend < -60 ? "better" : "steady"}`} title={trend > 60 ? msg.board.worse : trend < -60 ? msg.board.better : msg.board.steady}>{trend > 60 ? "▲" : trend < -60 ? "▼" : "•"} {Math.abs(Math.round(trend / 60)) > 0 ? `${trend > 0 ? "+" : "−"}${Math.abs(Math.round(trend / 60))}’` : ""}</span>
                 </button>
                 <span class="ledq">
                   <button onClick={() => p.onPick(m, "yes")}><small>{msg.card.late}</small> ×{fmtOdds(Number(m.odds_yes), p.locale)}</button>

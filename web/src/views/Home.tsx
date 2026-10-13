@@ -18,6 +18,7 @@ import { GameGroup } from "../components/GameGroup.tsx";
 import { Flag } from "../components/Flag.tsx";
 import { TopCards, type TopItem } from "../components/TopCards.tsx";
 import { Car, Coins, Globe, ListChecks, MapPin, SlidersHorizontal, Sparkles, ThumbsUp, X } from "lucide-preact";
+import { Fragment } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
@@ -121,7 +122,6 @@ export function Home(p: HomeProps) {
             <TopCards items={p.top} lead={p.italian ? <TrainBoard variant="card" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} /> : null} />
           </section>
         )}
-        {p.italian && <TrainBoard variant="full" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} />}
       </div>
       <div class="main stack">
         <h2 class="steplabel">{msg.home.whatLabel}</h2>
@@ -187,7 +187,7 @@ export function Home(p: HomeProps) {
             </div>
           )}
           {[...gameGroups].map(([appid, ms]) => <GameGroup key={appid} appid={appid} count={ms.length}>{ms.map((m, i) => card(m, i))}</GameGroup>)}
-          {plain.slice(0, 40).map((m, i) => card(m, i))}
+          {plain.slice(0, 40).map((m, i) => <Fragment key={m.id}>{card(m, i)}{i === Math.min(2, plain.length - 1) && p.cat === "train" && p.italian && <div style="grid-column:1/-1"><TrainBoard variant="full" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} /></div>}</Fragment>)}
         </div>
         <div class="nearwrap stack">{p.nearbyNode}{p.nearNode}</div>
         <footer class="legal">
