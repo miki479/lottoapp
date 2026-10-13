@@ -29,7 +29,7 @@ import { Remind } from "./Remind.tsx";
 
 /** Bet slip for one event: pick, stake, then place it (guests do the "last step" sign-up right here when it is required). */
 export function BetSheet(p: {
-  m: MarketRow; initial: Pick; msg: Messages; locale: Locale; credits: number; ready: boolean; needJoin: boolean; googleOn: boolean; inSlip: boolean; boosts: number; now: number; mm?: number; occ?: { level: number }; ladder: MarketRow[]; onSwitch: (m: MarketRow) => void;
+  m: MarketRow; initial: Pick; msg: Messages; locale: Locale; credits: number; stakeFactor?: number; ready: boolean; needJoin: boolean; googleOn: boolean; inSlip: boolean; boosts: number; now: number; mm?: number; occ?: { level: number }; ladder: MarketRow[]; onSwitch: (m: MarketRow) => void;
   onClose: () => void; onAddSlip: (m: MarketRow, pick: Pick) => void; onJoined: () => Promise<void>; onPlace: (m: MarketRow, pick: Pick, stake: number, boost: boolean, bonus?: string | null, vice?: boolean, offerId?: string | null) => Promise<string | null>;
   offer?: OfferUse;
 }) {
@@ -55,7 +55,11 @@ export function BetSheet(p: {
   const odds = shownOf(pick);
   // Upper limit: what the odds allow (all-but-certain picks are closed), or the whole balance when it is lower (the server checks it again).
   // a personal offer has its own small stake limit instead of the odds-based one, and still refuses a pick whose real quote has become all but certain
-  const oddsCap = offer ? offer.maxStake : ["bus_delay_gt", "train_delay_gt", "bus_full"].includes(p.m.kind) ? Math.min(stakeCap(odds), 1000) : stakeCap(odds), cap = Math.max(10, p.credits >= 10 ? Math.min(oddsCap, Math.floor(p.credits)) : Math.min(oddsCap, 500));
+  const factor = p.stakeFactor ?? 1;
+  const baseCap = offer ? offer.maxStake : ["bus_delay_gt", "train_delay_gt", "bus_full"].includes(p.m.kind) ? Math.min(stakeCap(odds), 1000) : stakeCap(odds);
+  // a reduced stake factor (someone who keeps cashing in on near-certain picks) shrinks the limit on such picks, as the server does
+  const oddsCap = !offer && baseCap > FUN_STAKE && factor < 1 ? Math.max(FUN_STAKE, Math.floor(baseCap * factor)) : baseCap;
+  const cap = Math.max(10, p.credits >= 10 ? Math.min(oddsCap, Math.floor(p.credits)) : Math.min(oddsCap, 500));
   const decided = offer ? baseOf(pick) < OFFER_MIN_BASE_ODDS : false, nearly = !offer && oddsCap <= FUN_STAKE;
   const amount = Math.min(stake, cap);
   const place = async () => {

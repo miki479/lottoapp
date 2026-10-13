@@ -401,3 +401,11 @@ describe("a train already far behind", () => {
     expect(liveYesProbability(0.14, 780, 300, 5, true)).toBeGreaterThan(0.93);
   });
 });
+
+describe("a very late train can still get later (reference: trenobet quotes 3.6x for +10 min on a train at +81)", () => {
+  it("prices +10 min over an 81-minute delay as a real long shot, and the line under the delay as no profit", () => {
+    const p10 = liveYesProbability(0.05, 81 * 60, 91 * 60, 5, true);
+    expect(p10).toBeGreaterThan(0.1); expect(p10).toBeLessThan(0.4);
+    expect(liveYesProbability(0.05, 81 * 60, 74 * 60, 5, true)).toBeGreaterThan(0.9);
+  });
+});

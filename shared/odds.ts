@@ -102,10 +102,11 @@ export function liveYesProbability(pHist: number, delaySec: number, thresholdSec
   // in the rush a late service keeps losing time (crowded platforms), at night it recovers faster
   // a train that is late stays late: a few seconds recovered per stop at most (Italian regional/long-distance delays barely shrink over a run)
   const recover = (train ? 6 : 10) * (crowd > 0 ? 0.3 : crowd < 0 ? 1.5 : 1), sd = (train ? 45 : 45) + (train ? 22 : 25) * Math.sqrt(n);
+  const growth = (train ? 0.12 : 0.08) * Math.max(0, delaySec); // a delay already large can still grow in proportion (only upwards: it recovers little)
   // the rush-hour drift builds up with the delay already there (none at all on time), so it never jumps at 0
   const drift = crowd > 0 && delaySec > 0 ? (train ? 12 : 8) * n * Math.min(1, delaySec / 120) : 0;
   const mean = delaySec > 0 ? Math.max(0, delaySec - recover * n + drift) : delaySec;
-  const z = (thresholdSec + 0.5 - mean) / sd;
+  const z = (thresholdSec + 0.5 - mean) / (thresholdSec + 0.5 > mean ? sd + growth : sd);
   const pLive = 1 - normalCdf(z);
   const h = historyAtThreshold(pHist, thresholdSec, train);
   const w = 10 / (10 + n);

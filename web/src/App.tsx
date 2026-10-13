@@ -71,7 +71,7 @@ const store = {
 /** Country-wide feeds (all Italian trains, all German regional trains): they show up under every town of that country, not only under a city of their own. */
 const NATIONAL = new Set(CITIES.filter((c) => c.id === "italia" || c.id === "germany").map((c) => c.id));
 const region = () => { try { return new Intl.Locale(navigator.language).maximize().region ?? null; } catch { return null; } };
-const PROFILE_COLS = "id,credits,city_id,locale,timezone,country,streak,best_streak,freezes,boosts,push_flash,push_streak,push_friends,display_name,last_play_date";
+const PROFILE_COLS = "id,credits,city_id,locale,timezone,country,streak,best_streak,freezes,boosts,push_flash,push_streak,push_friends,display_name,last_play_date,stake_factor";
 const BET_COLS = "id,pick,stake,odds,boosted,vice_pct,status,payout,bonus,bonus_hit,markets(id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,void_reason,outcome,evidence)";
 
 export function App() {
@@ -505,7 +505,8 @@ export function App() {
     if (offline) return msg.common.offline;
     const before = { bonus: progress?.bonus_claimed ?? false, trophies: new Set(trophies), streak: profile?.streak ?? 0 };
     const baseOdds = Number(pick === "yes" ? m.odds_yes : m.odds_no), betOdds = offerId && sheet?.offer ? offerOdds(baseOdds, sheet.offer.mult) : baseOdds;
-    const { error } = await sb.rpc("place_bet", { p_market: m.id, p_pick: pick, p_stake: stake, p_boost: boost, ...(bonus ? { p_bonus: bonus } : {}), ...(vice ? { p_vice: true } : {}), ...(offerId ? { p_offer: offerId } : {}) });
+    const { error } = await sb.rpc("place_bet", { p_market: m.id, p_pick: pick, p_stake: stake, p_boost: boost, ...(bonus ? { p_bonus: bonus } : {}), ...(vice ? { p_vice: true } : {}), ...(offerId ? { p_offer: offerId } : { p_odds: baseOdds }) });
+    if (error?.message.includes("odds_changed")) void loadMarkets();
     if (error) return (offerId ? offerErrorText(error.message, locale) : null) ?? msg.errors[Object.keys(msg.errors).find((k) => error.message.includes(k)) ?? "generic"]!;
     setSheet(null);
     if (offerId) dispatchEvent(new Event(OFFER_EVENT));
@@ -672,7 +673,7 @@ export function App() {
       {rewardsOpen && <RewardsSheet flash={flashM} onClaimFlash={claimFlash} missions={missions} onClaimMission={claimMission} onClaimChest={claimChest} msg={msg} locale={locale} now={now} profile={profile} quests={quests} referral={referral} registered={registered} onClaim={claimQuest} onGo={goQuest} onShare={shareReferral} onClose={() => setRewardsOpen(false)} />}
       {askPush && <PushAsk lifted={slip.length > 0} msg={msg} onYes={() => turnPush(true)} onNo={() => { rememberPush(false); setAskPush(false); }} />}
       <ParlayBar count={slip.length} odds={slipOdds(slip)} msg={msg} locale={locale} onOpen={() => setParlayOpen(true)} />
-      {sheet && <BetSheet offer={sheet.offer} now={now} occ={occ[sheet.m.id]} mm={outlook[sheet.m.id]} boosts={profile?.boosts ?? 0} key={sheet.m.id} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
+      {sheet && <BetSheet offer={sheet.offer} now={now} occ={occ[sheet.m.id]} mm={outlook[sheet.m.id]} boosts={profile?.boosts ?? 0} stakeFactor={profile?.stake_factor} key={sheet.m.id} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
       {parlayOpen && slip.length > 0 && <ParlaySheet boosts={profile?.boosts ?? 0} legs={slip} msg={msg} locale={locale} credits={profile?.credits ?? 0} needJoin={needJoin} googleOn={googleOn} onClose={() => setParlayOpen(false)} onRemove={(id) => setSlip((s) => s.filter((l) => l.m.id !== id))} onClear={() => { setSlip([]); setParlayOpen(false); }} onJoined={async () => {}} onPlace={placeParlay} />}
       {auth && <AuthSheet msg={msg} guest={!registered} googleOn={googleOn} onClose={() => setAuth(false)} onDone={(text) => { setAuth(false); flash(text); }} />}
       {lookOpen && look && <LookSheet progress={look} msg={msg} myId={profile?.id ?? ""} onClose={() => setLookOpen(false)} onSaved={(p) => { setLook(p); flash(msg.look.saved); }} />}
