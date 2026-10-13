@@ -1,3 +1,4 @@
+import { trainZone } from "../lib/zones.ts";
 import { CloudRain } from "lucide-preact";
 import { FilterSheet, filterLabel, ICON as KIND_ICON } from "../components/FilterSheet.tsx";
 import { groupMatches, MatchList } from "../components/MatchList.tsx";
@@ -63,8 +64,12 @@ export function Home(p: HomeProps) {
   const sportQ = p.cat === "sport" ? norm(teamQ.trim()) : "";
   const picked2 = sportQ ? picked.filter((m) => norm(`${m.params.home ?? ""} ${m.params.away ?? ""} ${m.params.league ?? ""}`).includes(sportQ)) : picked;
   const [seriesSel, setSeriesSel] = useState<number | null>(null);
+  const [zoneSel, setZoneSel] = useState<string | null>(null);
+  const zones = p.cat === "train" ? [...picked2.reduce((acc, m) => { const z = trainZone(m); if (z) acc.set(z, (acc.get(z) ?? 0) + 1); return acc; }, new Map<string, number>())].sort((x, y) => x[0].localeCompare(y[0], "it")) : [];
+  const zone = zones.some(([z]) => z === zoneSel) ? zoneSel : null;
   const followed = p.cat === "culture" ? followedShows() : [];
-  const shown0 = seriesSel !== null && p.cat === "culture" ? picked2.filter((m) => Number(m.params.showId) === seriesSel) : picked2;
+  const shown00 = zone ? picked2.filter((m) => trainZone(m) === zone) : picked2;
+  const shown0 = seriesSel !== null && p.cat === "culture" ? shown00.filter((m) => Number(m.params.showId) === seriesSel) : shown00;
   const shown = p.cat === "nature" ? [...shown0].sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at) || Number(a.params.minMag) - Number(b.params.minMag)) : shown0;
   const topId = shown.reduce<MarketRow | null>((b, m) => (!b || Number(m.odds_yes) > Number(b.odds_yes) ? m : b), null)?.id;
   const cities = CITIES.filter((c) => enabledCategories(c).length > 0);
@@ -134,6 +139,10 @@ export function Home(p: HomeProps) {
             </div>}
           </>
         )}
+        {zones.length > 1 && <div class="mkchips" role="tablist" aria-label="Regione">
+          <button role="tab" aria-selected={zone === null} class={`mkchip ${zone === null ? "on" : ""}`} onClick={() => setZoneSel(null)}>{msg.series.all}</button>
+          {zones.map(([z, n]) => <button key={z} role="tab" aria-selected={zone === z} class={`mkchip ${zone === z ? "on" : ""}`} onClick={() => setZoneSel(zone === z ? null : z)}>{z} · {n}</button>)}
+        </div>}
         {p.cat === "nature" && <button class="btn secondary quakecta" onClick={p.onQuakeMaker}><MapPin size={18} />{msg.quakeMaker.cta}</button>}
         {p.cat === "sport" && <label class="searchbox"><Search size={18} /><input class="field" type="search" value={teamQ} placeholder={msg.teamSearch} onInput={(e) => setTeamQ((e.target as HTMLInputElement).value)} /></label>}
         {p.cat === "sport" && p.markets !== null && <MatchList matches={groupMatches(shown)} msg={msg} locale={p.locale} onPick={p.onPick} registered={p.registered} onAuth={p.onAuth} details={p.details} friendBets={p.friendBets} />}

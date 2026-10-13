@@ -6,10 +6,12 @@ import { every } from "../lib/poll.ts";
 import { countdown, money } from "../lib/format.ts";
 import { FriendPicker } from "./FriendPicker.tsx";
 import { Sheet } from "./Sheet.tsx";
+import { Look } from "./looks/Look.tsx";
+import { useLooks } from "../lib/looks.ts";
 
 export interface Challenge {
   id: string; code: string; title: string; category: keyof Messages["friends"]["cats"]; stake: number; closes_at: string; status: "open" | "resolved" | "void"; outcome: "yes" | "no" | null; judge_mode: "creator" | "vote"; visibility: "private" | "public"; my_vote: "yes" | "no" | null; voted: number;
-  creator: string; is_creator: boolean; my_pick: "yes" | "no" | null; my_payout: number | null; yes: number; no: number; pot: number; people: { name: string; pick: "yes" | "no" | null; payout: number | null }[];
+  creator: string; is_creator: boolean; my_pick: "yes" | "no" | null; my_payout: number | null; yes: number; no: number; pot: number; people: { uid?: string; name: string; pick: "yes" | "no" | null; payout: number | null }[];
 }
 
 export const challengeLink = (code: string) => `${location.origin}/?c=${code}`;
@@ -19,6 +21,7 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
   const f = p.msg.friends;
   const [c, setC] = useState<Challenge | null | undefined>(undefined);
   const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null), [copied, setCopied] = useState(false);
+  const looks = useLooks((c?.people ?? []).flatMap((x) => (x.uid ? [x.uid] : [])));
   const load = useCallback(async () => { const { data } = await sb.rpc("get_challenge", { p_code: p.code }); setC((data as Challenge | null) ?? null); }, [p.code]);
   useEffect(() => { load(); return every(load, 20_000); }, [load]);
   const fail = (e: { message?: string } | null) => { const key = Object.keys(f.errors).find((k) => e?.message?.includes(k)) as keyof typeof f.errors | undefined; const k2 = Object.keys(p.msg.fx.errors).find((k) => e?.message?.includes(k)) as keyof typeof p.msg.fx.errors | undefined; setErr(k2 ? p.msg.fx.errors[k2] : f.errors[key ?? "generic"]); };
@@ -95,7 +98,7 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
         : <button class="btn secondary" onClick={() => setAsking(true)}>{f.deleteBtn}</button>)}
       {c.visibility === "public" && !c.is_creator && <button class="btn secondary" disabled={reported} onClick={report}>{reported ? p.msg.fx.reported : p.msg.fx.report}</button>}
       {c.people.length > 0 && <div class="tickchart"><div class="tchead"><b>{f.people}</b></div>
-        {c.people.map((x, i) => <div key={i} class="tchead" style="padding:4px 0"><span>{x.name === "?" ? p.msg.ticker.anon : x.name}</span><span class="num"><b>{x.pick === null ? "✓" : x.pick === "yes" ? f.yes : f.no}</b>{(x.payout ?? 0) > 0 && c.status === "resolved" ? ` · ${f.won} ${money(x.payout ?? 0, p.locale)}` : ""}</span></div>)}
+        {c.people.map((x, i) => <div key={i} class="tchead" style="padding:4px 0"><span style="display:inline-flex;align-items:center;gap:8px">{x.uid && looks[x.uid] ? <Look avatar={looks[x.uid]!.avatar} decoration={looks[x.uid]!.decoration} size={28} /> : <span class="lkph" style="width:28px;height:28px" />}{x.name === "?" ? p.msg.ticker.anon : x.name}</span><span class="num"><b>{x.pick === null ? "✓" : x.pick === "yes" ? f.yes : f.no}</b>{(x.payout ?? 0) > 0 && c.status === "resolved" ? ` · ${f.won} ${money(x.payout ?? 0, p.locale)}` : ""}</span></div>)}
       </div>}
       {err && <p class="formerr" role="alert">{err}</p>}
     </Sheet>

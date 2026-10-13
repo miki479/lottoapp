@@ -233,8 +233,11 @@ export function App() {
     const far = (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("category", ["sport", "finance", "culture", "nature", "law"]).gt("closes_at", new Date().toISOString()).order("closes_at").limit(200)).data ?? [];
     // the questions we write ourselves close far ahead: always fetched on their own
     const house = (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").eq("kind", "tick_gt").like("params->>series", "house:%").gt("closes_at", new Date().toISOString()).order("closes_at").limit(60)).data ?? [];
+    // the first page holds only what closes soonest: the town being looked at (and the country-wide train feeds of its country) are loaded in full
+    const f0 = envRef.current.filter;
+    const here = f0 && f0 !== "world" && f0 !== "mine" && !placeIds.current.includes(f0) ? (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("city_id", [f0, ...[...NATIONAL].filter((id) => CITIES.find((c) => c.id === id)?.country === (CITIES.find((c) => c.id === f0)?.country ?? placeById(f0)?.country))]).gt("closes_at", new Date().toISOString()).order("closes_at").limit(400)).data ?? [] : [];
     const seen = new Set([...(data ?? []), ...mine].map((x) => (x as { id: string }).id));
-    const extra = [...far, ...house].filter((x) => !seen.has((x as unknown as { id: string }).id));
+    const extra = [...far, ...house, ...here].filter((x) => { const id = (x as unknown as { id: string }).id; if (seen.has(id)) return false; seen.add(id); return true; });
     if (!error) { setMarkets([...(data ?? []), ...mine, ...extra].filter((m) => testMode() || !(m.params as { testOnly?: boolean } | null)?.testOnly) as MarketRow[]); if (navigator.onLine) setOffline(false); }
     else if (/fetch|network|load failed/i.test(error.message)) setOffline(true);
     const { data: h } = await sb.from("feed_health").select("feed_id,last_ok_at");
