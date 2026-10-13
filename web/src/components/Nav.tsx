@@ -1,4 +1,5 @@
-import { Clock3, House, Ticket, Trophy, User, Users } from "lucide-preact";
+import { House, Ticket, Trophy, User, Users } from "lucide-preact";
+import { BrandMark } from "./Header.tsx";
 import type { Messages } from "../i18n/index.ts";
 
 export type Screen = "home" | "bets" | "friends" | "ranking" | "profile" | "admin";
@@ -24,7 +25,7 @@ export function TabBar({ value, onPick, msg, openBets, profileDot, rankBadge, so
 export function Sidebar({ value, onPick, msg, openBets, profileDot, rankBadge, social = true }: { value: Screen; onPick: (s: Screen) => void; msg: Messages; openBets: number; profileDot?: boolean; rankBadge?: number; social?: boolean }) {
   return (
     <nav class="side" aria-label="Main">
-      <div class="brand"><i><Clock3 size={20} strokeWidth={2.4} /></i><span class="tx"><span class="wm">Late<b>Lotto</b></span><em class="stag">{msg.home.satire}</em></span></div>
+      <div class="brand"><i><BrandMark /></i><span class="tx"><span class="wm">Late<b>BET</b></span><em class="stag">{msg.home.satire}</em></span></div>
       {ITEMS.filter(([id]) => id !== "friends" || social).map(([id, Icon]) => (
         <button key={id} class={value === id ? "on" : ""} onClick={() => onPick(id)} aria-current={value === id ? "page" : undefined}>
           <Icon size={20} strokeWidth={value === id ? 2.4 : 2} /><span>{msg.nav[id]}</span>

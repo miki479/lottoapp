@@ -22,7 +22,7 @@ const toBlob = (c: HTMLCanvasElement) => new Promise<Blob>((res) => c.toBlob((b)
 function wordmark(g: CanvasRenderingContext2D) {
   g.fillStyle = C.brand; g.beginPath(); g.roundRect(72, 72, 64, 64, 18); g.fill();
   g.strokeStyle = "#fff"; g.lineWidth = 6; g.lineCap = "round"; g.beginPath(); g.arc(104, 104, 18, 0, Math.PI * 2); g.moveTo(104, 94); g.lineTo(104, 104); g.lineTo(112, 110); g.stroke();
-  g.fillStyle = C.text; g.font = F(800, 44); g.textAlign = "left"; g.fillText("Late", 156, 118); const w = g.measureText("Late").width; g.fillStyle = C.brand; g.fillText("Lotto", 156 + w, 118);
+  g.fillStyle = C.text; g.font = F(800, 44); g.textAlign = "left"; g.fillText("Late", 156, 118); const w = g.measureText("Late").width; g.fillStyle = C.brand; g.fillText("BET", 156 + w, 118);
 }
 
 /** 1080x1350 image of one result: soft colour, an icon, the amount, and what was measured. */
