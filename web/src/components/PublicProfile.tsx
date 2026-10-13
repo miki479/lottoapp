@@ -3,7 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages, TrophyId } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 import { money } from "../lib/format.ts";
-import { forgetLook, loadPublicProfile, type PublicProfileData } from "../lib/looks.ts";
+import { loadPublicProfile, rememberLook, type PublicProfileData } from "../lib/looks.ts";
 import { Trophy3D } from "./looks/Trophy3D.tsx";
 import { Look } from "./looks/Look.tsx";
 import { Sheet } from "./Sheet.tsx";
@@ -12,7 +12,7 @@ import { Sheet } from "./Sheet.tsx";
 export function PublicProfile({ id, msg, locale, onClose, onToast }: { id: string; msg: Messages; locale: Locale; onClose: () => void; onToast: (s: string) => void }) {
   const t = msg.look;
   const [d, setD] = useState<PublicProfileData | null>(null), [busy, setBusy] = useState(false), [failed, setFailed] = useState(false);
-  useEffect(() => { forgetLook(id); loadPublicProfile(id).then((x) => { if (x) setD(x); else setFailed(true); }); }, [id]);
+  useEffect(() => { loadPublicProfile(id).then((x) => { if (x) { setD(x); rememberLook(id, { avatar: x.avatar, decoration: x.decoration, level: x.level }); } else setFailed(true); }); }, [id]);
   /** A reload that fails keeps what is already shown. */
   const refresh = async () => { const x = await loadPublicProfile(id); if (x) setD(x); };
   const add = async () => {
