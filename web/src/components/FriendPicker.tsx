@@ -1,14 +1,15 @@
 import { Check, Users } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
-import type { Messages } from "../i18n/index.ts";
+import type { Locale, Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 import { Collapse } from "./Collapse.tsx";
 import { loadFriends, type FriendRow } from "../lib/friends.ts";
 import { Look } from "./looks/Look.tsx";
+import { PlayerTitle } from "./PlayerTitle.tsx";
 import { useLooks } from "../lib/looks.ts";
 
 /** Invite some of my friends to one friend challenge. They get a notification and find it in "My bets". */
-export function FriendPicker(p: { code: string; msg: Messages; onSent: (n: number) => void }) {
+export function FriendPicker(p: { code: string; locale: Locale; msg: Messages; onSent: (n: number) => void }) {
   const t = p.msg.frd;
   const [friends, setFriends] = useState<FriendRow[] | null>(null), [inside, setInside] = useState<Map<string, "joined" | "invited">>(new Map());
   const [sel, setSel] = useState<Set<string>>(new Set()), [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null), [note, setNote] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export function FriendPicker(p: { code: string; msg: Messages; onSent: (n: numbe
           return (
             <button key={f.user_id} class={`frchip ${on ? "on" : ""} ${done ? "done" : ""}`} disabled={done} aria-pressed={on} onClick={() => toggle(f.user_id)}>
               <span class="fav" aria-hidden="true">{looks[f.user_id] ? <Look avatar={looks[f.user_id]!.avatar} decoration={looks[f.user_id]!.decoration} size={30} /> : on || done ? <Check size={14} strokeWidth={3} /> : name.slice(0, 1).toUpperCase()}</span>
-              <span class="fn"><span>{name}</span>{done && <em>{st === "joined" ? t.invJoined : t.invDone}</em>}</span>
+              <span class="fn"><span>{name}</span><PlayerTitle id={looks[f.user_id]?.title} locale={p.locale} />{done && <em>{st === "joined" ? t.invJoined : t.invDone}</em>}</span>
             </button>
           );
         })}

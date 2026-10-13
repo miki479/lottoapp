@@ -9,6 +9,7 @@ import type { Place } from "../lib/places.ts";
 import { HomePlaceField } from "../components/HomePlaceField.tsx";
 import { loadFriends, type FriendRow } from "../lib/friends.ts";
 import { Look } from "../components/looks/Look.tsx";
+import { PlayerTitle } from "../components/PlayerTitle.tsx";
 import { useLooks } from "../lib/looks.ts";
 import { LeaguePanel } from "../components/League.tsx";
 
@@ -90,7 +91,7 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
                 <div class={`row ${r.is_me ? "me" : ""}`} key={r.user_id}>
                   <span class={`rank ${r.rank <= 3 ? "top" : ""}`}>{r.rank}</span>
                   {face(r.user_id)}
-                  <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name || p.msg.frd.anon}</b>{r.is_me && <span class="detail"> · {m.you}</span>}</button>
+                  <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name || p.msg.frd.anon}</b>{r.is_me && <span class="detail"> · {m.you}</span>}<PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} /></button>
                   {r.prev_rank !== r.rank && <span class={`mv ${r.rank < r.prev_rank ? "up" : "down"}`} aria-label={r.rank < r.prev_rank ? "up" : "down"}>{r.rank < r.prev_rank ? <ArrowUp size={13} strokeWidth={3} /> : <ArrowDown size={13} strokeWidth={3} />}{Math.abs(r.prev_rank - r.rank)}</span>}
                   <span class={`score big num ${r.score > 0 ? "pos" : r.score < 0 ? "neg" : "zero"}`}>{r.score > 0 ? <ArrowUp size={15} strokeWidth={3} /> : r.score < 0 ? <ArrowDown size={15} strokeWidth={3} /> : null}{r.score > 0 ? "+" : r.score < 0 ? "−" : ""}{Math.abs(r.score)}</span>
                 </div>
@@ -116,7 +117,7 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
             <div class={`row ${r.is_me ? "me" : ""}`} key={r.user_id}>
               <span class={`rank ${r.rank <= 3 ? "top" : ""}`}>{r.rank}</span>
               {face(r.user_id)}
-              <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name}</b>{r.is_me && <span class="detail"> · {m.you}</span>}</button>
+              <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name}</b>{r.is_me && <span class="detail"> · {m.you}</span>}<PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} /></button>
               <span class={`score num ${r.score > 0 ? "pos" : r.score < 0 ? "neg" : "zero"}`}>{r.score > 0 ? <TrendingUp size={14} /> : r.score < 0 ? <TrendingDown size={14} /> : null}{r.score > 0 ? "+" : r.score < 0 ? "−" : ""}{Math.abs(r.score)}</span>
             </div>
           ))}

@@ -6,6 +6,7 @@ import type { Locale, Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 import { countdown } from "../lib/format.ts";
 import { loadFriends, type FriendRow } from "../lib/friends.ts";
+import { PlayerTitle } from "../components/PlayerTitle.tsx";
 import { useLooks } from "../lib/looks.ts";
 
 interface FeedRow { code: string; title: string; creator: string; stake: number; closes_at: string; judge_mode: string }
@@ -69,7 +70,7 @@ export function Friends(p: { locale: Locale; msg: Messages; registered: boolean;
           {friends.map((r) => (
             <div class="row" key={r.user_id}>
               {face(r.user_id)}
-              <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name || f.anon}</b></button>
+              <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name || f.anon}</b><PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} /></button>
               <button class="iconbtn frdx" aria-label={`${f.remove} ${r.display_name ?? ""}`} onClick={() => setAskId(askId === r.user_id ? null : r.user_id)}><UserMinus size={16} /></button>
               {askId === r.user_id && <div class="frask" role="alert"><span>{f.removeAsk(r.display_name || f.anon)}</span><button class="btn secondary" onClick={() => setAskId(null)}>{f.removeNo}</button><button class="btn primary" onClick={() => removeFriend(r.user_id)}>{f.removeYes}</button></div>}
             </div>

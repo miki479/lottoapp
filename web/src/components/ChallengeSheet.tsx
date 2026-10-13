@@ -7,6 +7,7 @@ import { countdown, money } from "../lib/format.ts";
 import { FriendPicker } from "./FriendPicker.tsx";
 import { Sheet } from "./Sheet.tsx";
 import { Look } from "./looks/Look.tsx";
+import { PlayerTitle } from "./PlayerTitle.tsx";
 import { useLooks } from "../lib/looks.ts";
 
 export interface Challenge {
@@ -77,7 +78,7 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
         </div>
       </>}
       {isOpen && c.my_pick && <p class="hint"><b>{c.my_pick === "yes" ? f.yes : f.no}</b></p>}
-      {isOpen && p.registered && (c.is_creator || c.my_pick) && <FriendPicker code={c.code} msg={p.msg} onSent={() => p.onChanged()} />}
+      {isOpen && p.registered && (c.is_creator || c.my_pick) && <FriendPicker code={c.code} locale={p.locale} msg={p.msg} onSent={() => p.onChanged()} />}
       {awaiting && c.judge_mode === "vote" && c.my_pick && !c.my_vote && <>
         <span class="detail">{p.msg.fx.voteTitle}</span>
         <div class="actions2">
@@ -103,7 +104,7 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
         {[...c.people].sort((a, b) => (a.name === "?" ? "~" : a.name).localeCompare(b.name === "?" ? "~" : b.name, p.locale)).map((x, i) => (
           <div key={i} class="pplrow">
             <span class="lkwrap">{x.uid && looks[x.uid] ? <Look avatar={looks[x.uid]!.avatar} decoration={looks[x.uid]!.decoration} size={26} /> : <span class="lkph" />}</span>
-            <span class="pplname">{x.name === "?" ? p.msg.ticker.anon : x.name}</span>
+            <span class="pplname">{x.name === "?" ? p.msg.ticker.anon : x.name}<PlayerTitle id={x.uid ? looks[x.uid]?.title : null} locale={p.locale} /></span>
             <span class="num pplpick"><b>{x.pick === null ? "✓" : x.pick === "yes" ? f.yes : f.no}</b>{(x.payout ?? 0) > 0 && c.status === "resolved" ? ` · ${f.won} ${money(x.payout ?? 0, p.locale)}` : ""}</span>
           </div>
         ))}

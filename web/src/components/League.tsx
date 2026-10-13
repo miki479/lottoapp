@@ -3,8 +3,10 @@ import { useEffect, useState } from "preact/hooks";
 import { LEAGUES, PROMOTE_CREDITS, PROMOTE_TOP, promotionGap, resetBalance } from "../../../shared/leagues.ts";
 import { INTL_TAG, type Locale, type Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
+import { PlayerTitle } from "./PlayerTitle.tsx";
 import { useLooks } from "../lib/looks.ts";
 import { Collapse } from "./Collapse.tsx";
+import { LeagueEmblem } from "./LeagueEmblem.tsx";
 import { Sheet } from "./Sheet.tsx";
 import { Look } from "./looks/Look.tsx";
 import { M } from "./looks/art.ts";
@@ -55,8 +57,7 @@ function useMyLeague(registered: boolean): My | null {
 const tx = (l: Locale) => T[l] ?? T["en-US"];
 const metal = (i: number) => M[LEAGUES[Math.min(4, Math.max(0, i))]!]!;
 export function Badge({ league, size = 44 }: { league: number; size?: number }) {
-  const c = metal(league);
-  return <span class="lgbadge" aria-hidden="true" style={`width:${size}px;height:${size}px;font-size:${Math.round(size * 0.42)}px;background:linear-gradient(145deg,${c.h} -20%,${c.l} 22%,${c.m} 60%,${c.d} 120%)`}>{league + 1}</span>;
+  return <LeagueEmblem league={league} size={size} />;
 }
 
 function Board({ league, locale, onProfile }: { league: number; locale: Locale; onProfile: (id: string) => void }) {
@@ -77,7 +78,7 @@ function Board({ league, locale, onProfile }: { league: number; locale: Locale; 
         <div class={`row ${r.is_me ? "me" : ""}`} key={r.user_id}>
           <span class={`rank ${r.rank <= 3 ? "top" : ""}`}>{r.rank}</span>
           {l ? <Look avatar={l.avatar} decoration={l.decoration} size={36} /> : <span class="lkph" />}
-          <button class="grow rowlink" onClick={() => onProfile(r.user_id)}><b>{r.display_name}</b>{r.is_me && <span class="detail"> · {t.you}</span>}</button>
+          <button class="grow rowlink" onClick={() => onProfile(r.user_id)}><b>{r.display_name}</b>{r.is_me && <span class="detail"> · {t.you}</span>}<PlayerTitle id={l?.title} locale={locale} /></button>
           <span class="score num zero">{nf.format(r.credits)}</span>
         </div>
       );
