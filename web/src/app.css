@@ -1255,3 +1255,5 @@ textarea.field { resize: vertical; min-height: 84px; }
 .res { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; font-style: normal; font-size: 11px; font-weight: 800; background: var(--surface-2, #8883); }
 .res.w { background: var(--won-bg, #1f8a4c33); color: var(--won-fg, #2fbf71); } .res.l { background: var(--lost-bg, #c2413433); color: var(--lost-fg, #e5484d); }
 .opt small { display: block; font-size: .72rem; font-weight: 600; opacity: .85; margin-top: 2px; }
+
+.meta .frbadge { position: static; flex: none; }
