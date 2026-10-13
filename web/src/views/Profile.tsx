@@ -14,6 +14,7 @@ import { Look } from "../components/looks/Look.tsx";
 import { readConsent, writeConsent } from "../lib/useIntent.ts";
 import { Trophy3D } from "../components/looks/Trophy3D.tsx";
 import { XpInfo } from "../components/XpInfo.tsx";
+import { LeagueBadge } from "../components/League.tsx";
 import { levelProgress } from "../../../shared/looks";
 import type { MyProgress } from "../lib/looks.ts";
 
@@ -56,7 +57,7 @@ export function ProfileView(p: {
           <section class="card stack">
             <div style="display:flex;align-items:center;gap:14px">
               {p.look ? <button class="lkme" onClick={p.onLook} aria-label={p.msg.look.change}><Look avatar={p.look.avatar} decoration={p.look.decoration} size={72} /><span class="lvl num">{p.look.level}</span></button> : <span class="rank top" style="width:56px;height:56px;border-radius:18px;font-size:22px"><User size={26} /></span>}
-              <div style="min-width:0;flex:1"><b style="font-size:18px;display:block;overflow:hidden;text-overflow:ellipsis">{name}</b><span class="hint">{p.registered ? p.email : m.guest}</span>{p.homeNode}</div>
+              <div style="min-width:0;flex:1"><b style="font-size:18px;display:block;overflow:hidden;text-overflow:ellipsis">{name}</b><span class="hint">{p.registered ? p.email : m.guest}</span>{p.homeNode}{p.registered && <div style="margin-top:6px"><LeagueBadge locale={p.locale} registered={p.registered} /></div>}</div>
               {p.registered && <button class="iconbtn" onClick={p.onNickname} aria-label={m.nickname.title}><Pencil size={20} /></button>}
             </div>
             {p.look && (() => { const lp = levelProgress(p.look.xp); return <button class="lkxp" onClick={p.onLook}><span class="xpbar"><i style={`width:${Math.round(lp.ratio * 100)}%`} /></span><span class="hint num">{p.msg.look.level(lp.level)} · {p.msg.look.xp(lp.into, lp.need)}</span></button>; })()}
