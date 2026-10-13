@@ -1,6 +1,6 @@
 import { startChips } from "../lib/startcities.ts";
 import { ForYou } from "../components/ForYou.tsx";
-import { trainZone } from "../lib/zones.ts";
+import { CLASS_LABEL, trainClass, trainZone, type TrainClass } from "../lib/zones.ts";
 import { CloudRain } from "lucide-preact";
 import { FilterSheet, filterLabel, ICON as KIND_ICON } from "../components/FilterSheet.tsx";
 import { groupMatches, MatchList } from "../components/MatchList.tsx";
@@ -66,11 +66,14 @@ export function Home(p: HomeProps) {
   const sportQ = p.cat === "sport" ? norm(teamQ.trim()) : "";
   const picked2 = sportQ ? picked.filter((m) => norm(`${m.params.home ?? ""} ${m.params.away ?? ""} ${m.params.league ?? ""}`).includes(sportQ)) : picked;
   const [seriesSel, setSeriesSel] = useState<number | null>(null);
+  const [classSel, setClassSel] = useState<TrainClass | null>(null);
+  const classes = p.cat === "train" ? (["hs", "ic", "reg"] as TrainClass[]).map((c) => [c, picked2.filter((m) => trainClass(m) === c).length] as const).filter(([, n]) => n > 0) : [];
+  const cls = classes.some(([c]) => c === classSel) ? classSel : null;
   const [zoneSel, setZoneSel] = useState<string | null>(null);
-  const zones = p.cat === "train" ? [...picked2.reduce((acc, m) => { const z = trainZone(m); if (z) acc.set(z, (acc.get(z) ?? 0) + 1); return acc; }, new Map<string, number>())].sort((x, y) => x[0].localeCompare(y[0], "it")) : [];
+  const zones = p.cat === "train" ? [...picked2.filter((m) => !cls || trainClass(m) === cls).reduce((acc, m) => { const z = trainZone(m); if (z) acc.set(z, (acc.get(z) ?? 0) + 1); return acc; }, new Map<string, number>())].sort((x, y) => x[0].localeCompare(y[0], "it")) : [];
   const zone = zones.some(([z]) => z === zoneSel) ? zoneSel : null;
   const followed = p.cat === "culture" ? followedShows() : [];
-  const shown00 = zone ? picked2.filter((m) => trainZone(m) === zone) : picked2;
+  const shown00 = (cls || zone) ? picked2.filter((m) => (!cls || trainClass(m) === cls) && (!zone || trainZone(m) === zone)) : picked2;
   const shown0 = seriesSel !== null && p.cat === "culture" ? shown00.filter((m) => Number(m.params.showId) === seriesSel) : shown00;
   const shown = p.cat === "nature" ? [...shown0].sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at) || Number(a.params.minMag) - Number(b.params.minMag)) : shown0;
   const topId = shown.reduce<MarketRow | null>((b, m) => (!b || Number(m.odds_yes) > Number(b.odds_yes) ? m : b), null)?.id;
@@ -143,6 +146,10 @@ export function Home(p: HomeProps) {
             </div>}
           </>
         )}
+        {classes.length > 1 && <div class="mkchips" role="tablist" aria-label="Tipo">
+          <button role="tab" aria-selected={cls === null} class={`mkchip ${cls === null ? "on" : ""}`} onClick={() => setClassSel(null)}>{msg.series.all}</button>
+          {classes.map(([c, n]) => <button key={c} role="tab" aria-selected={cls === c} class={`mkchip ${cls === c ? "on" : ""}`} onClick={() => setClassSel(cls === c ? null : c)}>{(CLASS_LABEL[p.locale] ?? CLASS_LABEL.it!)[c]} · {n}</button>)}
+        </div>}
         {zones.length > 1 && <div class="mkchips" role="tablist" aria-label="Regione">
           <button role="tab" aria-selected={zone === null} class={`mkchip ${zone === null ? "on" : ""}`} onClick={() => setZoneSel(null)}>{msg.series.all}</button>
           {zones.map(([z, n]) => <button key={z} role="tab" aria-selected={zone === z} class={`mkchip ${zone === z ? "on" : ""}`} onClick={() => setZoneSel(zone === z ? null : z)}>{z} · {n}</button>)}

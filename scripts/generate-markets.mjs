@@ -190,7 +190,11 @@ async function trainMarkets(feed) {
   console.error(`[${feed.id}] ${candidates.size} trains on the boards`);
   const { ymd } = localYmd(now, city.timezone);
   const rand = seededRandom(`${city.id}-${feed.id}-${ymd}-${Math.floor(now / 21600)}`);
-  const shuffled = [...candidates.entries()].map((e) => [rand(), e]).sort((a, b) => a[0] - b[0]).map((x) => x[1]).slice(0, max * 3);
+  const mixed = [...candidates.entries()].map((e) => [rand(), e]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+  // Regional trains are most of the boards: one question in three goes to a Frecciarossa / Frecciargento / Frecciabianca / Intercity so the fast trains are not drowned.
+  const isFast = ([, x]) => ["FR", "FA", "FB", "IC", "ICN", "EC"].includes(String(x.categoriaDescrizione || "").trim().toUpperCase());
+  const fast = mixed.filter(isFast), slow = mixed.filter((e) => !isFast(e)), shuffled = [];
+  while ((fast.length || slow.length) && shuffled.length < max * 3) { if (fast.length) shuffled.push(fast.shift()); for (let k = 0; k < 2 && slow.length; k++) shuffled.push(slow.shift()); if (!fast.length) { while (slow.length && shuffled.length < max * 3) shuffled.push(slow.shift()); } }
 
   const hist = await historyLookup();
   const priorYes = await learnedPriorYes("train");

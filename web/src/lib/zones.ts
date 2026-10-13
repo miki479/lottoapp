@@ -16,3 +16,19 @@ export function trainZone(m: MarketRow): string | null {
   const code = String(m.params.stopId ?? "").replace(/^S/i, "");
   return ZONES[code.slice(0, 2)] ?? null;
 }
+
+export type TrainClass = "hs" | "ic" | "reg";
+/** High speed (Frecciarossa, Frecciargento, Frecciabianca, Italo), long distance (Intercity, EuroCity, night trains) and regional, from the name of the train. */
+export function trainClass(m: MarketRow): TrainClass | null {
+  if (m.category !== "train" || m.city_id !== "italia") return null;
+  const k = String(m.params.routeName ?? "").trim().split(/\s+/)[0]?.toUpperCase() ?? "";
+  if (["FR", "FA", "FB", "NTV", "ITALO"].includes(k)) return "hs";
+  if (["IC", "ICN", "EC", "EN", "ICE"].includes(k)) return "ic";
+  return "reg";
+}
+export const CLASS_LABEL: Record<string, Record<TrainClass, string>> = {
+  it: { hs: "Alta velocità", ic: "Intercity", reg: "Regionali" },
+  "en-US": { hs: "High speed", ic: "Intercity", reg: "Regional" },
+  "en-GB": { hs: "High speed", ic: "Intercity", reg: "Regional" },
+  ja: { hs: "高速", ic: "長距離", reg: "普通" },
+};
