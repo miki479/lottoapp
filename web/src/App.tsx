@@ -329,7 +329,8 @@ export function App() {
     const go = () => sb.rpc("weather_outlook", { p_markets: rainIds }).then(({ data }) => setOutlook(Object.fromEntries(((data ?? []) as { market_id: string; mm: number }[]).map((r) => [r.market_id, +r.mm]))));
     go(); return every(go, 300_000);
   }, [rainIds.join()]);
-  const trackable = useMemo(() => (markets ?? []).filter((m) => (m.category === "bus" || m.category === "train") && Date.parse(m.target_at) - Date.now() < (m.category === "train" ? 10 : 3) * 3600_000).slice(0, 150).map((m) => m.id), [markets]);
+  // the main question of each trip first (the rungs of the apology ladder come after), so the live readings the boards need are never cut off by the cap
+  const trackable = useMemo(() => (markets ?? []).filter((m) => (m.category === "bus" || m.category === "train") && Date.parse(m.target_at) - Date.now() < (m.category === "train" ? 10 : 3) * 3600_000).sort((a, b) => Number(!!a.params.ladderOf) - Number(!!b.params.ladderOf)).slice(0, 400).map((m) => m.id), [markets]);
   useEffect(() => {
     if (trackable.length === 0) { setLive({}); return; }
     const go = () => sb.rpc("live_delays", { p_markets: trackable }).then(({ data }) => setLive(Object.fromEntries(((data ?? []) as LiveDelay[]).map((d) => [d.market_id, d]))));
