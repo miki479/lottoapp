@@ -1358,3 +1358,6 @@ textarea.field { resize: vertical; min-height: 84px; }
 .updatebar { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 8px); z-index: 120; display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 0; background: var(--brand); color: #fff; font: inherit; font-size: .85rem; box-shadow: 0 6px 20px rgba(0,0,0,.3); cursor: pointer; } .updatebar b { padding: 2px 10px; border-radius: 999px; background: rgba(255,255,255,.22); }
 /* Profile town search: the result list has a fixed box so the rows do not jump while typing and loading. */
 .homefield .placeres { min-height: 232px; max-height: 232px; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 4px; }
+/* untouchable while the app is still starting (no half-loaded taps), but never for more than 5 s if the network is slow */
+.shell.booting main, .shell.booting nav { pointer-events: none; animation: bootunlock .01s 5s forwards; }
+@keyframes bootunlock { to { pointer-events: auto; } }

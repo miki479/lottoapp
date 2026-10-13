@@ -240,22 +240,28 @@ export function App() {
   const mkSeq = useRef(0); // calls overlap (timer, bets, filter changes): only the newest answer may replace the list
   const loadMarkets = useCallback(async () => {
     const seq = ++mkSeq.current;
-    const { data, error } = await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").not("city_id", "like", "p-%").gt("closes_at", new Date().toISOString()).order("closes_at").limit(300);
-    // Markets of the towns this player picked are loaded separately so a long list of places never crowds out the real cities.
-    const mine = placeIds.current.length ? (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("city_id", placeIds.current).gt("closes_at", new Date().toISOString()).order("closes_at").limit(160)).data ?? [] : [];
-    // Questions that close far ahead (matches, daily page views, price lines) would fall off the first page: fetch them on their own.
-    // One page per category: a single page of the soonest 200 across all of them (728 open at the last count) left the latest-closing ones out.
-    const far = (await Promise.all(["sport", "finance", "culture", "nature", "law", "traffic"].map((c) => sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").eq("category", c).gt("closes_at", new Date().toISOString()).order("closes_at").limit(c === "law" ? 60 : 200)))).flatMap((r) => r.data ?? []);
-    // the questions we write ourselves close far ahead: always fetched on their own
-    const house = (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").eq("kind", "tick_gt").like("params->>series", "house:%").gt("closes_at", new Date().toISOString()).order("closes_at").limit(60)).data ?? [];
+    // all the reads below go out together (they used to run one after the other, which added up to a long wait on a slow phone)
+    const COLS = "id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind", nowIso = new Date().toISOString();
+    const open = () => sb.from("markets").select(COLS).eq("status", "open").gt("closes_at", nowIso);
+    const none = Promise.resolve({ data: [] as unknown[] });
     // the first page holds only what closes soonest: the town being looked at (and the country-wide train feeds of its country) are loaded in full
     const f0 = envRef.current.filter;
-    const here = f0 && f0 !== "world" && f0 !== "mine" && !placeIds.current.includes(f0) ? (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("city_id", [f0, ...[...NATIONAL].filter((id) => CITIES.find((c) => c.id === id)?.country === (CITIES.find((c) => c.id === f0)?.country ?? placeById(f0)?.country))]).gt("closes_at", new Date().toISOString()).order("closes_at").limit(400)).data ?? [] : [];
     // the towns of the player's own country are loaded too: with a long list of open questions, the ones closing soonest may all belong to another country
     const cc = envRef.current.near?.country ?? envRef.current.profile?.country ?? region();
     const ownIds = CITIES.filter((c) => c.country === cc && !c.region).map((c) => c.id);
     const nationalIds = [...NATIONAL].filter((id) => CITIES.find((c) => c.id === id)?.country === cc);
-    const own = cc && ownIds.length + nationalIds.length ? (await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("status", "open").in("city_id", [...ownIds, ...nationalIds]).gt("closes_at", new Date().toISOString()).order("closes_at").limit(300)).data ?? [] : [];
+    const [first, mineR, farR, houseR, hereR, ownR] = await Promise.all([
+      open().not("city_id", "like", "p-%").order("closes_at").limit(300),
+      // Markets of the towns this player picked are loaded separately so a long list of places never crowds out the real cities.
+      placeIds.current.length ? open().in("city_id", placeIds.current).order("closes_at").limit(160) : none,
+      // Questions that close far ahead (matches, daily page views, price lines) fall off the first page: one page per category, fetched on their own.
+      Promise.all(["sport", "finance", "culture", "nature", "law", "traffic"].map((c) => open().eq("category", c).order("closes_at").limit(c === "law" ? 60 : 200))),
+      // the questions we write ourselves close far ahead: always fetched on their own
+      open().eq("kind", "tick_gt").like("params->>series", "house:%").order("closes_at").limit(60),
+      f0 && f0 !== "world" && f0 !== "mine" && !placeIds.current.includes(f0) ? open().in("city_id", [f0, ...[...NATIONAL].filter((id) => CITIES.find((c) => c.id === id)?.country === (CITIES.find((c) => c.id === f0)?.country ?? placeById(f0)?.country))]).order("closes_at").limit(400) : none,
+      cc && ownIds.length + nationalIds.length ? open().in("city_id", [...ownIds, ...nationalIds]).order("closes_at").limit(300) : none,
+    ]);
+    const { data, error } = first, mine = mineR.data ?? [], far = farR.flatMap((r) => r.data ?? []), house = houseR.data ?? [], here = hereR.data ?? [], own = ownR.data ?? [];
     const seen = new Set([...(data ?? []), ...mine].map((x) => (x as { id: string }).id));
     const extra = [...far, ...house, ...here, ...own].filter((x) => { const id = (x as unknown as { id: string }).id; if (seen.has(id)) return false; seen.add(id); return true; });
     if (seq !== mkSeq.current) return;
@@ -516,16 +522,20 @@ export function App() {
     if (error) return (offerId ? offerErrorText(error.message, locale) : null) ?? msg.errors[Object.keys(msg.errors).find((k) => error.message.includes(k)) ?? "generic"]!;
     setSheet(null);
     if (offerId) dispatchEvent(new Event(OFFER_EVENT));
-    const [pf] = await Promise.all([loadProfile(), loadBets(), loadQuests(), loadMarkets(), loadChallenges()]);
-    const reached = pf && pf.streak > before.streak ? STREAK_MILESTONES[pf.streak] : undefined;
-    const [pr, tr] = [await loadProgress(), await loadTrophies()];
-    const won = TROPHY_IDS.filter((id) => tr.has(id) && !before.trophies.has(id));
-    if (won.length) { setFresh(new Set(won)); flash(`${msg.profile.trophy[won[0]!].name}`); }
-    else if (reached) { flash(msg.streak.milestone(pf!.streak, `+${money(reached, locale)}`)); haptic.success(); }
-    else if (pr?.bonus_claimed && !before.bonus) flash(`${msg.home.missionsDone} · +${money(RING_BONUS, locale)}`);
-    else flash(msg.sheet.placed(money(Math.floor(stake * betOdds), locale)));
-    if (pushAvailable() && !pushAsked() && !pushDenied()) setTimeout(() => setAskPush(true), 1500);
+    // the player is told straight away that the bet is in; the refreshes (balance, lists, trophies) run behind it
+    flash(msg.sheet.placed(money(Math.floor(stake * betOdds), locale)));
+    haptic.success();
     announce(`placed-${m.id}`, msg.voice.placed(money(Math.floor(stake * betOdds), locale)), locale);
+    void (async () => {
+      const [pf] = await Promise.all([loadProfile(), loadBets(), loadQuests(), loadMarkets(), loadChallenges()]);
+      const reached = pf && pf.streak > before.streak ? STREAK_MILESTONES[pf.streak] : undefined;
+      const [pr, tr] = await Promise.all([loadProgress(), loadTrophies()]);
+      const won = TROPHY_IDS.filter((id) => tr.has(id) && !before.trophies.has(id));
+      if (won.length) { setFresh(new Set(won)); flash(`${msg.profile.trophy[won[0]!].name}`); }
+      else if (reached) { flash(msg.streak.milestone(pf!.streak, `+${money(reached, locale)}`)); haptic.success(); }
+      else if (pr?.bonus_claimed && !before.bonus) flash(`${msg.home.missionsDone} · +${money(RING_BONUS, locale)}`);
+      if (pushAvailable() && !pushAsked() && !pushDenied()) setTimeout(() => setAskPush(true), 1500);
+    })();
     return null;
   };
   const addSlip = (m: MarketRow, pick: Pick) => { setSlip((s) => (s.some((l) => l.m.id === m.id) ? s : [...s, { m, pick }])); setSheet(null); flash(`${msg.slip.added} · ${msg.slip.bar(slip.some((l) => l.m.id === m.id) ? slip.length : slip.length + 1)}`); haptic.tap(); };
@@ -654,7 +664,7 @@ export function App() {
   const openBets = bets.filter((b) => b.status === "open").length + invites.length;
 
   return (
-    <div class="shell">
+    <div class={`shell${ready ? "" : " booting"}`} aria-busy={!ready}>
       <Sidebar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} rankBadge={reqCount} social={social} />
       <div>
         <Header satire={msg.home.satire} claimable={claimable} onWallet={() => setRewardsOpen(true)} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} wallet={profile ? new Intl.NumberFormat(INTL_TAG[locale]).format(Math.round(wallet)) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />

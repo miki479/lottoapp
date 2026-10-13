@@ -4,6 +4,21 @@ export const sb = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.en
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 });
 
+/**
+ * Calls that change something (a bet, a claim, a purchase…) are never sent twice at once: a second identical call made while the first is
+ * still on its way (a double tap, a slow network) gets the same answer instead of a second request to the server.
+ */
+const CHANGES = /^(place_|claim_|buy_|open_|create_|cancel_|respond_|request_|remove_|set_|join_|vote_|pick_|resolve_|resolve|redeem_|invite_|delete_|toggle_|report_|register_|decline_|read_)/;
+const inflight = new Map<string, Promise<unknown>>();
+const rpcRaw = sb.rpc.bind(sb) as (fn: string, args?: object, opts?: object) => PromiseLike<unknown>;
+(sb as unknown as { rpc: typeof rpcRaw }).rpc = (fn, args, opts) => {
+  if (!CHANGES.test(fn)) return rpcRaw(fn, args, opts);
+  const key = `${fn}:${JSON.stringify(args ?? {})}`, hit = inflight.get(key);
+  if (hit) return hit;
+  const run = Promise.resolve(rpcRaw(fn, args, opts)).finally(() => inflight.delete(key));
+  inflight.set(key, run);
+  return run;
+};
 
 /**
  * Returns the current user id, creating a guest when there is none.

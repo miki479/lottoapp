@@ -4,7 +4,7 @@ import { FUN_STAKE, balanceStakeCap, stakeCap } from "../../../shared/wallet.ts"
 import { Q } from "./Q.tsx";
 import { MarketVs, noOf, reasonOf } from "./MatchVs.tsx";
 import { Gift, Layers, Rocket, Share2, Sparkles, X } from "lucide-preact";
-import { useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { fmtOdds, isYesNo, money, question, type MarketRow } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
@@ -65,10 +65,13 @@ export function BetSheet(p: {
   const cap = Math.max(10, p.credits >= 10 ? Math.min(oddsCap, Math.floor(p.credits)) : Math.min(oddsCap, 500));
   const decided = offer ? baseOf(pick) < OFFER_MIN_BASE_ODDS : false, nearly = !offer && oddsCap <= FUN_STAKE;
   const amount = Math.min(stake, cap);
+  const going = useRef(false);
   const place = async () => {
-    setBusy(true); setErr(null); haptic.tap();
+    if (going.current) return; // a fast second tap must not send the bet twice
+    going.current = true; setBusy(true); setErr(null); haptic.tap();
     const out = await p.onPlace(p.m, pick, amount, !offer && boost && p.boosts > 0, !offer && p.m.params.occBonus ? bonus : null, !offer && vice && vicePct > 0 && pick === "yes", offer?.id ?? null);
-    if (out) { setErr(out); setBusy(false); haptic.error(); } else haptic.success();
+    going.current = false;
+    if (out) { setErr(out); setBusy(false); haptic.error(); }
   };
   const label = (k: Pick) => (k === "yes" ? (isRain ? p.msg.card.yes : p.msg.card.late) : (isRain ? p.msg.card.no : p.msg.card.onTime));
   if (joining) return <JoinStep msg={p.msg} locale={p.locale} googleOn={p.googleOn} stakeLabel={money(amount, p.locale)} onBack={() => setJoining(false)} onClose={p.onClose} onJoined={place} />;
