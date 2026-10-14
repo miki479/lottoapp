@@ -1615,3 +1615,4 @@ textarea.field { resize: vertical; min-height: 84px; }
 .rgbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: auto; padding-top: 4px; }
 .rgbtn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: var(--hit); font: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--text); background: var(--surface); border: 1px solid var(--line-ui); border-radius: var(--radius-control); cursor: pointer; }
 .rgbtn b { color: var(--action-ink); } .rgbtn:active { transform: scale(.97); }
+.betsum .bsempty { font-size: var(--fs-md); font-weight: 700; color: var(--text-2); line-height: 1.2; }

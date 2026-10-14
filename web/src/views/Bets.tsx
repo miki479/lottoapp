@@ -52,8 +52,14 @@ export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge
       {bets.length + parlays.length > 0 && (
         <section class="betsum" aria-label={msg.bets.title}>
           <div class="bsc"><span class="bsi"><Flame size={16} /></span><span class="bsl">{sm.streak}</span><b class="num">{msg.streak.days(streak)}</b></div>
-          <div class="bsc"><span class="bsi"><TrendingDown size={16} /></span><span class="bsl">{sm.worst}</span><b class={`num ${sum?.worstDay ? "neg" : ""}`}>{sum?.worstDay ? moneySigned(sum.worstDay.net, locale) : "—"}</b><small>{sum?.worstDay ? dayFmt.format(new Date(`${sum.worstDay.day}T12:00:00Z`)) : sm.none}</small></div>
-          <div class="bsc"><span class="bsi"><ArrowDownToLine size={16} /></span><span class="bsl">{sm.drawdown}</span><b class={`num ${sum && sum.drawdown > 0 ? "neg" : ""}`}>{sum && sum.drawdown > 0 ? moneySigned(-sum.drawdown, locale) : "—"}</b><small>{sm.window(SUMMARY_DAYS)}</small></div>
+          <div class="bsc"><span class="bsi"><TrendingDown size={16} /></span><span class="bsl">{sm.worst}</span>
+            {sum?.worstDay ? <><b class="num neg">{moneySigned(sum.worstDay.net, locale)}</b><small>{dayFmt.format(new Date(`${sum.worstDay.day}T12:00:00Z`))}</small></>
+              : sum && sum.days > 0 ? <><b class="bsempty">{sm.noLoss}</b><small>{sm.window(SUMMARY_DAYS)}</small></>
+              : <><b class="bsempty">{series ? sm.noData : "…"}</b><small>{series ? sm.needData : ""}</small></>}</div>
+          <div class="bsc"><span class="bsi"><ArrowDownToLine size={16} /></span><span class="bsl">{sm.drawdown}</span>
+            {sum && sum.drawdown > 0 ? <><b class="num neg">{moneySigned(-sum.drawdown, locale)}</b><small>{sm.window(SUMMARY_DAYS)}</small></>
+              : sum && sum.days > 0 ? <><b class="bsempty">{sm.atPeak}</b><small>{sm.window(SUMMARY_DAYS)}</small></>
+              : <><b class="bsempty">{series ? sm.noData : "…"}</b><small>{series ? sm.needData : ""}</small></>}</div>
         </section>
       )}
       <div class="seg" role="tablist">
