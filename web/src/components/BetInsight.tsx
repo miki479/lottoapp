@@ -91,10 +91,11 @@ function MatchInsight({ m, pick, msg }: { m: M; pick: "yes" | "no"; msg: Message
 export function BetInsight({ m, pick, msg, now }: { m: M; pick: "yes" | "no"; msg: Messages; now: number }) {
   const [open, setOpen] = useState(false);
   const delay = (m.kind === "train_delay_gt" || m.kind === "bus_delay_gt") && !!m.params.tripId, match = m.kind === "match_bet" && !!m.params.home && !!m.params.away && !/^(pg|pa|ps):/.test(String(m.params.bet));
+  const started = now >= Number(m.params.kickoff ?? 0) * 1000;
   if (!delay && !match) return null;
   return (
     <div class="betinsight">
-      <button class="insbtn" aria-expanded={open} onClick={() => setOpen(!open)}><Activity size={15} />{msg.insight.how}<ChevronDown size={16} class={open ? "up" : ""} /></button>
+      <button class="insbtn" aria-expanded={open} onClick={() => setOpen(!open)}><Activity size={15} />{delay ? msg.insight.how : started ? msg.insight.howLive : msg.insight.howMatch}<ChevronDown size={16} class={open ? "up" : ""} /></button>
       {open && (delay ? <DelayInsight m={m} pick={pick} msg={msg} now={now} /> : <MatchInsight m={m} pick={pick} msg={msg} />)}
     </div>
   );

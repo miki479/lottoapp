@@ -98,7 +98,7 @@ export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge
         {shown.map((b, i) => {
           const m = b.markets, city = cityOf(m.city_id), st = b.status;
           const Icon = st === "won" ? Check : st === "lost" ? X : st === "void" ? RotateCcw : Ticket;
-          const label = st === "won" ? msg.bets.won : st === "lost" ? msg.bets.lost : st === "void" ? msg.bets.void : msg.bets.open;
+          const label = st === "won" ? msg.bets.won : st === "lost" ? msg.bets.lost : st === "void" ? msg.bets.void : m.kind === "match_bet" && now < Number(m.params.kickoff ?? 0) * 1000 ? msg.bets.upcoming : msg.bets.open;
           return (
             <div class="betwrap" key={b.id}>
             <button class="card bet pressable" style={`--i:${Math.min(i, 10)}; text-align:left`} onClick={() => (st !== "open" ? onOpen(b) : undefined)} disabled={st === "open"}>

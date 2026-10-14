@@ -38,6 +38,7 @@ import { fmtInt, fmtMult, fmtTimes, moneySigned, setNumLocale } from "./lib/num.
 import { balanceMove } from "./lib/stake.ts";
 import { resolvingToday } from "./lib/summary.ts";
 import { pickFeed, type FeedItem } from "./lib/feed.ts";
+import { unseenResults } from "./lib/results.ts";
 import { countdown, setDayUnit, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, trainLabel, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
@@ -97,7 +98,7 @@ async function capitalIdsFor(filter: string, origin: { lat: number; lon: number 
 const NATIONAL = new Set(CITIES.filter((c) => c.id === "italia" || c.id === "germany").map((c) => c.id));
 const region = () => { try { return new Intl.Locale(navigator.language).maximize().region ?? null; } catch { return null; } };
 const PROFILE_COLS = "id,credits,city_id,locale,timezone,country,streak,best_streak,freezes,boosts,push_flash,push_streak,push_friends,display_name,last_play_date,stake_factor";
-const BET_COLS = "id,pick,stake,odds,boosted,vice_pct,status,payout,bonus,bonus_hit,markets(id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,void_reason,outcome,evidence)";
+const BET_COLS = "id,pick,stake,odds,boosted,vice_pct,status,payout,settled_at,bonus,bonus_hit,markets(id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,void_reason,outcome,evidence)";
 
 export function App() {
   const now = useNow(5000);
@@ -552,7 +553,7 @@ export function App() {
   }, [detailsOn]);
 
   // ---------- results (Esito) ----------
-  const unseen = bets.filter((b) => b.status !== "open" && !seen.has(b.id));
+  const unseen = unseenResults(bets, seen, Date.now());
   useEffect(() => { if (ready && !resultBet && !sheet && !auth && !nick && unseen.length > 0) { const b = unseen[0]!; setResultBet(b); announce(`res-${b.id}`, b.status === "won" ? msg.voice.won(money(b.payout - b.stake, locale)) : b.status === "lost" ? msg.voice.lost : msg.bets.void, locale); } }, [ready, unseen.map((b) => b.id).join(), !!sheet, auth, nick]);
   const markSeen = (id: string) => { const n = new Set(seen); n.add(id); setSeen(n); store.set(seenKey, JSON.stringify([...n].slice(-300))); };
   const closeResult = () => { if (resultBet) markSeen(resultBet.id); setResultBet(null); };
