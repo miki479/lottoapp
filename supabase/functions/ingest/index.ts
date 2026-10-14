@@ -67,9 +67,25 @@ Deno.serve(safe(async (req) => {
   // "?slice=a-b" (diagnosis only): visit just those cities, in list order, and stop after the feeds
   const sliceQ = new URL(req.url).searchParams.get("slice"), [sa, sb2] = sliceQ ? sliceQ.split("-").map(Number) : [0, 0];
   const visit = sliceQ ? allCities.slice(sa, sb2) : [...allCities.slice(rot), ...allCities.slice(0, rot)];
+  // At most MAX_FEEDS_PER_RUN feeds per call, the ones waited longest first: one call must not carry the whole world's decoding (the platform kills a worker that asks for too much)
+  const MAX_FEEDS_PER_RUN = heavyRun ? 2 : 14, chosen = new Set<string>();
+  {
+    const cand: { id: string; last: number }[] = [], seenC = new Set<string>();
+    for (const city of visit) for (const feed of usableFeeds(city, allowUnverified())) {
+      if (!!feed.heavy !== heavyRun || seenC.has(feed.id)) continue;
+      seenC.add(feed.id);
+      if (feed.type === "viaggiatreno") continue;
+      const last = lastAttempt.get(feed.id) ?? 0;
+      if (now - last < feed.pollSeconds - 5) continue;
+      cand.push({ id: feed.id, last });
+    }
+    cand.sort((x, y) => x.last - y.last);
+    for (const c of cand.slice(0, MAX_FEEDS_PER_RUN)) chosen.add(c.id);
+  }
   for (const city of visit) {
     for (const feed of usableFeeds(city, allowUnverified())) {
       if (Date.now() - t0 > 45_000) break;
+      if (!seen.has(feed.id) && !chosen.has(feed.id) && feed.type !== "viaggiatreno") { report[feed.id] = "not due"; seen.add(feed.id); continue; }
       // Feed ids are globally unique (weather feeds are per city); a national feed listed by two cities is fetched once.
       if (!!feed.heavy !== heavyRun) continue;
       if (seen.has(feed.id)) continue;
@@ -376,8 +392,21 @@ async function ingestPlaces(sb: ReturnType<typeof db>, now: number, last: number
 async function fetchBytes(url: string, extra: Record<string, string> = {}, timeoutMs = FETCH_TIMEOUT_MS): Promise<Uint8Array> {
   const res = await fetch(url, { headers: { ...extra, "User-Agent": `LateLotto/0.1 (play-money game; contact: ${Deno.env.get("CONTACT_EMAIL") ?? "unset"})`, "Accept-Encoding": "gzip" }, signal: AbortSignal.timeout(timeoutMs) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const buf = new Uint8Array(await res.arrayBuffer());
-  if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) throw new Error(`unexpected size ${buf.byteLength}`);
+  // Never hold a huge answer in memory just to find out it is too big (a feed that grew to 26 MB was killing the worker every run): look at the declared size,
+  // then read in pieces and stop as soon as the limit is passed.
+  const declared = Number(res.headers.get("content-length") ?? 0);
+  if (declared > MAX_BYTES) { await res.body?.cancel(); throw new Error(`unexpected size ${declared}`); }
+  const reader = res.body!.getReader(), parts: Uint8Array[] = []; let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_BYTES) { await reader.cancel(); throw new Error(`unexpected size >${MAX_BYTES}`); }
+    parts.push(value);
+  }
+  if (total === 0) throw new Error("unexpected size 0");
+  const buf = new Uint8Array(total); let off = 0;
+  for (const p of parts) { buf.set(p, off); off += p.byteLength; }
   return buf;
 }
 
