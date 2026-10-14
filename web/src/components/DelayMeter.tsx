@@ -11,7 +11,7 @@ const hue = (t: number) => (255 + 135 * t) % 360;
  * How late is it right now? A big number, a segmented gauge whose middle tick is the bet's limit
  * (the gauge is full at twice the limit) and a trend chip: "getting worse / better in the last 10 minutes".
  */
-export function DelayMeter(p: { sec: number; prev: number | null; limitSec: number; forecast?: boolean; msg: Messages; big?: boolean }) {
+export function DelayMeter(p: { sec: number; prev: number | null; limitSec: number; forecast?: boolean; observedAt?: string; now?: number; msg: Messages; big?: boolean }) {
   const { sec, msg } = p;
   const shown = useCountUp(Math.round(sec / 60), 500);
   const ratio = Math.max(0, Math.min(1, sec / (2 * p.limitSec)));
@@ -30,6 +30,7 @@ export function DelayMeter(p: { sec: number; prev: number | null; limitSec: numb
         <em style={`left:${100 / 2}%`}><span>{msg.meter.threshold(Math.round(p.limitSec / 60))}</span></em>
         <u class="sweep" />
       </div>
+      {p.observedAt && p.now !== undefined && <small class="mupd">{msg.insight.updated(Math.max(0, Math.round((p.now - Date.parse(p.observedAt)) / 60_000)))}</small>}
     </div>
   );
 }

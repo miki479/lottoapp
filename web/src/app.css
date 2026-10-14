@@ -1577,3 +1577,4 @@ textarea.field { resize: vertical; min-height: 84px; }
 @keyframes ledblink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .25; } }
 @keyframes ledspin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .ledlamp, .ledrow.late .leddelay, .ledrefresh.spin svg { animation: none; } }
+.meter .mupd { display: block; margin-top: 4px; font-size: var(--fs-xs); color: var(--muted); }

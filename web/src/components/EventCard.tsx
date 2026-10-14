@@ -56,7 +56,7 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
       {typeof m.params.by === "string" && m.params.by && <p class="byline">{msg.maker.by(m.params.by)}</p>}
       {p.occ && <OccMeter level={p.occ.level} msg={msg} />}
       {m.kind !== "bus_full" && !live && (m.category === "train" || m.category === "bus") && <p class="nolive">{msg.card.noLive}</p>}
-      {m.kind !== "bus_full" && live && <DelayMeter sec={live.delay_sec} prev={live.prev_delay_sec} limitSec={Number(m.params.thresholdSec ?? 180)} forecast={live.is_forecast} msg={msg} />}
+      {m.kind !== "bus_full" && live && <DelayMeter sec={live.delay_sec} prev={live.prev_delay_sec} limitSec={Number(m.params.thresholdSec ?? 180)} forecast={live.is_forecast} observedAt={live.observed_at} now={now} msg={msg} />}
       <div class="actions2">
         {(["yes", "no"] as const).map((k) => {
           const o = Number(k === "yes" ? m.odds_yes : m.odds_no), boosted = k === "yes" && flashOn, mv = oddsMove(m.id, k, Number(m.odds_yes), Number(m.odds_no));

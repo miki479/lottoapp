@@ -13,6 +13,7 @@ import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { countdown, fmtOdds, isYesNo, money, potentialWin, question, trainLabel } from "../lib/format.ts";
 import type { Challenge } from "../components/ChallengeSheet.tsx";
+import { TWO_WAY_LEAGUES } from "../../../shared/sport.ts";
 import type { MyBet, ParlayRow } from "../lib/types.ts";
 import type { MarketRow } from "../lib/format.ts";
 import { moneySigned } from "../lib/num.ts";
@@ -31,10 +32,12 @@ function Due({ at, now, msg, seed }: { at: number; now: number; msg: Messages; s
 export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge, parlays, bets, msg, locale, now, onOpen, onHome }: { streak: number; canMore: boolean; onMore: () => void; invites: (Challenge & { invited_by: string })[]; challenges: Challenge[]; onChallenge: (code: string) => void; parlays: ParlayRow[]; bets: MyBet[]; msg: Messages; locale: Locale; now: number; onOpen: (b: MyBet) => void; onHome: () => void }) {
   const [tab, setTab] = useState<"open" | "settled">("open");
   const [st, setSt] = useState<"all" | "won" | "lost" | "void">("all"), [cat, setCat] = useState("all");
+  // football apart from the other sports (basketball, American football, hockey, baseball…): the leagues played to a winner are the "two-way" ones
+  const keyOf = (b: MyBet) => (b.markets.category === "sport" ? (TWO_WAY_LEAGUES.includes(String(b.markets.params.league ?? "")) ? "othersport" : "football") : b.markets.category);
   const inTab = (status: string) => (tab === "open") === (status === "open");
-  const cats = [...new Set(bets.filter((b) => inTab(b.status)).map((b) => b.markets.category))];
+  const cats = [...new Set(bets.filter((b) => inTab(b.status)).map((b) => keyOf(b)))];
   const catNow = (cats as string[]).includes(cat) ? cat : "all";
-  const shown = bets.filter((b) => inTab(b.status) && (tab === "open" || st === "all" || b.status === st) && (catNow === "all" || b.markets.category === catNow));
+  const shown = bets.filter((b) => inTab(b.status) && (tab === "open" || st === "all" || b.status === st) && (catNow === "all" || keyOf(b) === catNow));
   const shownP = parlays.filter((x) => inTab(x.status) && (tab === "open" || st === "all" || x.status === st) && catNow === "all");
   const nOpen = bets.filter((b) => b.status === "open").length + parlays.filter((x) => x.status === "open").length;
   const nDone = bets.length + parlays.length - nOpen;
@@ -59,7 +62,7 @@ export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge
       </div>
       <div class="stack" style="gap:6px">
         {tab === "settled" && <div class="mkchips">{(["all", "won", "lost", "void"] as const).map((k) => <button key={k} class={`mkchip ${st === k ? "on" : ""}`} aria-pressed={st === k} onClick={() => setSt(k)}>{msg.hist[k]}</button>)}</div>}
-        {cats.length > 1 && <div class="mkchips"><button class={`mkchip ${catNow === "all" ? "on" : ""}`} aria-pressed={catNow === "all"} onClick={() => setCat("all")}>{msg.hist.all}</button>{cats.map((c) => <button key={c} class={`mkchip ${catNow === c ? "on" : ""}`} aria-pressed={catNow === c} onClick={() => setCat(c)}>{msg.tabs[c as keyof typeof msg.tabs] ?? c} · {bets.filter((b) => inTab(b.status) && b.markets.category === c).length}</button>)}</div>}
+        {cats.length > 1 && <div class="mkchips"><button class={`mkchip ${catNow === "all" ? "on" : ""}`} aria-pressed={catNow === "all"} onClick={() => setCat("all")}>{msg.hist.all}</button>{cats.map((c) => <button key={c} class={`mkchip ${catNow === c ? "on" : ""}`} aria-pressed={catNow === c} onClick={() => setCat(c)}>{msg.tabs[c as keyof typeof msg.tabs] ?? c} · {bets.filter((b) => inTab(b.status) && keyOf(b) === c).length}</button>)}</div>}
       </div>
       {tab === "open" && invites.length > 0 && <Collapse id="inbox" class="inbox" title={msg.frd.inboxTitle} count={invites.length}>
         {invites.map((c) => <button key={c.id} class="card pressable chrow invite" onClick={() => onChallenge(c.code)}><span class="byline">{msg.frd.inboxFrom(c.invited_by)} · {countdown(Math.max(0, Date.parse(c.closes_at) - now))}</span><b>{c.title}</b><span class="invopen">{msg.frd.inboxOpen}</span></button>)}
