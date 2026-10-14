@@ -61,7 +61,7 @@ Deno.serve(safe(async (req) => {
     if (p.stopId) trips.get(p.tripId)!.add(p.stopId);
   }
 
-  const seen = new Set<string>();
+  const seen = new Set<string>(), okRows: Record<string, unknown>[] = [], errRows: Record<string, unknown>[] = [];
   // Same rule as the resolve job: stay inside ~45 s so that runs never pile up. The cities are visited from a different one each minute, so no feed is always last.
   const t0 = Date.now(), allCities = await loadCities(), rot = allCities.length ? new Date().getUTCMinutes() % allCities.length : 0;
   // "?slice=a-b" (diagnosis only): visit just those cities, in list order, and stop after the feeds
@@ -98,16 +98,18 @@ Deno.serve(safe(async (req) => {
       while (rtCache.size > 2) rtCache.delete(rtCache.keys().next().value as string); // keep only the latest decoded feeds: the big ones add up inside one run
       try {
         const n = await ingestFeed(sb, city, feed, now, tracked.get(feed.id) ?? new Map(), rtCache);
-        await sb.from("feed_health").upsert({ feed_id: feed.id, last_ok_at: new Date().toISOString(), last_error: null });
+        okRows.push({ feed_id: feed.id, last_ok_at: new Date().toISOString(), last_error: null });
         report[feed.id] = `ok ${n} ${Date.now() - tf}ms`;
         if (feed.vehiclesUrl) report[`${feed.id}-vehicles`] = await ingestVehicles(sb, feed, now, trackedVeh.get(feed.id) ?? new Set()).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
       } catch (e) {
         const msg = String((e as Error).message ?? e).slice(0, 300);
-        await sb.from("feed_health").upsert({ feed_id: feed.id, last_error: msg, last_error_at: new Date().toISOString() });
+        errRows.push({ feed_id: feed.id, last_error: msg, last_error_at: new Date().toISOString() });
         report[feed.id] = `error: ${msg}`;
       }
     }
   }
+  // the outcome of every feed of this run is written in two requests (one for the good, one for the failed), not one request per feed: every request is a line in the project's logs
+  await Promise.all([okRows.length ? sb.from("feed_health").upsert(okRows) : null, errRows.length ? sb.from("feed_health").upsert(errRows) : null]);
   report["live-odds"] = await repriceDelays(sb).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["rain-odds"] = await repriceRain(sb).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   if (heavyRun) return Response.json(report);
