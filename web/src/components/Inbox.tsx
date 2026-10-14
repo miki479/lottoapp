@@ -5,23 +5,27 @@ import { sb } from "../lib/api.ts";
 import { loadMyProgress, type MyProgress } from "../lib/looks.ts";
 import type { Locale } from "../i18n/index.ts";
 import { Look } from "./looks/Look.tsx";
+import { CARDS } from "../../../shared/cards.ts";
+import { cardCaption, cardName } from "../lib/cardText.ts";
+import { Figurine } from "./Figurine.tsx";
+import { hubText } from "../lib/shopText.ts";
 import { moneySigned } from "../lib/num.ts";
 
 interface Option { credits?: number; boosts?: number; freezes?: number; card?: boolean }
 interface Gifts { credits?: number; boosts?: number; decoration?: string; choose?: Option[] }
 interface Msg { id: string; heading: string; body: string; gifts?: Gifts | null }
 
-const T: Record<string, { pick: string; freezes: (n: number) => string; card: string; go: string; boosts: (n: number) => string; deco: string; jokes: string[] }> = {
-  it: { pick: "Scegline uno solo", freezes: (n) => `+${n} congelamento`, card: "Una figurina a sorpresa", go: "Ritira il bottino", boosts: (n) => `+${n} boost`, deco: "Decorazione per l'avatar", jokes: ["Valore reale: zero. Valore morale: incalcolabile.", "Niente tasse sul bottino: lo stato non ci arriva.", "Spenderli tutti subito è il modo più sicuro per non perderli.", "Il treno sarà in ritardo lo stesso, ma almeno ora hai un cerchio dorato."] },
-  "en-US": { pick: "Pick just one", freezes: (n) => `+${n} streak freeze`, card: "A surprise card", go: "Collect the loot", boosts: (n) => `+${n} boosts`, deco: "Avatar decoration", jokes: ["Real value: zero. Moral value: priceless.", "No tax on this loot: the government can't reach it.", "Spend it all right away. It's the only safe way to keep it.", "The train will still be late, but now you have a shiny ring."] },
-  "en-GB": { pick: "Pick just one", freezes: (n) => `+${n} streak freeze`, card: "A surprise card", go: "Collect the loot", boosts: (n) => `+${n} boosts`, deco: "Avatar decoration", jokes: ["Real value: nil. Moral value: priceless.", "No tax on this loot: the taxman can't reach it.", "Spend it all at once. It's the only safe way to keep it.", "The train will still be late, but now you have a shiny ring."] },
-  ja: { pick: "ひとつだけ選んでください", freezes: (n) => `+${n} 連続記録フリーズ`, card: "サプライズカード", go: "戦利品を受け取る", boosts: (n) => `+${n} ブースト`, deco: "アバターのかざり", jokes: ["現実の価値はゼロ。精神的価値は計り知れません。", "このお宝に税金はかかりません。税務署も届きません。", "全部すぐ使うのが、一番安全に持っておく方法です。", "電車はやっぱり遅れますが、キラキラのリングが手に入りました。"] },
+const T: Record<string, { got: string; err: string; ok: string; pick: string; freezes: (n: number) => string; card: string; go: string; boosts: (n: number) => string; deco: string; jokes: string[] }> = {
+  it: { got: "Ecco il tuo regalo", err: "Qualcosa è andato storto: riprova.", ok: "Perfetto", pick: "Scegline uno solo", freezes: (n) => `+${n} congelamento`, card: "Una figurina a sorpresa", go: "Ritira il bottino", boosts: (n) => `+${n} boost`, deco: "Decorazione per l'avatar", jokes: ["Valore reale: zero. Valore morale: incalcolabile.", "Niente tasse sul bottino: lo stato non ci arriva.", "Spenderli tutti subito è il modo più sicuro per non perderli.", "Il treno sarà in ritardo lo stesso, ma almeno ora hai un cerchio dorato."] },
+  "en-US": { got: "Here is your gift", err: "Something went wrong: try again.", ok: "Great", pick: "Pick just one", freezes: (n) => `+${n} streak freeze`, card: "A surprise card", go: "Collect the loot", boosts: (n) => `+${n} boosts`, deco: "Avatar decoration", jokes: ["Real value: zero. Moral value: priceless.", "No tax on this loot: the government can't reach it.", "Spend it all right away. It's the only safe way to keep it.", "The train will still be late, but now you have a shiny ring."] },
+  "en-GB": { got: "Here is your gift", err: "Something went wrong: try again.", ok: "Great", pick: "Pick just one", freezes: (n) => `+${n} streak freeze`, card: "A surprise card", go: "Collect the loot", boosts: (n) => `+${n} boosts`, deco: "Avatar decoration", jokes: ["Real value: nil. Moral value: priceless.", "No tax on this loot: the taxman can't reach it.", "Spend it all at once. It's the only safe way to keep it.", "The train will still be late, but now you have a shiny ring."] },
+  ja: { got: "プレゼントはこちら", err: "うまくいきませんでした。もう一度お試しください。", ok: "OK", pick: "ひとつだけ選んでください", freezes: (n) => `+${n} 連続記録フリーズ`, card: "サプライズカード", go: "戦利品を受け取る", boosts: (n) => `+${n} ブースト`, deco: "アバターのかざり", jokes: ["現実の価値はゼロ。精神的価値は計り知れません。", "このお宝に税金はかかりません。税務署も届きません。", "全部すぐ使うのが、一番安全に持っておく方法です。", "電車はやっぱり遅れますが、キラキラのリングが手に入りました。"] },
 };
 
 /** A message from the team (also sent as a push). With gifts it opens as a reward screen at start; without, a card on top of Home. */
 export function Inbox({ registered, ok, locale }: { registered: boolean; ok: string; locale: Locale }) {
   const [list, setList] = useState<Msg[]>([]);
-  const [me, setMe] = useState<MyProgress | null>(null), [busy, setBusy] = useState(false);
+  const [me, setMe] = useState<MyProgress | null>(null), [busy, setBusy] = useState(false), [got, setGot] = useState<{ credits: number; boosts: number; freezes: number; card: string | null } | null>(null), [failed, setFailed] = useState(false);
   useEffect(() => { if (!registered) return; let live = true; sb.rpc("my_messages").then(({ data }) => { if (live) setList((data ?? []) as Msg[]); }); return () => { live = false; }; }, [registered]);
   const m = list[0];
   const gifted = !!m?.gifts && (m.gifts.credits || m.gifts.boosts || m.gifts.decoration || m.gifts.choose?.length);
@@ -37,8 +41,40 @@ export function Inbox({ registered, ok, locale }: { registered: boolean; ok: str
       </section>
     );
   }
-  const choose = (i: number) => { if (busy) return; setBusy(true); void sb.rpc("claim_message_choice", { p_id: m.id, p_index: i }).then(() => { setBusy(false); setList((l) => l.filter((x) => x.id !== m.id)); }); };
+  const choose = (i: number) => {
+    if (busy) return; setBusy(true); setFailed(false);
+    void sb.rpc("claim_message_choice", { p_id: m.id, p_index: i }).then(({ data, error }) => {
+      setBusy(false);
+      if (error || !data) { setFailed(true); return; }
+      setGot(data as { credits: number; boosts: number; freezes: number; card: string | null });
+    });
+  };
   const t = T[locale] ?? T["en-US"]!, g = m.gifts!;
+  // what was taken: shown before the screen closes, so the player sees the gift (the card itself when it was a card)
+  if (got) {
+    const card = got.card ? CARDS.find((c) => c.id === got.card) : undefined, a = hubText(locale).album;
+    return createPortal(
+      <div class="rwscrim" role="dialog" aria-modal="true" aria-label={t.got}>
+        <div class="rwcard">
+          <i class="rwsp s1" /><i class="rwsp s2" /><i class="rwsp s3" /><i class="rwsp s4" />
+          <h2>{t.got}</h2>
+          {card && <div class="stack" style="align-items:center;text-align:center">
+            <div class={`pkplace halo h-${card.rarity} shown`}><i class="pkhalo" aria-hidden="true" /><div class="rvcard"><Figurine card={card} name={cardName(card.n, locale)} numText={a.number(card.n)} owned big /></div></div>
+            <h3 class="pktitle">{cardName(card.n, locale)}</h3>
+            <p class="rvmeta"><span class={`rchip r-${card.rarity}`}>{a.rar[card.rarity]}</span><span>{a.number(card.n)} · {a.cats[card.cat]}</span></p>
+            <p class="rvcap">“{cardCaption(card.n, locale)}”</p>
+          </div>}
+          <div class="rwgifts">
+            {got.credits > 0 && <div class="rwgift"><span class="rwico coin"><Coins size={34} /></span><b>{moneySigned(got.credits, locale)}</b></div>}
+            {got.boosts > 0 && <div class="rwgift"><span class="rwico bolt"><Zap size={34} /></span><b>{t.boosts(got.boosts)}</b></div>}
+            {got.freezes > 0 && <div class="rwgift"><span class="rwico bolt"><Snowflake size={34} /></span><b>{t.freezes(got.freezes)}</b></div>}
+          </div>
+          <button class="btn primary wide" onClick={() => { setGot(null); setList((l) => l.filter((x) => x.id !== m.id)); }}>{t.ok}</button>
+        </div>
+      </div>,
+      document.body,
+    );
+  }
   const joke = t.jokes[[...m.id].reduce((a, c) => a + c.charCodeAt(0), 0) % t.jokes.length]!;
   // in the document body: inside the page the "screen" animation makes it the containing block of fixed children, so the card ended up far down the long page
   return createPortal(
@@ -58,6 +94,7 @@ export function Inbox({ registered, ok, locale }: { registered: boolean; ok: str
             {o.card ? <Gift size={20} aria-hidden="true" /> : o.freezes ? <Snowflake size={20} aria-hidden="true" /> : o.boosts ? <Zap size={20} aria-hidden="true" /> : <Coins size={20} aria-hidden="true" />}
             <span>{[o.credits ? moneySigned(o.credits, locale) : "", o.boosts ? t.boosts(o.boosts) : "", o.freezes ? t.freezes(o.freezes) : "", o.card ? t.card : ""].filter(Boolean).join(" · ")}</span></button>)}</div>
         </>}
+        {failed && <p class="rwbody" role="alert">{t.err}</p>}
         <p class="rwjoke">{joke}</p>
         {!g.choose?.length && <button class="btn primary wide" onClick={done}>{t.go}</button>}
       </div>
