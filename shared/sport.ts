@@ -54,12 +54,15 @@ export const LEAGUES: LeagueCfg[] = [
   { id: "4480", name: "Champions League", top: true, deep: true, euro: true }, { id: "4481", name: "Europa League", top: true, deep: true, euro: true }, { id: "5071", name: "Conference League", top: false, deep: true, euro: true },
   { id: "4328", name: "Premier League", top: true, deep: true }, { id: "4335", name: "La Liga", top: true, deep: true }, { id: "4331", name: "Bundesliga", top: true, deep: true }, { id: "4334", name: "Ligue 1", top: true, deep: true },
   { id: "4337", name: "Eredivisie", top: false, deep: true }, { id: "4344", name: "Primeira Liga", top: false, deep: true }, { id: "4330", name: "Scottish Premiership", top: false, deep: true },
+  // Japan: J1 League (football, the free listing of 3 matches a day) and the professional baseball league (NPB, played to a winner)
+  { id: "4633", name: "J1 League", top: false },
   // sd = spread of the final margin, home = home advantage in points, avg = points per team per game, lenSec = how long until the result is final
   { id: "4387", name: "NBA", top: true, two: { sd: 12, tsd: 18, home: 2.5, avg: 113, lenSec: 3 * 3600 } },
   { id: "4546", name: "EuroLeague", top: false, two: { sd: 11, tsd: 16, home: 3, avg: 82, lenSec: 3 * 3600 } },
   { id: "4380", name: "NHL", top: true, two: { sd: 2.3, tsd: 2.4, home: 0.25, avg: 3.1, lenSec: 3 * 3600 } },
   { id: "4391", name: "NFL", top: true, two: { sd: 13, tsd: 14, home: 2.3, avg: 22, lenSec: 4 * 3600 } },
   { id: "4424", name: "MLB", top: true, two: { sd: 4.4, tsd: 4.4, home: 0.3, avg: 4.5, lenSec: 4 * 3600 } },
+  { id: "4591", name: "NPB", top: false, two: { sd: 3.6, tsd: 3.8, home: 0.25, avg: 3.9, lenSec: 3.5 * 3600 } },
 ];
 export const TWO_WAY_LEAGUES: string[] = LEAGUES.filter((l) => l.two).map((l) => l.name);
 /** A UEFA fixture is only offered when both clubs have at least this many games of form (cup + domestic): never a price from nothing. */

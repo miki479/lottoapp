@@ -33,13 +33,13 @@ export function matchName(label: string, locale: Locale = numLocale()): string {
 }
 
 const LEAGUE: Record<Locale, Record<string, string>> = {
-  it: { "Scottish Premiership": "Premiership scozzese", "EuroLeague": "Eurolega", "Serie C - A": "Serie C · Girone A", "Serie C - B": "Serie C · Girone B", "Serie C - C": "Serie C · Girone C" },
-  "en-US": { "Serie C - A": "Serie C · Group A", "Serie C - B": "Serie C · Group B", "Serie C - C": "Serie C · Group C" },
-  "en-GB": { "Serie C - A": "Serie C · Group A", "Serie C - B": "Serie C · Group B", "Serie C - C": "Serie C · Group C" },
+  it: { "NPB": "Baseball giapponese (NPB)", "Scottish Premiership": "Premiership scozzese", "EuroLeague": "Eurolega", "Serie C - A": "Serie C · Girone A", "Serie C - B": "Serie C · Girone B", "Serie C - C": "Serie C · Girone C" },
+  "en-US": { "NPB": "Japan baseball (NPB)", "Serie C - A": "Serie C · Group A", "Serie C - B": "Serie C · Group B", "Serie C - C": "Serie C · Group C" },
+  "en-GB": { "NPB": "Japan baseball (NPB)", "Serie C - A": "Serie C · Group A", "Serie C - B": "Serie C · Group B", "Serie C - C": "Serie C · Group C" },
   ja: {
     "Champions League": "チャンピオンズリーグ", "Europa League": "ヨーロッパリーグ", "Conference League": "カンファレンスリーグ", "Premier League": "プレミアリーグ", "La Liga": "ラ・リーガ",
     "Bundesliga": "ブンデスリーガ", "Ligue 1": "リーグ・アン", "Eredivisie": "エールディビジ", "Primeira Liga": "プリメイラ・リーガ", "Scottish Premiership": "スコティッシュ・プレミアシップ",
-    "Serie A": "セリエA", "Serie B": "セリエB", "Serie C - A": "セリエC グループA", "Serie C - B": "セリエC グループB", "Serie C - C": "セリエC グループC", "EuroLeague": "ユーロリーグ",
+    "Serie A": "セリエA", "Serie B": "セリエB", "Serie C - A": "セリエC グループA", "Serie C - B": "セリエC グループB", "Serie C - C": "セリエC グループC", "EuroLeague": "ユーロリーグ", "J1 League": "J1リーグ", "NPB": "プロ野球(NPB)",
   },
 };
 export const leagueName = (name: string, locale: Locale = numLocale()): string => LEAGUE[locale][name] ?? name;

@@ -1,5 +1,7 @@
 import type { Messages } from "../i18n/index.ts";
 import type { MarketRow } from "../lib/format.ts";
+import { cityOf } from "../lib/cities.ts";
+import { SakuraScene } from "./SakuraScene.tsx";
 
 type Hint = "yes" | "no" | null | undefined;
 
@@ -9,6 +11,8 @@ type Hint = "yes" | "no" | null | undefined;
  */
 export function MetricScene({ m, hint, msg }: { m: MarketRow; hint: Hint; msg: Messages }) {
   const metric = String(m.params.metric) as "temp" | "wind" | "snow" | "uv" | "aqi" | "hail";
+  // a warm day in a Japanese city is the cherry-blossom picture
+  if (metric === "temp" && cityOf(m.city_id).country === "JP") return <SakuraScene m={m} hint={hint} msg={msg} />;
   const f = m.params.forecast;
   const cap = `${msg.wx.names[metric]}${typeof f === "number" && metric !== "snow" && metric !== "hail" ? ` · ${msg.wx.forecast(`${f}${String(m.params.unit ?? "")}`)}` : ""}`;
   return (
