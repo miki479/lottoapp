@@ -3,7 +3,7 @@ import type { ComponentChildren } from "preact";
 import { useEffect, useRef } from "preact/hooks";
 import { clip } from "../lib/format.ts";
 
-export interface TopItem { cls?: string; mid?: string; id: string; icon: LucideIcon; label: string; big: ComponentChildren; sub: string; extra?: ComponentChildren; onClick: () => void }
+export interface TopItem { cls?: string; mid?: string; id: string; icon: LucideIcon; label: string; big: ComponentChildren; sub: string; extra?: ComponentChildren; mini?: ComponentChildren; node?: ComponentChildren; onClick: () => void }
 
 /** Pixels per frame of the slow drift (about 20 px a second) and how long the row waits after a touch before it moves again. */
 const DRIFT = 0.34, IDLE_MS = 5000;
@@ -43,9 +43,12 @@ export function TopCards({ items }: { items: TopItem[] }) {
       {copy ? <span class="top-dup" aria-hidden="true" /> : null}
       {items.map((it, i) => {
         const Icon = it.icon;
+        // a card that holds its own content (the small train board) is a box, not one big button: its rows are the buttons
+        if (it.node) return <div key={(copy ? "d" : "") + it.id} inert={copy || undefined} aria-hidden={copy ? "true" : undefined} class={`card topcard boardcard c${i % 4}`} style={copy ? undefined : `animation: rise var(--dur) var(--ease) ${i * 40}ms both`}>{it.node}</div>;
         return (
           <button key={(copy ? "d" : "") + it.id} tabIndex={copy ? -1 : undefined} aria-hidden={copy ? "true" : undefined} class={`card pressable topcard c${i % 4} ${it.cls ?? ""}`} style={copy ? undefined : `animation: rise var(--dur) var(--ease) ${i * 40}ms both`} onClick={it.onClick}>
             <span class="head"><Icon size={16} /><span class="detail">{it.label}</span></span>
+            {it.mini}
             <span class="big">{it.big}</span>
             {it.extra}
             <span class="sub">{clip(it.sub, 96)}</span>

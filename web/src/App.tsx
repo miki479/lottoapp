@@ -1,4 +1,4 @@
-import { Activity, Bitcoin, Clapperboard, Clock, CloudLightning, Gamepad2, MapPin, Trophy, TrendingUp, Users, Zap } from "lucide-preact";
+import { Activity, Bitcoin, Clapperboard, Clock, CloudLightning, Gamepad2, MapPin, Trophy, TrendingUp, Train, Users, Zap } from "lucide-preact";
 import { RING_BONUS, STREAK_MILESTONES } from "../../shared/rewards.ts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { AuthSheet } from "./components/AuthSheet.tsx";
@@ -8,7 +8,8 @@ import { OFFER_EVENT, offerErrorText, type OfferUse } from "./components/Persona
 import type { CatId } from "./components/CatChips.tsx";
 import { DelayMeter } from "./components/DelayMeter.tsx";
 import { OfflineBar } from "./components/OfflineBar.tsx";
-import { shortStation } from "./components/TrainBoard.tsx";
+import { shortStation, TrainBoard } from "./components/TrainBoard.tsx";
+import { MiniLive } from "./components/MiniLive.tsx";
 import { Ticker } from "./components/Ticker.tsx";
 import { ParlayBar } from "./components/ParlayBar.tsx";
 import { ParlaySheet, slipOdds } from "./components/ParlaySheet.tsx";
@@ -475,10 +476,13 @@ export function App() {
     if (soon) items.push({ mid: soon.id, id: "soon", icon: Clock, label: msg.top.closing, big: <span class="num">{countdown(Date.parse(soon.closes_at) - now)}</span>, sub: question(soon, msg, locale, cityName(cityOf(soon.city_id), locale), cityOf(soon.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: soon, pick: "no" }) });
     // Not everything at once: what matters now stays (friends, trend, flash, the most delayed), the rest rotates every few hours, five cards at most.
     const seenM = new Set<string>(); const uniq = items.filter((x) => { if (!x.mid) return true; if (seenM.has(x.mid)) return false; seenM.add(x.mid); return true; }); items.length = 0; items.push(...uniq);
-    const PIN = ["trend", "flash", "late"], pinned = items.filter((x) => PIN.includes(x.id)).sort((x, y) => PIN.indexOf(x.id) - PIN.indexOf(y.id)).slice(0, 3);
+    // a small train board for whoever wants to jump from another category to a train (to bet or to watch its delay live)
+    if (isItalian && byCat("train").some((m) => live[m.id] && !live[m.id]!.is_forecast)) items.push({ id: "board", icon: Train, label: "", big: null, sub: "", node: <TrainBoard variant="strip" markets={open} live={live} msg={msg} locale={locale} now={now} onPick={(m, pick) => setSheet({ m, pick })} onRefresh={() => setLiveTick((n) => n + 1)} />, onClick: () => {} });
+    const PIN = ["trend", "flash", "board", "late"], pinned = items.filter((x) => PIN.includes(x.id)).sort((x, y) => PIN.indexOf(x.id) - PIN.indexOf(y.id)).slice(0, 4);
     const seed = Math.floor(now / (3 * 3600_000)), h = (id: string) => { let n = seed; for (let i = 0; i < id.length; i++) n = (n * 31 + id.charCodeAt(i)) >>> 0; return n; };
     const rest = items.filter((x) => !PIN.includes(x.id) || !pinned.includes(x)).sort((x, y) => h(x.id) - h(y.id));
-    return [...pinned, ...rest].slice(0, 5);
+    // each card with a question gets its small live chart under the title
+    return [...pinned, ...rest].slice(0, 5).map((it) => { const mk = it.mid && it.id !== "late" ? open.find((x) => x.id === it.mid) : undefined; return mk ? { ...it, mini: <MiniLive m={mk} live={live[mk.id]} now={now} locale={locale} msg={msg} /> } : it; });
   }, [inFilter, live, popular, trendRows, locale, Math.floor(now / 1000)]);
 
   const flashId = open.find((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now)?.id;

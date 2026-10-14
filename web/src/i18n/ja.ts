@@ -43,7 +43,7 @@ const ja: Messages = {
   weather: { clear: "晴れ", light: "小雨", heavy: "大雨" },
   near: { title: "近くの人気", ask: "あなたの近くで、みんなが何を予想しているか見てみましょう。", privacy: "位置情報は端末の中だけで使われ、サーバーに送られるのは最寄りの都市名だけです。", locate: "現在地を使う", denied: "位置情報を取得できません。「他の都市」から選べます。", zone: (n) => `エリア：${n}`, bets: (n) => `${n}件の予想`, first: "今日はまだ誰も予想していません。近くのイベントはこちら。", nothing: "このエリアで開催中のイベントはありません。", refresh: "更新" },
   places: { more: "他の都市", title: "都市の天気", hint: "好きな都市や町を検索すると、雨の予想がすぐに開きます。", search: "都市を検索…", recent: "最近の都市", capitals: "イタリアの州都", famous: "世界の有名都市", withData: "バス・電車・天気あり", none: "見つかりません。名前を最後まで入力してください。", searchError: "今は検索できません。もう一度お試しください。", limit: "今日は新しい都市をすでに5つ追加しました。明日また試すか、既存の都市を選んでください。", full: "現在アクティブな都市が多すぎます。既存の都市を選んでください。", credit: "都市検索：Open-Meteo.com（CC BY 4.0）。今のところ天気のみ。" },
-  top: { best: "ベストオッズ", draw: "引き分け!?", goal: "ゴールのオッズ", upset: "番狂わせ？", coin: "コイントス", spotlight: "注目", wild: "どんでん返し", sky: "空に注目", late: "いま最も遅れている", popular: "一番人気", city: "最も遅れている都市", closing: "まもなく締切", avg: (m) => `平均遅延${m}分`, players: (n) => `${n}件の予想`, ontime: "定刻", open: "開く" },
+  top: { prob: "確率", best: "ベストオッズ", draw: "引き分け!?", goal: "ゴールのオッズ", upset: "番狂わせ？", coin: "コイントス", spotlight: "注目", wild: "どんでん返し", sky: "空に注目", late: "いま最も遅れている", popular: "一番人気", city: "最も遅れている都市", closing: "まもなく締切", avg: (m) => `平均遅延${m}分`, players: (n) => `${n}件の予想`, ontime: "定刻", open: "開く" },
   card: { noLive: "ライブ情報はまだありません。運行が始まると表示されます", late: "遅れる", onTime: "定刻", stakeTo: (s, w) => `賭け金 ${s} → ${w}`, closes: "締切", forecast: "予測", live: "ライブ", yes: "はい", no: "いいえ", topOdds: "高オッズ", hot: "まもなく締切" },
   alertNames: { yellow: "黄色", orange: "オレンジ", red: "赤" },
   alertHazards: { idraulica: "河川増水警報", idrogeologica: "土砂災害警報", temporali: "雷雨警報" },

@@ -66,7 +66,7 @@ export interface Messages {
   weather: { clear: string; light: string; heavy: string };
   near: { title: string; ask: string; privacy: string; locate: string; denied: string; zone: (name: string) => string; bets: (n: number) => string; first: string; nothing: string; refresh: string };
   places: { more: string; title: string; hint: string; search: string; recent: string; capitals: string; famous: string; withData: string; none: string; searchError: string; limit: string; full: string; credit: string };
-  top: { best: string; late: string; popular: string; city: string; closing: string; draw: string; goal: string; upset: string; coin: string; spotlight: string; wild: string; sky: string; avg: (min: number) => string; players: (n: number) => string; ontime: string; open: string };
+  top: { prob: string; best: string; late: string; popular: string; city: string; closing: string; draw: string; goal: string; upset: string; coin: string; spotlight: string; wild: string; sky: string; avg: (min: number) => string; players: (n: number) => string; ontime: string; open: string };
   card: { noLive: string; late: string; onTime: string; stakeTo: (stake: string, win: string) => string; closes: string; forecast: string; live: string; yes: string; no: string; topOdds: string; hot: string };
   alertNames: { yellow: string; orange: string; red: string };
   alertHazards: { idraulica: string; idrogeologica: string; temporali: string };
