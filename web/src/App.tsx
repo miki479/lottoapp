@@ -10,6 +10,7 @@ import { DelayMeter } from "./components/DelayMeter.tsx";
 import { OfflineBar } from "./components/OfflineBar.tsx";
 import { shortStation, TrainBoard } from "./components/TrainBoard.tsx";
 import { MiniLive } from "./components/MiniLive.tsx";
+import { getSnapshot } from "./lib/snapshot.ts";
 import { Ticker } from "./components/Ticker.tsx";
 import { ParlayBar } from "./components/ParlayBar.tsx";
 import { ParlaySheet, slipOdds } from "./components/ParlaySheet.tsx";
@@ -280,6 +281,41 @@ export function App() {
     const cc = envRef.current.near?.country ?? envRef.current.profile?.country ?? region();
     const ownIds = CITIES.filter((c) => c.country === cc && !c.region).map((c) => c.id);
     const nationalIds = [...NATIONAL].filter((id) => CITIES.find((c) => c.id === id)?.country === cc);
+    const trendTail = async () => {
+    try {
+      const env = envRef.current;
+      const nearIds = CITIES.filter((c) => c.country === (env.near?.country ?? env.profile?.country ?? region())).map((c) => c.id);
+      const here = env.near?.id ?? (env.filter !== "world" && env.filter !== "mine" && !isRegionFilter(env.filter) ? env.filter : null);
+      const { data: tr } = await sb.rpc("trending_markets", { p_place: here, p_near: nearIds, p_limit: 6 });
+      const ids = ((tr ?? []) as { market_id: string; bettors: number | string }[]);
+      if (ids.length) {
+        const { data: rows } = await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").in("id", ids.map((x) => x.market_id));
+        const by = new Map(((rows ?? []) as unknown as MarketRow[]).map((r) => [r.id, r]));
+        setTrendRows(ids.flatMap((x) => { const mk = by.get(x.market_id); return mk ? [{ m: mk, bettors: +x.bettors, near: !!here && (mk.city_id === here || nearIds.includes(mk.city_id)) }] : []; }));
+      } else setTrendRows([]);
+    } catch { /* trending is optional */ }
+    };
+    // The usual way: one picture of the open questions and the public aggregates, made once a minute on the server and handed out by the CDN. Only what is personal
+    // (the places this player added) is asked of the database. If the picture is missing or old, everything below runs as it always did.
+    const snap = await getSnapshot(import.meta.env.VITE_SUPABASE_URL as string);
+    if (snap) {
+      const isPlace = !!f0 && f0 !== "world" && f0 !== "mine" && !isRegionFilter(f0) && !CITIES.some((c) => c.id === f0);
+      const [mineS, hereS] = await Promise.all([
+        placeIds.current.length ? open().in("city_id", placeIds.current).order("closes_at").limit(160) : none,
+        isPlace && !placeIds.current.includes(f0!) ? open().in("city_id", [f0!]).order("closes_at").limit(400) : none,
+      ]);
+      if (seq !== mkSeq.current) return;
+      const seenS = new Set<string>(), allS: MarketRow[] = [];
+      for (const x of [...snap.markets, ...((mineS.data ?? []) as MarketRow[]), ...((hereS.data ?? []) as MarketRow[])]) if (!seenS.has(x.id)) { seenS.add(x.id); allS.push(x); }
+      setMarkets(allS); try { localStorage.setItem("mk1", JSON.stringify({ t: Date.now(), rows: allS.slice(0, 250) })); } catch { /* storage full or unavailable */ }
+      if (navigator.onLine) setOffline(false);
+      const nowS = Date.now();
+      setDetailsOn(snap.health.some((r) => r.feed_id === "apifootball" && !!r.last_ok_at && nowS - Date.parse(r.last_ok_at) < 8 * 3600_000));
+      setStaleCats([...new Set(snap.health.flatMap((r) => { const f = CITIES.flatMap((c) => c.feeds).find((x) => x.id === r.feed_id); return f && f.category !== "weather" && f.licenseVerified && !!r.last_ok_at && nowS - Date.parse(r.last_ok_at) > f.staleAfterSeconds * 1000 && allS.some((m) => m.category === f.category) ? [f.category as string] : []; }))]);
+      setPopular((snap.popular as PopularRow[]).map((x) => ({ ...x, bets: +x.bets })));
+      await trendTail();
+      return;
+    }
     const [first, mineR, farR, houseR, hereR, ownR, capR] = await Promise.all([
       open().not("city_id", "like", "p-%").order("closes_at").limit(300),
       // Markets of the towns this player picked are loaded separately so a long list of places never crowds out the real cities.
@@ -304,23 +340,13 @@ export function App() {
     setDetailsOn((h ?? []).some((r) => r.feed_id === "apifootball" && !!r.last_ok_at && nowMs - Date.parse(r.last_ok_at) < 8 * 3600_000));
     setStaleCats([...new Set((h ?? []).flatMap((r) => { const f = CITIES.flatMap((c) => c.feeds).find((x) => x.id === r.feed_id); return f && f.category !== "weather" && f.licenseVerified && !!r.last_ok_at && nowMs - Date.parse(r.last_ok_at) > f.staleAfterSeconds * 1000 && (data ?? []).some((m) => m.category === f.category) ? [f.category as string] : []; }))]);
     const { data: pop } = await sb.rpc("popular_markets", { p_limit: 5 }); setPopular(((pop ?? []) as PopularRow[]).map((x) => ({ ...x, bets: +x.bets })));
-    try {
-      const env = envRef.current;
-      const nearIds = CITIES.filter((c) => c.country === (env.near?.country ?? env.profile?.country ?? region())).map((c) => c.id);
-      const here = env.near?.id ?? (env.filter !== "world" && env.filter !== "mine" && !isRegionFilter(env.filter) ? env.filter : null);
-      const { data: tr } = await sb.rpc("trending_markets", { p_place: here, p_near: nearIds, p_limit: 6 });
-      const ids = ((tr ?? []) as { market_id: string; bettors: number | string }[]);
-      if (ids.length) {
-        const { data: rows } = await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").in("id", ids.map((x) => x.market_id));
-        const by = new Map(((rows ?? []) as unknown as MarketRow[]).map((r) => [r.id, r]));
-        setTrendRows(ids.flatMap((x) => { const mk = by.get(x.market_id); return mk ? [{ m: mk, bettors: +x.bettors, near: !!here && (mk.city_id === here || nearIds.includes(mk.city_id)) }] : []; }));
-      } else setTrendRows([]);
-    } catch { /* trending is optional */ }
+    await trendTail();
   }, []);
-  const loadActivity = useCallback(async () => { const { data } = await sb.rpc("activity_feed", { p_limit: 12 }); setActivity(((data ?? []) as ActivityRow[]).map((r) => ({ ...r, amount: +r.amount }))); }, []);
+  const loadActivity = useCallback(async () => { const snap = await getSnapshot(import.meta.env.VITE_SUPABASE_URL as string); const { data } = snap ? { data: snap.activity } : await sb.rpc("activity_feed", { p_limit: 12 }); setActivity(((data ?? []) as ActivityRow[]).map((r) => ({ ...r, amount: +r.amount }))); }, []);
   /** The four towns people bet on most (public aggregate), skipping the ones that already have a permanent chip. */
   const loadTrending = useCallback(async () => {
-    const { data } = await sb.rpc("trending_places", { p_limit: 12 });
+    const snap = await getSnapshot(import.meta.env.VITE_SUPABASE_URL as string);
+    const { data } = snap ? { data: snap.places } : await sb.rpc("trending_places", { p_limit: 12 });
     const out: Trend[] = [];
     for (const r of (data ?? []) as { city_id: string; name: string | null; country: string | null; lat: number | null; lon: number | null; timezone: string | null }[]) {
       if (FEATURED_CITY_IDS.includes(r.city_id) || FEATURED_PLACES.some((f) => f.id === r.city_id)) continue;
@@ -331,7 +357,7 @@ export function App() {
     }
     setTrending(out);
   }, [locale]);
-  const loadResults = useCallback(async () => { const { data } = await sb.from("markets").select("id,city_id,kind,status,outcome,void_reason,params,evidence,target_at").neq("status", "open").order("target_at", { ascending: false }).limit(12); setResults((data ?? []) as ResultRow[]); }, []);
+  const loadResults = useCallback(async () => { const snap = await getSnapshot(import.meta.env.VITE_SUPABASE_URL as string); const { data } = snap ? { data: snap.results } : await sb.from("markets").select("id,city_id,kind,status,outcome,void_reason,params,evidence,target_at").neq("status", "open").order("target_at", { ascending: false }).limit(12); setResults((data ?? []) as ResultRow[]); }, []);
   /** A friend-challenge link (?c=<code>) opens that challenge. */
   useEffect(() => {
     const c = new URLSearchParams(location.search).get("c");
@@ -370,6 +396,7 @@ export function App() {
       if (!data) return;
       setSheet((sh) => (sh && sh.m.id === data.id && (String(sh.m.odds_yes) !== String(data.odds_yes) || String(sh.m.odds_no) !== String(data.odds_no)) ? { ...sh, m: { ...sh.m, odds_yes: data.odds_yes, odds_no: data.odds_no } } : sh));
     }, () => {});
+    go();
     return every(go, 15_000);
   }, [sheetId]);
   useEffect(() => {
@@ -591,7 +618,12 @@ export function App() {
     const before = { bonus: progress?.bonus_claimed ?? false, trophies: new Set(trophies), streak: profile?.streak ?? 0 };
     const baseOdds = Number(pick === "yes" ? m.odds_yes : m.odds_no), betOdds = offerId && sheet?.offer ? offerOdds(baseOdds, sheet.offer.mult) : baseOdds;
     const { error } = await sb.rpc("place_bet", { p_market: m.id, p_pick: pick, p_stake: stake, p_boost: boost, ...(bonus ? { p_bonus: bonus } : {}), ...(vice ? { p_vice: true } : {}), ...(offerId ? { p_offer: offerId } : { p_odds: baseOdds }) });
-    if (error?.message.includes("odds_changed")) await loadMarkets();
+    if (error?.message.includes("odds_changed")) {
+      // the lists come from a picture up to a minute and a half old: the real price of this one question is asked of the database itself
+      const { data: fresh } = await sb.from("markets").select("id,odds_yes,odds_no").eq("id", m.id).maybeSingle();
+      if (fresh) setSheet((sh) => (sh && sh.m.id === m.id ? { ...sh, m: { ...sh.m, odds_yes: fresh.odds_yes, odds_no: fresh.odds_no } } : sh));
+      void loadMarkets();
+    }
     if (error) return (offerId ? offerErrorText(error.message, locale) : null) ?? msg.errors[Object.keys(msg.errors).find((k) => error.message.includes(k)) ?? "generic"]!;
     setSheet(null);
     if (offerId) dispatchEvent(new Event(OFFER_EVENT));

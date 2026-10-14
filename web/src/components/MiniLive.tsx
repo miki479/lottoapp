@@ -24,6 +24,21 @@ function Spark({ pts, thr, tone }: { pts: number[]; thr?: number; tone: "up" | "
   );
 }
 
+// Several cards (and the copy of the row that loops) ask about the same question: one request each ten minutes to follow it, one each 100 seconds for its history.
+const followed = new Map<string, number>(), histories = new Map<string, { at: number; p: PromiseLike<number[] | null> }>();
+function followOnce(id: string) {
+  if (Date.now() - (followed.get(id) ?? 0) < 600_000) return;
+  followed.set(id, Date.now());
+  sb.rpc("track_markets", { p_ids: [id] }).then(() => {}, () => {});
+}
+function history(id: string): PromiseLike<number[] | null> {
+  const hit = histories.get(id);
+  if (hit && Date.now() - hit.at < 100_000) return hit.p;
+  const p = sb.from("market_odds_history").select("p_yes").eq("market_id", id).order("at", { ascending: false }).limit(60).then(({ data }: { data: { p_yes: number }[] | null }) => (data ? data.map((r) => Number(r.p_yes)).reverse() : null), () => null);
+  histories.set(id, { at: Date.now(), p });
+  return p;
+}
+
 const nf = (locale: Locale, max = 2) => new Intl.NumberFormat(INTL_TAG[locale], { maximumFractionDigits: max, notation: "compact" });
 
 /**
@@ -60,8 +75,8 @@ export function MiniLive({ m, live, now, locale, msg }: { m: MarketRow; live?: L
   useEffect(() => {
     if (isTick) return;
     let alive = true;
-    sb.rpc("track_markets", { p_ids: [m.id] }).then(() => {}, () => {});
-    const go = () => sb.from("market_odds_history").select("p_yes").eq("market_id", m.id).order("at", { ascending: false }).limit(60).then(({ data }: { data: { p_yes: number }[] | null }) => { if (alive && data) setSrv(data.map((r) => Number(r.p_yes)).reverse()); });
+    followOnce(m.id);
+    const go = () => history(m.id).then((v) => { if (alive && v) setSrv(v); });
     const t0 = setTimeout(go, 1500), t = setInterval(go, 120_000);
     return () => { alive = false; clearTimeout(t0); clearInterval(t); };
   }, [m.id, isTick]);
