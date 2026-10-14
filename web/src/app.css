@@ -1663,3 +1663,4 @@ textarea.field { resize: vertical; min-height: 84px; }
 .topcard.boardcard .ledrow:nth-child(n+4) { display: none; }
 .topcard.boardcard .ledmain { min-height: 40px; gap: 6px; }
 .topcard.boardcard .leddest { font-size: var(--fs-xs); overflow-wrap: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meter .cells em.lo span { left: 0; transform: translateX(-6px); }
