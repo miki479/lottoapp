@@ -292,6 +292,16 @@ const BROADCAST = {
     },
     url: "https://latelotto.web.app/",
   },
+  // a plain push with no gift: set app_settings broadcast_pending = 'bomb_v2'
+  bomb_v2: {
+    headings: { en: "💣 Don't look under the bed. Look at the app.", it: "💣 Non guardare sotto il letto. Guarda l'app.", ja: "💣 ベッドの下は見ないで。アプリを見て。" },
+    contents: {
+      en: "We planted a bomb. Relax: it is full of odds and late buses, so the real danger is how much time you will lose in there. Come in, or next time your bus will be on time, and you will wish you had never found out.",
+      it: "Abbiamo piazzato una bomba. Tranquillo: è piena di quote e di bus in ritardo, quindi il vero pericolo è quanto tempo ci perderai dentro. Entra, o la prossima volta il tuo bus sarà puntuale e vorresti non averlo mai scoperto.",
+      ja: "爆弾を仕掛けました。ご安心を。中身はオッズと遅れたバスだけなので、本当の危険は、そこでどれだけ時間を失うかです。入ってください。さもないと次はあなたのバスが定刻通りに来て、知らなければよかったと思うことになります。",
+    },
+    url: "https://latelotto.web.app/",
+  },
   // ready for the day the frisbee questions go live: set app_settings broadcast_pending = 'frisbee_v1'
   frisbee_v1: {
     headings: { en: "Frisbee has landed 🥏", it: "È arrivato il frisbee 🥏", ja: "フリスビーが登場 🥏" },
