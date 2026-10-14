@@ -411,16 +411,14 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .ticker { overflow: hidden; border-bottom: 1px solid var(--border); background: linear-gradient(90deg, color-mix(in srgb, var(--star) 14%, var(--surface)), var(--surface) 40%); height: 36px; display: flex; align-items: center; position: relative; z-index: 4; }
 .ticker::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 34px; z-index: 2; background: linear-gradient(90deg, var(--surface) 55%, transparent); pointer-events: none; }
 .ticker::after { content: ""; position: absolute; inset: 0 0 0 auto; width: 24px; z-index: 2; background: linear-gradient(270deg, var(--surface), transparent); pointer-events: none; }
-.ticker .tkdot { display: block; box-sizing: border-box; min-width: 0; position: absolute; left: 12px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--live); z-index: 3; animation: tickpulse 1.4s ease-out infinite; }
-@keyframes tickpulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 70%, transparent); } 100% { box-shadow: 0 0 0 9px transparent; } }
-.ticker .track { display: flex; width: max-content; padding-left: 28px; animation: tick linear infinite; }
+.ticker .track { display: flex; width: max-content; animation: tick linear infinite; }
 .ticker:hover .track, .ticker:active .track { animation-play-state: paused; }
 .ticker .tk { display: inline-flex; align-items: center; gap: 6px; padding: 0 22px; font-size: var(--fs-sm); color: var(--text-2); white-space: nowrap; flex: 0 0 auto; }
 .ticker .tk > * { flex: 0 0 auto; white-space: nowrap; }
 .ticker .tk b { color: var(--text); } .ticker .tk::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--star); margin-left: 22px; opacity: .8; }
 .ticker .amt { font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; } .ticker .amt.won { color: var(--gain); } .ticker .amt.lost { color: var(--loss); } .ticker .amt.placed { color: var(--c-pop); }
 @keyframes tick { to { transform: translateX(-50%); } }
-@media (prefers-reduced-motion: reduce) { .scene .puff { display: none; } .scene .rider { animation: none; opacity: 1; left: calc((100% - var(--w)) * var(--p)); } .scene .done { transition: none; } .meter .cells em, .meter .cells u.sweep { animation: none !important; } .ticker { overflow-x: auto; } .ticker .track { animation: none !important; } .ticker .tkdot { animation: none; } .meter .cells i.on { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .scene .puff { display: none; } .scene .rider { animation: none; opacity: 1; left: calc((100% - var(--w)) * var(--p)); } .scene .done { transition: none; } .meter .cells em, .meter .cells u.sweep { animation: none !important; } .ticker { overflow-x: auto; } .ticker .track { animation: none !important; } .meter .cells i.on { animation: none !important; } }
 
 /* ==========================================================================
    Stake control (glowing number + slider), parlay, join form, referral, voice
