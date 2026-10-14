@@ -109,7 +109,7 @@ const ja: Messages = {
     voidReason: { cancelled: "運休のため、予想は返金されました。", feed_down: "データ配信が止まっていました。当て推量で判定することはありません。", no_observation: "この便の有効なデータがありませんでした。", implausible_data: "データが信頼できませんでした。" },
   },
   result: {
-    won: "的中", lost: "外れ", void: "返金",     subWon: "予想的中です。", subLost: "今回はデータが違いました。", subVoid: "データが信頼できなかったため、賭け額を全額お返ししました。",
+    balance: "残高", won: "的中", lost: "外れ", void: "返金",     subWon: "予想的中です。", subLost: "今回はデータが違いました。", subVoid: "データが信頼できなかったため、賭け額を全額お返ししました。",
     fullMeasured: (l) => `バスの状況：${l}`,
     measured: (m, s) => (m > 0 ? `実測の遅延：${m}分${s}秒` : `実測の遅延：${s}秒`), threshold: (m) => `しきい値：${m}分超`, rainMeasured: (mm) => `実測の降水量：${mm} mm`, matchScore: (h, a) => `最終スコア：${h}–${a}`, tickMeasured: (v) => `実測値：${v}`, trafficMeasured: (a, t) => `実測の平均速度：${a} km/h（しきい値 ${t}）`, strikeOn: "ストライキは予定通り", strikeOff: "ストライキは中止または延期", metricMeasured: (n, v) => `${n}の実測値：${v}`, quakeMeasured: (c, m) => (c === 0 ? "その時間帯に地震はありませんでした" : `地震${c}回、最大${m}`),
     stake: "賭け額", odds: "オッズ", share: "結果をシェア", shareText: "LateBetでの私の結果", close: "閉じる", more: (n) => `他に${n}件の結果`, saved: "画像を保存しました",

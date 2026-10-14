@@ -35,6 +35,7 @@ import { pickCity, pickLocale } from "./lib/detect.ts";
 import { every } from "./lib/poll.ts";
 import { computeOdds } from "../../shared/odds.ts";
 import { fmtInt, fmtMult, fmtTimes, moneySigned, setNumLocale } from "./lib/num.ts";
+import { balanceMove } from "./lib/stake.ts";
 import { pickFeed, type FeedItem } from "./lib/feed.ts";
 import { countdown, setDayUnit, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
@@ -751,7 +752,7 @@ export function App() {
       {lookOpen && look && <LookSheet progress={look} msg={msg} myId={profile?.id ?? ""} onClose={() => setLookOpen(false)} onSaved={(p) => { setLook(p); flash(msg.look.saved); }} />}
       {pubUser && <PublicProfile id={pubUser} msg={msg} locale={locale} onClose={() => { setPubUser(null); loadReqs(); setReqTick((n) => n + 1); }} onToast={flash} />}
       {nick && <NicknameSheet msg={msg} current={profile?.display_name ?? null} onClose={() => setNick(false)} onSaved={(n) => { setNick(false); loadProfile(); loadQuests(); flash(n); }} />}
-      {resultBet && <ResultScreen bet={resultBet} msg={msg} locale={locale} remaining={Math.max(0, unseen.filter((b) => b.id !== resultBet.id).length)} onClose={closeResult} onShare={shareResult} onNext={() => { markSeen(resultBet.id); const next = unseen.find((b) => b.id !== resultBet.id); setResultBet(next ?? null); }} />}
+      {resultBet && <ResultScreen bet={resultBet} msg={msg} locale={locale} balance={profile ? balanceMove(unseen, resultBet, profile.credits) : null} remaining={Math.max(0, unseen.filter((b) => b.id !== resultBet.id).length)} onClose={closeResult} onShare={shareResult} onNext={() => { markSeen(resultBet.id); const next = unseen.find((b) => b.id !== resultBet.id); setResultBet(next ?? null); }} />}
       {toast && <Toast text={toast.text} kind={toast.kind} lift={slip.length > 0} />}
     </div>
   );

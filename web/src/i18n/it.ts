@@ -109,7 +109,7 @@ const it: Messages = {
     voidReason: { cancelled: "Corsa soppressa: puntata rimborsata.", feed_down: "Il feed dei dati era giù: non risolviamo mai a caso.", no_observation: "Nessun dato valido per questa corsa.", implausible_data: "Il dato non era credibile." },
   },
   result: {
-    won: "Vinta", lost: "Persa", void: "Rimborsata",     subWon: "Hai azzeccato la previsione.", subLost: "Stavolta il dato ha detto altro.", subVoid: "I dati non erano affidabili: puntata restituita per intero.",
+    balance: "Saldo", won: "Vinta", lost: "Persa", void: "Rimborsata",     subWon: "Hai azzeccato la previsione.", subLost: "Stavolta il dato ha detto altro.", subVoid: "I dati non erano affidabili: puntata restituita per intero.",
     fullMeasured: (l) => `Il bus era: ${l}`,
     measured: (m, s) => (m > 0 ? `Ritardo misurato: ${m} min ${s} s` : `Ritardo misurato: ${s} s`), threshold: (m) => `Soglia: oltre ${m} min`, matchScore: (h, a) => `Risultato: ${h}–${a}`, tickMeasured: (v) => `Valore misurato: ${v}`, trafficMeasured: (a, t) => `Velocità media misurata: ${a} km/h (soglia ${t})`, strikeOn: "Sciopero ancora in programma", strikeOff: "Sciopero revocato o spostato", metricMeasured: (n, v) => `${n} misurato: ${v}`, quakeMeasured: (c, m) => (c === 0 ? "Nessun terremoto in quell'intervallo" : `${c} ${c === 1 ? "terremoto" : "terremoti"}, il più forte ${m}`), rainMeasured: (mm) => `Pioggia misurata: ${mm} mm`,
     stake: "Puntata", odds: "Quota", share: "Condividi risultato", shareText: "Il mio risultato su LateBet", close: "Chiudi", more: (n) => `Altri ${n} esiti da vedere`, saved: "Immagine salvata",

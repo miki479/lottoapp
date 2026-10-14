@@ -1,7 +1,8 @@
 import { MarketVs, reasonOf } from "./MatchVs.tsx";
 import { Q } from "./Q.tsx";
-import { Check, RotateCcw, Share2, X } from "lucide-preact";
-import { useEffect } from "preact/hooks";
+import { ArrowRight, Check, RotateCcw, Share2, TrendingDown, X } from "lucide-preact";
+import { useEffect, useState } from "preact/hooks";
+import { reducedMotion, useCountUp } from "../lib/anim.ts";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { fmtOdds, money, resultAmount, tickValueText } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
@@ -27,13 +28,28 @@ export function evidenceLines(b: MyBet, msg: Messages): string[] {
   return out;
 }
 
-/** The big, clear outcome screen. Colour is soft, and always backed by an icon and a word. */
-export function ResultScreen({ bet, msg, locale, remaining, onClose, onShare, onNext }: { bet: MyBet; msg: Messages; locale: Locale; remaining: number; onClose: () => void; onShare: () => void; onNext: () => void }) {
+/** "Balance 11.119 € → 11.735 €": the balance without this result and with it, the second figure counting up to its value. */
+function BalanceMove({ before, after, label, locale }: { before: number; after: number; label: string; locale: Locale }) {
+  const [target, setTarget] = useState(reducedMotion() ? after : before);
+  useEffect(() => { if (reducedMotion()) { setTarget(after); return; } setTarget(before); const t = window.setTimeout(() => setTarget(after), 450); return () => window.clearTimeout(t); }, [before, after]);
+  const shown = useCountUp(target, 900);
+  return (
+    <p class="balmove" aria-label={`${label}: ${money(before, locale)} → ${money(after, locale)}`}>
+      <span aria-hidden="true">{label}</span><b class="num from" aria-hidden="true">{money(before, locale)}</b><ArrowRight size={18} aria-hidden="true" /><b class="num to" aria-hidden="true">{money(shown, locale)}</b>
+    </p>
+  );
+}
+
+/**
+ * The big, clear outcome screen. A win and a loss have the same structure and the same weight: an emblem, the word, the big figure, how the balance moved,
+ * what happened, what the bet was. Colour is soft, and always backed by an icon and a word; a loss gets a calm icon, never a check.
+ */
+export function ResultScreen({ bet, msg, locale, remaining, balance, onClose, onShare, onNext }: { bet: MyBet; msg: Messages; locale: Locale; remaining: number; balance?: { before: number; after: number } | null; onClose: () => void; onShare: () => void; onNext: () => void }) {
   const st = bet.status as "won" | "lost" | "void";
   const m = bet.markets, city = cityOf(m.city_id);
   useEffect(() => { st === "won" ? haptic.success() : st === "lost" ? haptic.error() : haptic.tap(); }, [bet.id]);
   const amount = resultAmount(st, bet.stake, bet.payout, locale);
-  const Icon = st === "won" ? Check : st === "lost" ? X : RotateCcw;
+  const Icon = st === "won" ? Check : st === "lost" ? TrendingDown : RotateCcw;
   const sub = st === "won" ? msg.result.subWon : st === "lost" ? msg.result.subLost : msg.result.subVoid;
   const lines = st === "void" ? [msg.bets.voidReason[m.void_reason ?? ""] ?? ""] : evidenceLines(bet, msg);
   return (
@@ -43,6 +59,7 @@ export function ResultScreen({ bet, msg, locale, remaining, onClose, onShare, on
         <span class="emblem"><Icon size={44} strokeWidth={2.4} /></span>
         <div><span class="detail">{msg.result[st]}</span></div>
         <div class="amount num">{amount}</div>
+        {balance && <BalanceMove before={balance.before} after={balance.after} label={msg.result.balance} locale={locale} />}
         <p style="color:var(--text-2)">{sub}</p>
         {m.kind === "match_bet" && <div class="vscard"><MarketVs m={m} size={36} />{reasonOf(m, msg) && <span class="reason big">{reasonOf(m, msg)}</span>}</div>}
         <p class="q" style="font-weight:600"><Q m={m} msg={msg} locale={locale} city={cityName(city, locale)} tz={city.timezone} /></p>

@@ -214,6 +214,9 @@ select.field, textarea.field, option { font: inherit; }
 .result.won .emblem { background: var(--won-bg); color: var(--won-fg); } .result.lost .emblem { background: var(--lost-bg); color: var(--lost-fg); }
 .result .amount { font-size: 72px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; animation: rise 300ms var(--ease) 80ms both; }
 .result.won .amount { color: var(--won-fg); } .result.lost .amount { color: var(--lost-fg); }
+.result .balmove { margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 18px; color: var(--text-2); }
+.result .balmove .from { color: var(--muted); font-weight: 700; } .result .balmove .to { color: var(--text); font-weight: 800; font-size: 22px; }
+.result.won .balmove .to { color: var(--won-fg); } .result.lost .balmove .to { color: var(--lost-fg); }
 .result .facts { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
 .result .facts > div { padding: var(--space-3); border-radius: var(--radius-control); background: var(--surface); border: 1px solid var(--border); text-align: left; }
 .result .facts b { display: block; font-size: 18px; }

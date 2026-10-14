@@ -21,3 +21,18 @@ export const balanceAfter = (balance: number, stake: number): number => Math.max
 export function outcomes(stake: number, payout: number): { lose: number; win: number; back: number } {
   return { lose: -stake, win: Math.max(0, payout - stake), back: payout };
 }
+
+/** What a settled bet changed in the balance, counted from before the bet was placed: the profit when won, minus the stake when lost, nothing when it was refunded. */
+export const netOf = (b: { status: string; stake: number; payout: number }): number => (b.status === "won" ? b.payout - b.stake : b.status === "lost" ? -b.stake : 0);
+
+/**
+ * The balance before and after one result, for the outcome screen. The balance now already holds every result that has not been looked at yet, so the
+ * results are laid out one after the other, the last one ending at the balance now: the one on screen ends where the ones still to be seen begin. The
+ * "before" is the balance without that result (derived: the Bank's small withholding on a win is not something the client can see). Null for a refund.
+ */
+export function balanceMove(unseen: readonly { id: string; status: string; stake: number; payout: number }[], current: { id: string; status: string; stake: number; payout: number }, credits: number): { before: number; after: number } | null {
+  if (current.status === "void") return null;
+  const order = unseen.some((b) => b.id === current.id) ? unseen : [current, ...unseen], at = order.findIndex((b) => b.id === current.id);
+  const after = credits - order.slice(at + 1).reduce((a, b) => a + netOf(b), 0);
+  return { before: after - netOf(current), after };
+}
