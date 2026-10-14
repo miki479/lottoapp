@@ -1631,3 +1631,9 @@ textarea.field { resize: vertical; min-height: 84px; }
 
 .stalenote { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0; }
 .stalex { background: none; border: 0; color: inherit; padding: 6px; min-width: 32px; min-height: 32px; display: grid; place-items: center; cursor: pointer; }
+/* the odds moved while the sheet was open: one clear pulse */
+.actions2.bump .opt { animation: oddsbump .9s var(--ease) both; }
+.oddsword.bump { animation: oddsbump .9s var(--ease) both; }
+@keyframes oddsbump { 0% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--star) 70%, transparent); } 30% { transform: scale(1.07); box-shadow: 0 0 0 8px color-mix(in srgb, var(--star) 35%, transparent); } 60% { transform: scale(.98); } 100% { transform: scale(1); box-shadow: 0 0 0 14px transparent; } }
+.boostrow { cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .actions2.bump .opt, .oddsword.bump { animation: none; } }

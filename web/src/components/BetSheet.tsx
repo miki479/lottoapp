@@ -5,7 +5,7 @@ import { BetHead } from "./BetHead.tsx";
 import { BetFoot } from "./BetFoot.tsx";
 import { MarketVs, noOf, reasonOf } from "./MatchVs.tsx";
 import { Gift, Layers, Share2, Sparkles, X } from "lucide-preact";
-import { useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { fmtOdds, isYesNo, money, question, type MarketRow } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
@@ -60,6 +60,9 @@ export function BetSheet(p: {
   const offer = p.offer;
   const baseOf = (k: Pick) => Number(k === "yes" ? p.m.odds_yes : p.m.odds_no), shownOf = (k: Pick) => (offer ? offerOdds(baseOf(k), offer.mult) : baseOf(k));
   const odds = shownOf(pick);
+  // The price moved while the sheet is open: the odds and the figures under them pulse once so the change is noticed.
+  const oddsKey = `${p.m.odds_yes}|${p.m.odds_no}`, seenOdds = useRef(oddsKey), [bump, setBump] = useState(0);
+  useEffect(() => { if (seenOdds.current !== oddsKey) { seenOdds.current = oddsKey; setBump((n) => n + 1); haptic.tap(); } }, [oddsKey]);
   // Upper limit: what the odds allow (all-but-certain picks are closed), or the whole balance when it is lower (the server checks it again).
   // a personal offer has its own small stake limit instead of the odds-based one, and still refuses a pick whose real quote has become all but certain
   const factor = p.stakeFactor ?? 1;
@@ -93,14 +96,14 @@ export function BetSheet(p: {
       {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "traffic_speed_lt" ? <TrafficScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "match_bet" ? <SportScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "tick_gt" ? <TickScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" || p.m.kind === "strike_on" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : p.m.kind === "bus_full" ? <OccScene m={p.m} hint={pick} level={p.occ?.level} msg={p.msg} /> : <TripScene m={p.m} now={p.now} hint={pick} />}
       <div>
         <span class="detail">{p.msg.sheet.pick}</span>
-        <div class="actions2" style="margin-top:8px">
+        <div class={`actions2 ${bump ? "bump" : ""}`} key={`a${bump}`} style="margin-top:8px">
           {(["yes", "no"] as const).map((k) => (
             <button key={k} class={`opt ${k} ${pick === k ? "sel" : ""}`} onClick={() => setPick(k)} aria-pressed={pick === k}>
               <span class="l">{label(k)}</span><b class="num">{fmtOdds(shownOf(k), p.locale)}</b>{p.m.kind === "match_bet" && (k === "yes" ? reasonOf(p.m, p.msg) : noOf(p.m, p.msg)) && <small class="mopt">{k === "yes" ? reasonOf(p.m, p.msg) : noOf(p.m, p.msg)}</small>}
             </button>
           ))}
         </div>
-        <p class="oddsword">{fmtMult(shownOf(pick), p.locale)} · {oddsWord(shownOf(pick), p.locale)}</p>
+        <p class={`oddsword ${bump ? "bump" : ""}`} key={`w${bump}`}>{fmtMult(shownOf(pick), p.locale)} · {oddsWord(shownOf(pick), p.locale)}</p>
       </div>
       {(decided || nearly) && <p class="note warn" role="status">{p.msg.errors.odds_too_low}</p>}
       <WhyBlock m={p.m} msg={p.msg} locale={p.locale} />
