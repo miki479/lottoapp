@@ -368,7 +368,7 @@ export function App() {
   // a push can open the app on a given screen (?open=ranking)
   useEffect(() => { const o = new URLSearchParams(location.search).get("open"); if (o === "ranking" || o === "friends" || o === "bets" || o === "profile") { setScreen(o); const u = new URL(location.href); u.searchParams.delete("open"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash); } }, []);
   const loadReqs = useCallback(async () => { if (!registered) { setReqCount(0); return; } const { data } = await sb.rpc("friend_requests_in"); setReqCount(((data ?? []) as unknown[]).length); }, [registered]);
-  useEffect(() => { loadReqs(); if (!registered) return; return every(loadReqs, 60_000); }, [registered, loadReqs]);
+  useEffect(() => { loadReqs(); if (!registered) return; return every(loadReqs, 120_000); }, [registered, loadReqs]);
   useEffect(() => { loadChallenges(); }, [registered]);
   useEffect(() => { if (registered) loadLook(); else setLook(null); }, [registered, profile?.credits]);
   useEffect(() => { if (screen === "bets") loadChallenges(); }, [screen]);
@@ -407,7 +407,7 @@ export function App() {
     });
   }, [markets]);
   useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = every(loadMarkets, 60_000), b = every(() => { loadResults(); loadActivity(); loadTrending(); }, 90_000); return () => { a(); b(); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
-  useEffect(() => { if (!ready) return; return every(() => { loadBets(); loadProfile(); loadQuests(); }, 120_000); }, [ready]);
+  useEffect(() => { if (!ready) return; return every(() => { loadBets(); loadProfile(); loadQuests(); }, 300_000); }, [ready]);
 
   const rainIds = useMemo(() => (markets ?? []).filter((m) => m.kind === "rain_at").map((m) => m.id), [markets]);
   useEffect(() => {
