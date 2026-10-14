@@ -6,6 +6,9 @@ import { useEffect, useRef } from "preact/hooks";
 const OPEN: HTMLElement[] = [];
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/** Shared page lock (see below). */
+const lock = { n: 0, y: 0, at: -1e9, prev: { overflow: "", position: "", top: "", width: "" } };
+
 /** Bottom sheet on phones, centred dialog on larger screens (`foot`: the last child of the sheet is a sticky foot that sits flush with its bottom edge). Closes on Escape, on outside tap and by dragging down; the keyboard focus stays inside while it is open and goes back where it was when it closes. */
 export function Sheet({ onClose, label, children, foot }: { onClose: () => void; label: string; children: ComponentChildren; foot?: boolean }) {
   const sheet = useRef<HTMLDivElement>(null);
@@ -24,11 +27,22 @@ export function Sheet({ onClose, label, children, foot }: { onClose: () => void;
       else if (!e.shiftKey && at === last) { e.preventDefault(); first.focus(); }
     };
     addEventListener("keydown", key);
-    // lock the page under the sheet (iOS ignores overflow:hidden on body): freeze it in place and give the scroll position back on close
-    const y = scrollY, b = document.body.style, prev = { overflow: b.overflow, position: b.position, top: b.top, width: b.width };
-    b.overflow = "hidden"; b.position = "fixed"; b.top = `-${y}px`; b.width = "100%";
+    // lock the page under the sheet (iOS ignores overflow:hidden on body): freeze it in place and give the scroll position back on close.
+    // The lock is shared: a sheet that opens as another closes (the result after a bet) must not take the frozen page (scrollY 0) as the place to go back to.
+    const b = document.body.style;
+    if (lock.n === 0) {
+      lock.y = performance.now() - lock.at < 800 ? lock.y : scrollY;
+      lock.prev = { overflow: b.overflow, position: b.position, top: b.top, width: b.width };
+      b.overflow = "hidden"; b.position = "fixed"; b.top = `-${lock.y}px`; b.width = "100%";
+    }
+    lock.n++;
     return () => {
-      removeEventListener("keydown", key); b.overflow = prev.overflow; b.position = prev.position; b.top = prev.top; b.width = prev.width; scrollTo(0, y);
+      removeEventListener("keydown", key);
+      lock.n--;
+      if (lock.n === 0) {
+        const { prev, y } = lock; b.overflow = prev.overflow; b.position = prev.position; b.top = prev.top; b.width = prev.width; lock.at = performance.now();
+        scrollTo(0, y); requestAnimationFrame(() => { if (lock.n === 0) scrollTo(0, y); });
+      }
       const i = el ? OPEN.indexOf(el) : -1; if (i >= 0) OPEN.splice(i, 1);
       if (before?.isConnected) before.focus({ preventScroll: true });
     };
