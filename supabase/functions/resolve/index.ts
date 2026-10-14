@@ -42,8 +42,13 @@ Deno.serve(safe(async (req) => {
   const { data: health } = await sb.from("feed_health").select("feed_id,last_ok_at");
   const lastOk = new Map((health ?? []).map((h) => [h.feed_id, h.last_ok_at ? Date.parse(h.last_ok_at) / 1000 : null]));
 
-  const out = { settled: 0, voided: 0, pending: 0, errors: 0 };
-  for (const row of (due ?? []) as (MarketRow & { id: string })[]) {
+  const out = { settled: 0, voided: 0, pending: 0, errors: 0, skipped: 0 };
+  // A run must end well inside the platform's limit (a minute-by-minute job that overruns piles up on itself and gets killed for resources): the due markets
+  // are visited in a random order for at most ~40 s, and what is left waits for the next minute. Random, so markets that cannot be settled yet never hog the front.
+  const t0 = Date.now(), dueList = [...((due ?? []) as (MarketRow & { id: string })[])];
+  for (let i = dueList.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [dueList[i], dueList[j]] = [dueList[j]!, dueList[i]!]; }
+  for (const row of dueList) {
+    if (Date.now() - t0 > 40_000) { out.skipped++; continue; }
     try {
       const event = marketToEvent(row);
       const city = cities.get(row.city_id) ?? (row.city_id === "world" ? ({ id: "world", timezone: "UTC" } as unknown as ReturnType<typeof cities.get> & object) : undefined) ?? (placeTz.has(row.city_id) ? ({ id: row.city_id, timezone: placeTz.get(row.city_id)! } as unknown as ReturnType<typeof cities.get> & object) : undefined);

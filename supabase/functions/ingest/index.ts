@@ -62,8 +62,11 @@ Deno.serve(safe(async (req) => {
   }
 
   const seen = new Set<string>();
-  for (const city of await loadCities()) {
+  // Same rule as the resolve job: stay inside ~45 s so that runs never pile up. The cities are visited from a different one each minute, so no feed is always last.
+  const t0 = Date.now(), allCities = await loadCities(), rot = allCities.length ? new Date().getUTCMinutes() % allCities.length : 0;
+  for (const city of [...allCities.slice(rot), ...allCities.slice(0, rot)]) {
     for (const feed of usableFeeds(city, allowUnverified())) {
+      if (Date.now() - t0 > 45_000) break;
       // Feed ids are globally unique (weather feeds are per city); a national feed listed by two cities is fetched once.
       if (!!feed.heavy !== heavyRun) continue;
       if (seen.has(feed.id)) continue;
