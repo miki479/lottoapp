@@ -1597,3 +1597,11 @@ textarea.field { resize: vertical; min-height: 84px; }
 @keyframes sakurafall { 0% { opacity: 0; transform: translate(0, 0) rotate(0deg); } 12% { opacity: .95; } 50% { transform: translate(34px, 30px) rotate(150deg); } 100% { opacity: 0; transform: translate(70px, 66px) rotate(320deg); } }
 @keyframes sakurasway { from { transform: rotate(-.6deg); } to { transform: rotate(.8deg); } }
 @media (prefers-reduced-motion: reduce) { .mscene.sakura .pt, .mscene.sakura .sk-tree { animation: none; } .mscene.sakura .pt { opacity: .7; } }
+
+/* one city's rain hours as one card */
+.raingroup { display: grid; gap: var(--space-3); padding: var(--space-4); }
+.rgtop { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; color: var(--c-weather); }
+.rgtop h3 { margin: 0; font-size: var(--fs-lg); color: var(--text); } .rgtop .detail { margin-left: auto; color: var(--muted); font-size: var(--fs-xs); }
+.rgrow { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.rgchip { width: auto; flex: 0 0 auto; display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--hit); padding: 0 var(--space-3); font: inherit; font-size: var(--fs-sm); color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius-control); cursor: pointer; }
+.rgchip b { color: var(--action-ink); } .rgchip:active { transform: scale(.97); }

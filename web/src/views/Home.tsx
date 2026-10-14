@@ -6,6 +6,7 @@ import { ForYou } from "../components/ForYou.tsx";
 import { PersonalOffer, type OfferUse } from "../components/PersonalOffer.tsx";
 import { CLASS_LABEL, trainClass, trainZone, type TrainClass } from "../lib/zones.ts";
 import { CloudRain } from "lucide-preact";
+import { RainGroup } from "../components/RainGroup.tsx";
 import { FilterSheet, filterLabel, ICON as KIND_ICON } from "../components/FilterSheet.tsx";
 import { groupMatches, MatchList } from "../components/MatchList.tsx";
 import { CatChips, type CatId } from "../components/CatChips.tsx";
@@ -89,7 +90,13 @@ export function Home(p: HomeProps) {
   const steamOf = (m: MarketRow) => { const sr = String(m.params.series ?? ""); return m.kind === "tick_gt" && sr.startsWith("steam:") ? sr.slice(6) : null; };
   const gameGroups = new Map<string, MarketRow[]>();
   if (p.cat === "culture") for (const m of shown) { const a = steamOf(m); if (a) gameGroups.set(a, [...(gameGroups.get(a) ?? []), m].sort((x, y) => Date.parse(x.target_at) - Date.parse(y.target_at))); }
-  const plain = gameGroups.size ? shown.filter((m) => !steamOf(m)) : shown;
+  const plain0 = gameGroups.size ? shown.filter((m) => !steamOf(m)) : shown;
+  // the hours of one city's rain question are one card (only when there are more than five hours), not a card for each
+  const rainBy = new Map<string, MarketRow[]>();
+  if (p.cat === "weather") for (const m of plain0) if (m.kind === "rain_at") rainBy.set(m.city_id, [...(rainBy.get(m.city_id) ?? []), m]);
+  const rainGroups = [...rainBy.values()].filter((g) => g.length > 5);
+  const grouped = new Set(rainGroups.flat().map((m) => m.id));
+  const plain = grouped.size ? plain0.filter((m) => !grouped.has(m.id)) : plain0;
   const card = (m: MarketRow, i: number) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} live={p.live[m.id]} occ={p.occ[m.id]} index={i} mm={p.outlook[m.id]} friends={p.friendBets[m.id]} hasLadder={(p.ladders[m.id]?.length ?? 0) > 0} top={m.id === topId && shown.length > 3} showCity={p.filter === "world" || p.filter === "mine"} onPick={p.onPick} />;
   const cities = CITIES.filter((c) => enabledCategories(c).length > 0);
   // the flag of the chosen place is its own country (a place picked from "More cities" is not Italian), and it is shown once: a place of the list below is not repeated here
@@ -200,6 +207,7 @@ export function Home(p: HomeProps) {
                 {alt.length > 0 && <div class="tryalt"><span>{msg.home.tryInstead}</span>{alt.map((t) => <button key={t.id} class="chip" onClick={() => p.onCat(t.id)}>{t.label}<em>{t.count}</em></button>)}</div>}
               </div>
             )}
+            {rainGroups.map((g) => <RainGroup key={g[0]!.city_id} markets={g} locale={p.locale} now={p.now} onPick={p.onPick} />)}
             {[...gameGroups].map(([appid, ms]) => <GameGroup key={appid} appid={appid} count={ms.length}>{ms.map((m, i) => card(m, i))}</GameGroup>)}
             {p.markets !== null && p.cat === "train" && p.italian && plain.length === 0 && <div style="grid-column:1/-1"><TrainBoard variant="full" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} onRefresh={p.onRefreshBoard} /></div>}
             {plain.slice(0, 40).map((m, i) => <Fragment key={m.id}>{card(m, i)}{i === Math.min(2, plain.length - 1) && p.cat === "train" && p.italian && <div style="grid-column:1/-1"><TrainBoard variant="full" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} onRefresh={p.onRefreshBoard} /></div>}</Fragment>)}
