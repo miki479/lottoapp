@@ -33,8 +33,8 @@ export function formatWhen(iso: string, locale: Locale, timeZone: string, now = 
   return `${new Intl.DateTimeFormat(tag, { weekday: "short", timeZone }).format(d)} ${time}`;
 }
 
-const TRAIN_NAMES: Record<string, [string, string, string]> = { it: ["Alta velocità", "Intercity", "Regionale"], "en-US": ["High-speed", "Intercity", "Regional"], "en-GB": ["High-speed", "Intercity", "Regional"] };
-/** "REG 4340" → "Regionale 4340", "FR 9516" → "Alta velocità 9516": the kind of train in words in front of its number. */
+const TRAIN_NAMES: Record<string, [string, string, string]> = { it: ["Alta velocità", "Intercity", "REGIONALE"], "en-US": ["High-speed", "Intercity", "Regional"], "en-GB": ["High-speed", "Intercity", "Regional"] };
+/** "REG 4340" → "REGIONALE 4340", "FR 9516" → "Alta velocità 9516": the kind of train in words in front of its number. */
 export function trainLabel(route: string, kind: string, locale: string): string {
   const names = TRAIN_NAMES[locale];
   if (kind !== "train_delay_gt" || !names) return route;

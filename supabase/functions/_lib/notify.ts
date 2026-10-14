@@ -4,7 +4,7 @@
 import { DECORATIONS } from "../_shared/shared/looks.ts";
 type Db = ReturnType<typeof import("./common.ts").db>;
 
-const TRAIN_KIND: Record<string, [string, string, string]> = { it: ["Alta velocità", "Intercity", "Regionale"], "en-US": ["High-speed", "Intercity", "Regional"], "en-GB": ["High-speed", "Intercity", "Regional"] };
+const TRAIN_KIND: Record<string, [string, string, string]> = { it: ["Alta velocità", "Intercity", "REGIONALE"], "en-US": ["High-speed", "Intercity", "Regional"], "en-GB": ["High-speed", "Intercity", "Regional"] };
 /** "REG 3935" → "Regionale 3935": the kind of train in words, as in the app. Any other name stays as it is. */
 export function trainWords(route: string, loc: string): string {
   const names = TRAIN_KIND[loc], m = route.trim().match(/^([A-Za-z]{1,4})\s*(\d{1,5}[A-Za-z]?)$/);
