@@ -59,5 +59,11 @@ try {
   check("account deleted and the app falls back to a fresh guest", /1\.?000/.test(await page.locator(".wallet").innerText()), await page.locator(".wallet").innerText());
   check("no script errors", errors.length === 0, errors.slice(0, 2).join(" | "));
 } catch (e) { check("journey finished", false, String(e.message).split("\n")[0]); if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT }); }
+// a run that failed before the "delete account" step must not leave its test account behind (needs the service key, otherwise it is skipped)
+if (process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_URL) {
+  const base = /^https?:/.test(process.env.SUPABASE_URL) ? process.env.SUPABASE_URL : `https://${process.env.SUPABASE_URL}.supabase.co`, h = { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` };
+  const list = await fetch(`${base}/auth/v1/admin/users?per_page=1000`, { headers: h }).then((r) => r.json()).catch(() => ({}));
+  for (const u of (list.users ?? []).filter((x) => x.email === email)) await fetch(`${base}/auth/v1/admin/users/${u.id}`, { method: "DELETE", headers: h }).catch(() => {});
+}
 await browser.close();
 process.exit(failed ? 1 : 0);
