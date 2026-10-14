@@ -41,7 +41,7 @@ export function DailyBonus({ locale, now, tz, onPlay, onChanged }: { locale: Loc
               <small>{n}</small>
               <b class="num">{fmtInt(a, locale)}</b>
               <span class="dbmark" aria-hidden="true">{st === "past" || st === "done" ? <Check size={14} strokeWidth={3} /> : st === "ready" ? <Gift size={14} /> : st === "lock" ? <Lock size={13} /> : null}</span>
-              {n === 7 && <span class="dbfreeze" title={d.freezeTile} aria-label={d.freezeTile}><Snowflake size={11} /></span>}
+              {n === 7 && <span class="dbfreeze" role="img" title={d.freezeTile} aria-label={d.freezeTile}><Snowflake size={11} /></span>}
             </li>
           );
         })}

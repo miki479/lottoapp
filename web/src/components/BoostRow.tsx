@@ -22,7 +22,7 @@ export function BoostRow(p: { on: boolean; onToggle: (on: boolean) => void; boos
         <b>{word}: {p.boosts}</b>
       </button>
       <button type="button" class="infodot" aria-label={p.msg.boost.title} aria-expanded={info} onClick={() => setInfo(!info)}>i</button>
-      <output class="glow pop boostnum" key={extra} aria-live="polite" style={`--hot:${p.on ? "hsl(24 100% 62%)" : "hsl(265 60% 70%)"};--halo:${p.on ? 22 : 8}px`}>{moneySigned(shown, p.locale)}</output>
+      <output class="glow pop boostnum" key={extra} aria-live="polite" style={`--hue:${p.on ? 24 : 265};--hot-s:${p.on ? 100 : 60}%;--halo:${p.on ? 22 : 8}px`}>{moneySigned(shown, p.locale)}</output>
       {info && <p class="boostinfo hint" role="note">{p.msg.boost.gain(moneySigned(plain - p.stake, p.locale), moneySigned(boosted - p.stake, p.locale))} · {p.msg.boost.hint}</p>}
     </div>
   );

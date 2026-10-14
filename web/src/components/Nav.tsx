@@ -14,7 +14,7 @@ export function TabBar({ value, onPick, msg, openBets, profileDot, rankBadge, so
           <Icon size={22} strokeWidth={value === id ? 2.4 : 2} /><span>{msg.nav[id]}</span>
           {id === "bets" && openBets > 0 && <i class="badge">{openBets}</i>}
           {id === "friends" && (rankBadge ?? 0) > 0 && <i class="badge">{rankBadge}</i>}
-          {id === "profile" && profileDot && <i class="badge dot" aria-label={msg.nav.fresh} />}
+          {id === "profile" && profileDot && <i class="badge dot" role="img" aria-label={msg.nav.fresh} />}
         </button>
       ))}
     </nav>
@@ -31,7 +31,7 @@ export function Sidebar({ value, onPick, msg, openBets, profileDot, rankBadge, s
           <Icon size={20} strokeWidth={value === id ? 2.4 : 2} /><span>{msg.nav[id]}</span>
           {id === "bets" && openBets > 0 && <i class="badge">{openBets}</i>}
           {id === "friends" && (rankBadge ?? 0) > 0 && <i class="badge">{rankBadge}</i>}
-          {id === "profile" && profileDot && <i class="badge dot" aria-label={msg.nav.fresh} />}
+          {id === "profile" && profileDot && <i class="badge dot" role="img" aria-label={msg.nav.fresh} />}
         </button>
       ))}
     </nav>

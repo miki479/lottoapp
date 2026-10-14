@@ -20,9 +20,9 @@ export function DelayMeter(p: { sec: number; prev: number | null; limitSec: numb
   const Trend = diff > 0 ? TrendingUp : diff < 0 ? TrendingDown : Minus;
   const text = diff > 0 ? msg.meter.up(diff) : diff < 0 ? msg.meter.down(-diff) : msg.meter.steady;
   return (
-    <div class={`meter ${p.big ? "big" : ""}`} aria-label={`${shown} min ${msg.meter.late}`}>
+    <div class={`meter ${p.big ? "big" : ""}`} role="group" aria-label={`${shown} min ${msg.meter.late}`}>
       <div class="mtop">
-        <b class="mnum num" style={`color:hsl(${hue(ratio)} 95% 66%)`}>{fmtSigned(sec < 0 ? -Math.abs(shown) : Math.abs(shown))}<small> {minUnit()}</small></b>
+        <b class="mnum num" style={`--sev:${Math.round(hue(ratio))}`}>{fmtSigned(sec < 0 ? -Math.abs(shown) : Math.abs(shown))}<small> {minUnit()}</small></b>
         <span class="mtrend"><Trend size={14} />{p.prev === null ? (p.forecast ? msg.meter.forecast : msg.meter.late) : text}</span>
       </div>
       <div class="cells" aria-hidden="true">

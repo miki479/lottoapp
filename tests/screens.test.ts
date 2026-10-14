@@ -68,7 +68,7 @@ describe("the screens of the player", () => {
   });
   it("keeps the chosen pill of a segmented control clear of its edge, in the selected state of the app", () => {
     expect(css).toMatch(/\.seg \{[^}]*padding: 6px/);
-    expect(css).toMatch(/\.seg button\.on \{[^}]*var\(--brand\)/);
+    expect(css).toMatch(/\.seg button\.on \{[^}]*var\(--action\)/);
   });
   it("shows the level next to the nick in the tables, and the season as an element", () => {
     expect(src("views/Ranking.tsx")).toContain("<LevelBadge");

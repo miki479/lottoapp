@@ -56,7 +56,7 @@ export function ProfileView(p: {
         <div class="stack">
           <section class="card stack idcard">
             <div class="idtop">
-              {p.look ? <button class="lkme" onClick={p.onLook} aria-label={p.msg.look.change}><Look avatar={p.look.avatar} decoration={p.look.decoration} size={72} /><span class="lvl num">{p.look.level}</span></button> : <span class="rank top" style="width:56px;height:56px;border-radius:18px;font-size:22px"><User size={26} /></span>}
+              {p.look ? <button class="lkme" onClick={p.onLook} aria-label={p.msg.look.change}><Look avatar={p.look.avatar} decoration={p.look.decoration} size={72} /><span class="lvl num">{p.look.level}</span></button> : <span class="rank top" style="width:56px;height:56px;border-radius:18px;font-size:var(--fs-xl)"><User size={26} /></span>}
               <div class="idtxt">
                 <b class="idname">{name}</b>
                 <span class="idmail">{p.registered ? p.email : m.guest}</span>
@@ -80,18 +80,18 @@ export function ProfileView(p: {
           {p.registered && <BankCard locale={p.locale} credits={p.profile?.credits} />}
           {p.push && (
             <section class="card stack">
-              <label class="switchrow"><span class="swlabel"><Bell size={18} style="color:var(--brand);flex:none" /><span>{p.msg.push.active}</span></span><input type="checkbox" role="switch" checked={p.push.on} disabled={p.push.denied} onChange={p.push.toggle} /></label>
+              <label class="switchrow"><span class="swlabel"><Bell size={18} style="color:var(--action-ink);flex:none" /><span>{p.msg.push.active}</span></span><input type="checkbox" role="switch" checked={p.push.on} disabled={p.push.denied} onChange={p.push.toggle} /></label>
               {p.push.denied && <p class="hint">{p.msg.push.denied}</p>}
               {p.push.on && (
                 <>
-                  <label class="switchrow"><span class="swlabel"><Zap size={18} style="color:var(--brand);flex:none" /><span>{p.msg.push.events}</span></span><input type="checkbox" role="switch" checked={p.push.flash && p.push.streak && p.push.friends} onChange={(e) => { const v = (e.target as HTMLInputElement).checked; p.push!.setPrefs(v, v, v); }} /></label>
+                  <label class="switchrow"><span class="swlabel"><Zap size={18} style="color:var(--action-ink);flex:none" /><span>{p.msg.push.events}</span></span><input type="checkbox" role="switch" checked={p.push.flash && p.push.streak && p.push.friends} onChange={(e) => { const v = (e.target as HTMLInputElement).checked; p.push!.setPrefs(v, v, v); }} /></label>
                   <p class="hint">{p.msg.push.prefsHint}</p>
                 </>
               )}
             </section>
           )}
           <section class="card stack">
-            <label class="switchrow"><span class="swlabel"><MapPin size={18} style="color:var(--brand);flex:none" /><span>{p.msg.fy.setTitle}</span></span><input type="checkbox" role="switch" checked={intentOn} onChange={(e) => { const on = (e.target as HTMLInputElement).checked; writeConsent(on ? "on" : "off"); setIntentOn(on); }} /></label>
+            <label class="switchrow"><span class="swlabel"><MapPin size={18} style="color:var(--action-ink);flex:none" /><span>{p.msg.fy.setTitle}</span></span><input type="checkbox" role="switch" checked={intentOn} onChange={(e) => { const on = (e.target as HTMLInputElement).checked; writeConsent(on ? "on" : "off"); setIntentOn(on); }} /></label>
             <p class="hint">{intentOn ? p.msg.fy.setOn : p.msg.fy.setOff}</p>
           </section>
           <section class="card stack referral">
@@ -116,7 +116,7 @@ export function ProfileView(p: {
             <div class="card cell span2" style="--i:5"><span class="detail">{m.stats.trophies}</span><span class="v num"><Trophy size={22} class="ic" style="vertical-align:-3px;margin-right:6px" />{owned}<small>/ {TROPHY_IDS.length}</small></span></div>
           </div>}
           <HistoryCard msg={p.msg} locale={p.locale} />
-          <div class="card" style="display:flex;gap:12px;align-items:center"><Snowflake size={22} style="color:var(--brand)" /><div><b>{m.freezes(p.profile?.freezes ?? 0)}</b><p class="hint">{m.freezeHint}</p></div></div>
+          <div class="card" style="display:flex;gap:12px;align-items:center"><Snowflake size={22} style="color:var(--action-ink)" /><div><b>{m.freezes(p.profile?.freezes ?? 0)}</b><p class="hint">{m.freezeHint}</p></div></div>
           <div class="card" style="display:flex;gap:12px;align-items:center"><Rocket size={22} style="color:var(--c-pop)" /><div><b>{p.msg.boost.title} · {(p.profile?.boosts ?? 0) > 0 ? p.msg.boost.have(p.profile?.boosts ?? 0) : p.msg.boost.none}</b><p class="hint">{p.msg.boost.explain}</p></div></div>
         </div>
 
@@ -143,7 +143,7 @@ export function ProfileView(p: {
             </div>
             {admin && <button class="row" onClick={p.onAdmin}><span class="grow">{p.msg.admin.open}</span><ChevronRight size={18} /></button>}
             {p.registered && <button class="row" disabled={busy} aria-busy={busy} onClick={() => run(async () => { await p.onSignOut(); })}><LogOut size={20} /><span class="grow">{m.signOut}</span><ChevronRight size={18} /></button>}
-            <button class="row" onClick={() => setConfirm(true)} style="color:var(--lost-fg)"><Trash2 size={20} style="color:var(--lost-fg)" /><span class="grow">{m.delete.action}</span></button>
+            <button class="row" onClick={() => setConfirm(true)} style="color:var(--loss)"><Trash2 size={20} style="color:var(--loss)" /><span class="grow">{m.delete.action}</span></button>
           </div>
         </div>
       </div>

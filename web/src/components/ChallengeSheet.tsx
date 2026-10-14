@@ -62,7 +62,7 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
     <Sheet onClose={p.onClose} label={f.title}>
       {head}
       <span class="byline">{f.cats[c.category]} · {c.creator || p.msg.ticker.anon} · {c.visibility === "public" ? p.msg.fx.publicBadge : p.msg.fx.privateBadge} · {c.judge_mode === "vote" ? p.msg.fx.byVote : p.msg.fx.byJudge}</span>
-      <p class="q" style="font-weight:800;font-size:1.15rem">{c.title}</p>
+      <p class="q" style="font-weight:800;font-size:var(--fs-lg)">{c.title}</p>
       {copied && <p class="hint" role="status">{f.copied}</p>}
       <div class="tcstats">
         <span><em>{isOpen ? f.closesIn : f.closed}</em><b class="num">{isOpen ? countdown(left) : "—"}</b></span>

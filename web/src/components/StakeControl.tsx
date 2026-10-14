@@ -18,7 +18,7 @@ const COIN_RAIN = Array.from({ length: 16 }, (_, i) => ({ left: (i * 37 + 8) % 9
 export function StakeControl(p: { value: number; onChange: (n: number) => void; cap: number; odds: number; balance?: number; boost?: boolean; vice?: number; fancy?: boolean; locale: Locale; msg: Messages }) {
   const lo = 10, hi = Math.max(lo + 10, p.cap);
   const heat = (p.value - lo) / (hi - lo);
-  const hot = `hsl(${(260 + 130 * heat) % 360} 95% 68%)`;
+  const hue = Math.round((260 + 130 * heat) % 360);
   const base = p.boost ? boostedPayout(p.value, p.odds) : Math.floor(p.value * p.odds);
   // the optional Bonus Vice adds a share of the total paid out, on top of the boost
   const gross = base + (p.vice ? Math.floor(Math.floor(p.value * p.odds) * p.vice / 100) : 0);
@@ -53,7 +53,7 @@ export function StakeControl(p: { value: number; onChange: (n: number) => void; 
   return (
     <div class={`stakectl ${allIn ? "allin" : ""}`}>
       <div class="stakehead"><span class="detail">{p.msg.stake.label}</span>{share !== null && <span class="pctbal num">{p.msg.sheet.share(share)}</span>}</div>
-      <output class={`glow pop ${p.fancy && p.value >= hi ? "vicemax" : ""} ${allIn || leaving ? "isallin" : ""}`} key={allIn ? "a" : leaving ? "l" : p.value} aria-live="polite" style={`--hot:${hot};--halo:${Math.round(10 + 26 * heat)}px`}>
+      <output class={`glow pop ${p.fancy && p.value >= hi ? "vicemax" : ""} ${allIn || leaving ? "isallin" : ""}`} key={allIn ? "a" : leaving ? "l" : p.value} aria-live="polite" style={`--hue:${hue};--halo:${Math.round(10 + 26 * heat)}px`}>
         {allIn
           ? <span class="aistack"><span class="ainum">{money(p.value, p.locale)}</span><span class="aiword" aria-label="All In">ALL IN<span class="aiburst" aria-hidden="true" /></span></span>
           : leaving
@@ -63,7 +63,7 @@ export function StakeControl(p: { value: number; onChange: (n: number) => void; 
       {allIn && <div class="airain" aria-hidden="true">{COIN_RAIN.map((c, i) => <span key={i} style={`left:${c.left}%;animation-delay:${c.delay}s;animation-duration:${c.dur}s`}>{c.e}</span>)}</div>}
       <div class="stakeline">
         <input class="range" type="range" min={0} max={1000} step={1} value={pos} aria-label={p.msg.stake.label}
-          style={`--fill:${fill}%;--hot:${hot}`}
+          style={`--fill:${fill}%;--hue:${hue}`}
           onInput={(e) => { p.onChange(fromSlider(Number((e.target as HTMLInputElement).value))); haptic.tap(); }} />
         <label class="stakein"><input type="text" inputMode="numeric" pattern="[0-9]*" autocomplete="off" value={text} aria-label={p.msg.stake.label}
           onFocus={(e) => { typing.current = true; (e.target as HTMLInputElement).select(); }} onInput={(e) => typed((e.target as HTMLInputElement).value)} onBlur={settle}

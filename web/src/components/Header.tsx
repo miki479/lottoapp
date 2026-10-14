@@ -19,6 +19,9 @@ export function BrandMark() {
   );
 }
 
+/** A balance written with more characters than this (a million and up) steps down one size, so it never runs out of the bar on a phone. */
+const LONG_FIGURE = 6;
+
 /**
  * The balance, a group of its own in the top bar: every change counts up or down in 400 ms, flashes green or red and leaves a chip with the difference for
  * a moment (all of it off for people who ask for less motion). A different player (signing in or out) is not a change.
@@ -37,11 +40,12 @@ function Balance({ credits, who, locale, coin, label, claimable, onClick }: { cr
     return () => window.clearTimeout(t);
   }, [credits, who]);
   const kind = change ? (change.n > 0 ? "gain" : "loss") : "";
+  const figure = credits === null ? "···" : fmtInt(shown, locale);
   return (
     <>
-      <button class={`wallet walletbtn ${kind}`} title={label} aria-label={credits === null ? label : `${label}: ${fmtInt(credits, locale)}`} onClick={onClick}>
+      <button class={`wallet walletbtn ${kind} ${figure.length > LONG_FIGURE ? "long" : ""}`} title={label} aria-label={credits === null ? label : `${label}: ${fmtInt(credits, locale)}`} onClick={onClick}>
         <i class="coin" aria-hidden="true">{coin}</i>
-        <span class="num bal" aria-hidden="true">{credits === null ? "···" : fmtInt(shown, locale)}</span>
+        <span class="num bal" aria-hidden="true">{figure}</span>
         {claimable > 0 && <span class="dotbadge" aria-hidden="true">{claimable}</span>}
         {change && <span class={`deltachip ${kind}`} key={change.at} aria-hidden="true">{fmtSigned(change.n, locale)}</span>}
       </button>

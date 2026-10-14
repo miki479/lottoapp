@@ -34,8 +34,9 @@ try {
   check("a dot on the Profile tab points at the welcome gift", (await page.locator(".tabbar .badge.dot").count()) === 1);
   check("balance debited", /9\d\d|950/.test(await page.locator(".wallet").innerText()), await page.locator(".wallet").innerText());
 
-  // parlay
+  // parlay: the whole world has events at every hour, the home town's own lines may be few once one of them has been bet on
   await page.waitForTimeout(3800);
+  await page.getByRole("tab", { name: /Tutto il mondo/ }).click().catch(() => {}); await page.waitForTimeout(1500);
   await page.locator(".event .opt").nth(2).click(); await page.getByText("Aggiungi alla multipla").click(); await page.waitForTimeout(600);
   await page.locator(".event .opt").nth(4).click(); await page.getByText("Aggiungi alla multipla").click(); await page.waitForTimeout(600);
   check("parlay bar shows the picks", (await page.locator(".parlaybar").count()) === 1, await page.locator(".parlaybar").innerText().catch(() => ""));

@@ -103,8 +103,8 @@ describe("the home", () => {
   });
   it("marks the chosen category with the one selected state of the interface, the brand ring, not its own colour", () => {
     const on = css.split("\n").filter((l) => /^\.cc\.on \{/.test(l)).pop() ?? "";
-    expect(on).toContain("var(--brand)");
+    expect(on).toContain("var(--action)");
     expect(on).not.toMatch(/border-color:\s*var\(--cat/);
-    expect(css).toMatch(/\.chip\.on \{ border-color: var\(--brand\)/);
+    expect(css).toMatch(/\.chip\.on \{ border-color: var\(--action\)/);
   });
 });

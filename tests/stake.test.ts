@@ -54,9 +54,9 @@ describe("the outcome screen", () => {
   });
   it("gives a loss a calm icon of its own, never a check, and the same big figure in red as the win has in green", () => {
     expect(rs).toMatch(/st === "won" \? Check : st === "lost" \? TrendingDown : RotateCcw/);
-    expect(css).toMatch(/\.result\.won \.amount \{ color: var\(--won-fg\); \} \.result\.lost \.amount \{ color: var\(--lost-fg\); \}/);
-    expect(css).toMatch(/\.result\.won \.balmove \.to \{[^}]*won-fg/);
-    expect(css).toMatch(/\.result\.lost \.balmove \.to \{[^}]*lost-fg/);
+    expect(css).toMatch(/\.result\.won \.amount \{ color: var\(--gain\); \} \.result\.lost \.amount \{ color: var\(--loss\); \}/);
+    expect(css).toMatch(/\.result\.won \.balmove \.to \{[^}]*var\(--gain\)/);
+    expect(css).toMatch(/\.result\.lost \.balmove \.to \{[^}]*var\(--loss\)/);
   });
 });
 
