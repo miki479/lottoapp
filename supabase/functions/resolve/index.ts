@@ -9,6 +9,9 @@ import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
 import { cancelledMarkets } from "../_shared/shared/cancel.ts";
 import { notifyOffers, notifyDirect, notifyComeback, notifyLiveDelay, notifyRecap, notifyRewards, notifyBroadcast, lastNotifyError, notifyFlash, notifyFriendWins, notifyInvites, notifyFriendRequests, notifyReminders, notifySupers, notifyModeration, notifyResults, notifyStreak } from "../_lib/notify.ts";
 
+/** Markets that were still waiting for their data, and until when they are left alone (kept in the worker between runs). */
+const pendingUntil = new Map<string, number>();
+
 Deno.serve(safe(async (req) => {
   const denied = requireCron(req);
   if (denied) return denied;
@@ -49,6 +52,7 @@ Deno.serve(safe(async (req) => {
   for (let i = dueList.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [dueList[i], dueList[j]] = [dueList[j]!, dueList[i]!]; }
   for (const row of dueList) {
     if (Date.now() - t0 > 40_000) { out.skipped++; continue; }
+    if ((pendingUntil.get(row.id) ?? 0) > Date.now()) { out.skipped++; continue; } // waiting for data a moment ago: not worth asking again before a few minutes
     try {
       const event = marketToEvent(row);
       const city = cities.get(row.city_id) ?? (row.city_id === "world" ? ({ id: "world", timezone: "UTC" } as unknown as ReturnType<typeof cities.get> & object) : undefined) ?? (placeTz.has(row.city_id) ? ({ id: row.city_id, timezone: placeTz.get(row.city_id)! } as unknown as ReturnType<typeof cities.get> & object) : undefined);
@@ -109,7 +113,7 @@ Deno.serve(safe(async (req) => {
         event, now, feed: { feedId: event.feedId, lastOkAt: lastOk.get(event.kind === "match_bet" ? "sportsdb" : event.kind === "tick_gt" ? "ticks" : event.kind === "metric_gt" ? "open-meteo-metrics" : event.feedId.startsWith("om-") ? "open-meteo-places" : event.feedId) ?? null },
         staleAfterSec: feedStale.get(event.feedId) ?? (event.feedId === "usgs" || event.feedId === "mit-scioperi" || event.kind === "tick_gt" || event.kind === "match_bet" ? 7200 : event.feedId.startsWith("om-") ? 10800 : 300), delays, weather, metrics, quake, strike, traffic, ticks, match, occupancy,
       });
-      if (res.status === "pending") { out.pending++; continue; }
+      if (res.status === "pending") { out.pending++; pendingUntil.set(row.id, Date.now() + 4 * 60_000); if (pendingUntil.size > 5000) pendingUntil.clear(); continue; }
       // Delay bets with the "how full" bonus: the bus's own report closest to the moment of the question goes into the evidence (no report = no bonus).
       if (res.status === "resolved" && (event.kind === "bus_delay_gt") && (row.params as { occBonus?: boolean }).occBonus) {
         const lo = new Date((event.targetAt - OCC_WINDOW_SEC) * 1000).toISOString(), hi = new Date((event.targetAt + OCC_WINDOW_SEC) * 1000).toISOString();

@@ -64,7 +64,10 @@ Deno.serve(safe(async (req) => {
   const seen = new Set<string>();
   // Same rule as the resolve job: stay inside ~45 s so that runs never pile up. The cities are visited from a different one each minute, so no feed is always last.
   const t0 = Date.now(), allCities = await loadCities(), rot = allCities.length ? new Date().getUTCMinutes() % allCities.length : 0;
-  for (const city of [...allCities.slice(rot), ...allCities.slice(0, rot)]) {
+  // "?slice=a-b" (diagnosis only): visit just those cities, in list order, and stop after the feeds
+  const sliceQ = new URL(req.url).searchParams.get("slice"), [sa, sb2] = sliceQ ? sliceQ.split("-").map(Number) : [0, 0];
+  const visit = sliceQ ? allCities.slice(sa, sb2) : [...allCities.slice(rot), ...allCities.slice(0, rot)];
+  for (const city of visit) {
     for (const feed of usableFeeds(city, allowUnverified())) {
       if (Date.now() - t0 > 45_000) break;
       // Feed ids are globally unique (weather feeds are per city); a national feed listed by two cities is fetched once.
@@ -75,10 +78,12 @@ Deno.serve(safe(async (req) => {
       if (feed.type === "viaggiatreno" && !Deno.env.get("VIAGGIATRENO_BASE_URL")) { report[feed.id] = "local-only"; continue; }
       if (now - (lastAttempt.get(feed.id) ?? 0) < feed.pollSeconds - 5) { report[feed.id] = "not due"; continue; }
       await sb.from("feed_health").upsert({ feed_id: feed.id, last_attempt_at: new Date(now * 1000).toISOString() });
+      const tf = Date.now();
+      while (rtCache.size > 2) rtCache.delete(rtCache.keys().next().value as string); // keep only the latest decoded feeds: the big ones add up inside one run
       try {
         const n = await ingestFeed(sb, city, feed, now, tracked.get(feed.id) ?? new Map(), rtCache);
         await sb.from("feed_health").upsert({ feed_id: feed.id, last_ok_at: new Date().toISOString(), last_error: null });
-        report[feed.id] = `ok ${n}`;
+        report[feed.id] = `ok ${n} ${Date.now() - tf}ms`;
         if (feed.vehiclesUrl) report[`${feed.id}-vehicles`] = await ingestVehicles(sb, feed, now, trackedVeh.get(feed.id) ?? new Set()).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
       } catch (e) {
         const msg = String((e as Error).message ?? e).slice(0, 300);
@@ -90,6 +95,7 @@ Deno.serve(safe(async (req) => {
   report["live-odds"] = await repriceDelays(sb).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["rain-odds"] = await repriceRain(sb).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   if (heavyRun) return Response.json(report);
+  if (sliceQ) return Response.json(report);
   report["open-meteo-places"] = await ingestPlaces(sb, now, lastAttempt.get("open-meteo-places") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["open-meteo-metrics"] = await ingestMetrics(sb, now, lastAttempt.get("open-meteo-metrics") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
   report["ticks"] = await ingestTicks(sb, now, lastAttempt.get("ticks") ?? 0).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
