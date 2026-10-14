@@ -302,13 +302,13 @@ const BROADCAST = {
     },
     url: "https://latelotto.web.app/",
   },
-  // the sarcastic bomb again, this time with 1,000 credits and a gift to choose inside (see scripts/send-gift-choice.sql)
+  // the sarcastic bomb again, with 1,000 in the player's own money and a gift to choose inside (see scripts/send-gift-choice.sql). Sent per language: the money differs.
   gift_v1: {
-    headings: { en: "💣 Don't look under the bed. Look at the app.", it: "💣 Non guardare sotto il letto. Guarda l'app.", ja: "💣 ベッドの下は見ないで。アプリを見て。" },
-    contents: {
-      en: "We planted a bomb. Relax: inside there are 1,000 pretend credits and a gift of your choice, and the real danger is how much time you will lose in the app. Come in, or next time your bus will be on time, and you will wish you had never found out.",
-      it: "Abbiamo piazzato una bomba. Tranquillo: dentro ci sono 1.000 crediti finti e un regalo a tua scelta, e il vero pericolo è quanto tempo ci perderai nell'app. Entra, o la prossima volta il tuo bus sarà puntuale e vorresti non averlo mai scoperto.",
-      ja: "爆弾を仕掛けました。ご安心を。中にはニセクレジット1,000と、お好きなプレゼントがひとつ入っています。本当の危険は、アプリで失う時間です。入ってください。さもないと次はあなたのバスが定刻通りに来て、知らなければよかったと思うことになります。",
+    byLocale: {
+      it: { h: "💣 Non guardare sotto il letto. Guarda l'app.", c: "Abbiamo piazzato una bomba. Tranquillo: dentro ci sono 1.000 € e un regalo a tua scelta, e il vero pericolo è quanto tempo ci perderai nell'app. Entra, o la prossima volta il tuo bus sarà puntuale e vorresti non averlo mai scoperto." },
+      "en-US": { h: "💣 Don't look under the bed. Look at the app.", c: "We planted a bomb. Relax: inside there is $1,000 and a gift of your choice, and the real danger is how much time you will lose in the app. Come in, or next time your bus will be on time, and you will wish you had never found out." },
+      "en-GB": { h: "💣 Don't look under the bed. Look at the app.", c: "We planted a bomb. Relax: inside there is £1,000 and a gift of your choice, and the real danger is how much time you will lose in the app. Come in, or next time your bus will be on time, and you will wish you had never found out." },
+      ja: { h: "💣 ベッドの下は見ないで。アプリを見て。", c: "爆弾を仕掛けました。ご安心を。中には1,000円とお好きなプレゼントがひとつ入っています。本当の危険は、アプリで失う時間です。入ってください。さもないと次はあなたのバスが定刻通りに来て、知らなければよかったと思うことになります。" },
     },
     url: "https://latelotto.web.app/",
   },
@@ -333,13 +333,29 @@ export async function notifyBroadcast(sb: Db): Promise<number> {
   // mark first: a failure after the send must never repeat the message to everybody
   await sb.from("app_settings").upsert({ key: "broadcast_done", value: id });
   const b = BROADCAST[id];
-  const r = await fetch("https://api.onesignal.com/notifications", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `${key.startsWith("os_v2") ? "Key" : "Basic"} ${key}` },
-    body: JSON.stringify({ app_id: app, target_channel: "push", included_segments: ["Subscribed Users"], headings: b.headings, contents: b.contents, url: b.url, ttl: 86400 }),
-  });
-  if (!r.ok) { lastNotifyError.msg = `broadcast ${r.status} ${(await r.text()).slice(0, 160)}`; console.error(lastNotifyError.msg); return 0; }
-  return 1;
+  const post = async (body: Record<string, unknown>) => {
+    const r = await fetch("https://api.onesignal.com/notifications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `${key.startsWith("os_v2") ? "Key" : "Basic"} ${key}` },
+      body: JSON.stringify({ app_id: app, target_channel: "push", url: b.url, ttl: 86400, ...body }),
+    });
+    if (!r.ok) { lastNotifyError.msg = `broadcast ${r.status} ${(await r.text()).slice(0, 160)}`; console.error(lastNotifyError.msg); return false; }
+    // 200 with an empty id means nobody was reached (wrong segment name, nobody subscribed): that is a failure, not a success
+    const j = await r.json().catch(() => null) as { id?: string; errors?: unknown } | null;
+    if (!j?.id) { lastNotifyError.msg = `broadcast not delivered ${JSON.stringify(j?.errors ?? {}).slice(0, 140)}`; console.error(lastNotifyError.msg); return false; }
+    return true;
+  };
+  let ok = 0;
+  if ("byLocale" in b) {
+    // one send per language, addressed by player id: the money in the text differs between en-US and en-GB
+    const { data: rows } = await sb.from("profiles").select("id,locale").limit(20000);
+    for (const [loc, t] of Object.entries(b.byLocale)) {
+      const ids = (rows ?? []).filter((r) => (r.locale as string) === loc).map((r) => r.id as string);
+      for (let i = 0; i < ids.length; i += 1000) if (await post({ include_aliases: { external_id: ids.slice(i, i + 1000) }, headings: { en: t.h }, contents: { en: t.c } })) ok++;
+    }
+  } else if (await post({ included_segments: ["Total Subscriptions"], headings: b.headings, contents: b.contents })) ok++;
+  if (ok === 0) await sb.from("app_settings").upsert({ key: "broadcast_done", value: `${id}:failed` }); // so that a fixed run can send it again
+  return ok > 0 ? 1 : 0;
 }
 
 // ---- more pushes: rewards, live delay, Sunday recap, coming back ----
