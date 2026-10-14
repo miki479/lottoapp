@@ -1598,17 +1598,20 @@ textarea.field { resize: vertical; min-height: 84px; }
 @keyframes sakurasway { from { transform: rotate(-.6deg); } to { transform: rotate(.8deg); } }
 @media (prefers-reduced-motion: reduce) { .mscene.sakura .pt, .mscene.sakura .sk-tree { animation: none; } .mscene.sakura .pt { opacity: .7; } }
 
-/* one city's rain hours as one card: two to a row in time order, a colour and an icon for morning / afternoon / evening */
+/* one city's rain hours as one panel: pick the part of the day, hours in order two to a row, each with its own Yes and No */
 .raingroup { display: grid; gap: var(--space-3); padding: var(--space-4); }
-.rgtop { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; color: var(--c-weather); }
-.rgtop h3 { margin: 0; font-size: var(--fs-lg); color: var(--text); } .rgtop .detail { margin-left: auto; color: var(--muted); font-size: var(--fs-xs); }
-.rgkey { display: flex; gap: var(--space-3); flex-wrap: wrap; font-size: var(--fs-xs); color: var(--muted); }
-.rgkey span { display: inline-flex; align-items: center; gap: 4px; }
-.rgday { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: var(--ls-detail); color: var(--muted); }
+.rgtop { display: flex; align-items: center; gap: var(--space-2); color: var(--c-weather); }
+.rgtop h3 { margin: 0; font-size: var(--fs-lg); color: var(--text); }
+.rgsel button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.rghist { display: flex; align-items: center; gap: var(--space-3); font-size: var(--fs-sm); color: var(--text-2); }
+.rgbars .bar.wet { fill: var(--c-weather); } .rgbars .bar.dry { fill: var(--border-strong); } .rgbars .bar.none { fill: var(--border); }
+.rgday { margin: 0; font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: var(--ls-detail); color: var(--muted); }
 .rggrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
-.rgchip { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-2); min-height: var(--hit); padding: 0 var(--space-3); font: inherit; font-size: var(--fs-sm); color: var(--text); text-align: left; background: var(--surface-2); border: 1px solid var(--border-strong); border-left-width: 4px; border-radius: var(--radius-control); cursor: pointer; }
-.rgchip b { color: var(--action-ink); } .rgchip:active { transform: scale(.97); }
-.dp-m { --dp: var(--c-train); } .dp-a { --dp: var(--star-ink); } .dp-e { --dp: var(--action-ink); }
-.rgkey .dp-m svg, .rgkey .dp-a svg, .rgkey .dp-e svg, .rgchip svg { color: var(--dp); }
-.rgchip { border-left-color: var(--dp); }
-.rgchip b { justify-self: end; } .rgchip .num:nth-of-type(1) { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rgchip { display: flex; flex-direction: column; gap: 4px; padding: var(--space-3); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius-control); }
+.rgchip.best { border-color: var(--action); box-shadow: 0 0 0 1px var(--action) inset; }
+.rghead { display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--text); } .rghead svg { color: var(--muted); flex: none; }
+.rgwhat { font-size: var(--fs-xs); color: var(--text-2); }
+.rgtag { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); font-weight: 700; color: var(--action-ink); }
+.rgbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: auto; padding-top: 4px; }
+.rgbtn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: var(--hit); font: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--text); background: var(--surface); border: 1px solid var(--line-ui); border-radius: var(--radius-control); cursor: pointer; }
+.rgbtn b { color: var(--action-ink); } .rgbtn:active { transform: scale(.97); }
