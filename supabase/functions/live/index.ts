@@ -3,7 +3,8 @@
 import { db, requireCron, safe } from "../_lib/common.ts";
 import { ESPN_PATH, matchGame, parseEspn, type LiveGame } from "../_shared/shared/live.ts";
 
-const UA = { "User-Agent": "LateLotto/0.1 (play-money game; https://latelotto.web.app)" };
+// ESPN answers 403 to any User-Agent that carries a web address, so this one is a plain product token
+const UA = { "User-Agent": "LateLotto/0.1 (play-money game)" };
 const ymd = (ms: number) => new Date(ms).toISOString().slice(0, 10).replace(/-/g, "");
 
 Deno.serve(safe(async (req) => {
@@ -25,7 +26,7 @@ Deno.serve(safe(async (req) => {
     for (const d of days) {
       try {
         const r = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${ESPN_PATH[league]}/scoreboard?dates=${d}`, { headers: UA, signal: AbortSignal.timeout(8000) });
-        if (r.ok) games.push(...parseEspn(await r.json()));
+        if (r.ok) games.push(...parseEspn(await r.json())); else notes.push(`${league}: HTTP ${r.status}`);
       } catch (e) { notes.push(`${league}: ${String((e as Error).message).slice(0, 60)}`); }
     }
     for (const f of list) {

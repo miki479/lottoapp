@@ -114,7 +114,19 @@ import { ESPN_PATH, parseEspn, sameTeam, type LiveGame } from "../_shared/shared
 import { alignNames, findRow, FORM_SOURCES, mergeForm, parseEspnTable, UEFA_SLUG } from "../_shared/shared/form.ts";
 import type { Fixture, LeagueCfg } from "../_shared/shared/sport.ts";
 
-const ESPN_UA = { "User-Agent": "LateLotto/0.1 (play-money game; https://latelotto.web.app)" };
+// ESPN answers 403 to any User-Agent that carries a web address, so this one is a plain product token
+const ESPN_UA = { "User-Agent": "LateLotto/0.1 (play-money game)" };
+
+// The free TheSportsDB key answers 429 above 30 calls a minute: every call waits here until fewer than 26 were made in the last 60 seconds.
+const tsdbStamps: number[] = [];
+export async function tsdbGate(): Promise<void> {
+  for (;;) {
+    const t = Date.now();
+    while (tsdbStamps.length && t - tsdbStamps[0]! > 60_000) tsdbStamps.shift();
+    if (tsdbStamps.length < 26) { tsdbStamps.push(t); return; }
+    await new Promise((r) => setTimeout(r, tsdbStamps[0]! + 60_050 - t));
+  }
+}
 const tableCache = new Map<string, { at: number; rows: TableRow[] }>();
 /** One ESPN standings table (cached for 20 minutes; empty when the source does not answer). */
 export async function espnTable(slug: string): Promise<TableRow[]> {
@@ -142,50 +154,92 @@ export async function deepTable(league: LeagueCfg, names: string[]): Promise<Tab
 export async function isItalianClub(name: string): Promise<boolean> { return !!findRow(name, await espnTable("ita.1")); }
 
 /**
- * Fixtures of the next 7 days that the day-by-day listing (3 matches a day on the free tier) did not show: the ESPN scoreboard names them, and the next
- * match of either club (a free TheSportsDB call per club) gives the real event with its id and crests. Games that already have a market are skipped.
+ * Fixtures of the next 7 days that the day-by-day listing (3 matches a day on the free tier) did not show: the ESPN scoreboard names them, and TheSportsDB
+ * gives the real event with its id and crests, found by "Home_vs_Away" in the season (ESPN's spelling first, then TheSportsDB's own spelling of each club,
+ * then the next match of either club). Games that already have a market are skipped, and a game that cannot be matched is not tried again for six hours.
  */
 // deno-lint-ignore no-explicit-any
-export async function discoverFixtures(sb: Db, base: string, league: LeagueCfg, now: number, known: Fixture[], getJson: (u: string) => Promise<any>, maxCalls = 30): Promise<{ fixtures: Fixture[]; seen: number; missing: string[] }> {
+export async function discoverFixtures(sb: Db, base: string, league: LeagueCfg, now: number, known: Fixture[], getJson: (u: string) => Promise<any>, maxCalls = 30, deadline = Date.now() + 70_000): Promise<{ fixtures: Fixture[]; seen: number; todo: number; missing: string[]; err: string }> {
   const path = ESPN_PATH[league.name];
-  if (!path) return { fixtures: [], seen: 0, missing: [] };
+  if (!path) return { fixtures: [], seen: 0, todo: 0, missing: [], err: "" };
   const games: LiveGame[] = [];
+  let err = "";
   for (let d = 0; d < 7; d++) {
     const day = new Date((now + d * 86400) * 1000).toISOString().slice(0, 10).replaceAll("-", "");
-    try { const r = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard?dates=${day}`, { headers: ESPN_UA, signal: AbortSignal.timeout(8000) }); if (r.ok) games.push(...parseEspn(await r.json())); } catch { /* next day */ }
+    try { const r = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard?dates=${day}`, { headers: ESPN_UA, signal: AbortSignal.timeout(8000) }); if (r.ok) games.push(...parseEspn(await r.json())); else err = `HTTP ${r.status}`; } catch (e) { err = String((e as Error).message ?? e).slice(0, 60); }
   }
-  const todo = games.filter((g) => g.state === "pre" && g.startMs / 1000 > now + 900 && g.startMs / 1000 < now + 7 * 86400 && !known.some((f) => Math.abs(f.kickoff - g.startMs / 1000) <= 6 * 3600 && sameTeam(f.home, g.home) && sameTeam(f.away, g.away)));
-  const { data: ids } = await sb.from("team_ids").select("team,sportsdb_id,tried_at");
-  const idOf = new Map<string, string | null>();
-  for (const r of ids ?? []) if (r.sportsdb_id || Date.now() - Date.parse(r.tried_at as string) < 3 * 86400_000) idOf.set(r.team as string, (r.sportsdb_id as string | null) ?? null);
+  const gameKey = (g: LiveGame) => `fx:${g.home}|${g.away}|${new Date(g.startMs).toISOString().slice(0, 10)}`;
+  const { data: rows } = await sb.from("team_ids").select("team,sportsdb_id,sportsdb_name,tried_at");
+  const info = new Map<string, { id: string | null; name: string | null }>(), triedAt = new Map<string, number>();
+  for (const r of rows ?? []) {
+    const team = r.team as string, at = Date.parse(r.tried_at as string);
+    if (team.startsWith("fx:")) triedAt.set(team, at);
+    else if (r.sportsdb_id || Date.now() - at < 3 * 86400_000) info.set(team, { id: (r.sportsdb_id as string | null) ?? null, name: (r.sportsdb_name as string | null) ?? null });
+  }
+  const todo = games.filter((g) => g.state === "pre" && g.startMs / 1000 > now + 900 && g.startMs / 1000 < now + 7 * 86400 && !known.some((f) => Math.abs(f.kickoff - g.startMs / 1000) <= 6 * 3600 && sameTeam(f.home, g.home) && sameTeam(f.away, g.away)))
+    .sort((a, b) => a.startMs - b.startMs);
   let calls = 0;
   const pause = () => new Promise((r) => setTimeout(r, 150));
-  const teamId = async (name: string): Promise<string | null> => {
-    if (idOf.has(name)) return idOf.get(name)!;
-    if (calls >= maxCalls) return null;
-    calls++; await pause();
-    const cands = ((await getJson(`${base}/searchteams.php?t=${encodeURIComponent(name)}`))?.teams ?? []) as Record<string, string>[];
-    const soccer = cands.filter((c) => c.strSport === "Soccer" && !/\b(women|ladies|u\d\d|ii|b)\b/i.test(c.strTeam ?? ""));
-    const row = findRow(name, soccer.map((c) => ({ team: c.strTeam!, played: 0, points: 0, goalsFor: 0, goalsAgainst: 0 })));
-    const id = row ? soccer.find((c) => c.strTeam === row.team)?.idTeam ?? null : null;
-    idOf.set(name, id);
-    await sb.from("team_ids").upsert({ team: name, sportsdb_id: id, tried_at: new Date().toISOString() });
-    return id;
+  const room = () => calls < maxCalls && Date.now() < deadline;
+  const call = async (file: string) => { calls++; await pause(); return await getJson(`${base}/${file}`); };
+  const season = (ms: number) => { const d = new Date(ms), y = d.getUTCFullYear(); return d.getUTCMonth() >= 6 ? `${y}-${y + 1}` : `${y - 1}-${y}`; };
+  const fixtureOf = (e: Record<string, string>): Fixture => ({ eventId: e.idEvent!, league: league.name, home: e.strHomeTeam!, away: e.strAwayTeam!, kickoff: Date.parse(`${e.strTimestamp}Z`) / 1000, ...(e.idAPIfootball ? { apiId: e.idAPIfootball } : {}), ...(e.strHomeTeamBadge ? { homeBadge: e.strHomeTeamBadge } : {}), ...(e.strAwayTeamBadge ? { awayBadge: e.strAwayTeamBadge } : {}) });
+  const isGame = (e: Record<string, string>, g: LiveGame) => !!e.idEvent && sameTeam(e.strHomeTeam ?? "", g.home) && sameTeam(e.strAwayTeam ?? "", g.away) && Math.abs(Date.parse(`${e.strTimestamp}Z`) - g.startMs) <= 6 * 3600_000;
+  /** The upcoming event of the season named "Home vs Away". */
+  const byName = async (home: string, away: string, g: LiveGame): Promise<Fixture | null> => {
+    const q = `${home}_vs_${away}`.trim().replace(/\s+/g, "_");
+    const evs = ((await call(`searchevents.php?e=${encodeURIComponent(q)}&s=${season(g.startMs)}`))?.event ?? []) as Record<string, string>[];
+    const e = evs.find((x) => isGame(x, g));
+    return e ? fixtureOf(e) : null;
+  };
+  /** TheSportsDB soccer teams whose name matches the query. */
+  const search = async (q: string): Promise<Record<string, string>[]> => {
+    const cands = ((await call(`searchteams.php?t=${encodeURIComponent(q)}`))?.teams ?? []) as Record<string, string>[];
+    return cands.filter((c) => c.strSport === "Soccer" && !/\b(women|ladies|u\d\d|ii|b)\b/i.test(c.strTeam ?? ""));
+  };
+  /** The id and TheSportsDB's own spelling of a club (a second try with the most telling word when the full ESPN spelling finds nothing). */
+  const team = async (espn: string): Promise<{ id: string | null; name: string | null }> => {
+    const hit = info.get(espn);
+    if (hit && (hit.name || !hit.id)) return hit;
+    if (hit?.id) { // known id, spelling not yet stored
+      if (!room()) return hit;
+      const t = ((await call(`lookupteam.php?id=${hit.id}`))?.teams ?? [])[0] as Record<string, string> | undefined;
+      const v = { id: hit.id, name: t?.strTeam ?? null };
+      info.set(espn, v); await sb.from("team_ids").upsert({ team: espn, sportsdb_id: v.id, sportsdb_name: v.name, tried_at: new Date().toISOString() });
+      return v;
+    }
+    if (!room()) return { id: null, name: null };
+    const mk = (c: Record<string, string>[]) => findRow(espn, c.map((x) => ({ team: x.strTeam!, played: 0, points: 0, goalsFor: 0, goalsAgainst: 0 })));
+    let soccer = await search(espn), row = mk(soccer);
+    if (!row && !soccer.length && room()) {
+      const word = espn.normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/[^A-Za-z0-9]+/).filter((w) => w.length >= 4 && !/^(real|club|city|united|sporting|fk|sk|fc)$/i.test(w)).sort((a, b) => b.length - a.length)[0];
+      if (word && word.toLowerCase() !== espn.toLowerCase()) { soccer = await search(word); row = mk(soccer); }
+    }
+    const v = { id: row ? soccer.find((c) => c.strTeam === row.team)?.idTeam ?? null : null, name: row?.team ?? null };
+    info.set(espn, v);
+    await sb.from("team_ids").upsert({ team: espn, sportsdb_id: v.id, sportsdb_name: v.name, tried_at: new Date().toISOString() });
+    return v;
   };
   const out: Fixture[] = [], missing: string[] = [];
   for (const g of todo) {
-    let found: Fixture | null = null;
-    for (const side of [g.home, g.away]) {
-      try {
-        const id = await teamId(side);
-        if (!id || calls >= maxCalls) continue;
-        calls++; await pause();
-        const evs = ((await getJson(`${base}/eventsnext.php?id=${id}`))?.events ?? []) as Record<string, string>[];
-        const e = evs.find((x) => sameTeam(x.strHomeTeam ?? "", g.home) && sameTeam(x.strAwayTeam ?? "", g.away) && Math.abs(Date.parse(`${x.strTimestamp}Z`) - g.startMs) <= 6 * 3600_000);
-        if (e?.idEvent) { found = { eventId: e.idEvent, league: league.name, home: e.strHomeTeam!, away: e.strAwayTeam!, kickoff: Date.parse(`${e.strTimestamp}Z`) / 1000, ...(e.idAPIfootball ? { apiId: e.idAPIfootball } : {}), ...(e.strHomeTeamBadge ? { homeBadge: e.strHomeTeamBadge } : {}), ...(e.strAwayTeamBadge ? { awayBadge: e.strAwayTeamBadge } : {}) }; break; }
-      } catch { /* the other club, or next time */ }
-    }
-    if (found) out.push(found); else missing.push(`${g.home}-${g.away}`);
+    if (Date.now() - (triedAt.get(gameKey(g)) ?? 0) < 6 * 3600_000) { missing.push(`${g.home}-${g.away}`); continue; }
+    if (!room()) { missing.push(`${g.home}-${g.away}`); continue; }
+    let found: Fixture | null = null, gaveUp = false;
+    try {
+      found = await byName(g.home, g.away, g);
+      if (!found && room()) {
+        const h = await team(g.home), a = await team(g.away), hn = h.name ?? g.home, an = a.name ?? g.away;
+        if ((hn !== g.home || an !== g.away) && room()) found = await byName(hn, an, g);
+        for (const t of [h, a]) { // the next match of either club
+          if (found || !t.id || !room()) continue;
+          const e = ((await call(`eventsnext.php?id=${t.id}`))?.events ?? [] as Record<string, string>[]).find((x: Record<string, string>) => isGame(x, g));
+          if (e) found = fixtureOf(e);
+        }
+        gaveUp = !found && room();
+      }
+    } catch { /* a call failed: the next run tries again */ }
+    if (found && !out.some((f) => f.eventId === found!.eventId)) out.push(found);
+    else if (!found) { missing.push(`${g.home}-${g.away}`); if (gaveUp) await sb.from("team_ids").upsert({ team: gameKey(g), sportsdb_id: null, tried_at: new Date().toISOString() }); }
   }
-  return { fixtures: out, seen: games.length, missing };
+  return { fixtures: out, seen: games.length, todo: todo.length, missing, err };
 }

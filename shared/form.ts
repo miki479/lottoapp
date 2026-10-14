@@ -14,7 +14,7 @@ export const UEFA_SLUG: Record<string, string> = { "Champions League": "uefa.cha
 
 const STOP = new Set(["fc", "cf", "ac", "as", "sc", "us", "ssc", "afc", "calcio", "club", "the", "de", "la", "le", "ud", "cd", "sd", "rc", "ca", "and", "sk", "fk", "bk", "if", "ik", "sv", "fsv", "vfb", "vfl", "tsg", "rb"]);
 /** Spellings that differ completely between the two sources. */
-const ALIAS: Record<string, string> = { internazionale: "inter milan", "inter": "inter milan", "paris saint germain": "paris saint germain", psg: "paris saint germain", "sporting": "sporting cp", "sporting lisbon": "sporting cp", "man city": "manchester city", "man united": "manchester united", "manchester utd": "manchester united", "bayer leverkusen": "bayer leverkusen", "atletico": "atletico madrid" };
+const ALIAS: Record<string, string> = { internazionale: "inter milan", "inter": "inter milan", "paris saint germain": "paris saint germain", psg: "paris saint germain", "paris sg": "paris saint germain", "bod glimt": "bodo glimt", "sporting": "sporting cp", "sporting lisbon": "sporting cp", "man city": "manchester city", "man united": "manchester united", "manchester utd": "manchester united", "bayer leverkusen": "bayer leverkusen", "atletico": "atletico madrid" };
 const norm = (s: string) => {
   const t = s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/&/g, " and ").replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).filter((x) => x && !STOP.has(x)).join(" ");
   return ALIAS[t] ?? t;

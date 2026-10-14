@@ -17,7 +17,7 @@ import { FUELS, METALS, OIL, buildFuelMarkets, buildMetalMarkets, buildOilMarket
 import { LASTFM, buildLastfmMarkets, BIKES, buildBikesMarkets, bikesPlausible, buildNwsMarkets, isNws } from "../_shared/shared/ticks.ts";
 import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildAlertMarkets, alertLevel, alertQueryDate, ALERT_AREAS, ALERT_HAZARDS, ALERT_URL, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
 import { bookPriors, buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, MIN_FORM_GAMES, type Fixture, type Geo, type MatchBet, type TableRow } from "../_shared/shared/sport.ts";
-import { apiFootball, apiKey, deepTable, discoverFixtures, fetchBookQuotes, fetchDetails, fetchPlayerFacts, isItalianClub, loadTable } from "../_lib/football.ts";
+import { apiFootball, apiKey, deepTable, discoverFixtures, fetchBookQuotes, fetchDetails, fetchPlayerFacts, isItalianClub, loadTable, tsdbGate } from "../_lib/football.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { DEFAULT_YES_PROBABILITY, computeOdds, delayContextAt, learnedPrior, liveYesProbability, rainYesProbability } from "../_shared/shared/odds.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
@@ -987,6 +987,8 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
   const key = Deno.env.get("SPORTSDB_KEY") || "3";
   const base = `https://www.thesportsdb.com/api/v1/json/${key}`;
   const notes: string[] = [];
+  /** Every TheSportsDB call goes through the gate: the free key answers 429 above 30 a minute. */
+  const tsdb = async (url: string) => { await tsdbGate(); return await getJson(url); };
   // 1. Matches that should be over: store the final score once it is published.
   const { data: open } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").lte("target_at", new Date(now * 1000).toISOString()).order("target_at").limit(100);
   const ids = [...new Set((open ?? []).map((m) => String((m.params as { eventId: string }).eventId)))];
@@ -996,7 +998,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
     const rows: Record<string, unknown>[] = [];
     for (const id of ids.filter((x) => !done.has(x)).slice(0, 12)) {
       try {
-        const e = ((await getJson(`${base}/lookupevent.php?id=${id}`))?.events ?? [])[0];
+        const e = ((await tsdb(`${base}/lookupevent.php?id=${id}`))?.events ?? [])[0];
         if (!e) continue;
         const hg = e.intHomeScore === null || e.intHomeScore === undefined ? null : Number(e.intHomeScore), ag = e.intAwayScore === null || e.intAwayScore === undefined ? null : Number(e.intAwayScore);
         rows.push({ event_id: id, kickoff: `${String(e.strTimestamp)}Z`, home_goals: hg, away_goals: ag, status: String(e.strStatus ?? ""), fetched_at: new Date().toISOString() });
@@ -1068,7 +1070,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
         let season = "";
         for (let d = 0; d < 7; d++) {
           const day = new Date((now + d * 86400) * 1000).toISOString().slice(0, 10);
-          const evs = ((await getJson(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
+          const evs = ((await tsdb(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
           await new Promise((r) => setTimeout(r, 150)); // the free tier is polite-use: about 30 calls a minute
           for (const e of evs) {
             const k = Date.parse(`${e.strTimestamp}Z`) / 1000;
@@ -1079,7 +1081,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
         const played: Record<string, unknown>[] = [];
         for (let d = 1; d <= 3; d++) {
           const day = new Date((now - d * 86400) * 1000).toISOString().slice(0, 10);
-          const evs = ((await getJson(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
+          const evs = ((await tsdb(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
           await new Promise((r) => setTimeout(r, 150));
           for (const e of evs) {
             const k = Date.parse(`${e.strTimestamp}Z`) / 1000, hg = e.intHomeScore, ag = e.intAwayScore;
@@ -1094,15 +1096,15 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
           const { data: openM } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").eq("params->>league", league.name).limit(600);
           const have = new Map<string, Fixture>();
           for (const m of openM ?? []) { const p = m.params as { eventId: string; home: string; away: string; kickoff: number }; have.set(String(p.eventId), { eventId: String(p.eventId), league: league.name, home: p.home, away: p.away, kickoff: Number(p.kickoff) }); }
-          const more = await discoverFixtures(sb, base, league, now, [...fixtures, ...have.values()], getJson);
+          const more = await discoverFixtures(sb, base, league, now, [...fixtures, ...have.values()], tsdb);
           for (const f of more.fixtures) if (!fixtures.some((x) => x.eventId === f.eventId)) fixtures.push(f);
-          if (more.fixtures.length || more.missing.length) notes.push(`${league.name}: +${more.fixtures.length} found, ${more.missing.length} not matched${more.missing.length ? ` (${more.missing.slice(0, 2).join(", ")})` : ""}`);
+          notes.push(`${league.name}: espn ${more.seen}/${more.todo} new${more.err ? ` (${more.err})` : ""}, +${more.fixtures.length} found, ${more.missing.length} not matched${more.missing.length ? ` (${more.missing.slice(0, 2).join(", ")})` : ""}`);
         }
         if (fixtures.length === 0) continue;
         // strengths from the matches already played; the free league table (five teams) only when nothing is stored yet
         let table: TableRow[] = league.deep ? await deepTable(league, fixtures.flatMap((f) => [f.home, f.away])).catch(() => []) : [];
         if (table.length < 8 && !league.euro) table = await loadTable(sb, league.name).catch(() => []);
-        if (table.length < 8) { try { table = (((await getJson(`${base}/lookuptable.php?l=${league.id}&s=${season}`))?.table ?? []) as Record<string, string>[]).map((r) => ({ team: r.strTeam!, played: Number(r.intPlayed), points: Number(r.intPoints), goalsFor: Number(r.intGoalsFor), goalsAgainst: Number(r.intGoalsAgainst) })); } catch { /* priors fall back to averages */ } }
+        if (table.length < 8) { try { table = (((await tsdb(`${base}/lookuptable.php?l=${league.id}&s=${season}`))?.table ?? []) as Record<string, string>[]).map((r) => ({ team: r.strTeam!, played: Number(r.intPlayed), points: Number(r.intPoints), goalsFor: Number(r.intGoalsFor), goalsAgainst: Number(r.intGoalsAgainst) })); } catch { /* priors fall back to averages */ } }
         // town of every home team, geocoded once and remembered (a foreign fixture is local at the Italian club's town, home or away)
         const geo = new Map<string, Geo>();
         for (const f of fixtures) {
@@ -1141,6 +1143,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
             }
           }
         }
+        if (league.deep) notes.push(`${league.name}: ${fixtures.length} fixtures, strengths of ${table.length} clubs`);
         const markets = buildMatchMarkets(fixtures, table, now, false, geo, league.top, league.two, book, league.euro ? MIN_FORM_GAMES : 0);
         if (markets.length) { const { error } = await sb.from("markets").upsert(markets, { onConflict: "dedupe_key", ignoreDuplicates: true }); if (error) throw new Error(error.message); }
         // keep the figures of the not-yet-opened bets (and the data-source id) of already open matches current
