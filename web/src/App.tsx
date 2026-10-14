@@ -363,7 +363,15 @@ export function App() {
   useEffect(() => { if (filterSeen.current) { filterSeen.current = false; return; } void loadMarkets(); }, [filter, home?.id]);
   // While a bet sheet is open the odds it shows follow the live ones (refreshed every 10 s, and at once when the server says they moved), so the price on screen is the price that will be asked.
   const sheetId = sheet && !sheet.offer ? sheet.m.id : null;
-  useEffect(() => { if (!sheetId) return; return every(loadMarkets, 10_000); }, [sheetId, loadMarkets]);
+  // (only this one question is read, a few columns: the whole list is not reloaded for it)
+  useEffect(() => {
+    if (!sheetId) return;
+    const go = () => sb.from("markets").select("id,odds_yes,odds_no").eq("id", sheetId).maybeSingle().then(({ data }: { data: { id: string; odds_yes: number; odds_no: number } | null }) => {
+      if (!data) return;
+      setSheet((sh) => (sh && sh.m.id === data.id && (String(sh.m.odds_yes) !== String(data.odds_yes) || String(sh.m.odds_no) !== String(data.odds_no)) ? { ...sh, m: { ...sh.m, odds_yes: data.odds_yes, odds_no: data.odds_no } } : sh));
+    }, () => {});
+    return every(go, 15_000);
+  }, [sheetId]);
   useEffect(() => {
     setSheet((sh) => {
       if (!sh || sh.offer) return sh;

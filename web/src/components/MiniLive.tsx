@@ -45,7 +45,7 @@ export function MiniLive({ m, live, now, locale, msg }: { m: MarketRow; live?: L
     let alive = true;
     const key = isCrypto(series) ? `px:${series}` : series;
     const go = () => sb.rpc("tick_history", { p_series: key, p_limit: 24 }).then(({ data }: { data: unknown }) => { if (alive) setHist(((data ?? []) as { value: number | string }[]).map((r) => Number(r.value)).filter(Number.isFinite)); });
-    go(); const t = setInterval(go, 60_000);
+    go(); const t = setInterval(go, 120_000);
     return () => { alive = false; clearInterval(t); };
   }, [m.id, isTick, series]);
   // a match that is on: the score, every 30 seconds
@@ -62,7 +62,7 @@ export function MiniLive({ m, live, now, locale, msg }: { m: MarketRow; live?: L
     let alive = true;
     sb.rpc("track_markets", { p_ids: [m.id] }).then(() => {}, () => {});
     const go = () => sb.from("market_odds_history").select("p_yes").eq("market_id", m.id).order("at", { ascending: false }).limit(60).then(({ data }: { data: { p_yes: number }[] | null }) => { if (alive && data) setSrv(data.map((r) => Number(r.p_yes)).reverse()); });
-    const t0 = setTimeout(go, 1500), t = setInterval(go, 60_000);
+    const t0 = setTimeout(go, 1500), t = setInterval(go, 120_000);
     return () => { alive = false; clearTimeout(t0); clearInterval(t); };
   }, [m.id, isTick]);
   // trains and buses: the delay each time it was read here
