@@ -360,6 +360,16 @@ export function App() {
   // a new filter or home town needs its own questions (regions and "near you" read towns the first page does not hold)
   const filterSeen = useRef(true);
   useEffect(() => { if (filterSeen.current) { filterSeen.current = false; return; } void loadMarkets(); }, [filter, home?.id]);
+  // While a bet sheet is open the odds it shows follow the live ones (refreshed every 10 s, and at once when the server says they moved), so the price on screen is the price that will be asked.
+  const sheetId = sheet && !sheet.offer ? sheet.m.id : null;
+  useEffect(() => { if (!sheetId) return; return every(loadMarkets, 10_000); }, [sheetId, loadMarkets]);
+  useEffect(() => {
+    setSheet((sh) => {
+      if (!sh || sh.offer) return sh;
+      const fresh = markets?.find((x) => x.id === sh.m.id);
+      return fresh && (fresh.odds_yes !== sh.m.odds_yes || fresh.odds_no !== sh.m.odds_no) ? { ...sh, m: { ...sh.m, odds_yes: fresh.odds_yes, odds_no: fresh.odds_no } } : sh;
+    });
+  }, [markets]);
   useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = every(loadMarkets, 45_000), b = every(() => { loadResults(); loadActivity(); loadTrending(); }, 90_000); return () => { a(); b(); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
   useEffect(() => { if (!ready) return; return every(() => { loadBets(); loadProfile(); loadQuests(); }, 60_000); }, [ready]);
 
@@ -569,7 +579,7 @@ export function App() {
     const before = { bonus: progress?.bonus_claimed ?? false, trophies: new Set(trophies), streak: profile?.streak ?? 0 };
     const baseOdds = Number(pick === "yes" ? m.odds_yes : m.odds_no), betOdds = offerId && sheet?.offer ? offerOdds(baseOdds, sheet.offer.mult) : baseOdds;
     const { error } = await sb.rpc("place_bet", { p_market: m.id, p_pick: pick, p_stake: stake, p_boost: boost, ...(bonus ? { p_bonus: bonus } : {}), ...(vice ? { p_vice: true } : {}), ...(offerId ? { p_offer: offerId } : { p_odds: baseOdds }) });
-    if (error?.message.includes("odds_changed")) void loadMarkets();
+    if (error?.message.includes("odds_changed")) await loadMarkets();
     if (error) return (offerId ? offerErrorText(error.message, locale) : null) ?? msg.errors[Object.keys(msg.errors).find((k) => error.message.includes(k)) ?? "generic"]!;
     setSheet(null);
     if (offerId) dispatchEvent(new Event(OFFER_EVENT));
