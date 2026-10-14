@@ -1,4 +1,4 @@
-import { Share2, X } from "lucide-preact";
+import { Share2, X, Check } from "lucide-preact";
 import { useCallback, useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
@@ -107,7 +107,7 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
           <div key={i} class="pplrow">
             <span class="lkwrap">{x.uid && looks[x.uid] ? <Look avatar={looks[x.uid]!.avatar} decoration={looks[x.uid]!.decoration} size={26} /> : <span class="lkph" />}</span>
             <span class="pplname">{x.name === "?" ? p.msg.ticker.anon : x.name}<PlayerTitle id={x.uid ? looks[x.uid]?.title : null} locale={p.locale} /></span>
-            <span class="num pplpick"><b>{x.pick === null ? "✓" : x.pick === "yes" ? f.yes : f.no}</b>{(x.payout ?? 0) > 0 && c.status === "resolved" ? ` · ${f.won} ${money(x.payout ?? 0, p.locale)}` : ""}</span>
+            <span class="num pplpick"><b>{x.pick === null ? <Check size={14} aria-label="✓" /> : x.pick === "yes" ? f.yes : f.no}</b>{(x.payout ?? 0) > 0 && c.status === "resolved" ? ` · ${f.won} ${money(x.payout ?? 0, p.locale)}` : ""}</span>
           </div>
         ))}
       </div>}

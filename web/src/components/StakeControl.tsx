@@ -1,3 +1,4 @@
+import { Coins, Star } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { boostedPayout } from "../../../shared/wallet.ts";
 import { useCountUp } from "../lib/anim.ts";
@@ -8,7 +9,7 @@ import { balanceAfter, outcomes } from "../lib/stake.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 
 const ALL: Record<string, string> = { it: "Tutto", "en-US": "All", "en-GB": "All", ja: "全額" };
-const COIN_RAIN = Array.from({ length: 16 }, (_, i) => ({ left: (i * 37 + 8) % 96, delay: ((i * 53) % 100) / 70, dur: 1.8 + ((i * 29) % 10) / 6, e: i % 2 ? "🤩" : "💸" }));
+const COIN_RAIN = Array.from({ length: 16 }, (_, i) => ({ left: (i * 37 + 8) % 96, delay: ((i * 53) % 100) / 70, dur: 1.8 + ((i * 29) % 10) / 6, star: i % 2 === 1 }));
 
 /**
  * The amount of a bet: a big centred figure that warms up (violet -> magenta -> orange) and pops as the stake grows, a slider with a number field beside it, the
@@ -60,7 +61,7 @@ export function StakeControl(p: { value: number; onChange: (n: number) => void; 
             ? <span class="aistack"><span class="ainum aiback">{money(p.value, p.locale)}</span><span class="aiword aisuck" aria-hidden="true">ALL IN</span></span>
             : money(p.value, p.locale)}
       </output>
-      {allIn && <div class="airain" aria-hidden="true">{COIN_RAIN.map((c, i) => <span key={i} style={`left:${c.left}%;animation-delay:${c.delay}s;animation-duration:${c.dur}s`}>{c.e}</span>)}</div>}
+      {allIn && <div class="airain" aria-hidden="true">{COIN_RAIN.map((c, i) => <span key={i} style={`left:${c.left}%;animation-delay:${c.delay}s;animation-duration:${c.dur}s`}>{c.star ? <Star size={22} fill="currentColor" /> : <Coins size={22} />}</span>)}</div>}
       <div class="stakeline">
         <input class="range" type="range" min={0} max={1000} step={1} value={pos} aria-label={p.msg.stake.label}
           style={`--fill:${fill}%;--hue:${hue}`}

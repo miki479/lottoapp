@@ -116,6 +116,7 @@ const it: Messages = {
   },
   rankTabs: { world: "Mondiale", local: "Locale", friends: "Amici", near: "Dintorni", country: "Paese", city: "Città", km: "km", needHome: "Imposta la tua città per vedere chi gioca vicino a te.", radius: "Raggio" },
   ranking: {
+    seasonLbl: "stagione", seasonLegend: "Il numero a destra è il risultato di stagione: quanto hai guadagnato o perso da inizio stagione, diverso dal saldo.", balanceLbl: "Saldo", monthLbl: "crediti del mese", leagueLegend: "Il numero è il saldo di questo mese: ripartono tutti da zero a fine mese.",
     title: "Classifica", season: (d) => (d <= 1 ? "La stagione finisce oggi" : `La stagione finisce tra ${d} giorni`),
     scopes: { global: "Mondo", country: "Paese", city: "Città", friends: "Amici" }, you: "Tu", credits: "crediti",
     empty: { title: "Ancora nessuno in classifica", body: "Questo mese il primo posto è libero." },

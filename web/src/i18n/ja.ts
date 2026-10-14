@@ -116,6 +116,7 @@ const ja: Messages = {
   },
   rankTabs: { world: "世界", local: "地元", friends: "友達", near: "近く", country: "国", city: "都市", km: "km", needHome: "町を設定すると、近くのプレイヤーが表示されます。", radius: "範囲" },
   ranking: {
+    seasonLbl: "シーズン", seasonLegend: "右の数字はシーズンの成績で、シーズン開始からの勝ち負けです。残高とは別です。", balanceLbl: "残高", monthLbl: "今月", leagueLegend: "数字は今月の残高です。月末に全員リセットされます。",
     title: "ランキング", season: (d) => (d <= 1 ? "シーズンは今日で終了" : `シーズン終了まであと${d}日`),
     scopes: { global: "世界", country: "国", city: "都市", friends: "友だち" }, you: "あなた", credits: "クレジット",
     empty: { title: "まだ誰もランクインしていません", body: "今月の1位はまだ空席です。" },

@@ -23,7 +23,7 @@ import { Fragment } from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, CITIES, enabledCategories } from "../lib/cities.ts";
-import { ChevronDown, Flame, Plus, Search, Tv } from "lucide-preact";
+import { ChevronDown, Flame, Plus, Search, Tv, X } from "lucide-preact";
 import { TrainBoard } from "../components/TrainBoard.tsx";
 import { LoadBar } from "../components/LoadBar.tsx";
 import { followedShows, type FollowedShow } from "../lib/series.ts";
@@ -60,6 +60,7 @@ export function Home(p: HomeProps) {
   const wxKey = (m: MarketRow) => (m.kind === "tick_gt" && m.category === "finance" ? finKey(m) : m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : m.kind === "quake_m" ? String(m.params.region ?? "world") : "");
   const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi", "hail"] : p.cat === "nature" ? ["world", "jp", "it", "ca", "tr"] : p.cat === "finance" ? ["crypto", "metals", "fx", "oil", "fuel", "power"] : [];
   const [filterOpen, setFilterOpen] = useState(false);
+  const [staleOff, setStaleOff] = useState(false);
   const [howOpen, setHowOpen] = useState(() => safe.get("how") !== "1");
   const mq = typeof matchMedia === "function" ? matchMedia("(max-width: 560px)") : null;
   const [phone, setPhone] = useState(!!mq?.matches);
@@ -194,7 +195,7 @@ export function Home(p: HomeProps) {
           {p.cat === "sport" && <label class="searchbox"><Search size={18} /><input class="field" type="search" value={teamQ} placeholder={msg.teamSearch} onInput={(e) => setTeamQ((e.target as HTMLInputElement).value)} /></label>}
           {p.cat === "sport" && p.markets !== null && !sportQ && <FrisbeeSoon locale={p.locale} />}
           {p.cat === "sport" && p.markets !== null && <MatchList matches={groupMatches(shown)} msg={msg} locale={p.locale} onPick={p.onPick} registered={p.registered} onAuth={p.onAuth} details={p.details} friendBets={p.friendBets} />}
-          {p.stale && <p class="note warn">{msg.feedWarning}</p>}
+          {p.stale && !staleOff && <p class="note warn stalenote"><span>{msg.feedWarning}</span><button class="stalex" aria-label={msg.common.close} onClick={() => setStaleOff(true)}><X size={14} /></button></p>}
           <div class="cardgrid" style={p.cat === "sport" ? "display:none" : undefined}>
             {p.filter === "mine" && p.mineWide && p.markets !== null && shown.length > 0 && <p class="hint" style="grid-column:1/-1;margin:0" role="note">{NEAR_WIDE[p.locale] ?? NEAR_WIDE["en-US"]}</p>}
             {p.markets === null && <div style="grid-column:1/-1"><LoadBar label={msg.common.loading} /></div>}

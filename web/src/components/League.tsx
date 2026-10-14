@@ -90,17 +90,17 @@ function Board({ league, locale, msg, onProfile }: { league: number; locale: Loc
   if (rows === null) return <>{[0, 1, 2].map((i) => <div class="sk s" key={i} />)}</>;
   if (rows.length === 0) return <p class="hint">{t.empty}</p>;
   return (
-    <div class="list">{rows.map((r) => {
+    <><p class="detail scorelegend">{msg.ranking.leagueLegend}</p><div class="list">{rows.map((r) => {
       const l = looks[r.user_id];
       return (
         <div class={`row ${r.is_me ? "me" : ""}`} key={r.user_id}>
           <span class={`rank ${r.rank <= 3 ? "top" : ""}`}>{r.rank}</span>
           {l ? <Look avatar={l.avatar} decoration={l.decoration} size={36} /> : <span class="lkph" />}
           <button class="grow rowlink" onClick={() => onProfile(r.user_id)}><span class="nick"><b>{r.display_name}</b><LevelBadge level={l?.level} msg={msg} /></span><span class="subline">{r.is_me && <em class="youtag">{t.you}</em>}<PlayerTitle id={l?.title} locale={locale} /></span></button>
-          <span class="score num zero">{nf.format(r.credits)}</span>
+          <span class="scorebox"><span class="score num zero">{nf.format(r.credits)}</span><small class="scorelbl">{msg.ranking.monthLbl}</small></span>
         </div>
       );
-    })}</div>
+    })}</div></>
   );
 }
 
@@ -164,7 +164,7 @@ export function LeaguePanel(p: { locale: Locale; msg: Messages; registered: bool
         <SeasonBanner msg={p.msg} flat />
         {d.rank != null && rival && (rival.nextRank !== null
           ? <Meter tone="brand" name={t.gapTo(nf.format(Math.max(0, (rival.nextCredits ?? 0) - rival.credits)), t.ord(rival.nextRank))} value={rival.credits} max={Math.max(1, rival.nextCredits ?? 1)} label={<b class="num">{t.ord(rival.rank)}</b>} end={t.ord(rival.nextRank)} foot={t.gapTo(nf.format(Math.max(0, (rival.nextCredits ?? 0) - rival.credits)), t.ord(rival.nextRank))} />
-          : rival.belowRank !== null && <Meter tone="brand" name={t.leadOver(nf.format(Math.max(0, rival.credits - (rival.belowCredits ?? 0))), t.ord(rival.belowRank))} value={1} max={1} label={<b class="num">{t.ord(rival.rank)}</b>} end={t.ord(rival.belowRank)} foot={t.leadOver(nf.format(Math.max(0, rival.credits - (rival.belowCredits ?? 0))), t.ord(rival.belowRank))} />)}
+          : rival.belowRank !== null && <Meter tone="brand" name={t.leadOver(nf.format(Math.max(0, rival.credits - (rival.belowCredits ?? 0))), t.ord(rival.belowRank))} value={Math.max(0, rival.credits - (rival.belowCredits ?? 0))} max={Math.max(1, rival.credits)} label={<b class="num">{t.ord(rival.rank)}</b>} end={t.ord(rival.belowRank)} foot={t.leadOver(nf.format(Math.max(0, rival.credits - (rival.belowCredits ?? 0))), t.ord(rival.belowRank))} />)}
         {d.league >= 4
           ? <p class="hint">{t.top}</p>
           : d.rank != null && <Meter tone="streak" name={t.promo} value={inZone ? 1 : d.credits} max={inZone ? 1 : Math.max(1, line)} label={t.promo} end={inZone ? undefined : nf.format(line)} foot={inZone ? t.zone : t.gap(nf.format(gap ?? 0))} />}

@@ -14,6 +14,7 @@ import { LevelBadge } from "../components/LevelBadge.tsx";
 import { SeasonBanner } from "../components/Season.tsx";
 import { useLooks } from "../lib/looks.ts";
 import { fmtSigned } from "../lib/num.ts";
+import { money } from "../lib/format.ts";
 
 type Tab = "world" | "local" | "friends";
 type Local = "near" | "city" | "country";
@@ -84,6 +85,7 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
       {board && (
         <>
           <p class="detail">{p.msg.frd.boardHint}</p>
+          {p.profile && <p class="detail scorelegend">{m.balanceLbl} <b class="num">{money(p.profile.credits, p.locale)}</b> · {m.seasonLegend}</p>}
                     {friends === null && [0, 1, 2].map((i) => <div class="sk s" key={i} />)}
           {friends && friends.length <= 1 && <div class="card"><Empty icon={Users} title={p.msg.frd.empty} body={p.msg.frd.emptyBody} /></div>}
           {friends && friends.length > 1 && (
@@ -94,7 +96,7 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
                   {face(r.user_id)}
                   <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><span class="nick"><b>{r.display_name || p.msg.frd.anon}</b><LevelBadge level={looks[r.user_id]?.level} msg={p.msg} /></span><span class="subline">{r.is_me && <em class="youtag">{m.you}</em>}<PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} /></span></button>
                   {r.prev_rank !== r.rank && <span class={`mv ${r.rank < r.prev_rank ? "up" : "down"}`} aria-label={r.rank < r.prev_rank ? "up" : "down"}>{r.rank < r.prev_rank ? <ArrowUp size={13} strokeWidth={3} /> : <ArrowDown size={13} strokeWidth={3} />}{Math.abs(r.prev_rank - r.rank)}</span>}
-                  <span class={`score big num ${r.score > 0 ? "pos" : r.score < 0 ? "neg" : "zero"}`}>{r.score > 0 ? <ArrowUp size={15} strokeWidth={3} /> : r.score < 0 ? <ArrowDown size={15} strokeWidth={3} /> : null}{fmtSigned(r.score, p.locale)}</span>
+                  <span class="scorebox"><span class={`score big num ${r.score > 0 ? "pos" : r.score < 0 ? "neg" : "zero"}`}>{r.score > 0 ? <ArrowUp size={15} strokeWidth={3} /> : r.score < 0 ? <ArrowDown size={15} strokeWidth={3} /> : null}{fmtSigned(r.score, p.locale)}</span><small class="scorelbl">{m.seasonLbl}</small></span>
                 </div>
               ))}
             </div>
@@ -112,6 +114,7 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
       )}
       {!board && rows === null && [0, 1, 2, 3].map((i) => <div class="sk s" key={i} />)}
       {!board && rows && rows.length === 0 && <div class="card"><Empty icon={Trophy} title={m.empty.title} body={m.empty.body} /></div>}
+      {!board && rows && rows.length > 0 && p.profile && <p class="detail scorelegend">{m.balanceLbl} <b class="num">{money(p.profile.credits, p.locale)}</b> · {m.seasonLegend}</p>}
       {!board && rows && rows.length > 0 && (
         <div class="list">
           {rows.map((r) => (
@@ -119,7 +122,7 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
               <span class={`rank ${r.rank <= 3 ? "top" : ""}`}>{r.rank}</span>
               {face(r.user_id)}
               <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><span class="nick"><b>{r.display_name}</b><LevelBadge level={looks[r.user_id]?.level} msg={p.msg} /></span><span class="subline">{r.is_me && <em class="youtag">{m.you}</em>}<PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} /></span></button>
-              <span class={`score num ${r.score > 0 ? "pos" : r.score < 0 ? "neg" : "zero"}`}>{r.score > 0 ? <TrendingUp size={14} /> : r.score < 0 ? <TrendingDown size={14} /> : null}{fmtSigned(r.score, p.locale)}</span>
+              <span class="scorebox"><span class={`score num ${r.score > 0 ? "pos" : r.score < 0 ? "neg" : "zero"}`}>{r.score > 0 ? <TrendingUp size={14} /> : r.score < 0 ? <TrendingDown size={14} /> : null}{fmtSigned(r.score, p.locale)}</span><small class="scorelbl">{m.seasonLbl}</small></span>
             </div>
           ))}
         </div>

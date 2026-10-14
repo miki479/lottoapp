@@ -8,6 +8,7 @@ import { OFFER_EVENT, offerErrorText, type OfferUse } from "./components/Persona
 import type { CatId } from "./components/CatChips.tsx";
 import { DelayMeter } from "./components/DelayMeter.tsx";
 import { OfflineBar } from "./components/OfflineBar.tsx";
+import { shortStation } from "./components/TrainBoard.tsx";
 import { Ticker } from "./components/Ticker.tsx";
 import { ParlayBar } from "./components/ParlayBar.tsx";
 import { ParlaySheet, slipOdds } from "./components/ParlaySheet.tsx";
@@ -492,7 +493,7 @@ export function App() {
     const seenTrip = new Set<string>();
     for (const m of lateNow) {
       const trip = String(m.params.tripId ?? m.id); if (seenTrip.has(trip)) continue; seenTrip.add(trip);
-      const line = msg.ticker.late(trainLabel(String(m.params.routeName ?? ""), m.kind, locale), String(m.params.headsign ?? ""), Math.round(live[m.id]!.delay_sec / 60));
+      const line = msg.ticker.late(trainLabel(String(m.params.routeName ?? ""), m.kind, locale), m.category === "train" ? shortStation(String(m.params.headsign ?? "").toUpperCase()) : String(m.params.headsign ?? ""), Math.round(live[m.id]!.delay_sec / 60));
       system.push({ id: `l${m.id}`, text: line, node: <><i class="amt lost">●</i> {line}</> });
       if (system.length >= 5) break;
     }

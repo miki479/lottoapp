@@ -1,3 +1,4 @@
+import { Check } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { INTL_TAG } from "../i18n/index.ts";
@@ -68,7 +69,7 @@ export function MatchPicker(p: { msg: Messages; locale: Locale; origin: { lat: n
       </div>
       {cur && <>
         <span class="detail">{t.reason}</span>
-        <div class="mkchips">{BETS.map((b) => <button key={b} class={`mkchip ${bet === b ? "on" : ""}`} aria-pressed={bet === b} onClick={() => setBet(b)}>{t.bets[b]}{cur.have.has(b) ? " ✓" : ""}</button>)}</div>
+        <div class="mkchips">{BETS.map((b) => <button key={b} class={`mkchip ${bet === b ? "on" : ""}`} aria-pressed={bet === b} onClick={() => setBet(b)}>{t.bets[b]}{cur.have.has(b) ? <Check size={12} aria-label="✓" /> : null}</button>)}</div>
         {odds && <p class="hint num">{mk.odds}: {fmtOdds(odds.y, p.locale)} / {fmtOdds(odds.n, p.locale)}</p>}
         {exists && <p class="hint">{t.exists}</p>}
       </>}

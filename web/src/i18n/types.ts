@@ -90,7 +90,7 @@ export interface Messages {
     stake: string; odds: string; share: string; shareText: string; close: string; more: (n: number) => string; saved: string;
   };
   rankTabs: { world: string; local: string; friends: string; near: string; country: string; city: string; km: string; needHome: string; radius: string };
-  ranking: {
+  ranking: { seasonLbl: string; seasonLegend: string; balanceLbl: string; monthLbl: string; leagueLegend: string;
     title: string; season: (d: number) => string; scopes: { global: string; country: string; city: string; friends: string }; you: string; credits: string;
     empty: { title: string; body: string }; gate: { title: string; body: string; cta: string };
     groups: { create: string; join: string; namePh: string; codePh: string; yourCode: (c: string) => string; none: string };

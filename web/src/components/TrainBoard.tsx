@@ -12,7 +12,7 @@ const STRIP_ROWS = 4, FULL_ROWS = 12, SEARCH_ROWS = 30;
 
 /** The long station names of the board in their usual short forms (TORINO PORTA NUOVA → TORINO P. NUOVA). */
 const SHORT: [RegExp, string][] = [[/\bSTAZIONE\b/g, "STAZ."], [/\bCENTRALE\b/g, "C.LE"], [/\bPORTA\b/g, "P."], [/\bSANT'?\s/g, "S. "], [/\bSANTA\b/g, "S."], [/\bSAN\b/g, "S."]];
-const shortStation = (s: string) => SHORT.reduce((t, [re, to]) => t.replace(re, to), s);
+export const shortStation = (s: string) => SHORT.reduce((t, [re, to]) => t.replace(re, to), s);
 
 /** "FR 9516" / "REG 3935": the kind of train from the code in front of the number. */
 function kindOf(routeName: unknown, msg: Messages): { short: string; num: string; cls: "hs" | "ic" | "rg" } {

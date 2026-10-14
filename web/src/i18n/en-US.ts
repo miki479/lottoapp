@@ -116,6 +116,7 @@ const enUS: Messages = {
   },
   rankTabs: { world: "World", local: "Local", friends: "Friends", near: "Nearby", country: "Country", city: "City", km: "km", needHome: "Set your town to see who plays near you.", radius: "Radius" },
   ranking: {
+    seasonLbl: "season", seasonLegend: "The figure on the right is the season result: what you have won or lost since the season started, not your balance.", balanceLbl: "Balance", monthLbl: "this month", leagueLegend: "The figure is this month's balance: everyone restarts at month end.",
     title: "Leaderboard", season: (d) => (d <= 1 ? "Season ends today" : `Season ends in ${d} days`),
     scopes: { global: "World", country: "Country", city: "City", friends: "Friends" }, you: "You", credits: "credits",
     empty: { title: "Nobody on the board yet", body: "First place is wide open this month." },
