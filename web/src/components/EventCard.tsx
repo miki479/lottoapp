@@ -38,6 +38,8 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
   const isRain = isYesNo(m.kind);
   const who = subjectOf(m, msg, locale, cityName(city, locale));
   const flashOn = (m.flash_multiplier ?? 1) > 1 && !!m.flash_until && Date.parse(m.flash_until) > now;
+  /** Short outcome words ("Sì" / "No") sit beside the odds; longer ones ("In ritardo") sit above them. One layout per card, so the two buttons line up. */
+  const inlineWords = [isRain ? msg.card.yes : msg.card.late, isRain ? msg.card.no : msg.card.onTime].every((w) => w.length <= 5);
   return (
     <article class={`card event ${(p.friends ?? 0) > 0 ? "has-friends" : ""} ${m.category} ${p.top ? "is-top" : ""} ${flashOn ? "is-flash" : ""}`} style={`--i:${Math.min(p.index, 10)}`}>
       {(p.friends ?? 0) > 0 && <span class="frbadge" title={msg.frd.friendsOn(p.friends!)} aria-label={msg.frd.friendsOn(p.friends!)}><Users size={13} />{p.friends}</span>}
@@ -58,10 +60,12 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
       <div class="actions2">
         {(["yes", "no"] as const).map((k) => {
           const o = Number(k === "yes" ? m.odds_yes : m.odds_no), boosted = k === "yes" && flashOn, mv = oddsMove(m.id, k, Number(m.odds_yes), Number(m.odds_no));
+          const word = k === "yes" ? (isRain ? msg.card.yes : msg.card.late) : (isRain ? msg.card.no : msg.card.onTime);
           return (
-            <button key={k} class={`opt row ${k} ${boosted ? "boosted" : ""}`} onClick={() => p.onPick(m, k)} onPointerEnter={(e) => { if (e.pointerType === "mouse") show(k); }} onPointerLeave={(e) => { if (e.pointerType === "mouse") clear(); }} onPointerDown={(e) => { if (e.pointerType !== "mouse") show(k, 1600); }} onFocus={() => show(k)} onBlur={clear}>
-              <span class="l">{k === "yes" ? (isRain ? msg.card.yes : msg.card.late) : (isRain ? msg.card.no : msg.card.onTime)}</span>
-              <span class="ob"><b class="num">{fmtOdds(o, locale)}</b>{mv && <i class={`mv ${mv.dir}`}>{mv.dir === "up" ? "\u2191" : "\u2193"} {fmtDec(mv.delta, 2, locale)}</i>}</span>
+            <button key={k} class={`opt row ${inlineWords ? "short" : ""} ${k} ${boosted ? "boosted" : ""}`} onClick={() => p.onPick(m, k)} onPointerEnter={(e) => { if (e.pointerType === "mouse") show(k); }} onPointerLeave={(e) => { if (e.pointerType === "mouse") clear(); }} onPointerDown={(e) => { if (e.pointerType !== "mouse") show(k, 1600); }} onFocus={() => show(k)} onBlur={clear}>
+              <span class="l">{word}</span>
+              <span class="ob"><b class="num">{fmtOdds(o, locale)}</b></span>
+              {mv && <i class={`mv ${mv.dir}`}>{mv.dir === "up" ? "\u2191" : "\u2193"} {fmtDec(mv.delta, 2, locale)}</i>}
               <span class="s num">{msg.card.stakeTo(fmtInt(100, locale), fmtInt(potentialWin(100, o), locale))}</span>
             </button>
           );

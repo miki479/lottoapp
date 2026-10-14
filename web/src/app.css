@@ -1425,13 +1425,18 @@ textarea.field { resize: vertical; min-height: 84px; }
 .itlist { max-height: 168px; }
 
 /* ---------- event card: outcome and odds side by side, the payout written out, the quote's movement, and "why this quote" ---------- */
-.opt.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "l ob" "s s"; align-items: center; column-gap: 8px; row-gap: 3px; padding: 10px 12px; min-height: 80px; }
-.opt.row .l { grid-area: l; text-align: left; align-self: center; }
-.opt.row .ob { grid-area: ob; display: inline-flex; align-items: baseline; gap: 6px; justify-self: end; }
+.opt.row { display: grid; grid-template-columns: 1fr; grid-template-areas: "l" "ob" "s"; align-items: center; row-gap: 4px; padding: 10px 12px; min-height: 84px; }
+.opt.row .l { grid-area: l; text-align: left; overflow-wrap: normal; word-break: normal; }
+.opt.row .ob { grid-area: ob; display: inline-flex; align-items: baseline; gap: 8px; justify-self: start; }
 .opt.row .ob b { font-size: 28px; line-height: 1; padding: 3px 9px; border-radius: 10px; background: var(--brand-soft); }
 .opt.row.no .ob b { background: var(--surface); }
 .opt.row .s { grid-area: s; text-align: left; font-size: 12px; }
-.opt .mv { font-style: normal; font-size: 12px; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* a short word (Yes, No) sits beside its odds; a longer one (Late, On time) sits above them */
+.opt.row.short { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "l ob" "s s"; }
+.opt.row.short .ob { justify-self: end; }
+/* the movement of the quote: a small tag on the top edge of the choice, so it never takes room from the odds */
+.opt.row { position: relative; }
+.opt .mv { position: absolute; top: -9px; right: 10px; padding: 1px 7px; border-radius: var(--radius-pill); background: var(--surface); border: 1px solid currentColor; font-style: normal; font-size: 11px; font-weight: 800; line-height: 1.4; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .opt .mv.up { color: var(--won-fg); } .opt .mv.down { color: var(--lost-fg); }
 .why { border-top: 1px solid var(--border); margin-top: 2px; }
 .whyhead { width: 100%; min-height: 40px; display: flex; align-items: center; gap: 10px; padding: 6px 2px; color: var(--text-2); text-align: left; }
