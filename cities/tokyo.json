@@ -78,29 +78,6 @@
       ]
     },
     {
-      "id": "yokohama-bus-trip-update",
-      "category": "bus",
-      "type": "gtfs-rt",
-      "kind": "trip_updates",
-      "url": "https://api.odpt.org/api/v4/gtfs/realtime/YokohamaMunicipalBus_trip_update",
-      "requiresKey": "ODPT_KEY",
-      "pollSeconds": 60,
-      "staleAfterSeconds": 180,
-      "attribution": {
-        "name": "横浜市交通局 (City of Yokohama Transportation Bureau)",
-        "via": "公共交通オープンデータセンター (ODPT)",
-        "license": "ODPT Basic License for Public Transport Open Data",
-        "licenseUrl": "https://developer.odpt.org/documents",
-        "url": "https://developer.odpt.org/"
-      },
-      "licenseVerified": true,
-      "staticGtfsUrl": "https://api.odpt.org/api/v4/files/YokohamaMunicipal/data/YokohamaMunicipal-Bus-GTFS.zip",
-      "routeTypes": [
-        3
-      ],
-      "note": "ODPT access token (secret ODPT_KEY, Center Access Token). The real-time feed gives an explicit delay per stop; trip ids match the static timetable."
-    },
-    {
       "id": "toei-train-trip-update",
       "category": "train",
       "type": "gtfs-rt",
@@ -138,6 +115,11 @@
     }
   ],
   "futureFeeds": [
+    {
+      "id": "yokohama-bus-trip-update",
+      "note": "PAUSED on purpose: no questions about delays of Yokohama Municipal Bus (ODPT Basic License art. 4.2.1 / 11.2: do not use the data in a way that may harm the operator's reputation; the operator is Japanese and cares). Only a non-delay question (e.g. how full the bus is) may use it again. Feed config kept: {\"url\": \"https://api.odpt.org/api/v4/gtfs/realtime/YokohamaMunicipalBus_trip_update\", \"staticGtfsUrl\": \"https://api.odpt.org/api/v4/files/YokohamaMunicipal/data/YokohamaMunicipal-Bus-GTFS.zip\", \"requiresKey\": \"ODPT_KEY\", \"kind\": \"trip_updates\"}",
+      "requiresKey": "ODPT_KEY"
+    },
     {
       "id": "tomtom-flow",
       "note": "Free tier: 20k Flow Segment requests/month. Check data storage terms before enabling.",

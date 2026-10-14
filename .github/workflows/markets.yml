@@ -29,9 +29,6 @@ jobs:
       - name: Tokyo buses
         if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         run: node scripts/generate-markets.mjs --city tokyo --feed toei-bus-vehicle --max 30 --apply
-      - name: Yokohama buses (needs the ODPT_KEY repository secret)
-        if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch') && env.ODPT_KEY != ''
-        run: node scripts/generate-markets.mjs --city tokyo --feed yokohama-bus-trip-update --max 30 --apply
       - name: Spanish commuter trains (trips seen live)
         if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         run: node scripts/generate-markets.mjs --city madrid --feed renfe-trip-update --max 30 --apply

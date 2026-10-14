@@ -302,6 +302,16 @@ const BROADCAST = {
     },
     url: "https://latelotto.web.app/",
   },
+  // the sarcastic bomb again, this time with 1,000 credits and a gift to choose inside (see scripts/send-gift-choice.sql)
+  gift_v1: {
+    headings: { en: "💣 Don't look under the bed. Look at the app.", it: "💣 Non guardare sotto il letto. Guarda l'app.", ja: "💣 ベッドの下は見ないで。アプリを見て。" },
+    contents: {
+      en: "We planted a bomb. Relax: inside there are 1,000 pretend credits and a gift of your choice, and the real danger is how much time you will lose in the app. Come in, or next time your bus will be on time, and you will wish you had never found out.",
+      it: "Abbiamo piazzato una bomba. Tranquillo: dentro ci sono 1.000 crediti finti e un regalo a tua scelta, e il vero pericolo è quanto tempo ci perderai nell'app. Entra, o la prossima volta il tuo bus sarà puntuale e vorresti non averlo mai scoperto.",
+      ja: "爆弾を仕掛けました。ご安心を。中にはニセクレジット1,000と、お好きなプレゼントがひとつ入っています。本当の危険は、アプリで失う時間です。入ってください。さもないと次はあなたのバスが定刻通りに来て、知らなければよかったと思うことになります。",
+    },
+    url: "https://latelotto.web.app/",
+  },
   // ready for the day the frisbee questions go live: set app_settings broadcast_pending = 'frisbee_v1'
   frisbee_v1: {
     headings: { en: "Frisbee has landed 🥏", it: "È arrivato il frisbee 🥏", ja: "フリスビーが登場 🥏" },
