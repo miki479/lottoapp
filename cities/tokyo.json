@@ -20,10 +20,10 @@
   },
   "categories": {
     "bus": {
-      "enabled": true
+      "enabled": false
     },
     "train": {
-      "enabled": true
+      "enabled": false
     },
     "weather": {
       "enabled": true
@@ -33,70 +33,6 @@
     }
   },
   "feeds": [
-    {
-      "id": "toei-bus-vehicle",
-      "category": "bus",
-      "type": "gtfs-rt",
-      "kind": "vehicle_positions",
-      "url": "https://api-public.odpt.org/api/v4/gtfs/realtime/ToeiBus",
-      "staticGtfsUrl": "https://api-public.odpt.org/api/v4/files/Toei/data/ToeiBus-GTFS.zip",
-      "requiresKey": null,
-      "pollSeconds": 60,
-      "staleAfterSeconds": 180,
-      "delaySemantics": "last_passed_stop",
-      "attribution": {
-        "name": "東京都交通局 (Bureau of Transportation, Tokyo Metropolitan Government)",
-        "via": "公共交通オープンデータ協議会 (ODPT)",
-        "license": "CC BY 4.0",
-        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
-        "url": "https://ckan.odpt.org/en/dataset/b_bus_gtfs_rt-toei"
-      },
-      "licenseVerified": true,
-      "routeTypes": [
-        3
-      ]
-    },
-    {
-      "id": "keisei-bus-trip-update",
-      "category": "bus",
-      "type": "gtfs-rt",
-      "kind": "trip_updates",
-      "url": "https://api-public.odpt.org/api/v4/gtfs/realtime/odpt_KeiseiTransitBus_AllLines_trip_update",
-      "requiresKey": null,
-      "pollSeconds": 60,
-      "staleAfterSeconds": 180,
-      "attribution": {
-        "name": "京成トランジットバス / KEISEI BUS CHIBA WEST",
-        "via": "公共交通オープンデータ協議会 (ODPT)",
-        "license": "CC BY 4.0",
-        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
-        "url": "https://ckan.odpt.org/en/dataset/odpt_keisei_transit_bus_all_lines"
-      },
-      "licenseVerified": true,
-      "routeTypes": [
-        3
-      ]
-    },
-    {
-      "id": "toei-train-trip-update",
-      "category": "train",
-      "type": "gtfs-rt",
-      "kind": "trip_updates_times",
-      "url": "https://api-public.odpt.org/api/v4/gtfs/realtime/toei_odpt_train_trip_update",
-      "requiresKey": null,
-      "pollSeconds": 60,
-      "staleAfterSeconds": 240,
-      "attribution": {
-        "name": "東京都交通局 (Bureau of Transportation, Tokyo Metropolitan Government): Toei Subway and Tokyo Sakura Tram",
-        "via": "公共交通オープンデータ協議会 (ODPT)",
-        "license": "CC BY 4.0",
-        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
-        "url": "https://ckan.odpt.org/en/dataset/r_train_gtfs_rt-odpt_train-toei"
-      },
-      "licenseVerified": true,
-      "staticGtfsUrl": "https://api-public.odpt.org/api/v4/files/Toei/data/Toei-Train-GTFS.zip",
-      "note": "No delay field: delay = predicted time minus the scheduled time of the same stop_sequence. The timetable has whole-minute resolution, so the figure is biased by about +30 s; Toei is very punctual, most delay questions are near-certain No."
-    },
     {
       "id": "open-meteo-tokyo",
       "category": "weather",
@@ -115,6 +51,88 @@
     }
   ],
   "futureFeeds": [
+    {
+      "id": "toei-train-trip-update",
+      "note": "PAUSED on purpose (14 Oct): no questions about delays of Japanese operators, out of respect for their reputation. Config kept for a question that is not about delays.",
+      "url": "https://api-public.odpt.org/api/v4/gtfs/realtime/toei_odpt_train_trip_update",
+      "requiresKey": null,
+      "pausedFeed": {
+        "id": "toei-train-trip-update",
+        "category": "train",
+        "type": "gtfs-rt",
+        "kind": "trip_updates_times",
+        "url": "https://api-public.odpt.org/api/v4/gtfs/realtime/toei_odpt_train_trip_update",
+        "requiresKey": null,
+        "pollSeconds": 60,
+        "staleAfterSeconds": 240,
+        "attribution": {
+          "name": "東京都交通局 (Bureau of Transportation, Tokyo Metropolitan Government): Toei Subway and Tokyo Sakura Tram",
+          "via": "公共交通オープンデータ協議会 (ODPT)",
+          "license": "CC BY 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+          "url": "https://ckan.odpt.org/en/dataset/r_train_gtfs_rt-odpt_train-toei"
+        },
+        "licenseVerified": true,
+        "staticGtfsUrl": "https://api-public.odpt.org/api/v4/files/Toei/data/Toei-Train-GTFS.zip",
+        "note": "No delay field: delay = predicted time minus the scheduled time of the same stop_sequence. The timetable has whole-minute resolution, so the figure is biased by about +30 s; Toei is very punctual, most delay questions are near-certain No."
+      }
+    },
+    {
+      "id": "keisei-bus-trip-update",
+      "note": "PAUSED on purpose (14 Oct): no questions about delays of Japanese operators, out of respect for their reputation. Config kept for a question that is not about delays.",
+      "url": "https://api-public.odpt.org/api/v4/gtfs/realtime/odpt_KeiseiTransitBus_AllLines_trip_update",
+      "requiresKey": null,
+      "pausedFeed": {
+        "id": "keisei-bus-trip-update",
+        "category": "bus",
+        "type": "gtfs-rt",
+        "kind": "trip_updates",
+        "url": "https://api-public.odpt.org/api/v4/gtfs/realtime/odpt_KeiseiTransitBus_AllLines_trip_update",
+        "requiresKey": null,
+        "pollSeconds": 60,
+        "staleAfterSeconds": 180,
+        "attribution": {
+          "name": "京成トランジットバス / KEISEI BUS CHIBA WEST",
+          "via": "公共交通オープンデータ協議会 (ODPT)",
+          "license": "CC BY 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+          "url": "https://ckan.odpt.org/en/dataset/odpt_keisei_transit_bus_all_lines"
+        },
+        "licenseVerified": true,
+        "routeTypes": [
+          3
+        ]
+      }
+    },
+    {
+      "id": "toei-bus-vehicle",
+      "note": "PAUSED on purpose (14 Oct): no questions about delays of Japanese operators, out of respect for their reputation. Config kept for a question that is not about delays.",
+      "url": "https://api-public.odpt.org/api/v4/gtfs/realtime/ToeiBus",
+      "requiresKey": null,
+      "pausedFeed": {
+        "id": "toei-bus-vehicle",
+        "category": "bus",
+        "type": "gtfs-rt",
+        "kind": "vehicle_positions",
+        "url": "https://api-public.odpt.org/api/v4/gtfs/realtime/ToeiBus",
+        "staticGtfsUrl": "https://api-public.odpt.org/api/v4/files/Toei/data/ToeiBus-GTFS.zip",
+        "requiresKey": null,
+        "pollSeconds": 60,
+        "staleAfterSeconds": 180,
+        "delaySemantics": "last_passed_stop",
+        "attribution": {
+          "name": "東京都交通局 (Bureau of Transportation, Tokyo Metropolitan Government)",
+          "via": "公共交通オープンデータ協議会 (ODPT)",
+          "license": "CC BY 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+          "url": "https://ckan.odpt.org/en/dataset/b_bus_gtfs_rt-toei"
+        },
+        "licenseVerified": true,
+        "routeTypes": [
+          3
+        ]
+      }
+    },
     {
       "id": "yokohama-bus-trip-update",
       "note": "PAUSED on purpose: no questions about delays of Yokohama Municipal Bus (ODPT Basic License art. 4.2.1 / 11.2: do not use the data in a way that may harm the operator's reputation; the operator is Japanese and cares). Only a non-delay question (e.g. how full the bus is) may use it again. Feed config kept: {\"url\": \"https://api.odpt.org/api/v4/gtfs/realtime/YokohamaMunicipalBus_trip_update\", \"staticGtfsUrl\": \"https://api.odpt.org/api/v4/files/YokohamaMunicipal/data/YokohamaMunicipal-Bus-GTFS.zip\", \"requiresKey\": \"ODPT_KEY\", \"kind\": \"trip_updates\"}",
