@@ -1,3 +1,4 @@
+import { isCrypto } from "../../../shared/ticks.ts";
 import type { Messages } from "../i18n/index.ts";
 import type { MarketRow } from "../lib/format.ts";
 import { LawScene } from "./Cannabis.tsx";
@@ -196,7 +197,7 @@ export function TickScene({ m, hint, msg, now }: { m: MarketRow; hint: Hint; msg
     );
   }
   // the dot at the end of the line wears the currency only where the number is a price
-  const sym = series === "btc" || series === "eth" ? "$" : series === "power:it" ? "€" : series.startsWith("fx:") ? "⇄" : "";
+  const sym = isCrypto(series) ? "$" : series === "power:it" ? "€" : series.startsWith("fx:") ? "⇄" : "";
   return (
     <div class={cls} aria-hidden="true">
       <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">

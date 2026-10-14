@@ -545,6 +545,7 @@ export function App() {
       { name: "Pegelonline (Wasserstraßen- und Schifffahrtsverwaltung des Bundes)", license: "Data licence Germany – Zero 2.0", licenseUrl: "https://www.govdata.de/dl-de/zero-2-0", url: "https://www.pegelonline.wsv.de" },
       { name: "Crypto Fear & Greed Index (alternative.me)", license: "Free API, attribution to alternative.me required", licenseUrl: "https://alternative.me/crypto/fear-and-greed-index/", url: "https://alternative.me/crypto/fear-and-greed-index/" },
       { name: "Steam Web API and game images (Valve)", license: "Steam Web API Terms of Use", licenseUrl: "https://steamcommunity.com/dev/apiterms", url: "https://steamcommunity.com/dev" },
+      { name: "Hugging Face (public model pages: likes)", license: "Hugging Face Terms of Service", licenseUrl: "https://huggingface.co/terms-of-service", url: "https://huggingface.co" },
       { name: "CoinGecko API", license: "Free API, attribution required", licenseUrl: "https://www.coingecko.com/en/api/documentation", url: "https://www.coingecko.com" },
       { name: "NOAA Space Weather Prediction Center", license: "Public domain (US Government)", licenseUrl: "https://www.weather.gov/disclaimer", url: "https://www.swpc.noaa.gov" },
       { name: "Wikimedia Foundation (page views)", license: "CC0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", url: "https://wikimedia.org/api/rest_v1/" },

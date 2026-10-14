@@ -1,3 +1,4 @@
+import { isCrypto } from "../../../shared/ticks.ts";
 import { useEffect, useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
 import type { Locale } from "../i18n/index.ts";
@@ -11,7 +12,7 @@ interface Pt { at: number; v: number }
 /** The trend behind a number question: recent history with the threshold line, plus a few plain statistics. */
 export function TickChart({ m, msg, locale }: { m: MarketRow; msg: Messages; locale: Locale }) {
   const series = String(m.params.series ?? "");
-  const key = series === "btc" || series === "eth" ? `px:${series}` : series;  // steam:<id>, kp and wiki:<title> are stored under their own name
+  const key = isCrypto(series) ? `px:${series}` : series;  // steam:<id>, kp and wiki:<title> are stored under their own name
   const kind = series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : "price";  // storms and games are lines like prices
   const [pts, setPts] = useState<Pt[] | null>(null);
   useEffect(() => {
@@ -34,7 +35,7 @@ export function TickChart({ m, msg, locale }: { m: MarketRow; msg: Messages; loc
   const above = pts.filter((p) => p.v >= thr).length;
   const change = first.v ? ((last.v - first.v) / first.v) * 100 : 0;
   // currency goes in front outside Italy ("$4,200", "€1.85/l"); other units stay behind the number
-  const cur = series === "btc" || series === "eth" || series.startsWith("metal:") || series.startsWith("oil:") ? "$" : series.startsWith("fuel:") ? "€" : "";
+  const cur = isCrypto(series) || series.startsWith("metal:") || series.startsWith("oil:") ? "$" : series.startsWith("fuel:") ? "€" : "";
   const suffix = series.startsWith("fuel:") ? "/l" : series === "carbon:gb" ? " g/kWh" : series === "power:it" ? " €/MWh" : series.startsWith("tide:") ? " m" : series.startsWith("river:") ? " cm" : series.startsWith("storm:") ? " kt" : "";
   const fmt = (v: number) => locale === "it" && cur ? `${nf.format(v)} ${cur}${suffix}` : `${cur}${nf.format(v)}${cur && locale === "it" ? "" : suffix}`;
   const poly = pts.map((p, i) => `${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");

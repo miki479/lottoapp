@@ -14,9 +14,9 @@ export interface TickDef {
   max: number;
 }
 
-export const CRYPTO = { btc: { id: "bitcoin", label: "Bitcoin", step: 500 }, eth: { id: "ethereum", label: "Ethereum", step: 25 } } as const;
+export const CRYPTO = { btc: { id: "bitcoin", label: "Bitcoin", step: 500 }, eth: { id: "ethereum", label: "Ethereum", step: 25 }, sol: { id: "solana", label: "Solana", step: 2 }, bnb: { id: "binancecoin", label: "BNB", step: 10 }, xrp: { id: "ripple", label: "XRP", step: 0.05 } } as const;
 export type CryptoSeries = keyof typeof CRYPTO;
-export const isCrypto = (s: string): s is CryptoSeries => s === "btc" || s === "eth";
+export const isCrypto = (s: string): s is CryptoSeries => Object.prototype.hasOwnProperty.call(CRYPTO, s);
 
 /** Games whose number of players online (Steam Web API, no key) is asked about. */
 export const STEAM = { "730": "Counter-Strike 2", "570": "Dota 2", "271590": "Grand Theft Auto V", "578080": "PUBG", "1245620": "Elden Ring" } as const;
@@ -42,6 +42,16 @@ export type BikeKey = keyof typeof BIKES;
 export const isBikes = (s: string) => s.startsWith("bikes:") && s.slice(6) in BIKES;
 /** A reading is believable when there are some bikes and not more than the system's `max`. */
 export const bikesPlausible = (key: string, n: number): boolean => key in BIKES && Number.isFinite(n) && n > 0 && n <= BIKES[key as BikeKey].max;
+/** AI models on Hugging Face whose number of likes is asked about (public API). The total only grows, so the line sits where the recent pace of growth puts it. */
+export const HF = {
+  "deepseek-r1": { repo: "deepseek-ai/DeepSeek-R1", label: "DeepSeek-R1" }, "llama-3-1-8b": { repo: "meta-llama/Llama-3.1-8B-Instruct", label: "Llama 3.1 8B" },
+  "flux-dev": { repo: "black-forest-labs/FLUX.1-dev", label: "FLUX.1 dev" }, "sdxl": { repo: "stabilityai/stable-diffusion-xl-base-1.0", label: "Stable Diffusion XL" },
+  "whisper-v3": { repo: "openai/whisper-large-v3", label: "Whisper large v3" }, "mistral-7b": { repo: "mistralai/Mistral-7B-Instruct-v0.3", label: "Mistral 7B" },
+} as const;
+export type HfKey = keyof typeof HF;
+export const isHf = (s: string) => s.startsWith("hf:") && s.slice(3) in HF;
+/** Speed of the solar wind (NOAA SWPC real-time, km/s): the push behind the aurora. A spot reading, asked a few hours ahead. */
+export const isSolarWind = (s: string) => s === "sw";
 /** Numbers that exist only "right now": they must be read within minutes of the instant. */
 export const isStorm = (s: string) => s.startsWith("storm:");
 export const isAlert = (s: string) => s.startsWith("alert:");
@@ -91,13 +101,13 @@ export function tmWindow(at: number): { from: string; to: string } {
 export const isTv = (s: string) => /^tv:\d+$/.test(s);
 /** A question we write ourselves ("house:gta6"): settled by an admin once the day has passed, refunded if nobody does. */
 export const isHouse = (s: string) => /^house:[a-z0-9_-]{2,30}$/.test(s);
-export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isLastfm(s) || isBikes(s) || isStorm(s) || isMetal(s) || isCarbon(s) || isNws(s) || isTide(s) || isRiver(s) || isTicket(s);
+export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isLastfm(s) || isHf(s) || isSolarWind(s) || isBikes(s) || isStorm(s) || isMetal(s) || isCarbon(s) || isNws(s) || isTide(s) || isRiver(s) || isTicket(s);
 
 /** Saffir-Simpson scale by sustained wind in knots (1 min average), as NHC reports it. */
 export const STORM_STEPS: { kt: number; label: string }[] = [{ kt: 34, label: "TS" }, { kt: 64, label: "Cat. 1" }, { kt: 83, label: "Cat. 2" }, { kt: 96, label: "Cat. 3" }, { kt: 113, label: "Cat. 4" }, { kt: 137, label: "Cat. 5" }];
 
 /** English Wikipedia articles people follow: entertainment and sport, no politics. */
-export const WIKI_ARTICLES = ["Taylor_Swift", "Cristiano_Ronaldo", "Lionel_Messi", "Rihanna", "Zendaya", "Netflix", "Formula_One", "Eurovision_Song_Contest", "Grand_Theft_Auto_VI", "Fortnite", "Minecraft"] as const;
+export const WIKI_ARTICLES = ["Taylor_Swift", "Cristiano_Ronaldo", "Lionel_Messi", "Rihanna", "Zendaya", "Netflix", "Formula_One", "Eurovision_Song_Contest", "Grand_Theft_Auto_VI", "Fortnite", "Minecraft", "ChatGPT", "OpenAI", "Artificial_intelligence", "SpaceX", "Elon_Musk", "NASA", "Nvidia", "Bitcoin"] as const;
 
 export function tickDef(series: string): TickDef | null {
   if (isCrypto(series)) return { category: "finance", label: CRYPTO[series].label, unit: "$", min: 1, max: 10_000_000 };
@@ -115,6 +125,8 @@ export function tickDef(series: string): TickDef | null {
   if (isStorm(series)) return { category: "nature", label: "Storm", unit: " kt", min: 0, max: 200 };
   if (isSteam(series)) return { category: "culture", label: STEAM[series.slice(6) as keyof typeof STEAM], unit: "", min: 0, max: 100_000_000 };
   if (isBikes(series)) return { category: "traffic", label: BIKES[series.slice(6) as BikeKey].label, unit: "", min: 0, max: BIKES[series.slice(6) as BikeKey].max };
+  if (isHf(series)) return { category: "culture", label: HF[series.slice(3) as HfKey].label, unit: "", min: 50, max: 10_000_000 };
+  if (isSolarWind(series)) return { category: "nature", label: "Solar wind", unit: " km/s", min: 150, max: 2500 };
   if (isLastfm(series)) return { category: "culture", label: LASTFM[series.slice(7) as LastfmKey], unit: "", min: 1000, max: 2_000_000_000 };
   if (isHouse(series)) return { category: "culture", label: "Esclusiva", unit: "", min: 0, max: 1 };
   if (isTv(series)) return { category: "culture", label: "Voto episodio", unit: "", min: 0.5, max: 10 };
@@ -150,7 +162,7 @@ export function tickYes(series: string, value: number, threshold: number): boole
 export function tickGrain(series: string): number {
   if (series === "kp") return 1 / 3;
   if (isStorm(series)) return 5;
-  if (isAlert(series) || isNws(series) || isRiver(series) || isCarbon(series) || isFearGreed(series) || isTicket(series) || isBikes(series) || isSteam(series) || isLastfm(series) || series.startsWith("wiki:")) return 1;
+  if (isAlert(series) || isNws(series) || isRiver(series) || isCarbon(series) || isFearGreed(series) || isTicket(series) || isBikes(series) || isSteam(series) || isLastfm(series) || isHf(series) || series.startsWith("wiki:")) return 1;
   if (isTv(series)) return 0.1;
   if (isFuel(series) || isTide(series)) return 0.001;
   if (isPower(series) || isOil(series)) return 0.01;
@@ -299,6 +311,34 @@ export function diurnalRatio(series: string, fromEpoch: number, toEpoch: number)
   return shapeAt(series, toEpoch) / shapeAt(series, fromEpoch);
 }
 
+/** Likes on Hugging Face at 12 UTC tomorrow and the day after. `stats[key]` = the total now and its pace in likes per hour (from our own history); no pace yet, no question. */
+export function buildHfMarkets(stats: Record<string, { likes: number; perHour: number }>, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const [key, { likes: n, perHour }] of Object.entries(stats)) {
+    if (!(n > 500) || !(perHour > 0) || !(key in HF)) continue;
+    const series = `hf:${key}`, def = tickDef(series)!;
+    for (let at = Math.floor(now / 86400) * 86400 + 12 * H; at <= now + 50 * H; at += 86400) {
+      if (at - 600 <= now + 4 * H) continue;
+      const hours = (at - now) / H, expected = n + perHour * hours, step = Math.max(5, 10 ** Math.floor(Math.log10(Math.max(1, perHour * hours / 2))));
+      const thr = Math.round(expected / step) * step;
+      out.push(tickMarket(series, def, expected, thr, Math.max(step, perHour * hours * 0.3), at, at - 600, at + 3 * H));
+    }
+  }
+  return out;
+}
+
+/** Solar wind speed read now (km/s): questions about the speed 6, 12 and 24 hours ahead, on the whole hour, with a line near today's value and one higher. */
+export function buildSolarWindMarkets(speed: number, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  if (!(speed > 150 && speed < 2500)) return out;
+  const def = tickDef("sw")!;
+  for (const ahead of [6, 12, 24]) {
+    const at = Math.ceil((now + ahead * H) / H) * H, hours = (at - now) / H, sigma = tickSigma("sw", speed, hours);
+    for (const thr of [Math.round(speed / 25) * 25, Math.round((speed + 60) / 25) * 25]) out.push(tickMarket("sw", def, speed, thr, sigma, at, at - 600, at + 3 * H));
+  }
+  return out;
+}
+
 /** Typical error of "what it is now" as a forecast `hours` ahead, used to price player-made questions. */
 export function tickSigma(series: string, ref: number, hours: number): number {
   if (isStorm(series)) return Math.max(8, 11 * Math.sqrt(Math.max(1, hours) / 12));
@@ -316,6 +356,8 @@ export function tickSigma(series: string, ref: number, hours: number): number {
   if (isSteam(series)) return ref * Math.sqrt(0.07 ** 2 * Math.min(Math.max(1, hours), 12) / 4 + 0.08 ** 2); // the second term: the daily shape is itself an estimate
   if (isBikes(series)) return ref * 0.1 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4);
   if (isLastfm(series)) return ref * 0.0004 * Math.sqrt(Math.max(1, hours) / 24);
+  if (isHf(series)) return Math.max(3, ref * 0.002 * Math.sqrt(Math.max(1, hours) / 24));
+  if (isSolarWind(series)) return Math.max(40, 85 * Math.sqrt(Math.max(1, hours) / 12));
   if (isTv(series)) return 0.45;
   if (isTicket(series)) return Math.max(1.2, ref * 0.02 * Math.sqrt(Math.max(1, hours) / 24));
   return ref * 0.15;
@@ -336,6 +378,8 @@ export function tickStep(series: string, ref: number): number {
   if (isOil(series)) return 0.5;
   if (isTv(series)) return 0.1;
   if (isLastfm(series)) return Math.max(100, 10 ** Math.floor(Math.log10(ref * 0.0004)));
+  if (isHf(series)) return Math.max(5, 10 ** Math.floor(Math.log10(Math.max(1, ref * 0.002))));
+  if (isSolarWind(series)) return 25;
   if (isTicket(series)) return 1;
   if (isSteam(series)) return ref >= 500_000 ? 25_000 : ref >= 100_000 ? 10_000 : ref >= 20_000 ? 1_000 : 500;
   return ref >= 200_000 ? 10_000 : ref >= 50_000 ? 5_000 : ref >= 10_000 ? 1_000 : 500;

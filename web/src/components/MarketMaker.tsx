@@ -13,7 +13,7 @@ import { Sheet } from "./Sheet.tsx";
 import { Flag } from "./Flag.tsx";
 import { CITIES } from "../lib/cities.ts";
 import { MatchPicker } from "./MatchPicker.tsx";
-import { STEAM, WIKI_ARTICLES, CRYPTO } from "../../../shared/ticks.ts";
+import { STEAM, WIKI_ARTICLES, CRYPTO, isCrypto } from "../../../shared/ticks.ts";
 import { METRICS } from "../../../shared/metrics.ts";
 import { ALWAYS } from "../lib/num.ts";
 
@@ -65,7 +65,7 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
   };
 
   const seriesList = tab === "crypto" ? Object.keys(CRYPTO) : tab === "games" ? Object.keys(STEAM).map((id) => `steam:${id}`) : WIKI_ARTICLES.map((a) => `wiki:${a}`);
-  const label = (s: string) => (s === "btc" || s === "eth" ? CRYPTO[s].label : s.startsWith("steam:") ? STEAM[s.slice(6) as keyof typeof STEAM] : s.slice(5).replace(/_/g, " "));
+  const label = (s: string) => (isCrypto(s) ? CRYPTO[s].label : s.startsWith("steam:") ? STEAM[s.slice(6) as keyof typeof STEAM] : s.slice(5).replace(/_/g, " "));
   const wiki = tab === "culture";
   const at = () => { const now = Math.floor(Date.now() / 1000); return wiki ? Math.floor(now / 86400) * 86400 + (wikiDay + 1) * 86400 : Math.ceil((now + offset * 3600) / 1800) * 1800; };
   const body = (threshold: number, preview: boolean) => tab === "weather"

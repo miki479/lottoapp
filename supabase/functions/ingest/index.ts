@@ -545,6 +545,22 @@ async function bikeCounts(): Promise<Record<string, number>> {
   return out;
 }
 
+/** Likes of each AI model on Hugging Face (public API, no key). */
+async function hfCounts(): Promise<Record<string, number>> {
+  const out: Record<string, number> = {};
+  for (const [id, m] of Object.entries(HF)) {
+    try { const j = await getJson(`https://huggingface.co/api/models/${m.repo}`); const n = Number(j?.likes); if (Number.isFinite(n) && n > 0) out[id] = n; } catch { /* the others still go */ }
+  }
+  return out;
+}
+
+/** Solar wind speed now (NOAA SWPC real-time, public domain): the newest active reading of the last hour. */
+async function solarWindSpeed(): Promise<number | null> {
+  const rows = (await getJson("https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json")) as { time_tag: string; active: boolean; proton_speed: number | null }[];
+  const best = rows.filter((r) => r.active && typeof r.proton_speed === "number" && r.proton_speed > 0).sort((a, b) => Date.parse(b.time_tag + "Z") - Date.parse(a.time_tag + "Z"))[0];
+  return best && Date.now() - Date.parse(best.time_tag + "Z") < 3 * 3600_000 ? best.proton_speed! : null;
+}
+
 async function kpSeries(): Promise<{ observed: Map<number, number>; predicted: Map<number, number> }> {
   const rows = (await getJson(KP_URL)) as { time_tag: string; kp: number; observed: string }[];
   const observed = new Map<number, number>(), predicted = new Map<number, number>();
@@ -728,6 +744,12 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       if (bkDue.length) { const c = await bikeCounts(); for (const { x, at } of bkDue) { const v = c[x.slice(6)]; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
     } catch (e) { notes.push(`bikes: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
+      const hfDue = [...need.keys()].filter((x) => x.startsWith("hf:")).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (hfDue.length) { const c = await hfCounts(); for (const { x, at } of hfDue) { const v = c[x.slice(3)]; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
+      const swDue = [...need.keys()].filter((x) => x === "sw").flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (swDue.length) { const v = await solarWindSpeed(); if (v !== null) for (const { x, at } of swDue) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); }
+    } catch (e) { notes.push(`hf/sw: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
       const stormDue = [...need.keys()].filter((x) => x.startsWith("storm:")).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
       if (stormDue.length) {
         // a storm that is no longer on the list has weakened below tracking: its wind counts as 0
@@ -858,6 +880,19 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       }
       markets.push(...buildLastfmMarkets(stats, now));
     } catch (e) { notes.push(`lastfm: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    let hfNow: Record<string, number> = {};
+    try {
+      hfNow = await hfCounts();
+      const stats: Record<string, { likes: number; perHour: number }> = {};
+      for (const [id, n] of Object.entries(hfNow)) {
+        const { data: old } = await sb.from("tick_history").select("value,at").eq("series", `hf:${id}`).lte("at", new Date((now - 20 * 3600) * 1000).toISOString()).gte("at", new Date((now - 4 * 86400) * 1000).toISOString()).order("at", { ascending: false }).limit(1);
+        const o = old?.[0]; if (!o) continue;
+        const hrs = (now - Date.parse(o.at as string) / 1000) / 3600, pace = (n - Number(o.value)) / hrs;
+        if (pace > 0) stats[id] = { likes: n, perHour: pace };
+      }
+      markets.push(...buildHfMarkets(stats, now));
+    } catch (e) { notes.push(`hf: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { const sw = await solarWindSpeed(); if (sw !== null) { markets.push(...buildSolarWindMarkets(sw, now)); ok++; } } catch (e) { notes.push(`sw: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try { markets.push(...buildKpMarkets((await kpSeries()).predicted, now)); ok++; } catch (e) { notes.push(`kp: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
       const means: Record<string, number> = {};
@@ -965,6 +1000,7 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       }
       for (const st of stormsNow) hist.push({ series: `storm:${st.id}`, at: new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString(), value: st.kt });
       for (const [id, n] of Object.entries(bikesNow)) hist.push({ series: `bikes:${id}`, at: new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString(), value: n });
+      for (const [id, n] of Object.entries(hfNow)) hist.push({ series: `hf:${id}`, at: new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString(), value: n });
       for (const [id, n] of Object.entries(lastfmNow)) hist.push({ series: `lastfm:${id}`, at: new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString(), value: n });
       for (const [id, n] of Object.entries(steamNow)) hist.push({ series: `steam:${id}`, at: new Date(Math.floor(now / 3600) * 3600 * 1000).toISOString(), value: n });
       const { observed } = await kpSeries();
