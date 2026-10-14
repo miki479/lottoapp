@@ -52,6 +52,7 @@ export interface Messages {
   home: { typeLabel: string; hero: { title: string; body: string }; how: { title: string; steps: [string, string, string]; close: string }; whatLabel: string; whereLabel: string; hereNone: (place: string) => string; tryInstead: string;  missions: string; missionsLeft: (n: number) => string; missionsDone: string; bonusTease: string; top: string; events: string; live: string; idle: string[]; emptyCat: Record<"bus" | "train" | "weather" | "nature" | "strike" | "traffic" | "finance" | "culture" | "sport" | "law" | "gov", string>; empty: { title: string; body: string; cta: string }; trafficSoon: string; satire: string; moreCats: string; lessCats: string };
   streak: { title: string; days: (n: number) => string; next: (day: number, bonus: string) => string; max: string; milestone: (n: number, bonus: string) => string; flash: string };
   meter: { threshold: (min: number) => string; up: (min: number) => string; down: (min: number) => string; steady: string; forecast: string; late: string };
+  why: { title: string; line: (late: number, days: number, avg: string) => string; chart: (late: number, days: number) => string; dayLate: string; dayOk: string; dayNone: string; threshold: (min: string) => string; source: string; base: (pct: string) => string; implied: (sum: string) => string; show: string; hide: string };
   ticker: { label: string; anon: string; won: string; lost: string; placed: string; on: string; late: (route: string, to: string, min: number) => string; closing: string; crowd: (n: number) => string; flash: (x: number) => string; strike: (day: string) => string };
   slip: { bar: (n: number) => string; title: string; add: string; added: string; remove: string; odds: string; confirm: string; maxWin: string; need2: string; placed: (win: string) => string; legs: (n: number) => string; clear: string };
   stake: { label: string; min: string; max: (m: string) => string; ifRight: string };
@@ -66,7 +67,7 @@ export interface Messages {
   near: { title: string; ask: string; privacy: string; locate: string; denied: string; zone: (name: string) => string; bets: (n: number) => string; first: string; nothing: string; refresh: string };
   places: { more: string; title: string; hint: string; search: string; recent: string; capitals: string; famous: string; withData: string; none: string; searchError: string; limit: string; full: string; credit: string };
   top: { best: string; late: string; popular: string; city: string; closing: string; draw: string; goal: string; upset: string; coin: string; spotlight: string; wild: string; sky: string; avg: (min: number) => string; players: (n: number) => string; ontime: string; open: string };
-  card: { noLive: string; late: string; onTime: string; closes: string; forecast: string; live: string; yes: string; no: string; topOdds: string; hot: string };
+  card: { noLive: string; late: string; onTime: string; stakeTo: (stake: string, win: string) => string; closes: string; forecast: string; live: string; yes: string; no: string; topOdds: string; hot: string };
   alertNames: { yellow: string; orange: string; red: string };
   alertHazards: { idraulica: string; idrogeologica: string; temporali: string };
   alertAreas: { romagna: string; bologna: string; modena: string; parma: string };

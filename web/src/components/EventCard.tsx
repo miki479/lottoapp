@@ -2,7 +2,10 @@ import { Q } from "./Q.tsx";
 import { Activity, Car, Clapperboard, Trophy, TrendingUp, Megaphone, Clock, Star, Zap, Users, Scale } from "lucide-preact";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { Countdown } from "./Countdown.tsx";
-import { countdown, fmtOdds, isYesNo, money, per10, question, superText, type MarketRow } from "../lib/format.ts";
+import { countdown, fmtOdds, isYesNo, potentialWin, superText, type MarketRow } from "../lib/format.ts";
+import { fmtDec, fmtInt } from "../lib/num.ts";
+import { oddsMove } from "../lib/oddsmove.ts";
+import { WhyBlock } from "./WhyBlock.tsx";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { LiveDelay, LiveOcc, Pick } from "../lib/types.ts";
 import { BusSide, CloudRainSide, IntercitySide, isIntercityLine, isMetroLine, MetroSide, TrainSide } from "./Vehicles.tsx";
@@ -54,16 +57,17 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
       {m.kind !== "bus_full" && live && <DelayMeter sec={live.delay_sec} prev={live.prev_delay_sec} limitSec={Number(m.params.thresholdSec ?? 180)} forecast={live.is_forecast} msg={msg} />}
       <div class="actions2">
         {(["yes", "no"] as const).map((k) => {
-          const o = Number(k === "yes" ? m.odds_yes : m.odds_no), boosted = k === "yes" && flashOn;
+          const o = Number(k === "yes" ? m.odds_yes : m.odds_no), boosted = k === "yes" && flashOn, mv = oddsMove(m.id, k, Number(m.odds_yes), Number(m.odds_no));
           return (
-            <button key={k} class={`opt ${k} ${boosted ? "boosted" : ""}`} onClick={() => p.onPick(m, k)} onPointerEnter={(e) => { if (e.pointerType === "mouse") show(k); }} onPointerLeave={(e) => { if (e.pointerType === "mouse") clear(); }} onPointerDown={(e) => { if (e.pointerType !== "mouse") show(k, 1600); }} onFocus={() => show(k)} onBlur={clear}>
+            <button key={k} class={`opt row ${k} ${boosted ? "boosted" : ""}`} onClick={() => p.onPick(m, k)} onPointerEnter={(e) => { if (e.pointerType === "mouse") show(k); }} onPointerLeave={(e) => { if (e.pointerType === "mouse") clear(); }} onPointerDown={(e) => { if (e.pointerType !== "mouse") show(k, 1600); }} onFocus={() => show(k)} onBlur={clear}>
               <span class="l">{k === "yes" ? (isRain ? msg.card.yes : msg.card.late) : (isRain ? msg.card.no : msg.card.onTime)}</span>
-              <b class="num">{fmtOdds(o, locale)}</b>
-              <span class="s num">{money(10, locale)} → {money(per10(o), locale)}</span>
+              <span class="ob"><b class="num">{fmtOdds(o, locale)}</b>{mv && <i class={`mv ${mv.dir}`}>{mv.dir === "up" ? "\u2191" : "\u2193"} {fmtDec(mv.delta, 2, locale)}</i>}</span>
+              <span class="s num">{msg.card.stakeTo(fmtInt(100, locale), fmtInt(potentialWin(100, o), locale))}</span>
             </button>
           );
         })}
       </div>
+      <WhyBlock m={m} msg={msg} locale={locale} />
     </article>
   );
 }
