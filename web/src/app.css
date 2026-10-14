@@ -86,10 +86,10 @@ p { margin: 0; }
 .chip:active { transform: scale(.98); }
 .chip.on { border-color: var(--brand); background: var(--brand-soft); color: var(--text); }
 .flag { border-radius: 3px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 18%, transparent); }
-.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 4px; border-radius: var(--radius-control); background: var(--surface-2); gap: 4px; }
-.seg button { min-height: 40px; border-radius: 9px; font-size: 14px; font-weight: 600; color: var(--muted); transition: background var(--dur), color var(--dur), transform var(--dur-fast); }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 6px; border-radius: 14px; background: var(--surface-2); gap: 6px; }
+.seg button { min-height: 44px; border-radius: 10px; font-size: 14px; font-weight: 600; color: var(--muted); transition: background var(--dur), color var(--dur), transform var(--dur-fast); }
 .seg button:active { transform: scale(.98); }
-.seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 0 0 1px var(--border); }
+.seg button.on { background: var(--brand-soft); color: var(--text); box-shadow: inset 0 0 0 1px var(--brand); }
 
 /* ---------- cards ---------- */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--space-4); transition: border-color var(--dur), transform var(--dur-fast); }
@@ -380,7 +380,6 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .streakcard .srow { display: flex; align-items: center; gap: 12px; } .streakcard .stxt { flex: 1; display: flex; flex-direction: column; } .streakcard .stxt b { font-size: var(--fs-title); letter-spacing: var(--ls-title); }
 .streakcard .flame { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); } .streakcard .flame.lit { background: var(--c-bus-soft); color: var(--c-bus); animation: glow 1.8s ease-in-out infinite; }
 .streakcard .freezes { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: var(--c-train); }
-.streakcard .bar { height: 8px; border-radius: 8px; background: var(--surface-2); overflow: hidden; } .streakcard .bar i { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--c-bus), var(--c-pop)); transition: width 400ms var(--ease); }
 
 /* ==========================================================================
    Delay meter (segmented gauge, no charts) and the live ticker
@@ -1164,7 +1163,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 @keyframes lkspk { 0%, 100% { opacity: 0; transform: scale(.4); } 50% { opacity: 1; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .lk-sheen, .lk-spk { animation: none; } .lk-spk { opacity: .8; } }
 .lkph { width: 36px; height: 36px; flex: none; }
-.rowlink { background: none; border: 0; padding: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; min-width: 0; }
+.rowlink { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; background: none; border: 0; padding: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; min-width: 0; }
 .rowlink b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; max-width: 100%; vertical-align: bottom; }
 .reqrow { display: flex; align-items: center; gap: 10px; }
 .reqrow .iconbtn { width: 40px; height: 40px; border-radius: 12px; flex: none; }
@@ -1174,11 +1173,9 @@ textarea.field { resize: vertical; min-height: 84px; }
 .badge.inline { position: static; display: inline-grid; margin-left: 6px; vertical-align: middle; }
 .lkme { position: relative; background: none; border: 0; padding: 0; cursor: pointer; flex: none; }
 .lkme .lvl { position: absolute; right: -2px; bottom: -2px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; display: grid; place-items: center; background: var(--brand); color: #fff; font-size: 12px; font-weight: 800; border: 2px solid var(--surface); }
-.lkxp { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; width: 100%; }
-.xpbar { flex: 1; height: 8px; border-radius: 8px; background: var(--surface-2); overflow: hidden; display: block; }
-.xpbar > i { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--brand), var(--c-pop, var(--brand))); transition: width .6s var(--ease); }
+.lkxp { display: flex; align-items: flex-end; gap: 10px; } .lkxpmain { flex: 1; min-width: 0; background: none; border: 0; padding: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; }
 .lkprev { display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 6px; }
-.lkprev .xpbar { width: 70%; flex: none; }
+.lkprev .lkxp { width: 80%; }
 .lkh { font-size: 14px; color: var(--text-2); margin: 0; }
 .lkavs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; } .lkav .look { max-width: 100%; height: auto; }
 .lkav { background: var(--surface-2); border: 2px solid transparent; border-radius: 16px; padding: 6px; display: grid; place-items: center; cursor: pointer; }
@@ -1346,7 +1343,6 @@ textarea.field { resize: vertical; min-height: 84px; }
 /* Bank card (Profile) */
 .bankcard .srow { display: flex; align-items: center; gap: 12px; } .bankcard .stxt { display: flex; flex-direction: column; min-width: 0; }
 .bankcard .bankic { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--surface-2); color: var(--brand); flex: none; }
-.bankcard .bar { height: 8px; border-radius: 8px; background: var(--surface-2); overflow: hidden; } .bankcard .bar i { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--c-bus), var(--c-pop)); transition: width 400ms var(--ease); }
 .bankcard .bankrules { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
 
 /* Japanese: break between phrases, not in the middle of a word (イベ/ントを選ぶ) */
@@ -1494,3 +1490,58 @@ textarea.field { resize: vertical; min-height: 84px; }
 .bigq svg { flex: none; }
 
 @media (min-width: 1024px) { .betfoot { border-radius: 0 0 24px 24px; } }
+
+/* one progress bar for the whole app, a season banner and the level next to a nick */
+.pbar { display: flex; flex-direction: column; gap: 6px; min-width: 0; --fill-bg: linear-gradient(90deg, var(--brand), var(--c-pop)); }
+.pbar.t-streak { --fill-bg: linear-gradient(90deg, var(--c-bus), var(--c-pop)); }
+.pbar.t-bank { --fill-bg: linear-gradient(90deg, var(--c-train), var(--brand)); }
+.pbar.t-season { --fill-bg: var(--brand); }
+.pbhead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 14px; color: var(--text-2); }
+.pbhead b { color: var(--text); font-weight: 800; }
+.pbtrack { height: 12px; border-radius: 12px; overflow: hidden; background: color-mix(in srgb, var(--text) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent); }
+.pbtrack > i { display: block; height: 100%; border-radius: 12px; background: var(--fill-bg); transition: width .6s var(--ease); }
+.pbfoot { margin: 0; font-size: 14px; color: var(--text-2); }
+.seasonbar { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius-card); background: var(--surface); border: 1px solid var(--border); }
+.seasonico { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 14px; background: var(--brand-soft); color: var(--brand); }
+.seasontxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; } .seasontxt > b { font-size: 16px; line-height: 1.25; }
+.seasonbar.soon { border-color: var(--warn-fg); } .seasonbar.soon .seasonico { background: color-mix(in srgb, var(--warn-fg) 18%, transparent); color: var(--warn-fg); }
+.lvlb { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; padding: 1px 8px 1px 6px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: 12px; font-weight: 800; line-height: 1.5; vertical-align: 2px; }
+.nick { display: inline-flex; align-items: center; max-width: 100%; min-width: 0; } .nick { flex-wrap: wrap; } .nick > b { font-size: 16px; } .nick .lvlb { margin-left: 6px; } .nick > b { flex: 0 1 auto; min-width: 0; overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; } .nick .lvlb { flex: none; }
+
+/* the identity card on one axis: the avatar, the name, the mail, the chips and the experience bar all start from the same edge */
+.idcard .idtop { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 14px; }
+.idtxt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.idname { font-size: 18px; line-height: 1.25; overflow-wrap: anywhere; }
+.idmail { font-size: 14px; color: var(--text-2); overflow-wrap: anywhere; }
+.idchips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+
+/* the bank: what can be taken now next to what is still locked */
+.banktiles { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.bt { position: relative; display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 8px; row-gap: 2px; padding: 12px; border-radius: var(--radius-control); border: 1px solid var(--border); background: var(--surface-2); }
+.bt .bti { grid-row: 1; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--surface); }
+.bt .btl { grid-row: 1; font-size: 14px; font-weight: 700; color: var(--text-2); }
+.bt .btv { grid-column: 1 / -1; font-size: 24px; font-weight: 800; letter-spacing: var(--ls-title); line-height: 1.15; }
+.bt small { grid-column: 1 / -1; font-size: 12px; color: var(--text-2); }
+.bt.avail.ready { border-color: var(--won-fg); background: var(--won-bg); } .bt.avail.ready .bti, .bt.avail.ready .btv { color: var(--won-fg); }
+.bt.locked { background: repeating-linear-gradient(135deg, var(--surface-2) 0 8px, color-mix(in srgb, var(--text) 7%, var(--surface-2)) 8px 16px); border-style: dashed; color: var(--muted); cursor: not-allowed; }
+.bt.locked .btv, .bt.locked .btl { color: var(--muted); } .bt.locked .bti { background: var(--surface); color: var(--muted); }
+.bt.avail.got { animation: bankglow 1.6s var(--ease) both; } .bt.locked.gave { animation: bankdim 1.2s var(--ease) both; }
+@keyframes bankglow { 0%, 40% { box-shadow: 0 0 0 0 transparent; } 60% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--won-fg) 35%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+@keyframes bankdim { 0% { opacity: 1; } 50% { opacity: .55; } 100% { opacity: 1; } }
+.coinfly { position: absolute; top: 50%; left: 25%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; display: grid; place-items: center; background: var(--star); color: #5a4300; font-weight: 800; font-size: 15px; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); animation: coinfly 1.4s .2s var(--ease) both; pointer-events: none; z-index: 2; }
+@keyframes coinfly { 0% { left: 25%; opacity: 0; transform: translateY(0) scale(.6); } 15% { opacity: 1; transform: translateY(-12px) scale(1); } 85% { opacity: 1; transform: translateY(-12px) scale(1); } 100% { left: 75%; opacity: 0; transform: translateY(0) scale(.6); } }
+@media (prefers-reduced-motion: reduce) { .coinfly { display: none; } .bt.avail.got, .bt.locked.gave { animation: none; } }
+
+/* "My bets": the three figures at the top, and the time left on an open bet */
+.betsum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.bsc { display: grid; grid-template-columns: auto 1fr; align-content: start; align-items: center; column-gap: 6px; row-gap: 2px; padding: 10px; border-radius: var(--radius-control); background: var(--surface); border: 1px solid var(--border); }
+.bsc .bsi { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: var(--surface-2); color: var(--text-2); }
+.bsc .bsl { font-size: 12px; font-weight: 700; color: var(--text-2); line-height: 1.2; }
+.bsc b { grid-column: 1 / -1; font-size: 18px; font-weight: 800; letter-spacing: var(--ls-title); line-height: 1.2; } .bsc b.neg { color: var(--lost-fg); }
+.bsc small { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.due { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--brand-soft); color: var(--text); font-size: 14px; font-weight: 600; line-height: 1.3; }
+.due b { font-weight: 800; } .due.soon { background: color-mix(in srgb, var(--warn-fg) 22%, transparent); color: var(--warn-fg); }
+.subline { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; max-width: 100%; } .subline:empty { display: none; } .subline .youtag { margin-left: 0; }
+.subline .ptitle { font-size: 12px; white-space: normal; overflow: visible; text-overflow: clip; }
+.youtag { margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: var(--brand); color: var(--on-brand); font-style: normal; font-size: 12px; font-weight: 800; line-height: 1.5; align-self: center; }
+.lvlb svg { color: inherit; }

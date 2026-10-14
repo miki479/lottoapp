@@ -3,6 +3,7 @@ import { nextMilestone } from "../../../shared/rewards.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { money } from "../lib/format.ts";
 import { moneySigned } from "../lib/num.ts";
+import { Meter } from "./Meter.tsx";
 
 /** Current streak, the next reward on the way and the freezes in stock. Rewards are paid by the server. */
 export function StreakCard({ streak, freezes, msg, locale }: { streak: number; freezes: number; msg: Messages; locale: Locale }) {
@@ -15,8 +16,7 @@ export function StreakCard({ streak, freezes, msg, locale }: { streak: number; f
         <div class="stxt"><span class="detail">{msg.streak.title}</span><b class="num">{msg.streak.days(streak)}</b></div>
         <span class="freezes"><Snowflake size={16} />{freezes}</span>
       </div>
-      <div class="bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><i style={`width:${pct}%`} /></div>
-      <p class="hint">{next ? msg.streak.next(next.day, moneySigned(next.bonus, locale)) : msg.streak.max}</p>
+      <Meter tone="streak" name={msg.streak.title} value={pct} max={100} foot={next ? msg.streak.next(next.day, moneySigned(next.bonus, locale)) : msg.streak.max} />
     </section>
   );
 }

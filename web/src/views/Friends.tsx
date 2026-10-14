@@ -9,6 +9,7 @@ import { sb } from "../lib/api.ts";
 import { countdown } from "../lib/format.ts";
 import { loadFriends, type FriendRow } from "../lib/friends.ts";
 import { PlayerTitle } from "../components/PlayerTitle.tsx";
+import { LevelBadge } from "../components/LevelBadge.tsx";
 import { useLooks } from "../lib/looks.ts";
 import { fmtInt } from "../lib/num.ts";
 
@@ -36,7 +37,7 @@ export function Friends(p: { locale: Locale; msg: Messages; registered: boolean;
   return (
     <div class="screen stack" style="max-width:720px;margin:0 auto;width:100%">
       <h1>{p.msg.nav.friends}</h1>
-      <LeaguePanel locale={p.locale} registered={p.registered} onProfile={p.onProfile} />
+      <LeaguePanel locale={p.locale} msg={p.msg} registered={p.registered} onProfile={p.onProfile} />
       {reqs.length > 0 && (
         <section class="card stack reqcard">
           <div class="reqhead"><b>{p.msg.look.requests} · {reqs.length}</b>{reqs.length > 2 && <button class="linkbtn" disabled={busy} onClick={declineAll}>{p.msg.look.declineAll}</button>}</div>
@@ -75,7 +76,7 @@ export function Friends(p: { locale: Locale; msg: Messages; registered: boolean;
           {friends.map((r) => (
             <div class="row" key={r.user_id}>
               {face(r.user_id)}
-              <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name || f.anon}</b><PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} /></button>
+              <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><span class="nick"><b>{r.display_name || f.anon}</b><LevelBadge level={looks[r.user_id]?.level} msg={p.msg} /></span><PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} /></button>
               <button class="iconbtn frdx" aria-label={`${f.remove} ${r.display_name ?? ""}`} onClick={() => setAskId(askId === r.user_id ? null : r.user_id)}><UserMinus size={16} /></button>
               {askId === r.user_id && <div class="frask" role="alert"><span>{f.removeAsk(r.display_name || f.anon)}</span><button class="btn secondary" onClick={() => setAskId(null)}>{f.removeNo}</button><button class="btn primary" disabled={busy} aria-busy={busy} onClick={() => removeFriend(r.user_id)}>{f.removeYes}</button></div>}
             </div>

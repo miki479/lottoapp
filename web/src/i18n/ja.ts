@@ -103,7 +103,7 @@ const ja: Messages = {
   },
   sheet: { title: "予想シート", pick: "あなたの予想", stake: "賭け額", potential: "見込み配当", confirm: "予想を確定", confirming: "少々お待ちください…", odds: "オッズ", placed: (w) => `予想を登録しました。配当は最大${w}です。`, now: "いま", decides: "判定時刻", closesIn: "締切まで", noLive: "データなし", forecast: (m) => `予測 ${m}`, after: "賭けた後の残高", ifLose: "負けたら", ifWin: "勝てば", loseNote: "賭け額を失います", winNote: (b) => `合計${b}を受け取り`, bigStake: (n) => `残高の${n}%を賭けようとしています。よろしいですか？`, bigYes: (a) => `はい、${a}を賭ける`, bigNo: "賭け額を変更", share: (n) => `残高の${n}%` },
   bets: {
-    title: "マイ予想", tabs: { open: "進行中", settled: "終了" }, open: "進行中", won: "的中", lost: "外れ", void: "返金",
+    summary: { streak: "連続記録", worst: "最悪の日", drawdown: "ピークからの下落", window: (n) => `直近${n}日`, none: "なし" }, title: "マイ予想", tabs: { open: "進行中", settled: "終了" }, open: "進行中", won: "的中", lost: "外れ", void: "返金",
     empty: { title: "まだ予想がありません", body: "イベントを選んで、最初の予想をしてみましょう。", cta: "イベントを見る" },
     yourPick: (y) => (y ? "あなたの選択：はい" : "あなたの選択：いいえ"), potential: "予想配当", settles: "結果", waiting: ["サーバーが線路を確認中…","車掌が報告書にサインしています…","公式データを待っています…","伝書鳩が向かっています…","サーバーが休憩中…","のんびり分を数えています…"], details: "詳細",
     voidReason: { cancelled: "運休のため、予想は返金されました。", feed_down: "データ配信が止まっていました。当て推量で判定することはありません。", no_observation: "この便の有効なデータがありませんでした。", implausible_data: "データが信頼できませんでした。" },

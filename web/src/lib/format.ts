@@ -163,6 +163,12 @@ export function seasonDaysLeft(now = new Date()): number {
   return Math.max(1, Math.ceil((end - now.getTime()) / 86400000));
 }
 
+/** The season is the UTC month: how many days it has, how many are left (at least 1) and how much of it has gone, from 0 to 1. */
+export function seasonSpan(now = new Date()): { total: number; left: number; elapsed: number } {
+  const start = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1), end = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
+  return { total: Math.round((end - start) / 86400000), left: seasonDaysLeft(now), elapsed: Math.min(1, Math.max(0, (now.getTime() - start) / (end - start))) };
+}
+
 /** A reading of a tick series written with its unit, the way the questions write their lines (prices with the currency, physical readings with their unit, counts plain). */
 export function tickValueText(series: string, v: number, digits: number, locale: Locale = numLocale()): string {
   const nd = (x: number) => fmtDec(x, digits, locale), cur = (sym: string) => (locale === "it" ? `${nd(v)} ${sym}` : `${sym}${nd(v)}`);

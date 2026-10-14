@@ -1,6 +1,9 @@
 import { Q } from "../components/Q.tsx";
-import { Check, RotateCcw, Ticket, X } from "lucide-preact";
-import { useState } from "preact/hooks";
+import { ArrowDownToLine, Check, Clock, Flame, RotateCcw, Ticket, TrendingDown, X } from "lucide-preact";
+import { useEffect, useState } from "preact/hooks";
+import { sb } from "../lib/api.ts";
+import { INTL_TAG } from "../i18n/index.ts";
+import { summarize, type DayNet } from "../lib/summary.ts";
 import { MarketVs, reasonOf } from "../components/MatchVs.tsx";
 import { BetInsight } from "../components/BetInsight.tsx";
 import { StopsBoard } from "../components/StopsBoard.tsx";
@@ -16,7 +19,16 @@ import { moneySigned } from "../lib/num.ts";
 import { subjectOf } from "../lib/names.ts";
 import { WhyBlock } from "../components/WhyBlock.tsx";
 
-export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlays, bets, msg, locale, now, onOpen, onHome }: { canMore: boolean; onMore: () => void; invites: (Challenge & { invited_by: string })[]; challenges: Challenge[]; onChallenge: (code: string) => void; parlays: ParlayRow[]; bets: MyBet[]; msg: Messages; locale: Locale; now: number; onOpen: (b: MyBet) => void; onHome: () => void }) {
+/** The days the figures at the top are counted over. */
+const SUMMARY_DAYS = 30;
+
+/** "Result in 16m 28s", brighter when it is close; once the time has passed, a line that says it is waiting for the data. */
+function Due({ at, now, msg, seed }: { at: number; now: number; msg: Messages; seed: string }) {
+  const left = at - now;
+  return <span class={`due ${left > 0 && left < 300_000 ? "soon" : ""}`}><Clock size={14} aria-hidden="true" />{left > 0 ? <>{msg.bets.settles} <b class="num">{countdown(left)}</b></> : msg.bets.waiting[(Math.floor(now / 6000) + seed.charCodeAt(0)) % msg.bets.waiting.length]}</span>;
+}
+
+export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge, parlays, bets, msg, locale, now, onOpen, onHome }: { streak: number; canMore: boolean; onMore: () => void; invites: (Challenge & { invited_by: string })[]; challenges: Challenge[]; onChallenge: (code: string) => void; parlays: ParlayRow[]; bets: MyBet[]; msg: Messages; locale: Locale; now: number; onOpen: (b: MyBet) => void; onHome: () => void }) {
   const [tab, setTab] = useState<"open" | "settled">("open");
   const [st, setSt] = useState<"all" | "won" | "lost" | "void">("all"), [cat, setCat] = useState("all");
   const cats = [...new Set(bets.filter((b) => b.status !== "open").map((b) => b.markets.category))];
@@ -24,9 +36,21 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
   const shownP = parlays.filter((x) => (tab === "open" ? x.status === "open" : x.status !== "open" && (st === "all" || x.status === st) && cat === "all"));
   const nOpen = bets.filter((b) => b.status === "open").length + parlays.filter((x) => x.status === "open").length;
   const nDone = bets.length + parlays.length - nOpen;
+  // the results by day behind the three figures at the top: asked again whenever something has been settled
+  const [series, setSeries] = useState<DayNet[] | null>(null);
+  useEffect(() => { let live = true; sb.rpc("my_balance_series", { p_days: SUMMARY_DAYS }).then(({ data, error }) => { if (live) setSeries(error ? [] : ((data ?? []) as DayNet[]).map((d) => ({ day: String(d.day), net: Number(d.net), bets: Number(d.bets) }))); }); return () => { live = false; }; }, [nDone]);
+  const sum = series ? summarize(series) : null, sm = msg.bets.summary;
+  const dayFmt = new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "short", timeZone: "UTC" });
   return (
     <div class="screen stack">
       <h1>{msg.bets.title}</h1>
+      {bets.length + parlays.length > 0 && (
+        <section class="betsum" aria-label={msg.bets.title}>
+          <div class="bsc"><span class="bsi"><Flame size={16} /></span><span class="bsl">{sm.streak}</span><b class="num">{msg.streak.days(streak)}</b></div>
+          <div class="bsc"><span class="bsi"><TrendingDown size={16} /></span><span class="bsl">{sm.worst}</span><b class={`num ${sum?.worstDay ? "neg" : ""}`}>{sum?.worstDay ? moneySigned(sum.worstDay.net, locale) : "—"}</b><small>{sum?.worstDay ? dayFmt.format(new Date(`${sum.worstDay.day}T12:00:00Z`)) : sm.none}</small></div>
+          <div class="bsc"><span class="bsi"><ArrowDownToLine size={16} /></span><span class="bsl">{sm.drawdown}</span><b class={`num ${sum && sum.drawdown > 0 ? "neg" : ""}`}>{sum && sum.drawdown > 0 ? moneySigned(-sum.drawdown, locale) : "—"}</b><small>{sm.window(SUMMARY_DAYS)}</small></div>
+        </section>
+      )}
       <div class="seg" role="tablist">
         <button role="tab" class={tab === "open" ? "on" : ""} aria-selected={tab === "open"} onClick={() => setTab("open")}>{msg.bets.tabs.open} · {nOpen}</button>
         <button role="tab" class={tab === "settled" ? "on" : ""} aria-selected={tab === "settled"} onClick={() => setTab("settled")}>{msg.bets.tabs.settled} · {nDone}</button>
@@ -53,6 +77,7 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
               <div class="row1">
                 <span class={`pill ${st === "won" ? "won" : st === "lost" ? "lost" : ""}`}><Icon size={14} strokeWidth={2.6} />{label}</span>
                 <span class="detail">{msg.slip.title} · {msg.slip.legs(x.parlay_legs.length)}</span>
+                {st === "open" && (() => { const last = Math.max(...x.parlay_legs.map((l) => Date.parse(String(l.markets.target_at ?? "")) || 0)); return last > 0 ? <Due at={last} now={now} msg={msg} seed={x.id} /> : null; })()}
                 {st === "won" && <span class="amt won num">{moneySigned(x.payout - x.stake, locale)}</span>}
                 {st === "lost" && <span class="amt lost num">−{money(x.stake, locale)}</span>}
                 {st === "void" && <span class="amt num">{money(x.stake, locale)}</span>}
@@ -82,7 +107,7 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
                 {st === "won" && <span class="amt won num">{moneySigned(b.payout - b.stake, locale)}</span>}
                 {st === "lost" && <span class="amt lost num">−{money(b.stake, locale)}</span>}
                 {st === "void" && <span class="amt num">{money(b.stake, locale)}</span>}
-                {st === "open" && <span class="detail">{Date.parse(m.target_at) > now ? <>{msg.bets.settles} · {countdown(Date.parse(m.target_at) - now)}</> : msg.bets.waiting[(Math.floor(now / 6000) + b.id.charCodeAt(0)) % msg.bets.waiting.length]}</span>}
+                {st === "open" && <Due at={Date.parse(m.target_at)} now={now} msg={msg} seed={b.id} />}
               </div>
               {m.kind === "match_bet" && <div class="vscard"><MarketVs m={m} size={28} />{reasonOf(m, msg) && <span class="reason">{reasonOf(m, msg)}</span>}</div>}
               {m.kind !== "match_bet" && (() => { const sj = ["tick_gt", "bus_delay_gt", "train_delay_gt", "rain_at", "metric_gt"].includes(m.kind) ? subjectOf(m, msg, locale, cityName(city, locale)) : ""; return sj ? <b class="subject">{sj}</b> : null; })()}

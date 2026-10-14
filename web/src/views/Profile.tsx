@@ -14,6 +14,7 @@ import { Look } from "../components/looks/Look.tsx";
 import { readConsent, writeConsent } from "../lib/useIntent.ts";
 import { Trophy3D } from "../components/looks/Trophy3D.tsx";
 import { XpInfo } from "../components/XpInfo.tsx";
+import { Meter } from "../components/Meter.tsx";
 import { LeagueBadge } from "../components/League.tsx";
 import { levelProgress } from "../../../shared/looks";
 import type { MyProgress } from "../lib/looks.ts";
@@ -53,14 +54,22 @@ export function ProfileView(p: {
       )}
       <div class="profile-grid">
         <div class="stack">
-          <section class="card stack">
-            <div style="display:flex;align-items:center;gap:14px">
+          <section class="card stack idcard">
+            <div class="idtop">
               {p.look ? <button class="lkme" onClick={p.onLook} aria-label={p.msg.look.change}><Look avatar={p.look.avatar} decoration={p.look.decoration} size={72} /><span class="lvl num">{p.look.level}</span></button> : <span class="rank top" style="width:56px;height:56px;border-radius:18px;font-size:22px"><User size={26} /></span>}
-              <div style="min-width:0;flex:1"><b style="font-size:18px;display:block;overflow:hidden;text-overflow:ellipsis">{name}</b><span class="hint">{p.registered ? p.email : m.guest}</span>{p.homeNode}{p.registered && <div style="margin-top:6px"><LeagueBadge locale={p.locale} registered={p.registered} /></div>}</div>
+              <div class="idtxt">
+                <b class="idname">{name}</b>
+                <span class="idmail">{p.registered ? p.email : m.guest}</span>
+                <div class="idchips">{p.homeNode}{p.registered && <LeagueBadge locale={p.locale} registered={p.registered} />}</div>
+              </div>
               {p.registered && <button class="iconbtn" onClick={p.onNickname} aria-label={m.nickname.title}><Pencil size={20} /></button>}
             </div>
-            {p.look && (() => { const lp = levelProgress(p.look.xp); return <button class="lkxp" onClick={p.onLook}><span class="xpbar"><i style={`width:${Math.round(lp.ratio * 100)}%`} /></span><span class="hint num">{p.msg.look.level(lp.level)} · {p.msg.look.xp(lp.into, lp.need)}</span></button>; })()}
-            {p.look && <button class="infodot" onClick={() => setXpOpen(true)} aria-label={p.msg.look.xpHow}>i</button>}
+            {p.look && (() => { const lp = levelProgress(p.look.xp); return (
+              <div class="lkxp">
+                <button class="lkxpmain" onClick={p.onLook} aria-label={p.msg.look.change}><Meter tone="brand" name={p.msg.look.level(lp.level)} value={lp.ratio} label={p.msg.look.level(lp.level)} end={p.msg.look.xp(lp.into, lp.need)} /></button>
+                <button class="infodot" onClick={() => setXpOpen(true)} aria-label={p.msg.look.xpHow}>i</button>
+              </div>
+            ); })()}
             {xpOpen && <XpInfo msg={p.msg} onClose={() => setXpOpen(false)} />}
             {!p.registered && <p class="hint">{m.guestHint}</p>}
             {!p.registered ? <button class="btn primary wide" onClick={p.onAuth}>{m.signIn}</button> : !p.profile?.display_name && <button class="btn secondary wide" onClick={p.onNickname}>{m.nickname.title}</button>}

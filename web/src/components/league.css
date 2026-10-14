@@ -2,6 +2,15 @@
 .lgcard .lgtop { display: flex; align-items: center; gap: 12px; }
 .lgcard .lgtxt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .lgcard .lgtxt b { font-size: var(--fs-title); letter-spacing: var(--ls-title); }
-.lgbar { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
-.lgbar > i { display: block; height: 100%; border-radius: 999px; background: var(--brand); transition: width var(--dur); }
 .lgchip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 3px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); font-size: 12px; font-weight: 700; color: var(--text-2); }
+
+.lgcard .seasonbar.flat { padding: 0; border: 0; background: none; }
+.lgrewards { display: flex; flex-direction: column; gap: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border); }
+.lgrewards > b { font-size: 16px; }
+.lgsteps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.lgsteps li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px 6px; border-radius: var(--radius-control); border: 1px solid transparent; text-align: center; }
+.lgsteps .lgn { font-size: 12px; font-weight: 700; } .lgsteps .lgr { font-size: 12px; color: var(--text-2); }
+.lgsteps li.done { opacity: .6; }
+.lgsteps li.here { border-color: var(--brand); background: var(--brand-soft); }
+.lgsteps li.next { border: 1px dashed var(--brand); }
+.lgsteps em { font-style: normal; font-size: 12px; font-weight: 800; color: var(--brand); }

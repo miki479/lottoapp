@@ -4,13 +4,14 @@ import { Empty } from "../components/Empty.tsx";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
-import { seasonDaysLeft } from "../lib/format.ts";
 import type { GroupRow, LbRow, Profile } from "../lib/types.ts";
 import type { Place } from "../lib/places.ts";
 import { HomePlaceField } from "../components/HomePlaceField.tsx";
 import { loadFriends, type FriendRow } from "../lib/friends.ts";
 import { Look } from "../components/looks/Look.tsx";
 import { PlayerTitle } from "../components/PlayerTitle.tsx";
+import { LevelBadge } from "../components/LevelBadge.tsx";
+import { SeasonBanner } from "../components/Season.tsx";
 import { useLooks } from "../lib/looks.ts";
 import { fmtSigned } from "../lib/num.ts";
 
@@ -67,7 +68,7 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
   return (
     <div class="screen stack" style="max-width:720px;margin:0 auto;width:100%">
       <h1>{m.title}</h1>
-      <p class="detail">{m.season(seasonDaysLeft())}</p>
+      <SeasonBanner msg={p.msg} />
       {!p.profile?.display_name && <button class="card pressable" style="text-align:left" onClick={p.onNickname}><b>{p.msg.profile.nickname.title}</b><p class="hint">{p.msg.profile.nickname.label}</p></button>}
       <div class="seg" role="tablist">{(["world", "local", "friends"] as Tab[]).map((x) => <button key={x} role="tab" class={tab === x ? "on" : ""} aria-selected={tab === x} onClick={() => setTab(x)}>{p.msg.rankTabs[x]}</button>)}</div>
       {tab === "local" && (
@@ -91,7 +92,7 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
                 <div class={`row ${r.is_me ? "me" : ""}`} key={r.user_id}>
                   <span class={`rank ${r.rank <= 3 ? "top" : ""}`}>{r.rank}</span>
                   {face(r.user_id)}
-                  <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name || p.msg.frd.anon}</b>{r.is_me && <span class="detail"> · {m.you}</span>}<PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} /></button>
+                  <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><span class="nick"><b>{r.display_name || p.msg.frd.anon}</b><LevelBadge level={looks[r.user_id]?.level} msg={p.msg} /></span><span class="subline">{r.is_me && <em class="youtag">{m.you}</em>}<PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} /></span></button>
                   {r.prev_rank !== r.rank && <span class={`mv ${r.rank < r.prev_rank ? "up" : "down"}`} aria-label={r.rank < r.prev_rank ? "up" : "down"}>{r.rank < r.prev_rank ? <ArrowUp size={13} strokeWidth={3} /> : <ArrowDown size={13} strokeWidth={3} />}{Math.abs(r.prev_rank - r.rank)}</span>}
                   <span class={`score big num ${r.score > 0 ? "pos" : r.score < 0 ? "neg" : "zero"}`}>{r.score > 0 ? <ArrowUp size={15} strokeWidth={3} /> : r.score < 0 ? <ArrowDown size={15} strokeWidth={3} /> : null}{fmtSigned(r.score, p.locale)}</span>
                 </div>
@@ -117,7 +118,7 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
             <div class={`row ${r.is_me ? "me" : ""}`} key={r.user_id}>
               <span class={`rank ${r.rank <= 3 ? "top" : ""}`}>{r.rank}</span>
               {face(r.user_id)}
-              <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><b>{r.display_name}</b>{r.is_me && <span class="detail"> · {m.you}</span>}<PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} /></button>
+              <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><span class="nick"><b>{r.display_name}</b><LevelBadge level={looks[r.user_id]?.level} msg={p.msg} /></span><span class="subline">{r.is_me && <em class="youtag">{m.you}</em>}<PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} /></span></button>
               <span class={`score num ${r.score > 0 ? "pos" : r.score < 0 ? "neg" : "zero"}`}>{r.score > 0 ? <TrendingUp size={14} /> : r.score < 0 ? <TrendingDown size={14} /> : null}{fmtSigned(r.score, p.locale)}</span>
             </div>
           ))}

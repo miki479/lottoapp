@@ -10,6 +10,7 @@ import { forgetLook, loadMyProgress, saveLook, type MyProgress } from "../lib/lo
 import { Look } from "./looks/Look.tsx";
 import { Sheet } from "./Sheet.tsx";
 import { XpInfo } from "./XpInfo.tsx";
+import { Meter } from "./Meter.tsx";
 
 /** The "Decorations" sheet: preview on top, the character row, then the grid of rings with their padlocks. */
 export function LookSheet({ progress, msg, myId, onClose, onSaved }: { progress: MyProgress; msg: Messages; myId: string; onClose: () => void; onSaved: (p: MyProgress) => void }) {
@@ -28,8 +29,7 @@ export function LookSheet({ progress, msg, myId, onClose, onSaved }: { progress:
   return (
     <Sheet onClose={onClose} label={t.title}>
       <div class="lkprev"><Look avatar={av} decoration={deco} size={150} label={t.title} /><b>{t.level(progress.level)}</b>
-        <div class="xpbar" role="progressbar" aria-valuenow={Math.round(lp.ratio * 100)} aria-valuemin={0} aria-valuemax={100}><i style={`width:${Math.round(lp.ratio * 100)}%`} /></div>
-        <span class="hint num">{t.xp(lp.into, lp.need)}</span><button class="infodot" onClick={() => setXpOpen(true)} aria-label={t.xpHow}>i</button></div>
+        <div class="lkxp"><div class="lkxpmain"><Meter tone="brand" name={t.level(progress.level)} value={lp.ratio} end={t.xp(lp.into, lp.need)} /></div><button class="infodot" onClick={() => setXpOpen(true)} aria-label={t.xpHow}>i</button></div></div>
       {xpOpen && <XpInfo msg={msg} onClose={() => setXpOpen(false)} />}
       <h3 class="lkh">{t.avatars}</h3>
       <div class="lkavs">{AVATARS.map((a) => { const ok = avOpen(a); return <button key={a} class={`lkav ${av === a ? "on" : ""} ${ok ? "" : "lock"}`} aria-pressed={av === a} aria-label={ok ? t.av[a] : `${t.av[a]} · ${t.locked}`} disabled={!ok} onClick={() => setAv(a)}><span class="lkpic"><Look avatar={a} size={52} />{!ok && <span class="lklock"><Lock size={14} /></span>}</span></button>; })}</div>
