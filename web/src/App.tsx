@@ -379,8 +379,8 @@ export function App() {
       return fresh && (fresh.odds_yes !== sh.m.odds_yes || fresh.odds_no !== sh.m.odds_no) ? { ...sh, m: { ...sh.m, odds_yes: fresh.odds_yes, odds_no: fresh.odds_no } } : sh;
     });
   }, [markets]);
-  useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = every(loadMarkets, 45_000), b = every(() => { loadResults(); loadActivity(); loadTrending(); }, 90_000); return () => { a(); b(); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
-  useEffect(() => { if (!ready) return; return every(() => { loadBets(); loadProfile(); loadQuests(); }, 60_000); }, [ready]);
+  useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = every(loadMarkets, 60_000), b = every(() => { loadResults(); loadActivity(); loadTrending(); }, 90_000); return () => { a(); b(); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
+  useEffect(() => { if (!ready) return; return every(() => { loadBets(); loadProfile(); loadQuests(); }, 120_000); }, [ready]);
 
   const rainIds = useMemo(() => (markets ?? []).filter((m) => m.kind === "rain_at").map((m) => m.id), [markets]);
   useEffect(() => {
@@ -401,7 +401,7 @@ export function App() {
   useEffect(() => {
     if (busIds.length === 0) { setOcc({}); return; }
     const go = () => sb.rpc("live_occupancy", { p_markets: busIds }).then(({ data }) => setOcc(Object.fromEntries(((data ?? []) as LiveOcc[]).map((d) => [d.market_id, d]))));
-    go(); return every(go, 30_000);
+    go(); return every(go, 60_000);
   }, [busIds.join()]);
 
   // ---------- derived ----------
