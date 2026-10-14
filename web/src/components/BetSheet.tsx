@@ -61,8 +61,12 @@ export function BetSheet(p: {
   const baseOf = (k: Pick) => Number(k === "yes" ? p.m.odds_yes : p.m.odds_no), shownOf = (k: Pick) => (offer ? offerOdds(baseOf(k), offer.mult) : baseOf(k));
   const odds = shownOf(pick);
   // The price moved while the sheet is open: the odds and the figures under them pulse once so the change is noticed.
-  const oddsKey = `${p.m.odds_yes}|${p.m.odds_no}`, seenOdds = useRef(oddsKey), [bump, setBump] = useState(0);
-  useEffect(() => { if (seenOdds.current !== oddsKey) { seenOdds.current = oddsKey; setBump((n) => n + 1); haptic.tap(); } }, [oddsKey]);
+  const oddsKey = `${p.m.odds_yes}|${p.m.odds_no}`, seenOdds = useRef(oddsKey), seenId = useRef(p.m.id), [bump, setBump] = useState(0);
+  useEffect(() => {
+    // switching to another step of the same ladder keeps the sheet (and where it is scrolled): that is a new question, not a price that moved
+    if (seenId.current !== p.m.id) { seenId.current = p.m.id; seenOdds.current = oddsKey; return; }
+    if (seenOdds.current !== oddsKey) { seenOdds.current = oddsKey; setBump((n) => n + 1); haptic.tap(); }
+  }, [oddsKey, p.m.id]);
   // Upper limit: what the odds allow (all-but-certain picks are closed), or the whole balance when it is lower (the server checks it again).
   // a personal offer has its own small stake limit instead of the odds-based one, and still refuses a pick whose real quote has become all but certain
   const factor = p.stakeFactor ?? 1;
