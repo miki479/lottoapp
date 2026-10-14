@@ -36,8 +36,9 @@ export function MiniLive({ m, live, now, locale, msg }: { m: MarketRow; live?: L
   const isDelay = (m.kind === "train_delay_gt" || m.kind === "bus_delay_gt") && !!live && !live.is_forecast;
   const kickoff = Number(m.params.kickoff ?? 0) * 1000, onAir = m.kind === "match_bet" && kickoff > 0 && now >= kickoff - 60_000 && now < kickoff + 4 * 3600_000;
   const [hist, setHist] = useState<number[] | null>(null), [score, setScore] = useState<string | null>(null);
+  const [srv, setSrv] = useState<number[] | null>(null);
   const p = impliedYes(Number(m.odds_yes), Number(m.odds_no));
-  const chance = Number.isFinite(p) ? trend(m.id, p) : [];
+  const local = Number.isFinite(p) ? trend(m.id, p) : [], chance = srv && srv.length >= 2 ? srv : local;
   // numbers: recent history, refreshed every minute
   useEffect(() => {
     if (!isTick) return;
@@ -55,6 +56,15 @@ export function MiniLive({ m, live, now, locale, msg }: { m: MarketRow; live?: L
     go(); const t = setInterval(go, 30_000);
     return () => { alive = false; clearInterval(t); };
   }, [m.id, onAir]);
+  // the chance of "yes" as the server has followed it: this market is asked to be followed, then its snapshots are read every minute
+  useEffect(() => {
+    if (isTick) return;
+    let alive = true;
+    sb.rpc("track_markets", { p_ids: [m.id] }).then(() => {}, () => {});
+    const go = () => sb.from("market_odds_history").select("p_yes").eq("market_id", m.id).order("at", { ascending: false }).limit(60).then(({ data }: { data: { p_yes: number }[] | null }) => { if (alive && data) setSrv(data.map((r) => Number(r.p_yes)).reverse()); });
+    const t0 = setTimeout(go, 1500), t = setInterval(go, 60_000);
+    return () => { alive = false; clearTimeout(t0); clearInterval(t); };
+  }, [m.id, isTick]);
   // trains and buses: the delay each time it was read here
   const delayMin = isDelay ? Math.round(live!.delay_sec / 60) : 0;
   const delays = isDelay ? trend(`d:${m.id}`, delayMin) : [];
@@ -70,7 +80,9 @@ export function MiniLive({ m, live, now, locale, msg }: { m: MarketRow; live?: L
     pts = delays; thr = Number(m.params.thresholdSec ?? 180) / 60; tone = "warn";
     cap = `+${delayMin}′ / ${Math.round(thr)}′`;
   } else {
-    tone = chanceTone; cap = score ? `${score}` : chanceCap;
+    tone = chanceTone;
+    const before = m.kind === "match_bet" && kickoff > now && !score;
+    cap = score ? `${score}` : before ? `${new Intl.DateTimeFormat(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit" }).format(new Date(kickoff))} · ${chanceCap}` : chanceCap;
   }
   if (pts.length === 0) return null;
   return (
