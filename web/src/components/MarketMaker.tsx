@@ -103,7 +103,7 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
     setErr(code === "registration_required" ? m.needAccount : (m.errors[code as "generic"] ?? m.errors.generic));
   }, () => setErr(m.errors.generic));
   const chips = (items: { k: string; t: string }[], cur: string, set: (k: string) => void) => (
-    <div class="mkchips">{items.map((i) => <button key={i.k} class={`mkchip ${cur === i.k ? "on" : ""}`} onClick={() => set(i.k)} aria-pressed={cur === i.k}>{i.t}</button>)}</div>
+    <div class="mkchips wrap">{items.map((i) => <button key={i.k} class={`mkchip ${cur === i.k ? "on" : ""}`} onClick={() => set(i.k)} aria-pressed={cur === i.k}>{i.t}</button>)}</div>
   );
   return (
     <Sheet onClose={p.onClose} label={m.title}>
@@ -121,7 +121,8 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
             <button type="button" class="btn secondary" aria-expanded={mapOpen} onClick={() => setMapOpen(!mapOpen)}><MapIcon size={16} />{MAP_TXT[p.locale] ?? MAP_TXT["en-US"]}</button></div>
         </div>
         {mapOpen && <ItalyMapPicker locale={p.locale} initialRegion={mapRegion} onRegion={setMapRegion} onPick={pickMapCity} busy={picking} />}
-        <label class="searchbox"><Search size={18} /><input class="field" value={q} placeholder={p.msg.places.search} aria-label={p.msg.places.search} onInput={(e) => setQ((e.target as HTMLInputElement).value)} /></label>
+        <label class="searchbox"><Search size={18} /><input class="field" value={q} placeholder={p.msg.places.search} aria-label={p.msg.places.search} onInput={(e) => setQ((e.target as HTMLInputElement).value)} onKeyDown={(e) => { if (e.key === "Enter" && found?.[0]) { e.preventDefault(); void pickTown(found[0]); } }} /></label>
+        {q.trim().length >= 2 && <p class="hint" role="note">{m.pickTown}</p>}
         {found?.map((pl) => <button key={`${pl.lat},${pl.lon}`} class="placerow" disabled={picking} onClick={() => pickTown(pl)}><Flag cc={pl.country} size={14} /><span class="pn"><b>{pl.name}</b>{pl.admin && <small>{pl.admin}</small>}</span></button>)}
         <span class="detail">{m.metric}</span>{chips(METRIC_LIST.map((k) => ({ k, t: p.msg.wx.names[k] })), metric, (k) => setMetric(k as typeof metric))}
         <div class="qmgrid">
@@ -140,7 +141,7 @@ export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: st
         {pv && <p class="hint num">{pv.forecast !== undefined ? `${m.forecastLbl}: ${nf.format(pv.forecast)}` : `${m.now}: ${nf.format(pv.reference ?? 0)}`} · {m.odds}: {fmtOdds(pv.odds_yes, p.locale)} / {fmtOdds(pv.odds_no, p.locale)}</p>}
       </div>}
       {tab !== "match" && err && <p class="formerr" role="alert">{err}</p>}
-      {tab !== "match" && <button class="btn primary wide" disabled={busy || !pv} aria-busy={busy} onClick={create}>{busy ? m.creating : m.create}</button>}
+      {tab !== "match" && <button class="btn primary wide" disabled={busy || !pv || (tab === "weather" && q.trim().length >= 2)} aria-busy={busy} onClick={create}>{busy ? m.creating : m.create}</button>}
     </Sheet>
   );
 }
