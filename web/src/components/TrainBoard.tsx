@@ -1,3 +1,4 @@
+import { RefreshCw } from "lucide-preact";
 import { useMemo, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { MarketRow } from "../lib/format.ts";
@@ -46,10 +47,11 @@ function Line(p: { r: BoardRow; tab: BoardTab; full: boolean; msg: Messages; loc
  * already knows (open questions + live delays). Tapping a row opens the bet. "strip" is the short version at the top of the home, "full" the one in the
  * trains category, with a search box and the change since the last reading.
  */
-export function TrainBoard(p: { variant?: "full" | "strip"; markets: MarketRow[]; live: Record<string, LiveDelay>; msg: Messages; locale: Locale; now: number; onPick: (m: MarketRow, pick: Pick) => void }) {
+export function TrainBoard(p: { variant?: "full" | "strip"; markets: MarketRow[]; live: Record<string, LiveDelay>; msg: Messages; locale: Locale; now: number; onRefresh?: () => void; onPick: (m: MarketRow, pick: Pick) => void }) {
   const { msg, locale } = p, full = p.variant === "full";
   const [tab, setTab] = useState<BoardTab>("late");
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(""), [spin, setSpin] = useState(false);
+  const refresh = () => { setSpin(true); p.onRefresh?.(); setTimeout(() => setSpin(false), 900); };
   const rows = useMemo(() => boardRows(p.markets, p.live, p.now, full ? 8 : STRIP_ROWS), [p.markets, p.live, full, Math.floor(p.now / 20_000)]);
   if (rows.length === 0) return full ? <section class="led full" aria-label={msg.board.title}><div class="ledbezel"><header class="ledtop"><b>{msg.board.title}</b></header><p class="ledfine">{msg.board.marquee}</p></div></section> : null;
   const stats = boardStats(rows), needle = q.trim().toLowerCase();
@@ -59,7 +61,7 @@ export function TrainBoard(p: { variant?: "full" | "strip"; markets: MarketRow[]
   return (
     <section class={`led ${full ? "full" : "strip"}`} aria-label={msg.board.title}>
       <div class="ledbezel">
-        <header class="ledtop"><b>{msg.board.title}</b>{tabs}</header>
+        <header class="ledtop"><b><i class="ledlamp" aria-hidden="true" />{msg.board.title}</b>{tabs}{p.onRefresh && <button type="button" class={`ledrefresh ${spin ? "spin" : ""}`} onClick={refresh} aria-label={msg.board.refresh} title={msg.board.refresh}><RefreshCw size={16} aria-hidden="true" /></button>}</header>
         {full && <input class="ledsearch" type="search" value={q} placeholder={msg.board.search} aria-label={msg.board.search} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />}
         {full && <div class="ledcols" aria-hidden="true"><span>{msg.board.heads.train}</span><span>{msg.board.heads.to}</span><span>{tab === "odds" ? msg.board.heads.odds : msg.board.heads.delay}</span><span /></div>}
         <ul class="ledrows">{sorted.map((r) => <Line key={r.m.id} r={r} tab={tab} full={full} msg={msg} locale={locale} onPick={p.onPick} />)}</ul>

@@ -42,7 +42,7 @@ const NEAR_WIDE: Record<string, string> = { it: "Niente entro 50 km: ecco le pi√
 export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>; occ: Record<string, LiveOcc>;
   cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null; radiusKm?: number | null; mineWide?: boolean; country?: string | null; homePos?: { lat: number; lon: number } | null;
-  onQuakeMaker: () => void; onSeries: (s?: FollowedShow) => void; onCreate: () => void; registered: boolean; onAuth: () => void; italian: boolean; nearNode?: preact.ComponentChildren; nearbyNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
+  onRefreshBoard?: () => void; onQuakeMaker: () => void; onSeries: (s?: FollowedShow) => void; onCreate: () => void; registered: boolean; onAuth: () => void; italian: boolean; nearNode?: preact.ComponentChildren; nearbyNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
   stale?: boolean; details: boolean; friendBets: Record<string, number>; onOffer?: (m: MarketRow, o: OfferUse) => void;
   installEvt: Event | null;
 }
@@ -119,7 +119,7 @@ export function Home(p: HomeProps) {
         {p.onOffer && <PersonalOffer msg={msg} locale={p.locale} now={p.now} registered={p.registered} onUse={p.onOffer} />}
         <InstallHint locale={p.locale} invited={!!safe.get("ref")} />
         <Inbox registered={p.registered} ok={msg.common.close} locale={p.locale} />
-        {p.italian && p.markets !== null && <TrainBoard variant="strip" markets={p.markets} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} />}
+        {p.italian && p.markets !== null && <TrainBoard variant="strip" markets={p.markets} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} onRefresh={p.onRefreshBoard} />}
         {p.top.length > 0 && (
           <section class="stack featured" style="gap:8px">
             <div class="sectionhead"><h2>{msg.home.top}</h2></div>
@@ -199,8 +199,8 @@ export function Home(p: HomeProps) {
               </div>
             )}
             {[...gameGroups].map(([appid, ms]) => <GameGroup key={appid} appid={appid} count={ms.length}>{ms.map((m, i) => card(m, i))}</GameGroup>)}
-            {p.markets !== null && p.cat === "train" && p.italian && plain.length === 0 && <div style="grid-column:1/-1"><TrainBoard variant="full" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} /></div>}
-            {plain.slice(0, 40).map((m, i) => <Fragment key={m.id}>{card(m, i)}{i === Math.min(2, plain.length - 1) && p.cat === "train" && p.italian && <div style="grid-column:1/-1"><TrainBoard variant="full" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} /></div>}</Fragment>)}
+            {p.markets !== null && p.cat === "train" && p.italian && plain.length === 0 && <div style="grid-column:1/-1"><TrainBoard variant="full" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} onRefresh={p.onRefreshBoard} /></div>}
+            {plain.slice(0, 40).map((m, i) => <Fragment key={m.id}>{card(m, i)}{i === Math.min(2, plain.length - 1) && p.cat === "train" && p.italian && <div style="grid-column:1/-1"><TrainBoard variant="full" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} onRefresh={p.onRefreshBoard} /></div>}</Fragment>)}
           </div>
           <div class="nearwrap stack">{p.nearbyNode}{p.nearNode}</div>
         </div>

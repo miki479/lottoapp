@@ -1567,3 +1567,13 @@ textarea.field { resize: vertical; min-height: 84px; }
    so where a component draws its own pressed state (a smaller tile, a darker fill) that one still wins and this is the fallback.
    ========================================================================== */
 :where(button, [role="button"], [role="tab"], [role="menuitemradio"], summary, a[href], label.switchrow):active:not(:disabled) { filter: brightness(.88); }
+
+/* the departures board is alive: a lamp that blinks like the real ones, the late trains' figures blink slowly, a button to read the board again now */
+.ledlamp { display: inline-block; width: 9px; height: 9px; margin-right: 8px; border-radius: 50%; background: var(--led-hi); box-shadow: 0 0 8px var(--led-hi); animation: ledblink 1.6s steps(1, end) infinite; vertical-align: 1px; }
+.ledrow.late .leddelay { animation: ledblink 1.2s steps(1, end) infinite; }
+.ledrefresh { display: inline-grid; place-items: center; min-width: var(--hit); min-height: var(--hit); margin-left: auto; color: var(--led-hi); background: transparent; border: 1px solid #4a3a10; border-radius: 10px; cursor: pointer; }
+.ledrefresh:active { background: rgba(255, 176, 0, .16); }
+.ledrefresh.spin svg { animation: ledspin .9s ease-in-out; }
+@keyframes ledblink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .25; } }
+@keyframes ledspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ledlamp, .ledrow.late .leddelay, .ledrefresh.spin svg { animation: none; } }

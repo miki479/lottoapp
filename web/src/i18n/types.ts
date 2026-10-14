@@ -43,7 +43,7 @@ export interface Messages {
   /** TV series: bets on the rating of an episode. */
   series: { cta: string; title: string; body: string; search: string; followed: string; follow: string; unfollow: string; noEpisodes: string; pickEpisode: string; threshold: string; priced: (ref: string, chance: number, yes: string, no: string) => string; create: string; creating: string; credit: string; certain: string; register: string; noRatings: string; time: string; limit: string; mine: string; all: string };
   /** The board of Italian trains running now (Home). */
-  board: { search: string; title: string; following: (n: number) => string; meter: string; over5: string; avg: string; late: string; odds: string; worse: string; better: string; steady: string; kinds: { hs: string; ic: string; rg: string }; heads: { train: string; to: string; delay: string; odds: string }; updated: (time: string) => string; marquee: string; short: { hs: string; ic: string; rg: string } };
+  board: { refresh: string; search: string; title: string; following: (n: number) => string; meter: string; over5: string; avg: string; late: string; odds: string; worse: string; better: string; steady: string; kinds: { hs: string; ic: string; rg: string }; heads: { train: string; to: string; delay: string; odds: string }; updated: (time: string) => string; marquee: string; short: { hs: string; ic: string; rg: string } };
   /** Map of the vehicle behind an open bet. */
   map: { title: string; show: string; hide: string; none: string; estimated: string; stop: string; vehicle: string; updated: (sec: number) => string; credit: string };
   /** The "how full will it be?" bonus on a delay bet. */

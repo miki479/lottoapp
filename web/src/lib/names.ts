@@ -1,3 +1,4 @@
+import { INTL_TAG } from "../i18n/index.ts";
 import type { Locale } from "../i18n/index.ts";
 import { ALERT_AREAS, ALERT_HAZARDS } from "../../../shared/ticks.ts";
 import type { Messages } from "../i18n/index.ts";
@@ -83,5 +84,7 @@ export function subjectOf(m: { kind: string; params: Record<string, unknown> }, 
   if (m.kind === "match_bet") return leagueName(String(p.league ?? ""), locale);
   if (m.kind === "tick_gt") return alertLabel(String(p.series ?? ""), msg) || (msg.cm[String(p.label ?? "")] ?? String(p.label ?? ""));
   if (m.kind.endsWith("_delay_gt") || m.kind === "bus_full") return `${String(p.routeName ?? "")} · ${place}`;
+  // an earthquake is about a zone and a size, not about the city the market happens to be filed under
+  if (m.kind === "quake_m") { const r = String(p.region ?? ""); return `M${Number(p.minMag).toLocaleString(INTL_TAG[locale], { maximumFractionDigits: 1 })}+ · ${r === "custom" ? String(p.place ?? "") : r ? (msg.wx.regions[r] ?? r) : msg.world}`; }
   return place;
 }
