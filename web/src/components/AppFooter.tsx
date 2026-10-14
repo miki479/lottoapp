@@ -10,6 +10,7 @@ export function AppFooter({ msg, sources }: { msg: Messages; sources: Source[] }
       <p>{msg.disclaimerFull}</p>
       <p class="legallinks"><a href="/how-it-works.html">{msg.profile.howItWorks}</a><a href="/terms.html">{msg.profile.terms}</a><a href="/privacy.html">{msg.profile.privacy}</a></p>
       <details><summary>{msg.attributionTitle}</summary>
+        {sources.some((a) => a.url.includes("developer.odpt.org")) && <p class="odptnote">{msg.odptNotice.text} <a href={`mailto:${msg.odptNotice.email}`}>{msg.odptNotice.email}</a>. {msg.odptNotice.fresh}</p>}
         <ul>{sources.map((a) => <li key={a.name}><a href={a.url} target="_blank" rel="noopener noreferrer">{a.name}</a>{a.via ? ` · ${a.via}` : ""} · <a href={a.licenseUrl} target="_blank" rel="noopener noreferrer">{a.license}</a></li>)}</ul>
       </details>
     </footer>
