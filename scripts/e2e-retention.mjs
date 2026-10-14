@@ -34,7 +34,8 @@ try {
   // ---------- guest: rings, bonus, streak, trophies ----------
   const A = await guest();
   await rpc("ensure_profile", { p_city: "tokyo", p_locale: "en-US", p_country: "JP" }, A.token);
-  const open = async (category) => (await call(`/rest/v1/markets?status=eq.open&category=eq.${category}&closes_at=gt.${new Date().toISOString()}&order=target_at.asc&limit=3&select=id`, { token: A.token })).body;
+  // a train question whose "no" is already almost certain (odds 1.01) is capped by the stake limit, so the rings are closed on one that still pays
+  const open = async (category) => (await call(`/rest/v1/markets?status=eq.open&category=eq.${category}&closes_at=gt.${new Date().toISOString()}&order=target_at.asc&limit=12&select=id,odds_no`, { token: A.token })).body.filter((m) => category !== "train" || Number(m.odds_no) >= 1.15).slice(0, 3);
   const [bus, train, weather] = await Promise.all([open("bus"), open("train"), open("weather")]);
   check("open markets exist for bus, train and weather", bus.length >= 2 && train.length >= 1 && weather.length >= 1, `(${bus.length}/${train.length}/${weather.length})`);
   const credits = async () => (await call(`/rest/v1/profiles?id=eq.${A.id}&select=credits,streak,freezes,last_play_date`, { token: A.token })).body[0];
@@ -84,7 +85,10 @@ try {
   check("market settled by the server", settle.status < 300);
 
   const bProf = (await call(`/rest/v1/profiles?id=eq.${B.id}&select=credits`, { token: B.token })).body[0];
-  check("winner paid at the locked odds (1000-100+600)", bProf.credits === 1500, `(credits ${bProf.credits})`);
+  // while the Bank is on, 3% of the profit (500) is set aside in the vault instead of being paid out at once
+  const bankOn = ((await call("/rest/v1/app_settings?key=eq.bank_on&select=value", { key: SRV })).body[0] ?? {}).value === "true";
+  const expected = 1500 - (bankOn ? Math.floor(500 * 0.03) : 0);
+  check(`winner paid at the locked odds (1000-100+600${bankOn ? ", less 3% of the profit for the Bank" : ""})`, bProf.credits === expected, `(credits ${bProf.credits}, expected ${expected})`);
   const bTr = (await call(`/rest/v1/trophies?user_id=eq.${B.id}&select=trophy_id`, { token: B.token })).body.map((t) => t.trophy_id);
   check("winner gets first_win and long_shot trophies", bTr.includes("first_win") && bTr.includes("long_shot"), JSON.stringify(bTr));
 

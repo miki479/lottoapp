@@ -44,3 +44,16 @@ export function pickFeed(users: readonly FeedItem[], system: readonly FeedItem[]
   if (out.length > 1 && first?.who && last?.who && key(first.who) === key(last.who)) out.pop();
   return out;
 }
+
+/**
+ * "Friends are betting": the open questions friends have put credits on, the busiest first, at most `max`. They are distinct questions with the number of
+ * friends in each, never a list of what one player did, so the block cannot read as a single person's log.
+ */
+export function friendRows<T extends { id: string; closes_at: string; params?: Record<string, unknown> }>(markets: readonly T[] | null, bets: Record<string, number>, nowMs: number, max = 3): { m: T; n: number }[] {
+  const byId = new Map((markets ?? []).filter((m) => !m.params?.testOnly && !m.params?.ladderOf).map((m) => [m.id, m] as const));
+  return Object.entries(bets)
+    .filter(([id, n]) => n > 0 && byId.has(id) && Date.parse(byId.get(id)!.closes_at) > nowMs)
+    .sort((a, b) => b[1] - a[1] || Date.parse(byId.get(a[0])!.closes_at) - Date.parse(byId.get(b[0])!.closes_at))
+    .slice(0, max)
+    .map(([id, n]) => ({ m: byId.get(id)!, n }));
+}

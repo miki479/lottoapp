@@ -13,7 +13,7 @@ const DRIFT = 0.34, IDLE_MS = 5000;
  * On phones and tablets the row drifts slowly and loops, so everything gets shown; it stops while a finger or the mouse is on it, waits a few seconds
  * after the last touch, and stays still for people who asked for less motion.
  */
-export function TopCards({ items, lead }: { items: TopItem[]; lead?: ComponentChildren }) {
+export function TopCards({ items }: { items: TopItem[] }) {
   const row = useRef<HTMLDivElement>(null), hold = useRef(0), seen = useRef(true);
   useEffect(() => {
     const el = row.current;
@@ -36,12 +36,11 @@ export function TopCards({ items, lead }: { items: TopItem[]; lead?: ComponentCh
     };
     raf = requestAnimationFrame(step);
     return () => { cancelAnimationFrame(raf); io?.disconnect(); el.classList.remove("looping"); };
-  }, [items.length, !!lead]);
+  }, [items.length]);
   const pause = (ms = IDLE_MS) => { hold.current = performance.now() + ms; };
   const cards = (copy: boolean) => (
     <>
       {copy ? <span class="top-dup" aria-hidden="true" /> : null}
-      {copy ? <div class="top-ghost">{lead}</div> : lead}
       {items.map((it, i) => {
         const Icon = it.icon;
         return (
