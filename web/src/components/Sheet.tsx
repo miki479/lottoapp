@@ -2,16 +2,36 @@ import type { ComponentChildren } from "preact";
 import { createPortal } from "preact/compat";
 import { useEffect, useRef } from "preact/hooks";
 
-/** Bottom sheet on phones, centred dialog on larger screens. Closes on Escape and on outside tap. */
-export function Sheet({ onClose, label, children }: { onClose: () => void; label: string; children: ComponentChildren }) {
+/** The sheets that are open, the last one on top: Escape closes and Tab stays inside only that one. */
+const OPEN: HTMLElement[] = [];
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Bottom sheet on phones, centred dialog on larger screens (`foot`: the last child of the sheet is a sticky foot that sits flush with its bottom edge). Closes on Escape, on outside tap and by dragging down; the keyboard focus stays inside while it is open and goes back where it was when it closes. */
+export function Sheet({ onClose, label, children, foot }: { onClose: () => void; label: string; children: ComponentChildren; foot?: boolean }) {
   const sheet = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const key = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const el = sheet.current;
+    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (el) { OPEN.push(el); el.focus({ preventScroll: true }); }
+    const key = (e: KeyboardEvent) => {
+      if (!el || OPEN[OPEN.length - 1] !== el) return;
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab") return;
+      const items = [...el.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((x) => x.offsetParent !== null), at = document.activeElement;
+      if (!items.length) { e.preventDefault(); return; }
+      const first = items[0]!, last = items[items.length - 1]!;
+      if (!el.contains(at) || (e.shiftKey && (at === first || at === el))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && at === last) { e.preventDefault(); first.focus(); }
+    };
     addEventListener("keydown", key);
     // lock the page under the sheet (iOS ignores overflow:hidden on body): freeze it in place and give the scroll position back on close
     const y = scrollY, b = document.body.style, prev = { overflow: b.overflow, position: b.position, top: b.top, width: b.width };
     b.overflow = "hidden"; b.position = "fixed"; b.top = `-${y}px`; b.width = "100%";
-    return () => { removeEventListener("keydown", key); b.overflow = prev.overflow; b.position = prev.position; b.top = prev.top; b.width = prev.width; scrollTo(0, y); };
+    return () => {
+      removeEventListener("keydown", key); b.overflow = prev.overflow; b.position = prev.position; b.top = prev.top; b.width = prev.width; scrollTo(0, y);
+      const i = el ? OPEN.indexOf(el) : -1; if (i >= 0) OPEN.splice(i, 1);
+      if (before?.isConnected) before.focus({ preventScroll: true });
+    };
   }, []);
   // Pulling the content down while it is scrolled to the top closes the sheet like the handle does, instead of dragging the page below.
   useEffect(() => {
@@ -46,7 +66,7 @@ export function Sheet({ onClose, label, children }: { onClose: () => void; label
   // Rendered into <body>: a sheet opened from inside an animated screen would otherwise be positioned relative to that screen, not the window.
   return createPortal(
     <div class="scrim" onClick={onClose}>
-      <div class="sheet" ref={sheet} role="dialog" aria-modal="true" aria-label={label} onClick={(e) => e.stopPropagation()}>
+      <div class={`sheet ${foot ? "withfoot" : ""}`} ref={sheet} role="dialog" aria-modal="true" aria-label={label} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <div class="grab" aria-hidden="true" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} />
         {children}
       </div>

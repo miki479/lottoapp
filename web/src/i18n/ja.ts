@@ -30,7 +30,7 @@ const ja: Messages = {
   why: { title: "このオッズの根拠", line: (late, days, avg) => (late === 0 ? `${days}日間で遅れなし · 平均 ${avg}` : `${days}日中${late}日遅れ · 平均 ${avg}`), chart: (late, days) => `直近7日: データのある${days}日中${late}日が遅れ`, dayLate: "基準超え", dayOk: "基準内", dayNone: "データなし", threshold: (m) => `この予想の基準: ${m}`, source: "出典: この路線で締め切られた直近7日間の予想と、締切時に測った遅れ。", base: (p) => `オッズは基礎確率${p}(基準を超える遅延、国の履歴)から始まり、その後は進行中の遅れに追従します。`, implied: (sum) => `2つのオッズの暗黙確率の合計は${sum}。100%を超える分がハウスマージンです。`, show: "日ごとの詳細を表示", hide: "詳細を隠す" },
   ticker: { label: "ライブの動き", anon: "プレイヤー", won: "が勝ちました", lost: "が外れました", placed: "が予想しました", on: "：", late: (r, t, m) => `${r}${t ? `（${t}行き）` : ""}は現在+${m}分の遅れ`, closing: "まもなく終了", crowd: (n) => `${n}件の予想`, flash: (x) => `フラッシュ ×${x}`, strike: (d) => `${d}に全国ストライキ` },
   slip: { bar: (n) => `${n}件`, title: "複数予想", add: "+ 複数予想に追加", added: "追加済み", remove: "外す", odds: "合計オッズ", confirm: "複数予想を確定", maxWin: "最大配当：賭け額の100倍", need2: "もう1件追加してください", placed: (w) => `複数予想を登録しました。全部当たれば${w}。`, legs: (n) => `${n}件`, clear: "クリア" },
-  stake: { label: "賭け額", min: "最小", max: (m) => `最大 ${m}`, ifRight: "当たれば受け取れる額" },
+  stake: { label: "賭け額", min: "最小", max: (m) => `最大 ${m}` },
   join: { step: "最後のステップ", title: "メールとパスワードでプロフィールを作成", body: (c) => `登録後すぐに予想が確定します。架空の${c}を受け取り、毎日250まで補充されます。`, nickname: "ニックネーム", password: "パスワード", hint: "8文字以上。ニックネームはランキングで公開されます。", cta: (s) => `${s}で予想する`, haveProfile: "プロフィールを持っています", newProfile: "プロフィールを作成", emailInstead: "メールを使う", checkMail: "確認メールを開いてから、ここに戻って予想してください。" },
   referral: { title: "友だちを招待", body: (b) => `友だちが初めて予想すると${b}を受け取れます。`, code: "あなたのコード", copy: "リンクをコピー", copied: "リンクをコピーしました", share: "招待を共有", shareText: (c) => `LateBetで遊ぼう：データは本物、クレジットは架空。招待コード ${c}`, counts: (i, p) => `招待${i}人・予想した人${p}人`, guest: "プロフィールを作成すると招待コードが使えます。", accepted: "招待を承認しました" },
   voice: { on: "音声オン", off: "音声オフ", placed: (w) => `予想を登録しました。配当は最大${w}です。`, won: (a) => `${a}を獲得しました。おめでとうございます。`, lost: "今回は残念でした。次の電車は別の話です。", flash: "フラッシュイベント開催中。オッズがアップしています。", label: "音声アナウンス" },
@@ -101,7 +101,7 @@ const ja: Messages = {
     full: (q) => q.occ === "empty" ? `${q.time}に${q.stop}に着くバス${q.route}は空っぽですか？` : q.occ === "few" ? `${q.time}の${q.stop}で、バス${q.route}は座席がほぼ埋まっていますか？` : `${q.time}の${q.stop}で、バス${q.route}は立ち席のみになりますか？`,
     traffic: (q) => `${q.from}〜${q.to}の${q.site}（${q.toward}方面）の平均速度は${q.kmh} km/h未満になりますか？`,
   },
-  sheet: { title: "予想シート", pick: "あなたの予想", stake: "賭け額", potential: "見込み配当", confirm: "予想を確定", confirming: "少々お待ちください…", odds: "オッズ", placed: (w) => `予想を登録しました。配当は最大${w}です。` },
+  sheet: { title: "予想シート", pick: "あなたの予想", stake: "賭け額", potential: "見込み配当", confirm: "予想を確定", confirming: "少々お待ちください…", odds: "オッズ", placed: (w) => `予想を登録しました。配当は最大${w}です。`, now: "いま", decides: "判定時刻", closesIn: "締切まで", noLive: "データなし", forecast: (m) => `予測 ${m}`, after: "賭けた後の残高", ifLose: "負けたら", ifWin: "勝てば", loseNote: "賭け額を失います", winNote: (b) => `合計${b}を受け取り`, bigStake: (n) => `残高の${n}%を賭けようとしています。よろしいですか？`, bigYes: (a) => `はい、${a}を賭ける`, bigNo: "賭け額を変更", share: (n) => `残高の${n}%` },
   bets: {
     title: "マイ予想", tabs: { open: "進行中", settled: "終了" }, open: "進行中", won: "的中", lost: "外れ", void: "返金",
     empty: { title: "まだ予想がありません", body: "イベントを選んで、最初の予想をしてみましょう。", cta: "イベントを見る" },

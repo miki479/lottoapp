@@ -1,17 +1,17 @@
 import { sb } from "../lib/api.ts";
 import { oddsWord } from "../lib/oddsWord.ts";
 import { FUN_STAKE, balanceStakeCap, stakeCap } from "../../../shared/wallet.ts";
-import { Q } from "./Q.tsx";
+import { BetHead } from "./BetHead.tsx";
+import { BetFoot } from "./BetFoot.tsx";
 import { MarketVs, noOf, reasonOf } from "./MatchVs.tsx";
-import { Gift, Layers, Rocket, Share2, Sparkles, X } from "lucide-preact";
+import { Gift, Layers, Share2, Sparkles, X } from "lucide-preact";
 import { useRef, useState } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { fmtOdds, isYesNo, money, question, type MarketRow } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
-import type { Pick } from "../lib/types.ts";
+import type { LiveDelay, Pick } from "../lib/types.ts";
 import { JoinStep } from "./JoinStep.tsx";
-import { boostedPayout } from "../../../shared/wallet.ts";
 import { ReportLink } from "./ReportLink.tsx";
 import { Sheet } from "./Sheet.tsx";
 import { MetricArt } from "./MetricArt.tsx";
@@ -36,7 +36,7 @@ import { fmtMult } from "../lib/num.ts";
 /** Shown near the limit of 40 open bets (closed ones that wait for their result count too), so a refusal never comes as a surprise. */
 const OPEN_HINT: Record<string, string> = { it: "Puntate aperte (contano anche quelle in attesa del risultato)", "en-US": "Open bets (those waiting for a result count too)", "en-GB": "Open bets (those waiting for a result count too)", ja: "未決着の予想（結果待ちを含む）" };
 export function BetSheet(p: {
-  m: MarketRow; initial: Pick; msg: Messages; locale: Locale; credits: number; stakeFactor?: number; ready: boolean; needJoin: boolean; googleOn: boolean; inSlip: boolean; boosts: number; now: number; mm?: number; occ?: { level: number }; ladder: MarketRow[]; onSwitch: (m: MarketRow) => void;
+  m: MarketRow; initial: Pick; msg: Messages; locale: Locale; credits: number; stakeFactor?: number; ready: boolean; needJoin: boolean; googleOn: boolean; inSlip: boolean; boosts: number; now: number; mm?: number; live?: LiveDelay; occ?: { level: number }; ladder: MarketRow[]; onSwitch: (m: MarketRow) => void;
   onClose: () => void; onAddSlip: (m: MarketRow, pick: Pick) => void; onJoined: () => Promise<void>; onPlace: (m: MarketRow, pick: Pick, stake: number, boost: boolean, bonus?: string | null, vice?: boolean, offerId?: string | null) => Promise<string | null>;
   offer?: OfferUse; openBets?: number;
 }) {
@@ -82,19 +82,15 @@ export function BetSheet(p: {
   const label = (k: Pick) => (k === "yes" ? (isRain ? p.msg.card.yes : p.msg.card.late) : (isRain ? p.msg.card.no : p.msg.card.onTime));
   if (joining) return <JoinStep msg={p.msg} locale={p.locale} googleOn={p.googleOn} stakeLabel={money(amount, p.locale)} onBack={() => setJoining(false)} onClose={p.onClose} onJoined={place} />;
   return (
-    <Sheet onClose={p.onClose} label={p.msg.sheet.title}>
+    <Sheet foot onClose={p.onClose} label={p.msg.sheet.title}>
       <div class="shead"><h2>{p.msg.sheet.title}</h2><span class="grow" /><button class="iconbtn" onClick={share} aria-label={p.msg.maker.share}><Share2 size={20} /></button><button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>
       {copied && <p class="hint" role="status">{p.msg.maker.copied}</p>}
-      {p.m.kind === "match_bet" && <div class="vscard"><MarketVs m={p.m} size={38} />{reasonOf(p.m, p.msg) && <span class="reason big">{reasonOf(p.m, p.msg)}</span>}</div>}
       {offer && <div class="pobanner" role="status"><Gift size={18} />{offerText(p.locale).banner(offer.mult, offer.maxStake)}</div>}
-      <p class="q" style="font-weight:600"><Q m={p.m} msg={p.msg} locale={p.locale} city={cityName(city, p.locale)} tz={city.timezone} /></p>
+      <BetHead m={p.m} msg={p.msg} locale={p.locale} now={p.now} live={p.live} occ={p.occ} />
+      {p.m.kind === "match_bet" && <div class="vscard"><MarketVs m={p.m} size={38} />{reasonOf(p.m, p.msg) && <span class="reason big">{reasonOf(p.m, p.msg)}</span>}</div>}
       {(p.m.params as { house?: boolean }).house && <Remind id={p.m.id} msg={p.msg} />}
       {typeof p.m.params.by === "string" && p.m.params.by && <p class="byline">{p.msg.maker.by(p.m.params.by)}</p>}
-      {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "traffic_speed_lt" ? <TrafficScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "match_bet" ? <SportScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "tick_gt" ? <TickScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" || p.m.kind === "strike_on" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : p.m.kind === "bus_full" ? <OccScene m={p.m} hint={pick} level={p.occ?.level} msg={p.msg} /> : <TripScene m={p.m} now={p.now} hint={pick} big />}
-      {(p.m.kind === "bus_delay_gt" || p.m.kind === "train_delay_gt") && <StopsBoard m={p.m} locale={p.locale} now={p.now} />}
-      <WhyBlock m={p.m} msg={p.msg} locale={p.locale} />
-      {(p.m.params.custom === "true" || p.m.params.local === "true") && <AreaStats marketId={p.m.id} msg={p.msg} />}
-      {p.m.kind === "tick_gt" && !(p.m.params as { house?: boolean }).house && <TickChart m={p.m} msg={p.msg} locale={p.locale} />}
+      {p.m.kind === "rain_at" ? <Sky mm={p.mm} hint={pick} msg={p.msg} /> : p.m.kind === "traffic_speed_lt" ? <TrafficScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "match_bet" ? <SportScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "tick_gt" ? <TickScene m={p.m} hint={pick} msg={p.msg} /> : p.m.kind === "metric_gt" || p.m.kind === "quake_m" || p.m.kind === "strike_on" ? <MetricArt m={p.m} msg={p.msg} hint={pick} /> : p.m.category === "traffic" ? null : p.m.kind === "bus_full" ? <OccScene m={p.m} hint={pick} level={p.occ?.level} msg={p.msg} /> : <TripScene m={p.m} now={p.now} hint={pick} />}
       <div>
         <span class="detail">{p.msg.sheet.pick}</span>
         <div class="actions2" style="margin-top:8px">
@@ -104,7 +100,10 @@ export function BetSheet(p: {
             </button>
           ))}
         </div>
+        <p class="oddsword">{fmtMult(shownOf(pick), p.locale)} · {oddsWord(shownOf(pick), p.locale)}</p>
       </div>
+      {(decided || nearly) && <p class="note warn" role="status">{p.msg.errors.odds_too_low}</p>}
+      <WhyBlock m={p.m} msg={p.msg} locale={p.locale} />
       {p.ladder.length > 0 && (
         <div class="ladder">
           <b>{p.msg.ladder.title}</b>
@@ -119,22 +118,23 @@ export function BetSheet(p: {
           <span class="hint">{p.msg.ladder.estimate}</span>
         </div>
       )}
+      <StakeControl value={amount} onChange={setStake} cap={cap} balance={p.credits} odds={odds} boost={boost && p.boosts > 0} vice={vice && pick === "yes" ? vicePct : 0} fancy={exclusive} locale={p.locale} msg={p.msg} />
+      {!offer && p.boosts > 0 && <BoostRow on={boost} onToggle={setBoost} boosts={p.boosts} stake={amount} odds={odds} locale={p.locale} msg={p.msg} />}
+      {!offer && vicePct > 0 && pick === "yes" && <label class={`boosttoggle vicetoggle ${vice ? "on" : ""}`}><input type="checkbox" checked={vice} onChange={(e) => setVice((e.target as HTMLInputElement).checked)} /><Sparkles size={20} /><span><b>{p.msg.house.viceTitle}</b> · +{vicePct}%<small>{p.msg.house.viceBody(vicePct)}</small></span></label>}
       {!offer && p.m.params.occBonus === true && p.m.kind === "bus_delay_gt" && (
         <div class="bonusbox" role="group" aria-label={p.msg.bonus.title}>
           <b>{p.msg.bonus.title}</b><p class="hint">{p.msg.bonus.hint}</p>
           <div class="mkchips wrap">{([null, "free", "few", "standing"] as const).map((k) => <button key={String(k)} type="button" class={`mkchip ${bonus === k ? "on" : ""}`} aria-pressed={bonus === k} onClick={() => setBonus(k)}>{k === null ? p.msg.bonus.none : p.msg.bonus[k]}</button>)}</div>
         </div>
       )}
-      {!offer && vicePct > 0 && pick === "yes" && <label class={`boosttoggle vicetoggle ${vice ? "on" : ""}`}><input type="checkbox" checked={vice} onChange={(e) => setVice((e.target as HTMLInputElement).checked)} /><Sparkles size={20} /><span><b>{p.msg.house.viceTitle}</b> · +{vicePct}%<small>{p.msg.house.viceBody(vicePct)}</small></span></label>}
-      <p class="oddsword">{fmtMult(shownOf(pick), p.locale)} · {oddsWord(shownOf(pick), p.locale)}</p>
-      {(decided || nearly) && <p class="note warn" role="status">{p.msg.errors.odds_too_low}</p>}
-      <StakeControl value={amount} onChange={setStake} cap={cap} balance={p.credits} odds={odds} boost={boost && p.boosts > 0} vice={vice && pick === "yes" ? vicePct : 0} fancy={exclusive} locale={p.locale} msg={p.msg} />
-      {!offer && p.boosts > 0 && <BoostRow on={boost} onToggle={setBoost} boosts={p.boosts} stake={amount} odds={odds} locale={p.locale} msg={p.msg} />}
-      {err && <p class="formerr" role="alert">{err}</p>}
-      {(p.openBets ?? 0) >= 32 && <p class="hint" role="status">{OPEN_HINT[p.locale] ?? OPEN_HINT["en-US"]}: {p.openBets}/40</p>}
-      <button class="btn primary wide" disabled={busy || !p.ready || decided} aria-busy={busy} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? p.msg.sheet.confirming : `${p.msg.sheet.confirm} · ${money(amount, p.locale)}`}</button>
+      {(p.m.kind === "bus_delay_gt" || p.m.kind === "train_delay_gt") && <StopsBoard m={p.m} locale={p.locale} now={p.now} />}
+      {(p.m.params.custom === "true" || p.m.params.local === "true") && <AreaStats marketId={p.m.id} msg={p.msg} />}
+      {p.m.kind === "tick_gt" && !(p.m.params as { house?: boolean }).house && <TickChart m={p.m} msg={p.msg} locale={p.locale} />}
       {!offer && <button class="btn secondary wide" onClick={() => { p.onAddSlip(p.m, pick); haptic.tap(); }} disabled={p.inSlip}><Layers size={18} />{p.inSlip ? p.msg.slip.added : p.msg.slip.add}</button>}
       <ReportLink marketId={p.m.id} msg={p.msg} />
+      <BetFoot amount={amount} balance={p.credits} label={`${p.msg.sheet.confirm} · ${money(amount, p.locale)}`} busy={busy} disabled={!p.ready || decided} err={err} msg={p.msg} locale={p.locale} onGo={p.needJoin ? () => setJoining(true) : place} reset={`${pick}|${boost}|${vice}|${bonus}`}>
+        {(p.openBets ?? 0) >= 32 && <p class="hint" role="status">{OPEN_HINT[p.locale] ?? OPEN_HINT["en-US"]}: {p.openBets}/40</p>}
+      </BetFoot>
     </Sheet>
   );
 }

@@ -1,6 +1,7 @@
 import { Rocket, Trash2, X } from "lucide-preact";
 import { useRef, useState } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
+import { BetFoot } from "./BetFoot.tsx";
 import { BoostRow } from "./BoostRow.tsx";
 import { fmtOdds, isYesNo, money, question } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
@@ -39,7 +40,7 @@ export function ParlaySheet(p: {
   };
   if (joining) return <JoinStep msg={m} locale={p.locale} googleOn={p.googleOn} stakeLabel={money(amount, p.locale)} onBack={() => setJoining(false)} onClose={p.onClose} onJoined={place} />;
   return (
-    <Sheet onClose={p.onClose} label={m.slip.title}>
+    <Sheet foot onClose={p.onClose} label={m.slip.title}>
       <div class="shead"><h2>{m.slip.title} <small class="hint">{m.slip.legs(p.legs.length)}</small></h2><button class="iconbtn" onClick={p.onClose} aria-label={m.common.close}><X size={22} /></button></div>
       <ul class="legs">
         {p.legs.map((l) => {
@@ -59,9 +60,8 @@ export function ParlaySheet(p: {
       <StakeControl value={amount} onChange={setStake} cap={cap} balance={p.credits} odds={odds} boost={boost && p.boosts > 0} locale={p.locale} msg={m} />
       {p.boosts > 0 && <BoostRow on={boost} onToggle={setBoost} boosts={p.boosts} stake={amount} odds={odds} locale={p.locale} msg={m} />}
       <p class="hint">{m.slip.maxWin}</p>
-      {err && <p class="formerr" role="alert">{err}</p>}
-      <button class="btn primary wide" disabled={busy || p.legs.length < 2} aria-busy={busy} onClick={p.needJoin ? () => setJoining(true) : place}>{busy ? m.sheet.confirming : `${m.slip.confirm} · ${money(amount, p.locale)}`}</button>
       <button class="btn secondary wide" onClick={p.onClear}>{m.slip.clear}</button>
+      <BetFoot amount={amount} balance={p.credits} label={`${m.slip.confirm} · ${money(amount, p.locale)}`} busy={busy} disabled={p.legs.length < 2} err={err} msg={m} locale={p.locale} onGo={p.needJoin ? () => setJoining(true) : place} reset={`${boost}|${p.legs.length}`} />
     </Sheet>
   );
 }

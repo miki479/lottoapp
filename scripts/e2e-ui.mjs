@@ -26,8 +26,10 @@ try {
   check("tapping the bet button opens the sign-up step", (await page.locator(".joinform").count()) === 1);
   await page.fill("input[type=email]", email); await page.fill("input[type=password]", "password-ui-test-1");
   await page.locator(".joinform .btn.primary").click();
-  await page.waitForSelector(".toast", { timeout: 15000 });
-  check("bet placed right after signing up", /Puntata registrata/.test((await toast()).join(" ")), JSON.stringify(await toast()));
+  // two toasts follow the sign-up (the welcome gift and the bet), one replacing the other: watch for the bet's for a while instead of reading whichever is up
+  const seen = new Set();
+  for (let i = 0; i < 60 && ![...seen].some((t) => /Puntata registrata/.test(t)); i++) { for (const t of await toast()) seen.add(t); await page.waitForTimeout(250); }
+  check("bet placed right after signing up", [...seen].some((t) => /Puntata registrata/.test(t)), JSON.stringify([...seen]));
   await page.waitForTimeout(3000);
   check("a dot on the Profile tab points at the welcome gift", (await page.locator(".tabbar .badge.dot").count()) === 1);
   check("balance debited", /9\d\d|950/.test(await page.locator(".wallet").innerText()), await page.locator(".wallet").innerText());
