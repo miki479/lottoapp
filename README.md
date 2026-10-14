@@ -19,7 +19,7 @@ live delay board. Next: flash events, push notifications, more cities, calibrati
 
 | City | Bus/tram | Trains | Weather |
 |---|---|---|---|
-| Tokyo | Toei (positions + timetable), Keisei (explicit delays) | off (ODPT public train feed is nearly empty) | Open-Meteo |
+| Tokyo | Toei (positions + timetable), Keisei (explicit delays), Yokohama Municipal Bus (explicit delays, ODPT key) | off (ODPT public train feed is nearly empty) | Open-Meteo |
 | Rome | off: the feed's terms limit use to travel support | no open feed | Open-Meteo |
 | Amsterdam | off | Dutch railways (GTFS-RT TripUpdates) | Open-Meteo |
 
@@ -74,6 +74,7 @@ Copy `.env.example` to `.env`; never commit real keys.
 Attribution is stored per feed in the city file and must be shown in the app.
 
 - Toei Bus: © 東京都交通局, via 公共交通オープンデータ協議会 (ODPT), CC BY 4.0.
+- Yokohama Municipal Bus: © 横浜市交通局, via ODPT, ODPT Basic License (access token in the secret `ODPT_KEY`; the timetable is downloaded with it, so the market workflow needs `ODPT_KEY` as a repository secret too).
 - Keisei Transit Bus (Keisei Bus Chiba West): © 京成トランジットバス, via ODPT, CC BY 4.0.
 - Dutch trains: OVapi / NDOV open data (free to use, no SLA; do not impersonate the operators).
 - Weather: Weather data by [Open-Meteo.com](https://open-meteo.com/), CC BY 4.0 (free tier is non-commercial use only).

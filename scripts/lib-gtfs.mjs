@@ -20,7 +20,10 @@ export const GTFS_TABLES = ["agency.txt", "routes.txt", "trips.txt", "stops.txt"
 /** Downloads the feed's static GTFS and unzips the small tables next to the archive; returns the directory. */
 export async function downloadGtfs(feed, names = GTFS_TABLES) {
   if (!feed.staticGtfsUrl) throw new Error(`feed ${feed.id} has no staticGtfsUrl: pass --gtfs-dir`);
-  const res = await fetch(feed.staticGtfsUrl, { redirect: "follow", headers: { "User-Agent": "LateLotto/0.1 (play-money game)", ...hdrs(feed) }, signal: AbortSignal.timeout(600000) });
+  // an ODPT-style feed wants its access token in the address of the timetable too (from the environment, never from the config)
+  const key = feed.requiresKey && feed.keyIn !== "header" ? process.env[feed.requiresKey] : "";
+  const url = key ? `${feed.staticGtfsUrl}${feed.staticGtfsUrl.includes("?") ? "&" : "?"}acl:consumerKey=${encodeURIComponent(key)}` : feed.staticGtfsUrl;
+  const res = await fetch(url, { redirect: "follow", headers: { "User-Agent": "LateLotto/0.1 (play-money game)", ...hdrs(feed) }, signal: AbortSignal.timeout(600000) });
   if (!res.ok) throw new Error(`GTFS download failed: ${res.status}`);
   const dir = mkdtempSync(join(tmpdir(), "gtfs-"));
   // The archive goes to disk and the big table is streamed out of it with `unzip -p`: national feeds (Switzerland: ~300 MB zipped)

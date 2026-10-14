@@ -78,6 +78,29 @@
       ]
     },
     {
+      "id": "yokohama-bus-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://api.odpt.org/api/v4/gtfs/realtime/YokohamaMunicipalBus_trip_update",
+      "requiresKey": "ODPT_KEY",
+      "pollSeconds": 60,
+      "staleAfterSeconds": 180,
+      "attribution": {
+        "name": "横浜市交通局 (City of Yokohama Transportation Bureau)",
+        "via": "公共交通オープンデータセンター (ODPT)",
+        "license": "ODPT Basic License for Public Transport Open Data",
+        "licenseUrl": "https://developer.odpt.org/documents",
+        "url": "https://developer.odpt.org/"
+      },
+      "licenseVerified": true,
+      "staticGtfsUrl": "https://api.odpt.org/api/v4/files/YokohamaMunicipal/data/YokohamaMunicipal-Bus-GTFS.zip",
+      "routeTypes": [
+        3
+      ],
+      "note": "ODPT access token (secret ODPT_KEY, Center Access Token). The real-time feed gives an explicit delay per stop; trip ids match the static timetable."
+    },
+    {
       "id": "toei-train-trip-update",
       "category": "train",
       "type": "gtfs-rt",
@@ -115,12 +138,6 @@
     }
   ],
   "futureFeeds": [
-    {
-      "id": "yokohama-bus-trip-update",
-      "note": "Needs ODPT_TOKEN (api.odpt.org). Licensed under the ODPT Basic License, not CC BY: read the terms before enabling.",
-      "url": "https://api.odpt.org/api/v4/gtfs/realtime/YokohamaMunicipalBus_trip_update",
-      "requiresKey": "ODPT_TOKEN"
-    },
     {
       "id": "tomtom-flow",
       "note": "Free tier: 20k Flow Segment requests/month. Check data storage terms before enabling.",
