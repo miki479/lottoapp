@@ -11,7 +11,7 @@ import { Collapse } from "../components/Collapse.tsx";
 import { Empty } from "../components/Empty.tsx";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, cityOf } from "../lib/cities.ts";
-import { countdown, fmtOdds, isYesNo, money, potentialWin, question } from "../lib/format.ts";
+import { countdown, fmtOdds, isYesNo, money, potentialWin, question, trainLabel } from "../lib/format.ts";
 import type { Challenge } from "../components/ChallengeSheet.tsx";
 import type { MyBet, ParlayRow } from "../lib/types.ts";
 import type { MarketRow } from "../lib/format.ts";
@@ -31,9 +31,11 @@ function Due({ at, now, msg, seed }: { at: number; now: number; msg: Messages; s
 export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge, parlays, bets, msg, locale, now, onOpen, onHome }: { streak: number; canMore: boolean; onMore: () => void; invites: (Challenge & { invited_by: string })[]; challenges: Challenge[]; onChallenge: (code: string) => void; parlays: ParlayRow[]; bets: MyBet[]; msg: Messages; locale: Locale; now: number; onOpen: (b: MyBet) => void; onHome: () => void }) {
   const [tab, setTab] = useState<"open" | "settled">("open");
   const [st, setSt] = useState<"all" | "won" | "lost" | "void">("all"), [cat, setCat] = useState("all");
-  const cats = [...new Set(bets.filter((b) => b.status !== "open").map((b) => b.markets.category))];
-  const shown = bets.filter((b) => (tab === "open" ? b.status === "open" : b.status !== "open" && (st === "all" || b.status === st) && (cat === "all" || b.markets.category === cat)));
-  const shownP = parlays.filter((x) => (tab === "open" ? x.status === "open" : x.status !== "open" && (st === "all" || x.status === st) && cat === "all"));
+  const inTab = (status: string) => (tab === "open") === (status === "open");
+  const cats = [...new Set(bets.filter((b) => inTab(b.status)).map((b) => b.markets.category))];
+  const catNow = (cats as string[]).includes(cat) ? cat : "all";
+  const shown = bets.filter((b) => inTab(b.status) && (tab === "open" || st === "all" || b.status === st) && (catNow === "all" || b.markets.category === catNow));
+  const shownP = parlays.filter((x) => inTab(x.status) && (tab === "open" || st === "all" || x.status === st) && catNow === "all");
   const nOpen = bets.filter((b) => b.status === "open").length + parlays.filter((x) => x.status === "open").length;
   const nDone = bets.length + parlays.length - nOpen;
   // the results by day behind the three figures at the top: asked again whenever something has been settled
@@ -55,12 +57,10 @@ export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge
         <button role="tab" class={tab === "open" ? "on" : ""} aria-selected={tab === "open"} onClick={() => setTab("open")}>{msg.bets.tabs.open} · {nOpen}</button>
         <button role="tab" class={tab === "settled" ? "on" : ""} aria-selected={tab === "settled"} onClick={() => setTab("settled")}>{msg.bets.tabs.settled} · {nDone}</button>
       </div>
-      {tab === "settled" && (
-        <div class="stack" style="gap:6px">
-          <div class="mkchips">{(["all", "won", "lost", "void"] as const).map((k) => <button key={k} class={`mkchip ${st === k ? "on" : ""}`} aria-pressed={st === k} onClick={() => setSt(k)}>{msg.hist[k]}</button>)}</div>
-          {cats.length > 1 && <div class="mkchips"><button class={`mkchip ${cat === "all" ? "on" : ""}`} aria-pressed={cat === "all"} onClick={() => setCat("all")}>{msg.hist.all}</button>{cats.map((c) => <button key={c} class={`mkchip ${cat === c ? "on" : ""}`} aria-pressed={cat === c} onClick={() => setCat(c)}>{msg.tabs[c as keyof typeof msg.tabs] ?? c}</button>)}</div>}
-        </div>
-      )}
+      <div class="stack" style="gap:6px">
+        {tab === "settled" && <div class="mkchips">{(["all", "won", "lost", "void"] as const).map((k) => <button key={k} class={`mkchip ${st === k ? "on" : ""}`} aria-pressed={st === k} onClick={() => setSt(k)}>{msg.hist[k]}</button>)}</div>}
+        {cats.length > 1 && <div class="mkchips"><button class={`mkchip ${catNow === "all" ? "on" : ""}`} aria-pressed={catNow === "all"} onClick={() => setCat("all")}>{msg.hist.all}</button>{cats.map((c) => <button key={c} class={`mkchip ${catNow === c ? "on" : ""}`} aria-pressed={catNow === c} onClick={() => setCat(c)}>{msg.tabs[c as keyof typeof msg.tabs] ?? c} · {bets.filter((b) => inTab(b.status) && b.markets.category === c).length}</button>)}</div>}
+      </div>
       {tab === "open" && invites.length > 0 && <Collapse id="inbox" class="inbox" title={msg.frd.inboxTitle} count={invites.length}>
         {invites.map((c) => <button key={c.id} class="card pressable chrow invite" onClick={() => onChallenge(c.code)}><span class="byline">{msg.frd.inboxFrom(c.invited_by)} · {countdown(Math.max(0, Date.parse(c.closes_at) - now))}</span><b>{c.title}</b><span class="invopen">{msg.frd.inboxOpen}</span></button>)}
       </Collapse>}
@@ -86,7 +86,7 @@ export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge
                 {x.parlay_legs.map((l) => {
                   const c = cityOf(l.markets.city_id), rain = isYesNo(l.markets.kind);
                   const pickLabel = l.pick === "yes" ? (rain ? msg.card.yes : msg.card.late) : (rain ? msg.card.no : msg.card.onTime);
-                  const text = l.markets.target_at ? question(l.markets as unknown as MarketRow, msg, locale, cityName(c, locale), c.timezone) : (String(l.markets.params.routeName ?? "") || cityName(c, locale));
+                  const text = l.markets.target_at ? question(l.markets as unknown as MarketRow, msg, locale, cityName(c, locale), c.timezone) : (trainLabel(String(l.markets.params.routeName ?? ""), l.markets.kind, locale) || cityName(c, locale));
                   return <li key={l.market_id} class={l.status}><span class="legq">{text}<em>{pickLabel}</em></span><b class="num">{fmtOdds(Number(l.odds), locale)}</b></li>;
                 })}
               </ul>

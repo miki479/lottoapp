@@ -38,7 +38,7 @@ import { fmtInt, fmtMult, fmtTimes, moneySigned, setNumLocale } from "./lib/num.
 import { balanceMove } from "./lib/stake.ts";
 import { resolvingToday } from "./lib/summary.ts";
 import { pickFeed, type FeedItem } from "./lib/feed.ts";
-import { countdown, setDayUnit, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, type MarketRow } from "./lib/format.ts";
+import { countdown, setDayUnit, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, trainLabel, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
 import { FAMOUS_PLACES, FEATURED_CITY_IDS, FEATURED_PLACES, ITALY_CAPITALS, ensurePlace, km, placeById, placeIdOf, recentPlaces, registerPlace, rememberPlace, type Place } from "./lib/places.ts";
@@ -417,10 +417,10 @@ export function App() {
 
   const top: TopItem[] = useMemo(() => {
     const items: TopItem[] = [];
-    const fl = open.filter((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now && (filter === "world" || m.city_id === filter))[0];
+    const fl = open.filter((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now && (filter === "world" || m.city_id === filter))[0] ?? open.find((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now && !(m.params as { testOnly?: boolean }).testOnly);
     if (fl) items.push({ mid: fl.id, id: "flash", icon: Zap, label: superText(fl, msg) ? msg.sup.top : msg.streak.flash, big: <>{fmtTimes(Number(fl.flash_multiplier), locale)}<small class="num">{countdown(Date.parse(fl.flash_until!) - now)}</small></>, sub: superText(fl, msg) ?? question(fl, msg, locale, cityName(cityOf(fl.city_id), locale), cityOf(fl.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: fl, pick: "yes" }) });
     const facts = inFilter.filter((m) => live[m.id] && !live[m.id]!.is_forecast && live[m.id]!.delay_sec >= 60).sort((a, b) => live[b.id]!.delay_sec - live[a.id]!.delay_sec)[0];
-    if (facts) items.push({ mid: facts.id, id: "late", icon: TrendingUp, label: msg.top.late, big: null, extra: <DelayMeter sec={live[facts.id]!.delay_sec} prev={live[facts.id]!.prev_delay_sec} limitSec={Number(facts.params.thresholdSec ?? 180)} msg={msg} big />, sub: `${facts.params.routeName ?? ""} → ${facts.params.headsign ?? ""}`, onClick: () => setSheet({ m: facts, pick: "yes" }) });
+    if (facts) items.push({ mid: facts.id, id: "late", icon: TrendingUp, label: msg.top.late, big: null, extra: <DelayMeter sec={live[facts.id]!.delay_sec} prev={live[facts.id]!.prev_delay_sec} limitSec={Number(facts.params.thresholdSec ?? 180)} msg={msg} big />, sub: `${trainLabel(String(facts.params.routeName ?? ""), facts.kind, locale)} → ${facts.params.headsign ?? ""}`, onClick: () => setSheet({ m: facts, pick: "yes" }) });
     const pop = popular.map((p) => ({ p, m: inFilter.find((m) => m.id === p.market_id) })).find((x) => x.m);
     if (pop?.m) items.push({ mid: pop.m.id, id: "pop", icon: Users, label: msg.top.popular, big: <>{pop.p.bets}<small>{msg.top.players(pop.p.bets).replace(/^\d+\s*/, "")}</small></>, sub: question(pop.m, msg, locale, cityName(cityOf(pop.m.city_id), locale), cityOf(pop.m.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: pop.m!, pick: "no" }) });
     const byCity = new Map<string, number[]>();
@@ -490,12 +490,12 @@ export function App() {
     const seenTrip = new Set<string>();
     for (const m of lateNow) {
       const trip = String(m.params.tripId ?? m.id); if (seenTrip.has(trip)) continue; seenTrip.add(trip);
-      const line = msg.ticker.late(String(m.params.routeName ?? ""), String(m.params.headsign ?? ""), Math.round(live[m.id]!.delay_sec / 60));
+      const line = msg.ticker.late(trainLabel(String(m.params.routeName ?? ""), m.kind, locale), String(m.params.headsign ?? ""), Math.round(live[m.id]!.delay_sec / 60));
       system.push({ id: `l${m.id}`, text: line, node: <><i class="amt lost">●</i> {line}</> });
       if (system.length >= 5) break;
     }
     for (const r of results) {
-      const c = cityOf(r.city_id), route = String(r.params.routeName ?? "");
+      const c = cityOf(r.city_id), route = trainLabel(String(r.params.routeName ?? ""), r.kind, locale);
       const txt = r.status === "void" ? msg.bets.void : isYesNo(r.kind) ? (r.outcome === "yes" ? msg.card.yes : msg.card.no) : r.outcome === "yes" ? msg.card.late : msg.card.onTime;
       if (route || r.kind === "bus_delay_gt" || r.kind === "train_delay_gt") { const head = route || cityName(c, locale); system.push({ id: `r${r.id}`, text: `${head} · ${txt}`, node: <>{head} · {txt}</> }); continue; }
       // any other question is shown with its own words, never as a bare "World · No"

@@ -1382,10 +1382,13 @@ textarea.field { resize: vertical; min-height: 84px; }
 .shell.booting main, .shell.booting nav { pointer-events: none; animation: bootunlock .01s 5s forwards; }
 @keyframes bootunlock { to { pointer-events: auto; } }
 /* Boost: rocket button with the count, an (i) with the rules, and the extra it adds, in the same glowing number as the stake. */
-.boostrow { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 10px 12px; border-radius: var(--radius-control); border: 1px solid var(--border-strong); background: var(--surface-2); transition: border-color .2s, box-shadow .2s, background .2s; }
+.boostrow { position: relative; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 10px 12px; border-radius: var(--radius-control); border: 1px solid var(--border-strong); background: var(--surface-2); transition: border-color .2s, box-shadow .2s, background .2s; }
 .boostrow.on { border-color: var(--boost); background: color-mix(in srgb, var(--boost) 12%, var(--surface-2)); box-shadow: 0 0 18px rgba(255, 140, 60, .35); }
 .boostbtn { display: inline-flex; align-items: center; gap: 8px; min-height: var(--touch); padding: 0 6px; background: none; border: 0; color: var(--text); font: inherit; cursor: pointer; }
 .boostbtn b { font-size: var(--fs-md); }
+/* the whole box is the button: its hit area stretches over the row, the (i) stays on top of it */
+.boostbtn::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.boostrow .infodot { position: relative; z-index: 1; }
 .boostrow .rocket { position: relative; display: grid; place-items: center; width: 34px; height: 34px; color: var(--c-pop); }
 .boostrow.on .rocket { color: var(--boost); }
 .boostrow .flame { position: absolute; left: 2px; bottom: 1px; width: 11px; height: 17px; border-radius: 50% 50% 60% 60% / 70% 70% 40% 40%; background: radial-gradient(ellipse at 50% 70%, #fff6c0 0 25%, #ffb23c 45%, #ff5a1f 75%, transparent 78%); transform: rotate(45deg) scaleY(0); transform-origin: 50% 0; opacity: 0; filter: blur(.3px); }

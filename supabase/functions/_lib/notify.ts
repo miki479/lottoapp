@@ -4,6 +4,15 @@
 import { DECORATIONS } from "../_shared/shared/looks.ts";
 type Db = ReturnType<typeof import("./common.ts").db>;
 
+const TRAIN_KIND: Record<string, [string, string, string]> = { it: ["Alta velocità", "Intercity", "Regionale"], "en-US": ["High-speed", "Intercity", "Regional"], "en-GB": ["High-speed", "Intercity", "Regional"] };
+/** "REG 3935" → "Regionale 3935": the kind of train in words, as in the app. Any other name stays as it is. */
+export function trainWords(route: string, loc: string): string {
+  const names = TRAIN_KIND[loc], m = route.trim().match(/^([A-Za-z]{1,4})\s*(\d{1,5}[A-Za-z]?)$/);
+  if (!names || !m) return route;
+  const c = m[1]!.toUpperCase(), k = /^(FR|FA|FB|ES|ITA|NTV|EC|EN)$/.test(c) ? names[0] : /^(IC|ICN)$/.test(c) ? names[1] : /^(REG|RV|R|RE)$/.test(c) ? names[2] : null;
+  return k ? `${k} ${m[2]}` : route;
+}
+
 const CURRENCY: Record<string, string> = { it: "EUR", "en-US": "USD", "en-GB": "GBP", ja: "JPY" };
 const TAG: Record<string, string> = { it: "it-IT", "en-US": "en-US", "en-GB": "en-GB", ja: "ja-JP" };
 const money = (n: number, loc: string) =>
@@ -101,7 +110,7 @@ export async function notifyResults(sb: Db): Promise<number> {
   for (const r of rows) {
     const loc = (r.profiles?.locale && r.profiles.locale in TEXT ? r.profiles.locale : "en-US") as keyof typeof TEXT;
     const t = TEXT[loc];
-    const what = r.kind === "parlay" ? t.parlay : String(r.markets?.params.routeName ?? r.markets?.params.headsign ?? r.markets?.params.label ?? (r.markets?.params.home ? `${r.markets.params.home} – ${r.markets.params.away}` : "LateBet"));
+    const what = r.kind === "parlay" ? t.parlay : String(trainWords(String(r.markets?.params.routeName ?? ""), loc) || (r.markets?.params.headsign ?? r.markets?.params.label ?? (r.markets?.params.home ? `${r.markets.params.home} – ${r.markets.params.away}` : "LateBet")));
     const body = r.status === "won" ? t.won(money(r.payout - r.stake, loc), what) : r.status === "lost" ? t.lost(what) : t.void(what);
     // Only mark as announced when OneSignal accepted it, so a wrong key or an outage retries within the 30-minute window.
     if (!(await send([r.user_id], "LateBet", body))) continue;
@@ -397,7 +406,7 @@ export async function notifyLiveDelay(sb: Db): Promise<number> {
     const p = prefs.get(r.user_id);
     if (!p || seenUser.has(r.user_id)) continue; // one push per player per run, whatever the number of bets
     seenUser.add(r.user_id);
-    n += await sendOptional(sb, [p], (x) => MORE[L(x.locale)].live(r.route || "—", r.delay_min, r.line_min));
+    n += await sendOptional(sb, [p], (x) => MORE[L(x.locale)].live(trainWords(r.route, L(x.locale)) || "—", r.delay_min, r.line_min));
   }
   if (done.size) await sb.from("bets").update({ live_alerted: true }).in("id", [...done]);
   return n;
