@@ -92,6 +92,8 @@ export function Home(p: HomeProps) {
   const plain = gameGroups.size ? shown.filter((m) => !steamOf(m)) : shown;
   const card = (m: MarketRow, i: number) => <EventCard key={m.id} m={m} msg={msg} locale={p.locale} now={p.now} live={p.live[m.id]} occ={p.occ[m.id]} index={i} mm={p.outlook[m.id]} friends={p.friendBets[m.id]} hasLadder={(p.ladders[m.id]?.length ?? 0) > 0} top={m.id === topId && shown.length > 3} showCity={p.filter === "world" || p.filter === "mine"} onPick={p.onPick} />;
   const cities = CITIES.filter((c) => enabledCategories(c).length > 0);
+  // the flag of the chosen place is its own country (a place picked from "More cities" is not Italian), and it is shown once: a place of the list below is not repeated here
+  const selCountry = CITIES.find((x) => x.id === p.filter)?.country ?? [...p.places, ...FEATURED_PLACES, ...p.trending.map((t) => t.place).filter((x): x is Place => !!x)].find((x) => x.id === p.filter)?.country ?? "IT";
   const placeName = (() => { const c = CITIES.find((x) => x.id === p.filter); if (c) return cityName(c, p.locale); return [...p.places, ...FEATURED_PLACES, ...p.trending.map((t) => t.place).filter((x): x is Place => !!x)].find((x) => x.id === p.filter)?.name ?? p.filter; })();
   /** What does exist in the chosen place: offered as buttons so nothing switches by itself. */
   const alt = tiles.filter((t) => !t.disabled && t.id !== p.cat && t.count > 0).slice(0, 4);
@@ -139,7 +141,7 @@ export function Home(p: HomeProps) {
               {p.mine && <button class={`chip ${p.filter === "mine" ? "on" : ""}`} role="tab" aria-selected={p.filter === "mine"} onClick={() => p.onFilter("mine")}><Flag cc={p.mine} size={13} />{msg.near.title}{p.radiusKm ? ` · ${p.radiusKm} km` : ""}</button>}
               {regionChips.map((r) => <button key={r} class={`chip ${p.filter === REGION_FILTER + r ? "on" : ""}`} role="tab" aria-selected={p.filter === REGION_FILTER + r} onClick={() => p.onFilter(REGION_FILTER + r)}>{regionLabel(r, p.locale)}</button>)}
               {p.italian && <button class="chip more" aria-haspopup="dialog" onClick={() => setRegOpen(true)}><ChevronDown size={16} />{REG_MORE[p.locale] ?? REG_MORE["en-US"]}</button>}
-              {p.italian && p.filter !== "world" && p.filter !== "mine" && !isRegionFilter(p.filter) && <button class="chip on" role="tab" aria-selected><Flag cc="IT" size={13} />{placeLabel(placeName, p.locale)}</button>}
+              {p.italian && p.filter !== "world" && p.filter !== "mine" && !isRegionFilter(p.filter) && !p.places.some((pl) => pl.id === p.filter) && <button class="chip on" role="tab" aria-selected><Flag cc={selCountry} size={13} />{placeLabel(placeName, p.locale)}</button>}
               {(p.italian ? [] : startChips(p.country, p.locale)).map((ch) => { const pl = ch.place; return ch.city
                 ? <button key={ch.city.id} class={`chip ${p.filter === ch.city.id ? "on" : ""}`} role="tab" aria-selected={p.filter === ch.city.id} onClick={() => p.onFilter(ch.city!.id)}><Flag cc={ch.city.country} size={13} />{cityName(ch.city, p.locale)}</button>
                 : <button key={pl!.id} class={`chip ${p.filter === pl!.id ? "on" : ""}`} role="tab" aria-selected={p.filter === pl!.id} onClick={() => p.onPlace(pl!)}><Flag cc={pl!.country} size={13} />{placeLabel(pl!.name, p.locale)}</button>; })}
