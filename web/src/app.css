@@ -903,9 +903,9 @@ textarea.field { resize: vertical; min-height: 84px; }
    Phones flatten the aside and main columns into one flow, so every block says where it goes; on desktop the same numbers order the blocks inside each column. */
 .home .pofer, .home .installhint, .home .inbox { order: 3; }
 .home .led.strip { order: 4; }
-.home .chooser { order: 5; }
-.home .foryou { order: 6; }
-.home .featured { order: 7; }
+.home .featured { order: 5; }
+.home .chooser { order: 6; }
+.home .foryou { order: 7; }
 .home .events { order: 8; }
 .home .friendsblock { order: 9; }
 
@@ -1298,6 +1298,9 @@ textarea.field { resize: vertical; min-height: 84px; }
 .lkwrap > * { width: 26px !important; height: 26px !important; max-width: 26px; max-height: 26px; }
 .pplname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pplpick { text-align: right; font-size: var(--fs-sm); }
+.pplpick svg { width: 16px; height: 16px; max-width: 16px; vertical-align: -3px; color: var(--gain); }
+.mkchip svg { width: 12px; height: 12px; max-width: 12px; }
+.score svg { max-width: 18px; max-height: 18px; }
 
 /* the friends badge sits in the top right corner again; the card leaves it room so it never covers the stop pin */
 .event.has-friends { padding-top: 38px; position: relative; }

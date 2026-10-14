@@ -66,8 +66,8 @@ describe("the home", () => {
     const m = /^((?:\.home [^{,]+,?\s*)+)\{\s*order:\s*(\d+);\s*\}\s*$/.exec(line);
     if (m) for (const sel of m[1]!.split(",")) orders.set(sel.trim(), Number(m[2]));
   }
-  it("is laid out top to bottom as: banners, train board, what to predict + where, for tonight, featured, events, friends", () => {
-    const seq = [".home .pofer", ".home .led.strip", ".home .chooser", ".home .foryou", ".home .featured", ".home .events", ".home .friendsblock"].map((s) => orders.get(s));
+  it("is laid out top to bottom as: banners, featured, what to predict + where, for tonight, events, friends", () => {
+    const seq = [".home .pofer", ".home .featured", ".home .chooser", ".home .foryou", ".home .events", ".home .friendsblock"].map((s) => orders.get(s));
     expect(seq.every((n) => typeof n === "number")).toBe(true);
     expect([...seq].sort((a, b) => a! - b!)).toEqual(seq);
     expect(new Set(seq).size).toBe(seq.length);
@@ -78,7 +78,9 @@ describe("the home", () => {
   });
   it("gives every one of those blocks the class its slot is attached to", () => {
     const home = src("views/Home.tsx");
-    expect(home).toContain('<TrainBoard variant="strip"');
+    // the board lives only in the Trains category, first in its list
+    expect(home).not.toContain('<TrainBoard variant="strip"');
+    expect(home).toContain('<TrainBoard variant="full"');
     for (const c of ['class="chooser stack"', 'class="events stack"', "featured"]) expect(home).toContain(c);
     expect(home).toContain("<ForYou");
     expect(home).toContain("<FriendsBets");

@@ -23,7 +23,7 @@ const enGB: Messages = {
     idle: ["Real data, pretend credits", "Close the three daily missions for a bonus", "A missed day won't break your streak: freezes have your back"],
     emptyCat: { bus: "Even buses take a break.", train: "No train in sight: only an echo on the platform.", weather: "The sky has nothing to declare today.", nature: "Nature is taking a break.", strike: "No strike on the horizon, for now.", traffic: "Clear roads: no queue to bet on.", finance: "Markets are asleep, and so are the coins.", culture: "Curtain down: no show right now.", sport: "Final whistle: no match scheduled.", law: "No laws on the table right now.", gov: "Something will land here. Maybe." },
     empty: { title: "Nothing to play here", body: "Try another category, or go worldwide.", cta: "Show the whole world" },
-    trafficSoon: "Traffic is available where open data exists: Helsinki for now. More cities are coming.", satire: "Satirical game", moreCats: "More categories", lessCats: "Fewer categories",
+    quickPick: "Quick pick", trafficSoon: "Traffic is available where open data exists: Helsinki for now. More cities are coming.", satire: "Satirical game", moreCats: "More categories", lessCats: "Fewer categories",
   },
   streak: { title: "Streak", days: (n) => (n === 1 ? "1 day" : `${n} days`), next: (d, b) => `Next reward at ${d} days: ${b}`, max: "Every reward claimed. Legend.", milestone: (n, b) => `${n}-day streak! ${b} on the house`, flash: "Flash" },
   meter: { threshold: (m) => `Over ${m} min = late`, up: (m) => `+${m} min in 10 min`, down: (m) => `−${m} min in 10 min`, steady: "steady", forecast: "forecast", late: "late" },

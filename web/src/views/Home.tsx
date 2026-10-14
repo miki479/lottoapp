@@ -129,7 +129,6 @@ export function Home(p: HomeProps) {
         {p.onOffer && <PersonalOffer msg={msg} locale={p.locale} now={p.now} registered={p.registered} onUse={p.onOffer} />}
         <InstallHint locale={p.locale} invited={!!safe.get("ref")} />
         <Inbox registered={p.registered} ok={msg.common.close} locale={p.locale} />
-        {p.italian && p.markets !== null && <TrainBoard variant="strip" markets={p.markets} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} onRefresh={p.onRefreshBoard} />}
         {p.top.length > 0 && (
           <section class="stack featured" style="gap:8px">
             <div class="sectionhead"><h2>{msg.home.top}</h2></div>
@@ -210,8 +209,8 @@ export function Home(p: HomeProps) {
             )}
             {rainGroups.map((g) => <RainGroup key={g[0]!.city_id} markets={g} locale={p.locale} msg={msg} now={p.now} onPick={p.onPick} />)}
             {[...gameGroups].map(([appid, ms]) => <GameGroup key={appid} appid={appid} count={ms.length}>{ms.map((m, i) => card(m, i))}</GameGroup>)}
-            {p.markets !== null && p.cat === "train" && p.italian && plain.length === 0 && <div style="grid-column:1/-1"><TrainBoard variant="full" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} onRefresh={p.onRefreshBoard} /></div>}
-            {plain.slice(0, 40).map((m, i) => <Fragment key={m.id}>{card(m, i)}{i === Math.min(2, plain.length - 1) && p.cat === "train" && p.italian && <div style="grid-column:1/-1"><TrainBoard variant="full" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} onRefresh={p.onRefreshBoard} /></div>}</Fragment>)}
+            {p.markets !== null && p.cat === "train" && p.italian && <div class="stack" style="grid-column:1/-1;gap:8px"><h2 class="steplabel">{msg.home.quickPick}</h2><TrainBoard variant="full" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} onRefresh={p.onRefreshBoard} /></div>}
+            {plain.slice(0, 40).map((m, i) => card(m, i))}
           </div>
           <div class="nearwrap stack">{p.nearbyNode}{p.nearNode}</div>
         </div>
