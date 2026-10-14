@@ -16,6 +16,7 @@ import { TrafficScene } from "./TrafficScene.tsx";
 import { TickScene } from "./TickScene.tsx";
 import { SportScene } from "./SportScene.tsx";
 import { fmtTimes } from "../lib/num.ts";
+import { subjectOf } from "../lib/names.ts";
 
 const KIND = { bus: BusSide, train: TrainSide, weather: CloudRainSide, nature: Activity, strike: Megaphone, traffic: Car, finance: TrendingUp, culture: Clapperboard, sport: Trophy, law: Scale } as const;
 
@@ -32,12 +33,12 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
   const { hint, show, clear } = useHint();
   const left = Date.parse(m.closes_at) - now;
   const isRain = isYesNo(m.kind);
-  const who = m.kind === "match_bet" ? String(m.params.league ?? "") : m.kind === "tick_gt" ? (msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? "")) : isRain && m.kind !== "bus_full" ? cityName(city, locale) : `${String(m.params.routeName ?? "")} · ${cityName(city, locale)}`;
+  const who = subjectOf(m, msg, locale, cityName(city, locale));
   const flashOn = (m.flash_multiplier ?? 1) > 1 && !!m.flash_until && Date.parse(m.flash_until) > now;
   return (
     <article class={`card event ${(p.friends ?? 0) > 0 ? "has-friends" : ""} ${m.category} ${p.top ? "is-top" : ""} ${flashOn ? "is-flash" : ""}`} style={`--i:${Math.min(p.index, 10)}`}>
       {(p.friends ?? 0) > 0 && <span class="frbadge" title={msg.frd.friendsOn(p.friends!)} aria-label={msg.frd.friendsOn(p.friends!)}><Users size={13} />{p.friends}</span>}
-      {(p.top || flashOn || p.hasLadder || left < 300_000) && <div class="badges">{p.hasLadder && <span class="badge-sorry"><Megaphone size={13} />{msg.ladder.chip}</span>}{flashOn && <span class={`badge-flash ${superText(m, msg) ? "super" : ""}`}><Zap size={13} fill="currentColor" />{superText(m, msg) ? msg.sup.badge : "FLASH"} {fmtTimes(Number(m.flash_multiplier), locale)} · {countdown(Date.parse(m.flash_until!) - now)}</span>}{p.top && <span class="badge-top"><Star size={13} fill="currentColor" />{msg.card.topOdds}</span>}{left < 300_000 && <span class="badge-hot"><Zap size={13} fill="currentColor" />{msg.card.hot}</span>}</div>}
+      {(p.top || flashOn || p.hasLadder || left < 300_000) && <div class="badges">{p.hasLadder && <span class="badge-sorry"><Megaphone size={13} />{msg.ladder.chip}</span>}{flashOn && <span class={`badge-flash ${superText(m, msg) ? "super" : ""}`}><Zap size={13} fill="currentColor" />{superText(m, msg) ? msg.sup.badge : msg.streak.flash.toUpperCase()} {fmtTimes(Number(m.flash_multiplier), locale)} · {countdown(Date.parse(m.flash_until!) - now)}</span>}{p.top && <span class="badge-top"><Star size={13} fill="currentColor" />{msg.card.topOdds}</span>}{left < 300_000 && <span class="badge-hot"><Zap size={13} fill="currentColor" />{msg.card.hot}</span>}</div>}
       {flashOn && superText(m, msg) && <p class="supernote">{superText(m, msg)}</p>}
       {m.kind === "rain_at" ? <Sky mm={p.mm} hint={hint} msg={msg} /> : m.kind === "traffic_speed_lt" ? <TrafficScene m={m} hint={hint} msg={msg} /> : m.kind === "match_bet" ? <SportScene m={m} hint={hint} msg={msg} /> : m.kind === "tick_gt" ? <TickScene m={m} hint={hint} msg={msg} /> : m.kind === "metric_gt" || m.kind === "quake_m" || m.kind === "strike_on" ? <MetricArt m={m} msg={msg} hint={hint} /> : m.kind === "bus_full" ? <OccScene m={m} hint={hint} level={p.occ?.level} msg={msg} /> : <TripScene m={m} now={now} hint={hint} />}
       <div class="meta">

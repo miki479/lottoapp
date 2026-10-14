@@ -1,5 +1,6 @@
 import { INTL_TAG, type Locale, type Messages } from "../i18n/index.ts";
 import { ALWAYS, currencySymbol, fmtDec, fmtInt, fmtNum, fmtOdds, money, MINUS, numLocale } from "./num.ts";
+import { alertLabel, teamName } from "./names.ts";
 
 // every figure on screen is written by lib/num.ts; these stay importable from here
 export { currencySymbol, fmtOdds, money };
@@ -59,12 +60,12 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     const h0 = new Date(m.target_at).getTime() - 30 * 60_000, hh = (t: number) => new Intl.DateTimeFormat(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(new Date(t));
     return msg.question.traffic({ site: String(m.params.siteName ?? ""), toward: String(m.params.toward ?? ""), from: hh(h0), to: hh(h0 + 3600_000), kmh: Number(m.params.thresholdKmh) });
   }
-  if (m.kind === "match_bet" && /^(pg|pa|ps):/.test(String(m.params.bet))) return msg.question.player({ kind: String(m.params.bet).slice(0, 2) as "pg", name: String((m.params.player as { name?: string } | undefined)?.name ?? ""), home: String(m.params.home), away: String(m.params.away), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
+  if (m.kind === "match_bet" && /^(pg|pa|ps):/.test(String(m.params.bet))) return msg.question.player({ kind: String(m.params.bet).slice(0, 2) as "pg", name: String((m.params.player as { name?: string } | undefined)?.name ?? ""), home: teamName(String(m.params.home), locale), away: teamName(String(m.params.away), locale), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
   if (m.kind === "match_bet" && /^(tot|mrg):/.test(String(m.params.bet))) {
     const bet = String(m.params.bet), raw = Number(bet.slice(4)), unit = String(m.params.league) === "NHL" ? msg.sportui.goalsUnit : msg.sportui.ptsUnit;
-    return msg.question.two({ kind: bet.startsWith("tot") ? "tot" : "mrg", line: fmtLine(Math.abs(raw), locale), negative: raw < 0, unit, home: String(m.params.home), away: String(m.params.away), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
+    return msg.question.two({ kind: bet.startsWith("tot") ? "tot" : "mrg", line: fmtLine(Math.abs(raw), locale), negative: raw < 0, unit, home: teamName(String(m.params.home), locale), away: teamName(String(m.params.away), locale), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
   }
-  if (m.kind === "match_bet") return msg.question.match({ bet: m.params.bet as "home_win", home: String(m.params.home), away: String(m.params.away), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
+  if (m.kind === "match_bet") return msg.question.match({ bet: m.params.bet as "home_win", home: teamName(String(m.params.home), locale), away: teamName(String(m.params.away), locale), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
   if (m.kind === "tick_gt" && /^tv:\d+$/.test(String(m.params.series))) {
     const ep = `S${String(m.params.season ?? 0).padStart(2, "0")}E${String(m.params.number ?? 0).padStart(2, "0")}`;
     return msg.question.episode({ show: String(m.params.label ?? ""), ep, value: fmtDec(Number(m.params.threshold), 1, locale), date: new Intl.DateTimeFormat(INTL_TAG[locale], { weekday: "short", day: "numeric", month: "short" }).format(new Date(m.target_at)) });
@@ -77,7 +78,7 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     const series = String(m.params.series), at = m.target_at, thr = Number(m.params.threshold);
     const nf = new Intl.NumberFormat(INTL_TAG[locale], { maximumFractionDigits: 0, useGrouping: ALWAYS });
     const own = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (series.startsWith("alert:")) return msg.question.tick({ kind: "alert", label: String(m.params.label), value: msg.alertNames[String(m.params.note) as "yellow"] ?? String(m.params.note), time: "", from: "", to: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(new Date(Date.parse(at) - 3600_000)) });
+    if (series.startsWith("alert:")) return msg.question.tick({ kind: "alert", label: alertLabel(series, msg, String(m.params.label)), value: msg.alertNames[String(m.params.note) as "yellow"] ?? String(m.params.note), time: "", from: "", to: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(new Date(Date.parse(at) - 3600_000)) });
     if (series.startsWith("storm:")) return msg.question.tick({ kind: "storm", label: String(m.params.label), value: `${thr} kt${m.params.note ? ` (${m.params.note})` : ""}`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("lastfm:")) return msg.question.tick({ kind: "listeners", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("bikes:")) return msg.question.tick({ kind: "bikes", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });

@@ -53,6 +53,7 @@ import { ProfileView } from "./views/Profile.tsx";
 import { Ranking } from "./views/Ranking.tsx";
 import { Friends } from "./views/Friends.tsx";
 import { Suspense, lazy } from "preact/compat";
+import { alertLabelOf, matchName } from "./lib/names.ts";
 
 /** A component loaded only when it is first shown (these sheets are not needed to paint the home screen), each with its own empty fallback. */
 // deno-lint-ignore no-explicit-any
@@ -229,7 +230,7 @@ export function App() {
     // Sign-in providers report problems back in the URL (query or hash): show them instead of failing silently.
     const back = new URLSearchParams(location.hash.replace(/^#/, "") || location.search);
     const backErr = back.get("error_description") ?? back.get("error");
-    if (backErr) { const e = backErr.replace(/\+/g, " "); flash(/exchange external code/i.test(e) ? msg.errors.google_retry! : /already linked|identity_already_exists/i.test(e) ? msg.errors.google_exists! : `${msg.errors.generic} (${e})`, "err"); history.replaceState(null, "", location.pathname); }
+    if (backErr) { const e = backErr.replace(/\+/g, " "); flash(/exchange external code/i.test(e) ? msg.errors.google_retry! : /already linked|identity_already_exists/i.test(e) ? msg.errors.google_exists! : msg.errors.generic!, "err"); history.replaceState(null, "", location.pathname); }
     const ref = new URLSearchParams(location.search).get("ref"); if (ref) { store.set("ref", ref.toUpperCase()); history.replaceState(null, "", location.pathname); }
     const { data: reg } = await sb.rpc("is_registered");
     if (reg) {
@@ -478,7 +479,7 @@ export function App() {
     const users: FeedItem[] = [], system: FeedItem[] = [];
     for (const a of activity) {
       const c = cityOf(a.city_id), isDelay = a.market_kind === "bus_delay_gt" || a.market_kind === "train_delay_gt";
-      const subject = a.label ? (isDelay ? a.label : msg.cm[a.label] ?? a.label) : "", what = isDelay && subject ? `${subject} · ${cityName(c, locale)}` : subject || cityName(c, locale);
+      const subject = a.label ? (isDelay ? a.label : a.market_kind === "match_bet" ? matchName(a.label, locale) : msg.cm[a.label] ?? alertLabelOf(a.label, msg)) : "", what = isDelay && subject ? `${subject} · ${cityName(c, locale)}` : subject || cityName(c, locale);
       const who = a.who ?? msg.ticker.anon, verb = msg.ticker[a.kind];
       const amt = a.kind === "won" ? moneySigned(a.amount, locale) : a.kind === "lost" ? moneySigned(-a.amount, locale) : money(a.amount, locale);
       users.push({ id: `a${a.at}${a.who}${a.amount}`, who, text: `${who} ${verb} ${amt} ${msg.ticker.on} ${what}`, node: <><b>{who}</b> {verb} <i class={`amt ${a.kind}`}>{amt}</i> {msg.ticker.on} {what}</> });

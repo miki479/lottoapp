@@ -12,6 +12,7 @@ import { Sheet } from "./Sheet.tsx";
 import { Crest, MatchVs, twoSides } from "./MatchVs.tsx";
 import { Users, X } from "lucide-preact";
 import { fmtNum } from "../lib/num.ts";
+import { leagueName, teamName } from "../lib/names.ts";
 
 interface LinePlayer { id: number; name: string; pos: string; side: "home" | "away"; pg: { yes: number; no: number } | null; pa: { yes: number; no: number } | null; ps: { yes: number; no: number } | null }
 /** Lineups already seen (an hour before a match they do not change): asked once, not at every tap. */
@@ -60,7 +61,7 @@ function OddsBtn(p: { label: string; odds: number | null; locale: Locale; onClic
 
 /** Football the way betting sites show it: one row per match with 1-X-2, and "all markets" for goals, double chance, clean sheets. */
 export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; onPick: (m: MarketRow, pick: Pick) => void; registered: boolean; onAuth: () => void; details: boolean; friendBets?: Record<string, number> }) {
-  const u = p.msg.sportui;
+  const u = p.msg.sportui, tn = (t: string) => teamName(t, p.locale), ln = (l: string) => leagueName(l, p.locale);
   const [open, setOpen] = useState<Match | null>(null), [busy, run] = useBusy(), [err, setErr] = useState<string | null>(null);
   const [adv, setAdv] = useState(() => { try { return localStorage.getItem("sportadv") === "1"; } catch { return false; } });
   const setMode = (v: boolean) => { setAdv(v); try { localStorage.setItem("sportadv", v ? "1" : "0"); } catch { /* */ } };
@@ -78,7 +79,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
   const line = (l: string) => fmtNum(Number(l.replace("_", ".")), p.locale, 1);
   const leagues = useMemo(() => [...new Set(p.matches.map((m) => m.league))], [p.matches]);
   const [league, setLeague] = useState(""), [q, setQ] = useState("");
-  const when = (e: number) => new Intl.DateTimeFormat(INTL_TAG[p.locale], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(e * 1000));
+  const when = (e: number) => new Intl.DateTimeFormat(INTL_TAG[p.locale], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(e * 1000));
   const go = (mt: Match, bet: string, pick: Pick) => run(async () => {
     setErr(null);
     const have = mt.markets.get(bet);
@@ -96,9 +97,9 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
     const two = TWO_WAY_LEAGUES.includes(mt.league);
     if (!adv) return (
       <article class={`card matchrow simple ${fr(mt) > 0 ? "has-friends" : ""}`} key={mt.eventId}>
-        <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span><span class="mright">{fr(mt) > 0 && <span class="frbadge" title={p.msg.frd.friendsOn(fr(mt))} aria-label={p.msg.frd.friendsOn(fr(mt))}><Users size={13} />{fr(mt)}</span>}{(!two || hasLines(mt)) && <button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button>}</span></div>
+        <div class="mhead"><span class="detail">{ln(mt.league)} · {when(mt.kickoff)}</span><span class="mright">{fr(mt) > 0 && <span class="frbadge" title={p.msg.frd.friendsOn(fr(mt))} aria-label={p.msg.frd.friendsOn(fr(mt))}><Users size={13} />{fr(mt)}</span>}{(!two || hasLines(mt)) && <button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button>}</span></div>
         <MatchVs home={mt.home} away={mt.away} homeBadge={mt.homeBadge} awayBadge={mt.awayBadge} />
-        <span class="reason">{u.wins(mt.home)}?</span>
+        <span class="reason">{u.wins(tn(mt.home))}?</span>
         <div class="oddsrow two">
           <OddsBtn label={u.yes} odds={oddsOf(mt, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(mt, "home_win", "yes")} />
           <OddsBtn label={u.no} odds={oddsOf(mt, "home_win", "no")} locale={p.locale} busy={busy} onClick={() => go(mt, "home_win", "no")} />
@@ -107,7 +108,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
     );
     return (
       <article class={`card matchrow ${fr(mt) > 0 ? "has-friends" : ""}`} key={mt.eventId}>
-        <div class="mhead"><span class="detail">{mt.league} · {when(mt.kickoff)}</span><span class="mright">{fr(mt) > 0 && <span class="frbadge" title={p.msg.frd.friendsOn(fr(mt))} aria-label={p.msg.frd.friendsOn(fr(mt))}><Users size={13} />{fr(mt)}</span>}{(!two || hasLines(mt)) && <button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button>}</span></div>
+        <div class="mhead"><span class="detail">{ln(mt.league)} · {when(mt.kickoff)}</span><span class="mright">{fr(mt) > 0 && <span class="frbadge" title={p.msg.frd.friendsOn(fr(mt))} aria-label={p.msg.frd.friendsOn(fr(mt))}><Users size={13} />{fr(mt)}</span>}{(!two || hasLines(mt)) && <button class="more" onClick={() => { setTab("main"); setOpen(mt); }}>{u.allMarkets}<ChevronRight size={14} /></button>}</span></div>
         <MatchVs home={mt.home} away={mt.away} homeBadge={mt.homeBadge} awayBadge={mt.awayBadge} />
         <div class={`oddsrow ${two ? "two" : ""}`}>
           <OddsBtn label="1" odds={oddsOf(mt, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(mt, "home_win", "yes")} />
@@ -122,24 +123,24 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
   return (
     <>
       <div class="mkchips modes" role="tablist">{([false, true] as const).map((v) => <button key={String(v)} role="tab" aria-selected={adv === v} class={`mkchip ${adv === v ? "on" : ""}`} onClick={() => setMode(v)}>{v ? u.advanced : u.simple}</button>)}</div>
-      {leagues.length > 1 && <div class="mkchips wrap"><button class={`mkchip ${league === "" ? "on" : ""}`} onClick={() => setLeague("")}>{u.all}</button>{leagues.map((l) => <button key={l} class={`mkchip ${league === l ? "on" : ""}`} onClick={() => setLeague(l)}>{l}</button>)}</div>}
+      {leagues.length > 1 && <div class="mkchips wrap"><button class={`mkchip ${league === "" ? "on" : ""}`} onClick={() => setLeague("")}>{u.all}</button>{leagues.map((l) => <button key={l} class={`mkchip ${league === l ? "on" : ""}`} onClick={() => setLeague(l)}>{ln(l)}</button>)}</div>}
       {p.matches.length > 6 && <input class="field teamq" type="search" value={q} placeholder={u.searchTeam} aria-label={u.searchTeam} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />}
       {busy && !open && <p class="hint" role="status">{u.busy}</p>}
       {err && <p class="formerr" role="alert">{err}</p>}
       {shown.length === 0 && <p class="hint">{u.noMatches}</p>}
       <div class="matchlist">{shown.slice(0, 60).map(Row)}</div>
       {open && (
-        <Sheet onClose={() => setOpen(null)} label={`${open.home} – ${open.away}`}>
-          <div class="shead"><h2>{open.home} vs {open.away}</h2><button class="iconbtn" onClick={() => setOpen(null)} aria-label={p.msg.common.close}><X size={22} /></button></div>
-          <span class="byline">{open.league} · {when(open.kickoff)}</span>
+        <Sheet onClose={() => setOpen(null)} label={`${tn(open.home)} – ${tn(open.away)}`}>
+          <div class="shead"><h2>{tn(open.home)} vs {tn(open.away)}</h2><button class="iconbtn" onClick={() => setOpen(null)} aria-label={p.msg.common.close}><X size={22} /></button></div>
+          <span class="byline">{ln(open.league)} · {when(open.kickoff)}</span>
           <MatchVs home={open.home} away={open.away} homeBadge={open.homeBadge} awayBadge={open.awayBadge} size={36} />
           {busy && <p class="hint" role="status">{u.busy}</p>}
           {err && <p class="formerr" role="alert">{err}</p>}
           {hasDetails && <div class="mkchips wrap">{([["main", u.finalT], ["half", u.halves], ["corners", u.cornersT], ["cards", u.cardsT], ["players", u.players]] as const).map(([k, l]) => <button key={k} class={`mkchip ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>}
           {TWO_WAY_LEAGUES.includes(open.league) && <>
             {group(u.result, <>
-              <OddsBtn label={open.home} odds={oddsOf(open, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "home_win", "yes")} />
-              <OddsBtn label={open.away} odds={oddsOf(open, "away_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "away_win", "yes")} />
+              <OddsBtn label={tn(open.home)} odds={oddsOf(open, "home_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "home_win", "yes")} />
+              <OddsBtn label={tn(open.away)} odds={oddsOf(open, "away_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "away_win", "yes")} />
             </>)}
             {linesOf(open, "tot").map((b) => { const sd = twoSides({ kind: "match_bet", params: { bet: b, home: open.home, away: open.away } } as unknown as MarketRow, p.msg)!; return group(`${open.league === "NHL" ? u.totalGoals : u.totalPts} ${sd[0].replace(`${u.over} `, "")}`, <>
               <OddsBtn label={sd[0]} odds={oddsOf(open, b, "yes")} locale={p.locale} busy={busy} onClick={() => go(open, b, "yes")} />
@@ -166,8 +167,8 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
             <OddsBtn label={u.noGoal} odds={oddsOf(open, "btts", "no")} locale={p.locale} busy={busy} onClick={() => go(open, "btts", "no")} />
           </>)}
           {group(u.clean, <>
-            <OddsBtn label={`${u.cleanHome} ${open.home}`} odds={oddsOf(open, "home_clean", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "home_clean", "yes")} />
-            <OddsBtn label={`${u.cleanAway} ${open.away}`} odds={oddsOf(open, "away_clean", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "away_clean", "yes")} />
+            <OddsBtn label={`${u.cleanHome} ${tn(open.home)}`} odds={oddsOf(open, "home_clean", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "home_clean", "yes")} />
+            <OddsBtn label={`${u.cleanAway} ${tn(open.away)}`} odds={oddsOf(open, "away_clean", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "away_clean", "yes")} />
           </>)}
           </>}
           {tab === "half" && hasDetails && <>

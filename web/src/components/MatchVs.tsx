@@ -1,6 +1,7 @@
 import { useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
 import type { MarketRow } from "../lib/format.ts";
+import { teamName } from "../lib/names.ts";
 
 /** A club crest (from the data source), or the club's initials when the picture is missing or does not load. */
 export function Crest({ src, name, size = 30 }: { src?: string; name: string; size?: number }) {
@@ -15,9 +16,9 @@ export function Crest({ src, name, size = 30 }: { src?: string; name: string; si
 export function MatchVs({ home, away, homeBadge, awayBadge, size = 30, stack }: { home: string; away: string; homeBadge?: string; awayBadge?: string; size?: number; stack?: boolean }) {
   return (
     <div class={`vs ${stack ? "stack-vs" : ""}`}>
-      <span class="vsside"><Crest src={homeBadge} name={home} size={size} /><b>{home}</b></span>
+      <span class="vsside"><Crest src={homeBadge} name={home} size={size} /><b>{teamName(home)}</b></span>
       <i class="vsmark">vs</i>
-      <span class="vsside away"><b>{away}</b><Crest src={awayBadge} name={away} size={size} /></span>
+      <span class="vsside away"><b>{teamName(away)}</b><Crest src={awayBadge} name={away} size={size} /></span>
     </div>
   );
 }

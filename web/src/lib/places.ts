@@ -1,5 +1,7 @@
 import type { CityConfig } from "../../../shared/cities.ts";
 import { sb } from "./api.ts";
+import { placeName } from "./names.ts";
+import type { Locale } from "../i18n/index.ts";
 
 /** A town a player picked: weather questions can be opened for any place on Earth (see migration 0019). */
 export interface Place { id: string; name: string; admin: string | null; country: string; lat: number; lon: number; timezone: string }
@@ -9,7 +11,7 @@ const registry = new Map<string, Place>();
 
 /** Lookup used by cityOf(): places behave like cities (name, time zone, country) for cards and lists. */
 export const placeAsCity = (p: Place): CityConfig => ({
-  id: p.id, country: p.country, name: new Proxy({} as Record<string, string>, { get: () => p.name }), timezone: p.timezone, defaultLocale: "en-US", tone: {}, location: { lat: p.lat, lon: p.lon },
+  id: p.id, country: p.country, name: new Proxy({} as Record<string, string>, { get: (_t, locale) => placeName(p.name, String(locale) as Locale) }), timezone: p.timezone, defaultLocale: "en-US", tone: {}, location: { lat: p.lat, lon: p.lon },
   categories: { bus: { enabled: false }, train: { enabled: false }, weather: { enabled: true }, traffic: { enabled: false } }, feeds: [],
 });
 export const placeById = (id: string) => registry.get(id);

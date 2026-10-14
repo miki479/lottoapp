@@ -16,7 +16,7 @@ export function authError(e: { message?: string; code?: string } | null, msg: Me
     : t.includes("exchange external code") ? "google_retry"
     : t.includes("already linked") || t.includes("identity_already_exists") ? "google_exists"
     : t.includes("not enabled") || t.includes("unsupported provider") ? "provider_off" : "generic";
-  return k === "generic" && e?.message ? `${msg.errors[k]!} (${e.message})` : msg.errors[k]!;
+  return msg.errors[k]!;
 }
 
 export function AuthSheet({ msg, guest, googleOn, onClose, onDone }: { msg: Messages; guest: boolean; googleOn: boolean; onClose: () => void; onDone: (text: string) => void }) {

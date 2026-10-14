@@ -2,6 +2,7 @@ import type { Messages } from "../i18n/index.ts";
 import type { MarketRow } from "../lib/format.ts";
 import { LawScene } from "./Cannabis.tsx";
 import { HouseScene } from "./HouseScene.tsx";
+import { alertLabel } from "../lib/names.ts";
 
 type Hint = "yes" | "no" | null | undefined;
 
@@ -12,7 +13,7 @@ export function TickScene({ m, hint, msg, now }: { m: MarketRow; hint: Hint; msg
   if (series.startsWith("house:")) return <HouseScene m={m} hint={hint} msg={msg} now={now ?? Date.now()} />;
   const kind = series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("storm:") ? "storm" : series.startsWith("alert:") ? "alert" : series.startsWith("metal:") ? "metal" : series.startsWith("fuel:") ? "fuel" : series.startsWith("oil:") ? "oil" : series.startsWith("tm:") ? "concert" : /^tv:\d+$/.test(series) ? "tv" : "price";
   const cls = `mscene tick ${kind} ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`;
-  const cap = kind === "kp" ? "Kp ≥ " + m.params.threshold : msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? "");
+  const cap = kind === "kp" ? "Kp ≥ " + m.params.threshold : alertLabel(series, msg) || (msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? ""));
   if (kind === "tv") {
     const stars = hint === "yes" ? 5 : hint === "no" ? 2 : 3;
     return (

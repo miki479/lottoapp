@@ -91,7 +91,7 @@ export function TrainBoard(p: { variant?: "full" | "card"; markets: MarketRow[];
           <b>{msg.board.title}</b>
           <span class="ledtabs" role="tablist">{(["late", "odds"] as const).map((k) => <button key={k} role="tab" aria-selected={tab === k} class={tab === k ? "on" : ""} onClick={() => setTab(k)}>{msg.board[k]}</button>)}</span>
         </header>
-        <input class="ledsearch" type="search" value={q} placeholder="🔍 ·" aria-label={msg.board.heads.train} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
+        <input class="ledsearch" type="search" value={q} placeholder={msg.board.search} aria-label={msg.board.search} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
         <div class="ledcols" aria-hidden="true"><span>{msg.board.heads.train}</span><span>{msg.board.heads.to}</span><span>{msg.board.heads.delay}</span><span /></div>
         <ul class="ledrows">
           {sorted.map(({ m, delay, trend }) => {

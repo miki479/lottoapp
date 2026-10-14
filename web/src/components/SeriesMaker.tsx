@@ -61,7 +61,7 @@ export function SeriesMaker(p: { msg: Messages; locale: Locale; initial?: Follow
     if (error || !data?.market) { const c = await code(error); setErr(c === "limit" ? m.limit : c === "too_many_open" ? m.limit : c === "registration_required" ? m.register : c === "too_certain" ? m.certain : p.msg.errors.generic!); return; }
     p.onCreated(data.market as MarketRow);
   }, () => setErr(p.msg.errors.generic!));
-  const when = (iso: string) => new Intl.DateTimeFormat(INTL_TAG[p.locale], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+  const when = (iso: string) => new Intl.DateTimeFormat(INTL_TAG[p.locale], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(iso));
   const isFollowed = !!show && follow.some((f) => f.id === show.id);
   return (
     <Sheet onClose={p.onClose} label={m.title}>

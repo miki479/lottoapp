@@ -5,6 +5,7 @@ import type { MatchBetKey } from "../i18n/types.ts";
 import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
 import { fmtOdds, type MarketRow } from "../lib/format.ts";
+import { leagueName, teamName } from "../lib/names.ts";
 
 const BETS: MatchBetKey[] = ["home_win", "draw", "away_win", "over_1_5", "over_2_5", "over_3_5", "btts", "home_clean", "away_clean"];
 interface Fx { eventId: string; league: string; home: string; away: string; kickoff: number; km: number | null; have: Set<string>; priors: Record<string, number>; testOnly: boolean }
@@ -45,7 +46,7 @@ export function MatchPicker(p: { msg: Messages; locale: Locale; origin: { lat: n
     sb.functions.invoke("market-offer", { body: { type: "match", eventId: cur.eventId, bet, preview: true } }).then(({ data }) => { if (live && data?.preview) setOdds({ y: data.preview.odds_yes, n: data.preview.odds_no }); else if (live) setErr(p.msg.maker.errors.too_certain); });
     return () => { live = false; };
   }, [sel, bet]);
-  const when = (e: number) => new Intl.DateTimeFormat(INTL_TAG[p.locale], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(e * 1000));
+  const when = (e: number) => new Intl.DateTimeFormat(INTL_TAG[p.locale], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(e * 1000));
   const go = () => run(async () => {
     if (!cur) return;
     if (!p.registered) { setErr(mk.needAccount); return; }
@@ -63,7 +64,7 @@ export function MatchPicker(p: { msg: Messages; locale: Locale; origin: { lat: n
       {fx === null && <div class="sk s" />}
       {fx && fx.length === 0 && <p class="hint">{t.none}</p>}
       <div class="mkchips" style="flex-direction:column;align-items:stretch">
-        {fx?.filter((f) => !q.trim() || `${f.home} ${f.away} ${f.league}`.toLowerCase().includes(q.trim().toLowerCase())).map((f) => <button key={f.eventId} class={`mkchip ${sel === f.eventId ? "on" : ""}`} style="text-align:left" aria-pressed={sel === f.eventId} onClick={() => setSel(f.eventId)}><b>{f.home} – {f.away}</b><br /><small>{f.league} · {when(f.kickoff)}{f.km !== null ? ` · ${Math.round(f.km)} km` : ""}</small></button>)}
+        {fx?.filter((f) => !q.trim() || `${f.home} ${f.away} ${f.league}`.toLowerCase().includes(q.trim().toLowerCase())).map((f) => <button key={f.eventId} class={`mkchip ${sel === f.eventId ? "on" : ""}`} style="text-align:left" aria-pressed={sel === f.eventId} onClick={() => setSel(f.eventId)}><b>{teamName(f.home, p.locale)} – {teamName(f.away, p.locale)}</b><br /><small>{leagueName(f.league, p.locale)} · {when(f.kickoff)}{f.km !== null ? ` · ${Math.round(f.km)} km` : ""}</small></button>)}
       </div>
       {cur && <>
         <span class="detail">{t.reason}</span>

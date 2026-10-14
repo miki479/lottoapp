@@ -13,6 +13,7 @@ import type { Challenge } from "../components/ChallengeSheet.tsx";
 import type { MyBet, ParlayRow } from "../lib/types.ts";
 import type { MarketRow } from "../lib/format.ts";
 import { moneySigned } from "../lib/num.ts";
+import { subjectOf } from "../lib/names.ts";
 
 export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlays, bets, msg, locale, now, onOpen, onHome }: { canMore: boolean; onMore: () => void; invites: (Challenge & { invited_by: string })[]; challenges: Challenge[]; onChallenge: (code: string) => void; parlays: ParlayRow[]; bets: MyBet[]; msg: Messages; locale: Locale; now: number; onOpen: (b: MyBet) => void; onHome: () => void }) {
   const [tab, setTab] = useState<"open" | "settled">("open");
@@ -83,7 +84,7 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
                 {st === "open" && <span class="detail">{Date.parse(m.target_at) > now ? <>{msg.bets.settles} · {countdown(Date.parse(m.target_at) - now)}</> : msg.bets.waiting[(Math.floor(now / 6000) + b.id.charCodeAt(0)) % msg.bets.waiting.length]}</span>}
               </div>
               {m.kind === "match_bet" && <div class="vscard"><MarketVs m={m} size={28} />{reasonOf(m, msg) && <span class="reason">{reasonOf(m, msg)}</span>}</div>}
-              {m.kind !== "match_bet" && (() => { const sj = m.kind === "tick_gt" ? (msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? "")) : m.kind === "bus_delay_gt" || m.kind === "train_delay_gt" ? `${String(m.params.routeName ?? "")} · ${cityName(city, locale)}` : m.kind === "rain_at" || m.kind === "metric_gt" ? cityName(city, locale) : ""; return sj ? <b class="subject">{sj}</b> : null; })()}
+              {m.kind !== "match_bet" && (() => { const sj = ["tick_gt", "bus_delay_gt", "train_delay_gt", "rain_at", "metric_gt"].includes(m.kind) ? subjectOf(m, msg, locale, cityName(city, locale)) : ""; return sj ? <b class="subject">{sj}</b> : null; })()}
               <p class="q"><Q m={m} msg={msg} locale={locale} city={cityName(city, locale)} tz={city.timezone} now={new Date(now)} /></p>
               <div class="info"><span>{msg.bets.yourPick(b.pick === "yes")}</span><span class="num">{money(b.stake, locale)} × {fmtOdds(Number(b.odds), locale)}</span></div>
               {st === "open" && <div class="info win"><span>{msg.bets.potential}</span><b class="num">{money(potentialWin(b.stake, Number(b.odds), b.boosted, b.vice_pct ?? 0), locale)}</b></div>}

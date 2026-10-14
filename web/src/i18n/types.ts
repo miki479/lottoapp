@@ -29,10 +29,10 @@ export const TROPHY_RARITY: Record<TrophyId, "common" | "rare" | "epic" | "legen
 
 /** Every locale implements this: add `ja` by creating ja.ts and registering it in index.ts. */
 export interface Messages {
-  nav: { home: string; bets: string; friends: string; ranking: string; profile: string };
+  nav: { home: string; bets: string; friends: string; ranking: string; profile: string; label: string; fresh: string };
   fy: { title: string; consentTitle: string; consentBody: string; consentYes: string; consentNo: string; atStop: (n: string) => string; line: (time: string, delay: string) => string; late: (n: number) => string; onTime: string; bet: string; unavailable: string; homeTitle: string; matchBtn: string; rainBtn: string; challenge: string; denied: string; setTitle: string; setOn: string; setOff: string };
   insight: { liveNow: string; finalScore: string; how: string; noReadings: string; delayNow: string; chartLabel: string; line: (n: number) => string; goingWell: string; goingBad: string; updated: (n: number) => string; forecast: string; noForm: string; res: { w: string; d: string; l: string }; goalsFor: string; goalsAgainst: string; pointsFor: string; pointsAgainst: string; chance: string; waitMatch: string };
-  common: { loading: string; backOnline: string; close: string; cancel: string; save: string; retry: string; soon: string; offline: string; install: string; language: string; credits: string; copied: string; back: string };
+  common: { loading: string; backOnline: string; close: string; cancel: string; save: string; retry: string; soon: string; offline: string; install: string; language: string; credits: string; copied: string; back: string; ok: string };
   tabs: { law: string; bus: string; train: string; weather: string; nature: string; strike: string; traffic: string; finance: string; culture: string; sport: string; gov: string; soon: string };
   wx: { filter: string; all: string; rain: string; world: string; regions: Record<string, string>; localTime: string; names: Record<MetricKey | "crypto" | "metals" | "oil" | "fuel" | "fx" | "power", string>; forecast: (v: string) => string; quakeArt: string };
   world: string;
@@ -43,7 +43,7 @@ export interface Messages {
   /** TV series: bets on the rating of an episode. */
   series: { cta: string; title: string; body: string; search: string; followed: string; follow: string; unfollow: string; noEpisodes: string; pickEpisode: string; threshold: string; priced: (ref: string, chance: number, yes: string, no: string) => string; create: string; creating: string; credit: string; certain: string; register: string; noRatings: string; time: string; limit: string; mine: string; all: string };
   /** The board of Italian trains running now (Home). */
-  board: { title: string; following: (n: number) => string; meter: string; over5: string; avg: string; late: string; odds: string; worse: string; better: string; steady: string; kinds: { hs: string; ic: string; rg: string }; heads: { train: string; to: string; delay: string }; marquee: string; short: { hs: string; ic: string; rg: string } };
+  board: { search: string; title: string; following: (n: number) => string; meter: string; over5: string; avg: string; late: string; odds: string; worse: string; better: string; steady: string; kinds: { hs: string; ic: string; rg: string }; heads: { train: string; to: string; delay: string }; marquee: string; short: { hs: string; ic: string; rg: string } };
   /** Map of the vehicle behind an open bet. */
   map: { title: string; show: string; hide: string; none: string; estimated: string; stop: string; vehicle: string; updated: (sec: number) => string; credit: string };
   /** The "how full will it be?" bonus on a delay bet. */
@@ -68,6 +68,8 @@ export interface Messages {
   top: { best: string; late: string; popular: string; city: string; closing: string; draw: string; goal: string; upset: string; coin: string; spotlight: string; wild: string; sky: string; avg: (min: number) => string; players: (n: number) => string; ontime: string; open: string };
   card: { noLive: string; late: string; onTime: string; closes: string; forecast: string; live: string; yes: string; no: string; topOdds: string; hot: string };
   alertNames: { yellow: string; orange: string; red: string };
+  alertHazards: { idraulica: string; idrogeologica: string; temporali: string };
+  alertAreas: { romagna: string; bologna: string; modena: string; parma: string };
   nearby: { title: string; hint: string; radius: string; none: string; home: string; homeHint: string; homeSet: string; homeClear: string; homeSearch: string; homeNone: string; askLocate: string; statsTitle: string; statsIntro: string; towns: string; bands: string; yes: string; notEnough: string; people: string; total: string; km: string };
   sportui: { dec: string; searchTeam: string; totalPts: string; totalGoals: string; handicap: string; ptsUnit: string; goalsUnit: string; opp: { notWin: (t: string) => string; noDraw: string; atMost: (n: number) => string; notBoth: string; concede: (t: string) => string; no: string }; all: string; allMarkets: string; result: string; double: string; goals: string; over: string; under: string; goalNo: string; goal: string; noGoal: string; clean: string; cleanHome: string; cleanAway: string; pickOne: string; needAccount: string; busy: string; noMatches: string; firstHalf: string; secondHalf: string; cornersT: string; cardsT: string; redT: string; halfGoal: string; yes: string; no: string; unavailable: string; wins: (t: string) => string; players: string; pgL: string; paL: string; psL: string; noLineup: string; simple: string; advanced: string; halves: string; finalT: string };
   teamSearch: string;

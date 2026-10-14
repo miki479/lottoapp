@@ -1,5 +1,6 @@
 import type { Messages } from "../i18n/index.ts";
 import type { MarketRow } from "../lib/format.ts";
+import { teamName } from "../lib/names.ts";
 
 type Hint = "yes" | "no" | null | undefined;
 
@@ -15,7 +16,7 @@ export function SportScene({ m, hint }: { m: MarketRow; hint: Hint; msg: Message
         <path class="net" d="M314 32 L320 32 L320 52 L314 52" fill="#fff" opacity=".35" />
         <g class="ball"><circle cx="0" cy="0" r="6.500" fill="#fff" stroke="#1d2433" stroke-width="1.200" /><path d="M0 -3.500 L3.200 -1 L2 2.800 H-2 L-3.200 -1 Z" fill="#1d2433" /></g>
       </svg>
-      <b>{String(m.params.home)} – {String(m.params.away)}</b>
+      <b>{teamName(String(m.params.home))} – {teamName(String(m.params.away))}</b>
     </div>
   );
 }

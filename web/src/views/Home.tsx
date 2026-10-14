@@ -31,6 +31,7 @@ import { isRegionFilter, regionLabel, regionOfCity, regionOfPoint, REGION_FILTER
 import { RegionPanel } from "../components/RegionPanel.tsx";
 import type { MarketRow } from "../lib/format.ts";
 import type { LiveDelay, LiveOcc, Pick } from "../lib/types.ts";
+import { placeName as placeLabel } from "../lib/names.ts";
 
 /** Categories tucked away under "More categories" so the main row stays short. */
 /** Only these depend on a place: the city chips are shown for them and nowhere else, so a global category is never emptied by a city. */
@@ -143,12 +144,12 @@ export function Home(p: HomeProps) {
             {p.mine && <button class={`chip ${p.filter === "mine" ? "on" : ""}`} role="tab" aria-selected={p.filter === "mine"} onClick={() => p.onFilter("mine")}><Flag cc={p.mine} size={13} />{msg.near.title}{p.radiusKm ? ` · ${p.radiusKm} km` : ""}</button>}
             {regionChips.map((r) => <button key={r} class={`chip ${p.filter === REGION_FILTER + r ? "on" : ""}`} role="tab" aria-selected={p.filter === REGION_FILTER + r} onClick={() => p.onFilter(REGION_FILTER + r)}>{regionLabel(r, p.locale)}</button>)}
             {p.italian && <button class="chip more" aria-haspopup="dialog" onClick={() => setRegOpen(true)}><ChevronDown size={16} />{REG_MORE[p.locale] ?? REG_MORE["en-US"]}</button>}
-            {p.italian && p.filter !== "world" && p.filter !== "mine" && !isRegionFilter(p.filter) && <button class="chip on" role="tab" aria-selected><Flag cc="IT" size={13} />{placeName}</button>}
+            {p.italian && p.filter !== "world" && p.filter !== "mine" && !isRegionFilter(p.filter) && <button class="chip on" role="tab" aria-selected><Flag cc="IT" size={13} />{placeLabel(placeName, p.locale)}</button>}
             {(p.italian ? [] : startChips(p.country, p.locale)).map((ch) => { const pl = ch.place; return ch.city
               ? <button key={ch.city.id} class={`chip ${p.filter === ch.city.id ? "on" : ""}`} role="tab" aria-selected={p.filter === ch.city.id} onClick={() => p.onFilter(ch.city!.id)}><Flag cc={ch.city.country} size={13} />{cityName(ch.city, p.locale)}</button>
-              : <button key={pl!.id} class={`chip ${p.filter === pl!.id ? "on" : ""}`} role="tab" aria-selected={p.filter === pl!.id} onClick={() => p.onPlace(pl!)}><Flag cc={pl!.country} size={13} />{pl!.name}</button>; })}
-            {p.trending.filter((t) => !cities.find((c) => c.id === t.id)?.region && !startChips(p.country, p.locale).some((ch) => (ch.city?.id ?? ch.place?.id) === t.id)).map((t) => <button key={t.id} class={`chip trend ${p.filter === t.id ? "on" : ""}`} role="tab" aria-selected={p.filter === t.id} onClick={() => (t.place ? p.onPlace(t.place) : p.onFilter(t.id))}><Flag cc={t.country} size={13} />{t.name}<Flame size={13} /></button>)}
-            {p.places.filter((pl) => !FEATURED_PLACES.some((f) => f.id === pl.id) && !p.trending.some((t) => t.id === pl.id)).map((pl) => <button key={pl.id} class="chip on" role="tab" aria-selected><Flag cc={pl.country} size={13} />{pl.name}</button>)}
+              : <button key={pl!.id} class={`chip ${p.filter === pl!.id ? "on" : ""}`} role="tab" aria-selected={p.filter === pl!.id} onClick={() => p.onPlace(pl!)}><Flag cc={pl!.country} size={13} />{placeLabel(pl!.name, p.locale)}</button>; })}
+            {p.trending.filter((t) => !cities.find((c) => c.id === t.id)?.region && !startChips(p.country, p.locale).some((ch) => (ch.city?.id ?? ch.place?.id) === t.id)).map((t) => <button key={t.id} class={`chip trend ${p.filter === t.id ? "on" : ""}`} role="tab" aria-selected={p.filter === t.id} onClick={() => (t.place ? p.onPlace(t.place) : p.onFilter(t.id))}><Flag cc={t.country} size={13} />{placeLabel(t.name, p.locale)}<Flame size={13} /></button>)}
+            {p.places.filter((pl) => !FEATURED_PLACES.some((f) => f.id === pl.id) && !p.trending.some((t) => t.id === pl.id)).map((pl) => <button key={pl.id} class="chip on" role="tab" aria-selected><Flag cc={pl.country} size={13} />{placeLabel(pl.name, p.locale)}</button>)}
             <button class="chip more" onClick={p.onMorePlaces}><Plus size={16} />{msg.places.more}</button>
           </div>
         )}
@@ -174,11 +175,11 @@ export function Home(p: HomeProps) {
             </div>}
           </>
         )}
-        {classes.length > 1 && <div class="mkchips" role="tablist" aria-label="Tipo">
+        {classes.length > 1 && <div class="mkchips" role="tablist" aria-label={msg.home.typeLabel}>
           <button role="tab" aria-selected={cls === null} class={`mkchip ${cls === null ? "on" : ""}`} onClick={() => setClassSel(null)}>{msg.series.all}</button>
           {classes.map(([c, n]) => <button key={c} role="tab" aria-selected={cls === c} class={`mkchip ${cls === c ? "on" : ""}`} onClick={() => setClassSel(cls === c ? null : c)}>{(CLASS_LABEL[p.locale] ?? CLASS_LABEL.it!)[c]} · {n}</button>)}
         </div>}
-        {zones.length > 1 && <div class="mkchips" role="tablist" aria-label="Regione">
+        {zones.length > 1 && <div class="mkchips" role="tablist" aria-label={msg.home.whereLabel}>
           <button role="tab" aria-selected={zone === null} class={`mkchip ${zone === null ? "on" : ""}`} onClick={() => setZoneSel(null)}>{msg.series.all}</button>
           {zones.map(([z, n]) => <button key={z} role="tab" aria-selected={zone === z} class={`mkchip ${zone === z ? "on" : ""}`} onClick={() => setZoneSel(zone === z ? null : z)}>{z} · {n}</button>)}
         </div>}

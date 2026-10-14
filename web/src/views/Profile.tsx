@@ -48,7 +48,7 @@ export function ProfileView(p: {
         <section class="card giftcard">
           <span class="refico"><Gift size={22} /></span>
           <div style="flex:1"><b>{p.msg.boost.gift}</b><p class="hint">{p.msg.boost.explain}</p></div>
-          <button class="btn primary" onClick={p.onGiftSeen}>OK</button>
+          <button class="btn primary" onClick={p.onGiftSeen}>{p.msg.common.ok}</button>
         </section>
       )}
       <div class="profile-grid">

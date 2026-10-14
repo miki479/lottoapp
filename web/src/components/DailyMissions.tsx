@@ -53,7 +53,7 @@ export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages
         const f = p.flash, s = Date.parse(f.start), e = Date.parse(f.end), done = f.progress >= f.target, live = p.now >= s && p.now < e, over = p.now >= e;
         const st = f.claimed ? "claimed" : done ? "ready" : live ? "live" : over ? "missed" : "soon";
         const left = Math.max(0, e - p.now), mm = Math.floor(left / 60000), ss = Math.floor((left % 60000) / 1000);
-        const at = new Intl.DateTimeFormat(INTL_TAG[p.locale], { hour: "2-digit", minute: "2-digit", timeZone: p.tz }).format(new Date(s));
+        const at = new Intl.DateTimeFormat(INTL_TAG[p.locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: p.tz }).format(new Date(s));
         return (
           <div class={`dmflash ${st} ${pop === "flash" ? "pop" : ""}`}>
             <span class="dmico big bolt"><Zap size={24} fill="currentColor" /></span>

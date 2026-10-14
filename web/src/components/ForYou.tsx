@@ -6,6 +6,7 @@ import { cityName, cityOf } from "../lib/cities.ts";
 import { question, type MarketRow } from "../lib/format.ts";
 import { leisureTime } from "../lib/intent.ts";
 import { useIntent, type Arrival } from "../lib/useIntent.ts";
+import { leagueName, teamName } from "../lib/names.ts";
 
 type Pick = "yes" | "no";
 const timeOf = (epoch: number, locale: Locale) => new Date(epoch * 1000).toLocaleTimeString(locale === "ja" ? "ja-JP" : locale, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
@@ -69,7 +70,7 @@ export function ForYou(p: { msg: Messages; locale: Locale; now: number; markets:
     return (
       <section class="card stack foryou" aria-label={t.title}>
         <div class="fyhead"><Trophy size={20} /><b>{t.homeTitle}</b></div>
-        {match && <div class="fyrow"><div class="grow"><b>{String(match.params.home)} – {String(match.params.away)}</b><span class="detail">{String(match.params.league ?? "")} · {timeOf(Number(match.params.kickoff), p.locale)}</span></div><button class="btn secondary" onClick={() => p.onPick(match, "yes")}>{t.matchBtn}</button></div>}
+        {match && <div class="fyrow"><div class="grow"><b>{teamName(String(match.params.home), p.locale)} – {teamName(String(match.params.away), p.locale)}</b><span class="detail">{leagueName(String(match.params.league ?? ""), p.locale)} · {timeOf(Number(match.params.kickoff), p.locale)}</span></div><button class="btn secondary" onClick={() => p.onPick(match, "yes")}>{t.matchBtn}</button></div>}
         {wx && <div class="fyrow"><div class="grow"><span>{question(wx, p.msg, p.locale, cityName(cityOf(wx.city_id), p.locale), cityOf(wx.city_id).timezone, new Date(p.now))}</span></div><button class="btn secondary" onClick={() => p.onPick(wx, "yes")}>{t.rainBtn}</button></div>}
         <button class="btn secondary wide" onClick={p.onCreate}><Swords size={18} />{t.challenge}</button>
         {it.denied && <p class="hint"><X size={12} /> {t.denied}</p>}
