@@ -408,8 +408,12 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .topcard .meter { background: rgba(0,0,0,.18); }
 @media (prefers-color-scheme: light) { .topcard .meter { background: rgba(255, 255, 255, .6); } }
 
-.ticker { overflow: hidden; border-bottom: 1px solid var(--border); background: var(--surface); min-height: 36px; padding-top: 4px; padding-bottom: 4px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 4; padding: 0 var(--gutter); }
-.ticker .tk { display: inline-flex; align-items: center; justify-content: center; gap: 6px; max-width: 100%; min-width: 0; font-size: var(--fs-sm); color: var(--text-2); white-space: normal; text-align: center; line-height: 1.25; overflow-wrap: anywhere; }
+.ticker { overflow: hidden; white-space: nowrap; border-bottom: 1px solid var(--border); background: var(--surface); min-height: 36px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 4; padding: 0 var(--gutter); }
+.ticker .tk { display: inline-flex; align-items: center; justify-content: center; gap: 6px; max-width: none; font-size: var(--fs-sm); color: var(--text-2); white-space: nowrap; flex: 0 0 auto; }
+.ticker .tk > * { flex: 0 0 auto; white-space: nowrap; }
+.ticker .tk.glide { max-width: none; justify-content: flex-start; animation: tickglide var(--glide) linear 1.2s both; }
+.ticker:has(.tk.glide) { justify-content: flex-start; }
+@keyframes tickglide { from { transform: translateX(0); } to { transform: translateX(var(--shift)); } }
 .ticker .tk.fade { animation: tickfade .45s var(--ease) both; }
 @keyframes tickfade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 .ticker .tk b { color: var(--text); }
