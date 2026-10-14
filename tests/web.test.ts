@@ -1,5 +1,7 @@
 import { nextMilestone } from "../shared/rewards.ts";
 import { currencySymbol, money, resultAmount } from "../web/src/lib/format.ts";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { MESSAGES } from "../web/src/i18n/index.ts";
 import { pickCity, pickLocale, type CityInfo } from "../web/src/lib/detect.ts";
@@ -111,3 +113,12 @@ describe("play money and rewards", () => {
     expect(nextMilestone(30)).toBeNull();
   });
 });
+
+describe("the disclaimer", () => {
+  const files = (dir: string): string[] => readdirSync(dir).flatMap((f) => { const p = join(dir, f); return statSync(p).isDirectory() ? files(p) : /\.(tsx?|html)$/.test(f) ? [p] : []; });
+  it("is written once in the screens: in the footer (the share image is not a screen)", () => {
+    const users = files("web/src").filter((f) => !f.includes("/i18n/") && readFileSync(f, "utf8").includes("disclaimerShort")).map((f) => f.replace(/^web\/src\//, ""));
+    expect(users.sort()).toEqual(["components/AppFooter.tsx", "lib/share.ts"]);
+  });
+});
+

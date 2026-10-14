@@ -45,7 +45,7 @@ export interface HomeProps {
   cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null; radiusKm?: number | null; mineWide?: boolean; country?: string | null; homePos?: { lat: number; lon: number } | null;
   onQuakeMaker: () => void; onSeries: (s?: FollowedShow) => void; onCreate: () => void; registered: boolean; onAuth: () => void; italian: boolean; nearNode?: preact.ComponentChildren; nearbyNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
   stale?: boolean; details: boolean; friendBets: Record<string, number>; onOffer?: (m: MarketRow, o: OfferUse) => void;
-  attributions: { name: string; via?: string; license: string; licenseUrl: string; url: string }[]; installEvt: Event | null;
+  installEvt: Event | null;
 }
 
 export function Home(p: HomeProps) {
@@ -205,12 +205,6 @@ export function Home(p: HomeProps) {
           {plain.slice(0, 40).map((m, i) => <Fragment key={m.id}>{card(m, i)}{i === Math.min(2, plain.length - 1) && p.cat === "train" && p.italian && <div style="grid-column:1/-1"><TrainBoard variant="full" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} /></div>}</Fragment>)}
         </div>
         <div class="nearwrap stack">{p.nearbyNode}{p.nearNode}</div>
-        <footer class="legal">
-          <p><strong style="color:var(--text)">{msg.disclaimerShort}</strong> {msg.disclaimerFull}</p>
-          <details style="margin-top:8px"><summary>{msg.attributionTitle}</summary>
-            <ul>{p.attributions.map((a) => <li key={a.name}><a href={a.url} target="_blank" rel="noopener noreferrer">{a.name}</a>{a.via ? ` · ${a.via}` : ""} · <a href={a.licenseUrl} target="_blank" rel="noopener noreferrer">{a.license}</a></li>)}</ul>
-          </details>
-        </footer>
       </div>
       {regOpen && <RegionPanel locale={p.locale} current={curRegion} counts={regionCounts} onPick={(id) => { setRegOpen(false); p.onFilter(REGION_FILTER + id); }} onClose={() => setRegOpen(false)} />}
     </div>

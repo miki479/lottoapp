@@ -24,7 +24,7 @@ export function ProfileView(p: {
   look: MyProgress | null; onLook: () => void;
   onAdmin: () => void; homeNode?: preact.ComponentChildren; missionsNode?: preact.ComponentChildren;
   giftCard: boolean; onGiftSeen: () => void; push: { on: boolean; denied: boolean; toggle: () => void; flash: boolean; streak: boolean; friends: boolean; setPrefs: (f: boolean, s: boolean, fr: boolean) => void } | null; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
-  onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => Promise<void> | void; onDelete: () => Promise<void>; sources: { name: string; via?: string; license: string; licenseUrl: string; url: string }[];
+  onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => Promise<void> | void; onDelete: () => Promise<void>;
 }) {
   const [intentOn, setIntentOn] = useState(() => readConsent() === "on");
   const m = p.msg.profile;
@@ -133,14 +133,9 @@ export function ProfileView(p: {
               <div class="seg" style="width:100%">{LOCALES.map((l) => <button key={l.id} class={l.id === p.locale ? "on" : ""} aria-pressed={l.id === p.locale} onClick={() => p.onLocale(l.id)}>{l.short}</button>)}</div>
             </div>
             {admin && <button class="row" onClick={p.onAdmin}><span class="grow">{p.msg.admin.open}</span><ChevronRight size={18} /></button>}
-            <p class="hint" style="display:flex;gap:14px;flex-wrap:wrap;padding:6px 4px"><a href="/how-it-works.html" style="color:var(--brand)">{m.howItWorks}</a><a href="/terms.html" style="color:var(--text-2)">{m.terms}</a><a href="/privacy.html" style="color:var(--text-2)">{m.privacy}</a></p>
-            <details class="row" style="display:block"><summary style="min-height:32px;display:flex;align-items:center;cursor:pointer">{m.sources}</summary>
-              <ul class="hint" style="padding-left:18px">{p.sources.map((a) => <li key={a.name}><a href={a.url} target="_blank" rel="noopener noreferrer" style="color:inherit">{a.name}</a>{a.via ? ` · ${a.via}` : ""} · <a href={a.licenseUrl} target="_blank" rel="noopener noreferrer" style="color:inherit">{a.license}</a></li>)}</ul>
-            </details>
             {p.registered && <button class="row" disabled={busy} aria-busy={busy} onClick={() => run(async () => { await p.onSignOut(); })}><LogOut size={20} /><span class="grow">{m.signOut}</span><ChevronRight size={18} /></button>}
             <button class="row" onClick={() => setConfirm(true)} style="color:var(--lost-fg)"><Trash2 size={20} style="color:var(--lost-fg)" /><span class="grow">{m.delete.action}</span></button>
           </div>
-          <p class="hint">{p.msg.disclaimerShort}</p>
         </div>
       </div>
 

@@ -100,7 +100,7 @@ export interface Messages {
     streakHint: string; freezes: (n: number) => string; freezeHint: string;
     trophies: string; locked: string; rarity: { common: string; rare: string; epic: string; legendary: string; mythic: string };
     trophy: Record<TrophyId, { name: string; desc: string }>;
-    shareCard: string; shareText: string; settings: string; signOut: string; sources: string;
+    shareCard: string; shareText: string; settings: string; signOut: string;
     delete: { action: string; title: string; body: string; confirm: string; done: string };
     nickname: { title: string; label: string; placeholder: string; rules: string; save: string; needAccount: string };
   };

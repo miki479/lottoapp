@@ -231,7 +231,8 @@ select.field, textarea.field, option { font: inherit; }
 .langpop button { width: 100%; min-height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 12px; border-radius: 10px; text-align: left; } .langpop button:hover, .langpop button.on { background: var(--surface-2); }
 .langpop b { font-size: 12px; color: var(--brand); min-width: 44px; }
 .relative { position: relative; }
-footer.legal { margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); line-height: 1.55; }
+footer.legal { max-width: var(--max-w); margin: var(--space-6) auto 0; padding-top: var(--space-4); border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); line-height: 1.55; }
+footer.legal p { margin: 0 0 8px; } footer.legal .legallinks { display: flex; flex-wrap: wrap; gap: 4px 16px; } footer.legal .legallinks a { display: inline-flex; align-items: center; min-height: 32px; text-decoration: underline; text-underline-offset: 2px; } footer.legal summary { min-height: 32px; display: flex; align-items: center; cursor: pointer; }
 footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 
 /* ---------- keyframes (all short) ---------- */
