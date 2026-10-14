@@ -312,6 +312,16 @@ const BROADCAST = {
     },
     url: "https://latelotto.web.app/",
   },
+  // the apology after the outage of 14 October (1,000 in the player's own money and a gift to choose: scripts/send-sorry.sql). Per language: the money differs.
+  sorry_v1: {
+    byLocale: {
+      it: { h: "Siamo tornati online ✅", c: "Scusa per il problema tecnico. Per farci perdonare ti aspettano 1.000 € e un regalo a tua scelta nell'app." },
+      "en-US": { h: "We are back online ✅", c: "Sorry for the technical problem. To make up for it, $1,000 and a gift of your choice are waiting in the app." },
+      "en-GB": { h: "We are back online ✅", c: "Sorry for the technical problem. To make up for it, £1,000 and a gift of your choice are waiting in the app." },
+      ja: { h: "オンラインに戻りました ✅", c: "技術的な問題でご迷惑をおかけしました。お詫びに1,000円とお好きなプレゼントをアプリでお受け取りください。" },
+    },
+    url: "https://latelotto.web.app/",
+  },
   // ready for the day the frisbee questions go live: set app_settings broadcast_pending = 'frisbee_v1'
   frisbee_v1: {
     headings: { en: "Frisbee has landed 🥏", it: "È arrivato il frisbee 🥏", ja: "フリスビーが登場 🥏" },
