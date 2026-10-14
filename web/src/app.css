@@ -38,8 +38,26 @@ p { margin: 0; }
 .header .grow { flex: 1; }
 .iconbtn { width: var(--touch); height: var(--touch); border-radius: var(--radius-control); display: grid; place-items: center; color: var(--text-2); transition: background var(--dur-fast), transform var(--dur-fast); }
 .iconbtn:hover { background: var(--surface-2); } .iconbtn:active { transform: scale(.96); }
-.wallet { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px 0 12px; border-radius: var(--radius-pill); background: var(--surface); border: 1px solid var(--border); font-weight: 700; }
+/* the small tools (sound, language) and, apart from them, the balance: the one figure of the bar */
+.hdr-tools { display: flex; align-items: center; gap: 2px; padding-right: var(--space-3); border-right: 1px solid var(--border); }
+.hdr-tools .iconbtn { width: 44px; height: 44px; }
+.wallet { position: relative; display: inline-flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px 0 9px; border-radius: var(--radius-pill); background: var(--surface); border: 1px solid var(--border-strong); font-size: 21px; font-weight: 700; letter-spacing: -.01em; line-height: 1; }
 .wallet svg { color: var(--brand); }
+.wallet .coin { width: 26px; height: 26px; font-size: 15px; }
+.wallet.gain { animation: balgain 900ms var(--ease); } .wallet.loss { animation: balloss 900ms var(--ease); }
+@keyframes balgain { 0% { background: color-mix(in srgb, var(--won-fg) 26%, var(--surface)); border-color: var(--won-fg); } 100% { background: var(--surface); border-color: var(--border-strong); } }
+@keyframes balloss { 0% { background: color-mix(in srgb, var(--lost-fg) 26%, var(--surface)); border-color: var(--lost-fg); } 100% { background: var(--surface); border-color: var(--border-strong); } }
+.deltachip { position: absolute; right: 8px; top: calc(100% - 4px); z-index: 2; padding: 3px 9px; border-radius: var(--radius-pill); font-size: 14px; font-weight: 800; line-height: 1.1; pointer-events: none; animation: chipshow 1500ms var(--ease) both; box-shadow: 0 4px 14px rgb(0 0 0 / .3); }
+.deltachip.gain { background: color-mix(in srgb, var(--won-fg) 22%, var(--surface)); color: var(--won-fg); border: 1px solid var(--won-fg); }
+.deltachip.loss { background: color-mix(in srgb, var(--lost-fg) 22%, var(--surface)); color: var(--lost-fg); border: 1px solid var(--lost-fg); }
+@keyframes chipshow { 0% { opacity: 0; transform: translateY(-8px); } 12% { opacity: 1; transform: none; } 82% { opacity: 1; } 100% { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .wallet.gain, .wallet.loss { animation: none; } .deltachip { display: none; } }
+/* past the first screen the bar keeps only the logo and the balance */
+@media (max-width: 699px) {
+  .header.compact .header-in { min-height: 48px; padding-top: calc(4px + env(safe-area-inset-top)); padding-bottom: 4px; }
+  .header.compact .brand .tx, .header.compact .hdr-tools { display: none; }
+  .header.compact .wallet { height: 40px; }
+}
 
 /* ---------- nav: tab bar (mobile) / sidebar (desktop) ---------- */
 .tabbar { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-around; padding: 0 var(--space-2) env(safe-area-inset-bottom); height: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--border); }
@@ -386,6 +404,7 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .ticker:hover .track, .ticker:active .track { animation-play-state: paused; }
 .ticker .tk { display: inline-flex; align-items: center; gap: 4px; padding: 0 22px; font-size: 13px; color: var(--text-2); white-space: nowrap; }
 .ticker .tk b { color: var(--text); } .ticker .tk::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--star); margin-left: 22px; opacity: .8; }
+.ticker.still { justify-content: center; } .ticker.still .tk::after { display: none; }
 .ticker .amt { font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; } .ticker .amt.won { color: var(--won-fg); } .ticker .amt.lost { color: var(--lost-fg); } .ticker .amt.placed { color: var(--c-pop); }
 @keyframes tick { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .scene .puff { display: none; } .scene .rider { animation: none; opacity: 1; left: calc((100% - var(--w)) * var(--p)); } .scene .done { transition: none; } .meter .cells em, .meter .cells u.sweep { animation: none !important; } .ticker { overflow-x: auto; } .ticker .track { animation: none !important; } .meter .cells i.on { animation: none !important; } }
@@ -755,10 +774,14 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 /* narrow phones (360 px): the header never overflows and its buttons keep a proper touch size */
 .header .iconbtn { flex: none; min-width: var(--touch); }
 @media (max-width: 400px) {
-  .header-in { gap: 4px; }
-  .header .brand span { font-size: 19px; }
-  .header .wallet { padding-left: 10px; padding-right: 10px; }
+  .header-in { gap: 4px; padding-left: 12px; padding-right: 12px; }
+  .header .brand span { font-size: 18px; }
+  .header .brand { gap: 8px; }
+  .hdr-tools { padding-right: 6px; } .hdr-tools .iconbtn { width: 40px; min-width: 40px; }
+  .wallet { padding-right: 12px; gap: 8px; font-size: 20px; }
 }
+/* very narrow phones: the logo mark is enough, the balance needs the room */
+@media (max-width: 389px) { .header .brand .tx { display: none; } }
 
 /* traffic scene: a queue (YES) or free-flowing cars (NO) */
 .mscene.traffic .car { transform: translateX(var(--x)); transition: transform 1.4s cubic-bezier(.3, .7, .2, 1); }

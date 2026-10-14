@@ -28,7 +28,6 @@ import { ResultScreen } from "./components/ResultScreen.tsx";
 import { Toast } from "./components/Toast.tsx";
 import type { TopItem } from "./components/TopCards.tsx";
 import { INTL_TAG, t, TROPHY_IDS, type Locale, type TrophyId } from "./i18n/index.ts";
-import { useCountUp } from "./lib/anim.ts";
 import { ensureGuest, guestState, sb } from "./lib/api.ts";
 import { CITIES, cityInfos, cityName, cityOf } from "./lib/cities.ts";
 import { useNow } from "./lib/clock.ts";
@@ -36,6 +35,7 @@ import { pickCity, pickLocale } from "./lib/detect.ts";
 import { every } from "./lib/poll.ts";
 import { computeOdds } from "../../shared/odds.ts";
 import { fmtInt, fmtMult, fmtTimes, moneySigned, setNumLocale } from "./lib/num.ts";
+import { pickFeed, type FeedItem } from "./lib/feed.ts";
 import { countdown, setDayUnit, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
@@ -174,7 +174,6 @@ export function App() {
   const msg = t(locale);
   const tz = profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [activity, setActivity] = useState<ActivityRow[]>([]);
-  const wallet = useCountUp(profile?.credits ?? 0, 600);
   const toastTimer = useRef<number | undefined>(undefined);
   const flash = (text: string, kind: "ok" | "err" = "ok") => { setToast({ text, kind }); clearTimeout(toastTimer.current); toastTimer.current = window.setTimeout(() => setToast(null), 3600); };
   const seenKey = `seen.${profile?.id ?? "x"}`;
@@ -471,34 +470,45 @@ export function App() {
   const flashId = open.find((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now)?.id;
   useEffect(() => { if (flashId) announce(`flash-${flashId}`, msg.voice.flash, locale); }, [flashId]);
 
-  /** Ticker: what other players just did (real bets only), then recent results and tips. */
+  /**
+   * Ticker: what the lines and the markets are doing right now (late services first, then results, flash, crowds, closings, tips) with a few real bets of
+   * other players among them: at most two per player, never two in a row from the same one, identical lines once (see lib/feed.ts).
+   */
   const tickerItems = useMemo(() => {
-    const out: { id: string; node: preact.ComponentChildren }[] = [];
+    const users: FeedItem[] = [], system: FeedItem[] = [];
     for (const a of activity) {
-      const c = cityOf(a.city_id), isDelay = a.market_kind === "bus_delay_gt" || a.market_kind === "train_delay_gt", what = isDelay && a.label ? `${a.market_kind === "bus_delay_gt" ? msg.tabs.bus : msg.tabs.train} ${a.label} · ${cityName(c, locale)}` : a.label || cityName(c, locale);
-      const verb = msg.ticker[a.kind];
-      out.push({ id: `a${a.at}${a.who}${a.amount}`, node: <><b>{a.who ?? msg.ticker.anon}</b> {verb} <i class={`amt ${a.kind}`}>{a.kind === "won" ? moneySigned(a.amount, locale) : a.kind === "lost" ? moneySigned(-a.amount, locale) : money(a.amount, locale)}</i> {msg.ticker.on} {what}</> });
+      const c = cityOf(a.city_id), isDelay = a.market_kind === "bus_delay_gt" || a.market_kind === "train_delay_gt";
+      const subject = a.label ? (isDelay ? a.label : msg.cm[a.label] ?? a.label) : "", what = isDelay && subject ? `${subject} · ${cityName(c, locale)}` : subject || cityName(c, locale);
+      const who = a.who ?? msg.ticker.anon, verb = msg.ticker[a.kind];
+      const amt = a.kind === "won" ? moneySigned(a.amount, locale) : a.kind === "lost" ? moneySigned(-a.amount, locale) : money(a.amount, locale);
+      users.push({ id: `a${a.at}${a.who}${a.amount}`, who, text: `${who} ${verb} ${amt} ${msg.ticker.on} ${what}`, node: <><b>{who}</b> {verb} <i class={`amt ${a.kind}`}>{amt}</i> {msg.ticker.on} {what}</> });
+    }
+    const q = (m: MarketRow) => { const c = cityOf(m.city_id); return question(m, msg, locale, cityName(c, locale), c.timezone, new Date(now)); };
+    // services that are late right now: the most delayed first (their delay is a real reading, not a forecast)
+    const lateNow = open.filter((m) => live[m.id] && !live[m.id]!.is_forecast && live[m.id]!.delay_sec >= 180).sort((a, b) => live[b.id]!.delay_sec - live[a.id]!.delay_sec);
+    const seenTrip = new Set<string>();
+    for (const m of lateNow) {
+      const trip = String(m.params.tripId ?? m.id); if (seenTrip.has(trip)) continue; seenTrip.add(trip);
+      const line = msg.ticker.late(String(m.params.routeName ?? ""), String(m.params.headsign ?? ""), Math.round(live[m.id]!.delay_sec / 60));
+      system.push({ id: `l${m.id}`, text: line, node: <><i class="amt lost">●</i> {line}</> });
+      if (system.length >= 5) break;
     }
     for (const r of results) {
       const c = cityOf(r.city_id), route = String(r.params.routeName ?? "");
       const txt = r.status === "void" ? msg.bets.void : isYesNo(r.kind) ? (r.outcome === "yes" ? msg.card.yes : msg.card.no) : r.outcome === "yes" ? msg.card.late : msg.card.onTime;
-      if (route || r.kind === "bus_delay_gt" || r.kind === "train_delay_gt") { out.push({ id: `r${r.id}`, node: <>{route || cityName(c, locale)} · {txt}</> }); continue; }
+      if (route || r.kind === "bus_delay_gt" || r.kind === "train_delay_gt") { const head = route || cityName(c, locale); system.push({ id: `r${r.id}`, text: `${head} · ${txt}`, node: <>{head} · {txt}</> }); continue; }
       // any other question is shown with its own words, never as a bare "World · No"
       if (!r.target_at) continue;
-      const mk = { ...r, category: "", closes_at: r.target_at, odds_yes: 1, odds_no: 1, flash_multiplier: 1, flash_until: null, flash_kind: null } as unknown as MarketRow;
-      out.push({ id: `r${r.id}`, node: <>{question(mk, msg, locale, cityName(c, locale), c.timezone, new Date(now))} · <b>{txt}</b></> });
+      const mk = { ...r, category: "", closes_at: r.target_at, odds_yes: 1, odds_no: 1, flash_multiplier: 1, flash_until: null, flash_kind: null } as unknown as MarketRow, head = question(mk, msg, locale, cityName(c, locale), c.timezone, new Date(now));
+      system.push({ id: `r${r.id}`, text: `${head} · ${txt}`, node: <>{head} · <b>{txt}</b></> });
     }
-    // What is happening on the lines and in the markets right now (not only what players did).
-    const q = (m: MarketRow) => { const c = cityOf(m.city_id); return question(m, msg, locale, cityName(c, locale), c.timezone, new Date(now)); };
-    const lateNow = open.filter((m) => live[m.id] && !live[m.id]!.is_forecast && live[m.id]!.delay_sec >= 120).sort((a, b) => live[b.id]!.delay_sec - live[a.id]!.delay_sec).slice(0, 3);
-    lateNow.forEach((m, i) => out.splice(Math.min(out.length, 1 + i * 3), 0, { id: `l${m.id}`, node: <><i class="amt lost">●</i> {msg.ticker.late(String(m.params.routeName ?? ""), String(m.params.headsign ?? ""), Math.round(live[m.id]!.delay_sec / 60))}</> }));
     const fl = open.find((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now);
-    if (fl) out.splice(Math.min(out.length, 2), 0, { id: `f${fl.id}`, node: <><b>{msg.ticker.flash(Number(fl.flash_multiplier))}</b> · {q(fl)}</> });
-    for (const p of popular.slice(0, 2)) { const m = open.find((x) => x.id === p.market_id); if (m) out.push({ id: `p${m.id}`, node: <><b>{msg.ticker.crowd(p.bets)}</b> · {q(m)}</> }); }
-    open.filter((m) => !m.params.ladderOf && Date.parse(m.closes_at) - now < 8 * 60_000 && Date.parse(m.closes_at) > now).slice(0, 2).forEach((m) => out.push({ id: `c${m.id}`, node: <><b>{msg.ticker.closing}</b> · {q(m)}</> }));
-    if (isItalian) { const s = open.filter((m) => m.category === "strike").sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at))[0]; if (s) out.push({ id: `s${s.id}`, node: <>{msg.ticker.strike(new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(new Date(s.target_at)))}</> }); }
-    msg.home.idle.forEach((s, i) => out.splice(Math.min(out.length, 1 + i * 2), 0, { id: `t${i}`, node: <>{s}</> }));
-    return out;
+    if (fl) { const head = msg.ticker.flash(Number(fl.flash_multiplier)); system.splice(Math.min(system.length, 2), 0, { id: `f${fl.id}`, text: `${head} · ${q(fl)}`, node: <><b>{head}</b> · {q(fl)}</> }); }
+    for (const p of popular.slice(0, 2)) { const m = open.find((x) => x.id === p.market_id); if (m) { const head = msg.ticker.crowd(p.bets); system.push({ id: `p${m.id}`, text: `${head} · ${q(m)}`, node: <><b>{head}</b> · {q(m)}</> }); } }
+    open.filter((m) => !m.params.ladderOf && Date.parse(m.closes_at) - now < 8 * 60_000 && Date.parse(m.closes_at) > now).slice(0, 2).forEach((m) => system.push({ id: `c${m.id}`, text: `${msg.ticker.closing} · ${q(m)}`, node: <><b>{msg.ticker.closing}</b> · {q(m)}</> }));
+    if (isItalian) { const s = open.filter((m) => m.category === "strike").sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at))[0]; if (s) { const line = msg.ticker.strike(new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(new Date(s.target_at))); system.push({ id: `s${s.id}`, text: line, node: <>{line}</> }); } }
+    msg.home.idle.slice(1).forEach((line, i) => system.splice(Math.min(system.length, 1 + i * 2), 0, { id: `t${i}`, text: line, node: <>{line}</> }));
+    return pickFeed(users, system);
   }, [activity, results, locale, open, live, popular, isItalian, Math.floor(now / 30000)]);
 
   const sources = useMemo(() => {
@@ -712,9 +722,9 @@ export function App() {
     <div class={`shell${ready ? "" : " booting"}`} aria-busy={!ready}>
       <Sidebar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} rankBadge={reqCount} social={social} />
       <div>
-        <Header satire={msg.home.satire} claimable={claimable} onWallet={() => setRewardsOpen(true)} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} wallet={profile ? fmtInt(wallet, locale) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
+        <Header satire={msg.home.satire} claimable={claimable} onWallet={() => setRewardsOpen(true)} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} credits={profile ? profile.credits : null} who={profile?.id ?? null} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
         <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
-        <Ticker items={tickerItems} />
+        <Ticker items={tickerItems} label={msg.ticker.label} />
         <main class="content">
           {screen === "home" && <Home onOffer={(m, o) => setSheet({ m, pick: "yes", offer: o })} onSeries={(s) => setSeriesMaker({ show: s ?? null })} occ={occ} friendBets={friendBets} details={detailsOn} stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} radiusKm={originPt ? RADIUS_KM : null} mineWide={filter === "mine" && mineWide.has(cat)} country={myCountry} homePos={home ? { lat: home.lat, lon: home.lon } : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} attributions={sources} installEvt={installEvt} />}
           {screen === "bets" && <Bets canMore={bets.length >= betsLimit} onMore={() => setBetsLimit((n) => n + 60)} invites={invites} challenges={myChallenges} onChallenge={(code) => setChallengeCode(code)} parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}

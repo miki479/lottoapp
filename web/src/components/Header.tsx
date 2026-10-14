@@ -1,6 +1,8 @@
 import { Languages, Volume2, VolumeX } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { LOCALES, type Locale } from "../i18n/index.ts";
+import { reducedMotion, useCountUp } from "../lib/anim.ts";
+import { fmtInt, fmtSigned } from "../lib/num.ts";
 
 /** Sticky top bar: it gains a light blur and a hairline once the page scrolls under it. */
 /** The mark: a gold betting chip with the clock hands in it. */
@@ -17,12 +19,44 @@ export function BrandMark() {
   );
 }
 
-export function Header({ satire, claimable, onWallet, voice, locale, onLocale, wallet, coin, languageLabel, creditsLabel, onHome }: { satire?: string; locale: Locale; onLocale: (l: Locale) => void; wallet: string; coin: string; claimable: number; onWallet: () => void; voice: { on: boolean; label: string; toggle: () => void } | null; languageLabel: string; creditsLabel: string; onHome: () => void }) {
-  const [scrolled, setScrolled] = useState(false);
+/**
+ * The balance, a group of its own in the top bar: every change counts up or down in 400 ms, flashes green or red and leaves a chip with the difference for
+ * a moment (all of it off for people who ask for less motion). A different player (signing in or out) is not a change.
+ */
+function Balance({ credits, who, locale, coin, label, claimable, onClick }: { credits: number | null; who: string | null; locale: Locale; coin: string; label: string; claimable: number; onClick: () => void }) {
+  const shown = useCountUp(credits ?? 0, 400);
+  const last = useRef<{ who: string | null; credits: number | null }>({ who: null, credits: null });
+  const [change, setChange] = useState<{ n: number; at: number } | null>(null);
+  useEffect(() => {
+    if (credits === null) return;
+    const before = last.current;
+    last.current = { who, credits };
+    if (before.credits === null || before.who !== who || before.credits === credits || reducedMotion()) return;
+    setChange({ n: credits - before.credits, at: Date.now() });
+    const t = window.setTimeout(() => setChange(null), 1500);
+    return () => window.clearTimeout(t);
+  }, [credits, who]);
+  const kind = change ? (change.n > 0 ? "gain" : "loss") : "";
+  return (
+    <>
+      <button class={`wallet walletbtn ${kind}`} title={label} aria-label={credits === null ? label : `${label}: ${fmtInt(credits, locale)}`} onClick={onClick}>
+        <i class="coin" aria-hidden="true">{coin}</i>
+        <span class="num bal" aria-hidden="true">{credits === null ? "···" : fmtInt(shown, locale)}</span>
+        {claimable > 0 && <span class="dotbadge" aria-hidden="true">{claimable}</span>}
+        {change && <span class={`deltachip ${kind}`} key={change.at} aria-hidden="true">{fmtSigned(change.n, locale)}</span>}
+      </button>
+      <span class="sr" role="status">{credits === null ? "" : `${label}: ${fmtInt(credits, locale)}`}</span>
+    </>
+  );
+}
+
+export function Header({ satire, claimable, onWallet, voice, locale, onLocale, credits, who, coin, languageLabel, creditsLabel, onHome }: { satire?: string; locale: Locale; onLocale: (l: Locale) => void; credits: number | null; who: string | null; coin: string; claimable: number; onWallet: () => void; voice: { on: boolean; label: string; toggle: () => void } | null; languageLabel: string; creditsLabel: string; onHome: () => void }) {
+  const [scrolled, setScrolled] = useState(false), [compact, setCompact] = useState(false);
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const f = () => setScrolled(scrollY > 4);
+    // the bar shrinks past 56 px and grows back under 16, so it never flickers at the edge
+    const f = () => { setScrolled(scrollY > 4); setCompact((c) => (c ? scrollY > 16 : scrollY > 56)); };
     f(); addEventListener("scroll", f, { passive: true });
     return () => removeEventListener("scroll", f);
   }, []);
@@ -34,10 +68,11 @@ export function Header({ satire, claimable, onWallet, voice, locale, onLocale, w
     return () => { removeEventListener("pointerdown", away); removeEventListener("keydown", esc); };
   }, [open]);
   return (
-    <header class={`header ${scrolled ? "scrolled" : ""}`}>
+    <header class={`header ${scrolled ? "scrolled" : ""} ${compact ? "compact" : ""}`}>
       <div class="header-in">
         <button class="brand" onClick={onHome} aria-label="LateBet"><i><BrandMark /></i><span class="tx"><span class="wm">Late<b>BET</b></span>{satire && <em class="stag">{satire}</em>}</span></button>
         <div class="grow" />
+        <div class="hdr-tools">
         {voice && <button class={`iconbtn ${voice.on ? "voiceon" : ""}`} onClick={voice.toggle} aria-pressed={voice.on} aria-label={voice.label}>{voice.on ? <Volume2 size={22} /> : <VolumeX size={22} />}</button>}
         <div class="relative" ref={box}>
           <button class="iconbtn" aria-haspopup="menu" aria-expanded={open} aria-label={languageLabel} onClick={() => setOpen(!open)}><Languages size={22} /></button>
@@ -49,7 +84,8 @@ export function Header({ satire, claimable, onWallet, voice, locale, onLocale, w
             </div>
           )}
         </div>
-        <button class="wallet walletbtn" aria-live="polite" title={creditsLabel} aria-label={creditsLabel} onClick={onWallet}><i class="coin" aria-hidden="true">{coin}</i><span class="num">{wallet}</span>{claimable > 0 && <span class="dotbadge">{claimable}</span>}</button>
+        </div>
+        <Balance credits={credits} who={who} locale={locale} coin={coin} label={creditsLabel} claimable={claimable} onClick={onWallet} />
       </div>
     </header>
   );

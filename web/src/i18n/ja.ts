@@ -27,7 +27,7 @@ const ja: Messages = {
   },
   streak: { title: "連続記録", days: (n) => `${n}日`, next: (d, b) => `${d}日達成で次の報酬：${b}`, max: "すべての報酬を獲得しました。伝説です。", milestone: (n, b) => `${n}日連続！${b}をプレゼント`, flash: "フラッシュ" },
   meter: { threshold: (m) => `${m}分を超えると遅延`, up: (m) => `10分で+${m}分`, down: (m) => `10分で−${m}分`, steady: "横ばい", forecast: "予測", late: "遅れ" },
-  ticker: { anon: "プレイヤー", won: "が勝ちました", lost: "が外れました", placed: "が予想しました", on: "：", late: (r, t, m) => `${r}${t ? `（${t}行き）` : ""}は現在+${m}分の遅れ`, closing: "まもなく終了", crowd: (n) => `${n}件の予想`, flash: (x) => `フラッシュ ×${x}`, strike: (d) => `${d}に全国ストライキ` },
+  ticker: { label: "ライブの動き", anon: "プレイヤー", won: "が勝ちました", lost: "が外れました", placed: "が予想しました", on: "：", late: (r, t, m) => `${r}${t ? `（${t}行き）` : ""}は現在+${m}分の遅れ`, closing: "まもなく終了", crowd: (n) => `${n}件の予想`, flash: (x) => `フラッシュ ×${x}`, strike: (d) => `${d}に全国ストライキ` },
   slip: { bar: (n) => `${n}件`, title: "複数予想", add: "+ 複数予想に追加", added: "追加済み", remove: "外す", odds: "合計オッズ", confirm: "複数予想を確定", maxWin: "最大配当：賭け額の100倍", need2: "もう1件追加してください", placed: (w) => `複数予想を登録しました。全部当たれば${w}。`, legs: (n) => `${n}件`, clear: "クリア" },
   stake: { label: "賭け額", min: "最小", max: (m) => `最大 ${m}`, ifRight: "当たれば受け取れる額" },
   join: { step: "最後のステップ", title: "メールとパスワードでプロフィールを作成", body: (c) => `登録後すぐに予想が確定します。架空の${c}を受け取り、毎日250まで補充されます。`, nickname: "ニックネーム", password: "パスワード", hint: "8文字以上。ニックネームはランキングで公開されます。", cta: (s) => `${s}で予想する`, haveProfile: "プロフィールを持っています", newProfile: "プロフィールを作成", emailInstead: "メールを使う", checkMail: "確認メールを開いてから、ここに戻って予想してください。" },
