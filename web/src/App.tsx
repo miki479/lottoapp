@@ -379,8 +379,8 @@ export function App() {
       return fresh && (fresh.odds_yes !== sh.m.odds_yes || fresh.odds_no !== sh.m.odds_no) ? { ...sh, m: { ...sh.m, odds_yes: fresh.odds_yes, odds_no: fresh.odds_no } } : sh;
     });
   }, [markets]);
-  useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = every(loadMarkets, 90_000), b = every(() => { loadResults(); loadActivity(); loadTrending(); }, 90_000); return () => { a(); b(); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
-  useEffect(() => { if (!ready) return; return every(() => { loadBets(); loadProfile(); loadQuests(); }, 120_000); }, [ready]);
+  useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = every(loadMarkets, 45_000), b = every(() => { loadResults(); loadActivity(); loadTrending(); }, 90_000); return () => { a(); b(); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
+  useEffect(() => { if (!ready) return; return every(() => { loadBets(); loadProfile(); loadQuests(); }, 60_000); }, [ready]);
 
   const rainIds = useMemo(() => (markets ?? []).filter((m) => m.kind === "rain_at").map((m) => m.id), [markets]);
   useEffect(() => {
@@ -394,14 +394,14 @@ export function App() {
   useEffect(() => {
     if (trackable.length === 0) { setLive({}); return; }
     const go = () => sb.rpc("live_delays", { p_markets: trackable }).then(({ data }) => setLive(Object.fromEntries(((data ?? []) as LiveDelay[]).map((d) => [d.market_id, d]))));
-    go(); return every(go, 40_000);
+    go(); return every(go, 20_000);
   }, [trackable.join(), liveTick]);
   // how full the buses are (only some operators report it: the answer lists just those)
   const busIds = useMemo(() => (markets ?? []).filter((m) => m.category === "bus" && Date.parse(m.target_at) - Date.now() < 3 * 3600_000).slice(0, 150).map((m) => m.id), [markets]);
   useEffect(() => {
     if (busIds.length === 0) { setOcc({}); return; }
     const go = () => sb.rpc("live_occupancy", { p_markets: busIds }).then(({ data }) => setOcc(Object.fromEntries(((data ?? []) as LiveOcc[]).map((d) => [d.market_id, d]))));
-    go(); return every(go, 60_000);
+    go(); return every(go, 30_000);
   }, [busIds.join()]);
 
   // ---------- derived ----------
