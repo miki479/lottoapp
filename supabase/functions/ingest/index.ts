@@ -640,13 +640,16 @@ async function hfCounts(): Promise<Record<string, number>> {
   return out;
 }
 
-/** Solar wind speed now (NOAA SWPC real-time, public domain): the newest active reading of the last hour. */
+/** Solar wind speed now (NOAA SWPC real-time, public domain): the newest reading of the last 3 hours. The file is 2.6 MB, newest first: only its first few KB are asked for. */
 async function solarWindSpeed(): Promise<number | null> {
-  const rows = (await getJson("https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json")) as { time_tag: string; active: boolean; proton_speed: number | null }[];
-  // The "active" spacecraft can go quiet for a day (it did): then the newest reading of the standby ones (ACE, IMAP) is just as real.
-  const fresh = rows.filter((r) => typeof r.proton_speed === "number" && r.proton_speed > 0 && Date.now() - Date.parse(r.time_tag + "Z") < 3 * 3600_000).sort((a, b) => Date.parse(b.time_tag + "Z") - Date.parse(a.time_tag + "Z"));
-  const best = fresh.find((r) => r.active) ?? fresh[0];
-  return best && Date.now() - Date.parse(best.time_tag + "Z") < 3 * 3600_000 ? best.proton_speed! : null;
+  const res = await fetch("https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json", { headers: { ...UA, Range: "bytes=0-7999" }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = new TextDecoder().decode(new Uint8Array(await res.arrayBuffer()).subarray(0, 8000));
+  const rows = [...text.matchAll(/"time_tag":\s*"([^"]+)",\s*"active":\s*(true|false),\s*"source":\s*"[A-Z0-9]+",\s*"proton_speed":\s*([0-9.]+)/g)].map((m) => ({ at: Date.parse(m[1] + "Z"), active: m[2] === "true", v: Number(m[3]) }))
+    .filter((r) => Number.isFinite(r.at) && r.v > 0 && Date.now() - r.at < 3 * 3600_000).sort((x, y) => y.at - x.at);
+  // the "active" spacecraft can go quiet for a day: then the newest reading of the standby ones is just as real
+  const best = rows.find((r) => r.active) ?? rows[0];
+  return best ? best.v : null;
 }
 
 async function kpSeries(): Promise<{ observed: Map<number, number>; predicted: Map<number, number> }> {
