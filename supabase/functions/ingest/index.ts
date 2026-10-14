@@ -306,11 +306,14 @@ async function ingestMetrics(sb: ReturnType<typeof db>, now: number, last: numbe
   await sb.from("feed_health").upsert({ feed_id: "open-meteo-metrics", last_attempt_at: new Date(now * 1000).toISOString() });
   const targets: { id: string; lat: number; lon: number; tz: string }[] = [];
   for (const c of await loadCities()) if (c.categories.weather?.enabled && c.location) targets.push({ id: c.id, lat: c.location.lat, lon: c.location.lon, tz: c.timezone });
-  const { data: places } = await sb.from("places").select("id,lat,lon,timezone").gt("last_used_at", new Date((now - 3 * 86400) * 1000).toISOString()).order("last_used_at", { ascending: false }).limit(500);
+  const { data: places } = await sb.from("places").select("id,lat,lon,timezone").gt("last_used_at", new Date((now - 86400) * 1000).toISOString()).order("last_used_at", { ascending: false }).limit(160);
   for (const p of places ?? []) targets.push({ id: p.id as string, lat: Number(p.lat), lon: Number(p.lon), tz: p.timezone as string });
   let rows = 0, created = 0;
   try {
+    const t0 = Date.now();
     for (let i = 0; i < targets.length; i += 40) {
+      // Never run into the platform's time limit: what is left (the least recently used places) is picked up by the next hourly run.
+      if (i > 0 && Date.now() - t0 > 30000) break;
       const chunk = targets.slice(i, i + 40);
       const loc = { latitude: chunk.map((p) => p.lat).join(","), longitude: chunk.map((p) => p.lon).join(",") };
       const fapi = METRIC_IDS.filter((m) => METRICS[m].source === "forecast").map((m) => METRICS[m].api).join(",");
@@ -366,7 +369,14 @@ async function ingestPlaces(sb: ReturnType<typeof db>, now: number, last: number
     for (let i = 0; i < places.length; i += 40) {
       const chunk = places.slice(i, i + 40);
       const q = new URLSearchParams({ latitude: chunk.map((p) => p.lat).join(","), longitude: chunk.map((p) => p.lon).join(","), hourly: "precipitation", timezone: "GMT", forecast_days: "2", past_days: "1" });
-      const json = JSON.parse(new TextDecoder().decode(await fetchBytes(`https://api.open-meteo.com/v1/forecast?${q}`)));
+      let json: unknown;
+      try { json = JSON.parse(new TextDecoder().decode(await fetchBytes(`https://api.open-meteo.com/v1/forecast?${q}`))); } catch (e) {
+        // Open-Meteo refused: the back-up source covers the most recently used places, the rest wait for the next hour.
+        const left = places.slice(i, i + 15).map((p) => ({ id: p.id as string, lat: Number(p.lat), lon: Number(p.lon) }));
+        const n = await precipFallback(sb, left, 20000).catch(() => 0);
+        if (n === 0) throw e;
+        rows += n; break;
+      }
       const list = Array.isArray(json) ? json : [json];
       const out: Record<string, unknown>[] = [];
       list.forEach((one, k) => {
@@ -387,6 +397,39 @@ async function ingestPlaces(sb: ReturnType<typeof db>, now: number, last: number
   }
   await sb.from("feed_health").upsert({ feed_id: "open-meteo-places", last_ok_at: new Date().toISOString(), last_error: null });
   return `ok ${rows}`;
+}
+
+/**
+ * Back-up weather source (MET Norway, free, no key, one place per call): used only when Open-Meteo refuses or fails.
+ * Gives the precipitation of each coming hour; the hour that starts "now" is rewritten every run, so a closed hour keeps the last forecast made for it.
+ */
+async function metnoPrecip(lat: number, lon: number): Promise<{ hourStart: number; mm: number }[]> {
+  const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`;
+  const json = JSON.parse(new TextDecoder().decode(await fetchBytes(url)));
+  const out: { hourStart: number; mm: number }[] = [];
+  for (const t of (json?.properties?.timeseries ?? []) as Array<{ time: string; data?: { next_1_hours?: { details?: { precipitation_amount?: number } } } }>) {
+    const mm = t.data?.next_1_hours?.details?.precipitation_amount;
+    const ts = Date.parse(t.time) / 1000;
+    if (typeof mm === "number" && Number.isFinite(ts)) out.push({ hourStart: ts, mm });
+    if (out.length >= 36) break;
+  }
+  return out;
+}
+
+/** Back-up for a list of places (most recent first), a few calls at a time, inside a time budget. Returns the rows written. */
+async function precipFallback(sb: ReturnType<typeof db>, targets: { id: string; lat: number; lon: number }[], budgetMs: number): Promise<number> {
+  const t0 = Date.now(); let rows = 0;
+  for (let i = 0; i < targets.length && Date.now() - t0 < budgetMs; i += 5) {
+    const got = await Promise.all(targets.slice(i, i + 5).map((t) => metnoPrecip(t.lat, t.lon).then((o) => ({ t, o })).catch(() => null)));
+    const out: Record<string, unknown>[] = [];
+    for (const g of got) if (g) for (const o of g.o) out.push({ city_id: g.t.id, feed_id: `om-${g.t.id}`, hour_start: new Date(o.hourStart * 1000).toISOString(), precipitation_mm: Math.max(0, o.mm), fetched_at: new Date().toISOString() });
+    if (out.length) {
+      const { error } = await sb.from("weather_observations").upsert(out, { onConflict: "feed_id,hour_start" });
+      if (error) throw new Error(error.message);
+      rows += out.length;
+    }
+  }
+  return rows;
 }
 
 async function fetchBytes(url: string, extra: Record<string, string> = {}, timeoutMs = FETCH_TIMEOUT_MS): Promise<Uint8Array> {
@@ -414,7 +457,12 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
   const url = feedUrl(feed, city);
   if (feed.type === "open-meteo") {
     const adapter = weatherAdapterFor(feed)!;
-    const obs = adapter(JSON.parse(new TextDecoder().decode(await fetchBytes(url))), feed.id);
+    let obs: ReturnType<typeof adapter> = [];
+    try { obs = adapter(JSON.parse(new TextDecoder().decode(await fetchBytes(url))), feed.id); } catch (e) {
+      // Open-Meteo said no (daily limit, 5xx): ask the back-up source for this city instead of leaving its rain questions blind.
+      if (city.location && await precipFallback(sb, [{ id: city.id, lat: city.location.lat, lon: city.location.lon }], 8000) > 0) return 1;
+      throw e;
+    }
     if (obs.length === 0) throw new Error("no weather data in response");
     const rows = obs.map((o) => ({ city_id: city.id, feed_id: feed.id, hour_start: new Date(o.hourStart * 1000).toISOString(), precipitation_mm: Math.max(0, o.precipitationMm), fetched_at: new Date().toISOString() }));
     const { error } = await sb.from("weather_observations").upsert(rows, { onConflict: "feed_id,hour_start" });
@@ -595,7 +643,9 @@ async function hfCounts(): Promise<Record<string, number>> {
 /** Solar wind speed now (NOAA SWPC real-time, public domain): the newest active reading of the last hour. */
 async function solarWindSpeed(): Promise<number | null> {
   const rows = (await getJson("https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json")) as { time_tag: string; active: boolean; proton_speed: number | null }[];
-  const best = rows.filter((r) => r.active && typeof r.proton_speed === "number" && r.proton_speed > 0).sort((a, b) => Date.parse(b.time_tag + "Z") - Date.parse(a.time_tag + "Z"))[0];
+  // The "active" spacecraft can go quiet for a day (it did): then the newest reading of the standby ones (ACE, IMAP) is just as real.
+  const fresh = rows.filter((r) => typeof r.proton_speed === "number" && r.proton_speed > 0 && Date.now() - Date.parse(r.time_tag + "Z") < 3 * 3600_000).sort((a, b) => Date.parse(b.time_tag + "Z") - Date.parse(a.time_tag + "Z"));
+  const best = fresh.find((r) => r.active) ?? fresh[0];
   return best && Date.now() - Date.parse(best.time_tag + "Z") < 3 * 3600_000 ? best.proton_speed! : null;
 }
 

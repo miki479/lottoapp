@@ -552,6 +552,7 @@ export function App() {
       { name: "Wikimedia Foundation (page views)", license: "CC0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", url: "https://wikimedia.org/api/rest_v1/" },
       { name: "USGS Earthquake Hazards Program", license: "Public domain", licenseUrl: "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits", url: "https://earthquake.usgs.gov" },
       { name: "Copernicus Atmosphere Monitoring Service", via: "Open-Meteo", license: "Copernicus licence", licenseUrl: "https://atmosphere.copernicus.eu/terms-of-use", url: "https://open-meteo.com/en/docs/air-quality-api" },
+      { name: "MET Norway (Norwegian Meteorological Institute): back-up weather forecasts", license: "CC BY 4.0 / NLOD", licenseUrl: "https://api.met.no/doc/License", url: "https://api.met.no" },
     ];
     return [...map.values(), ...extra] as NonNullable<ReturnType<typeof map.values> extends IterableIterator<infer T> ? T : never>[];
   }, [detailsOn]);
