@@ -6,6 +6,7 @@ import { money } from "../lib/format.ts";
 import type { DailyMissionsData, FlashData } from "../lib/types.ts";
 import { INTL_TAG } from "../i18n/index.ts";
 import { untilReset } from "./RewardsSheet.tsx";
+import { moneySigned } from "../lib/num.ts";
 
 const ICON: Record<string, LucideIcon> = {
   m_bets3: Ticket, m_bets5: Ticket, m_bets8: Ticket, m_leg_bets10: Ticket, m_cat_bus: Bus, m_cat_train: TrainFront, m_cat_weather: CloudRain, m_cat_nature: Activity, m_cat_fin: Coins, m_cat_cult: Clapperboard, m_sport: Trophy,
@@ -41,8 +42,8 @@ export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages
                 <span class="dmbar" role="progressbar" aria-valuenow={m.progress} aria-valuemax={m.target}><i style={`width:${pct}%`} /></span></div>
               <span class="dmact">
                 {m.claimed ? <span class="dmok"><Check size={16} strokeWidth={3} />{t.done}</span>
-                  : done ? <button class="btn primary dmbtn" disabled={busy !== null} aria-busy={busy === m.id} onClick={() => burst(m.id, () => p.onClaim(m.id))}><span>{t.claim}</span><b>+{money(m.reward, p.locale)}</b></button>
-                  : <><em class="num">{m.progress}/{m.target}</em><span class="dmrew">+{money(m.reward, p.locale)}</span></>}
+                  : done ? <button class="btn primary dmbtn" disabled={busy !== null} aria-busy={busy === m.id} onClick={() => burst(m.id, () => p.onClaim(m.id))}><span>{t.claim}</span><b>{moneySigned(m.reward, p.locale)}</b></button>
+                  : <><em class="num">{m.progress}/{m.target}</em><span class="dmrew">{moneySigned(m.reward, p.locale)}</span></>}
               </span>
             </li>
           );

@@ -2,10 +2,15 @@ import { useMemo, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { fmtOdds, type MarketRow } from "../lib/format.ts";
 import type { LiveDelay, Pick } from "../lib/types.ts";
+import { fmtMult, fmtPct } from "../lib/num.ts";
 
 const CLOCK = new Intl.DateTimeFormat("it-IT", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Europe/Rome" });
 /** At most this many trains on the board, like the rows of a real one. */
 const MAX_ROWS = 6, MAX_ROWS_PHONE = 4;
+
+/** The long station names of the board in their usual short forms (TORINO PORTA NUOVA → TORINO P. NUOVA), never cut in the middle of a word. */
+const SHORT: [RegExp, string][] = [[/\bSTAZIONE\b/g, "STAZ."], [/\bCENTRALE\b/g, "C.LE"], [/\bPORTA\b/g, "P."], [/\bSANT'?\s/g, "S. "], [/\bSANTA\b/g, "S."], [/\bSAN\b/g, "S."]];
+const shortStation = (s: string) => SHORT.reduce((t, [re, to]) => t.replace(re, to), s);
 
 /** "FR 9516" / "REG 3935": the kind of train from the code in front of the number. */
 function kindOf(routeName: unknown, msg: Messages): { short: string; num: string; cls: "hs" | "ic" | "rg" } {
@@ -60,19 +65,19 @@ export function TrainBoard(p: { variant?: "full" | "card"; markets: MarketRow[];
             <span class="ledtabs" role="tablist">{(["late", "odds"] as const).map((k) => <button key={k} role="tab" aria-selected={tab === k} class={tab === k ? "on" : ""} onClick={() => setTab(k)}>{msg.board[k]}</button>)}</span>
             <ul class="ledrows">
               {sorted.map(({ m, delay }) => {
-                const k = kindOf(m.params.routeName, msg), dir = (String(m.params.headsign ?? "") || String(m.params.stopName ?? "")).toUpperCase(), min = Math.round(delay / 60);
+                const k = kindOf(m.params.routeName, msg), dir = shortStation((String(m.params.headsign ?? "") || String(m.params.stopName ?? "")).toUpperCase()), min = Math.round(delay / 60);
                 const best = Math.max(Number(m.odds_yes), Number(m.odds_no));
                 return (
                   <li key={m.id} class={`ledrow ${delay > 300 ? "late" : ""}`}>
                     <button class="ledmain" onClick={() => p.onPick(m, "yes")} aria-label={`${k.short} ${k.num} ${dir} ${min} min`}>
                       <span class={`ledkind k-${k.cls}`}>{k.short}</span><span class="lednum">{k.num}</span><span class="leddest">{dir}</span>
-                      <span class="leddelay">{tab === "late" ? (min > 0 ? `${min}’` : "—") : `×${fmtOdds(best, p.locale)}`}</span>
+                      <span class="leddelay">{tab === "late" ? (min > 0 ? `${min}’` : "—") : fmtMult(best, p.locale)}</span>
                     </button>
                   </li>
                 );
               })}
             </ul>
-            <footer class="ledfoot slim"><span class="ledclock num" aria-label={clock}>{clock}</span><span class="ledstat">{Math.round((late5 / rows.length) * 100)}% {msg.board.over5}</span></footer>
+            <footer class="ledfoot slim"><span class="ledclock num" aria-label={clock}>{clock}</span><span class="ledstat">{fmtPct(late5 / rows.length, p.locale)} {msg.board.over5}</span></footer>
           </div>
         </section>
         <span class="topdiv" aria-hidden="true" />
@@ -102,8 +107,8 @@ export function TrainBoard(p: { variant?: "full" | "card"; markets: MarketRow[];
                   <span class={`ledtrend ${trend > 60 ? "worse" : trend < -60 ? "better" : "steady"}`} title={trend > 60 ? msg.board.worse : trend < -60 ? msg.board.better : msg.board.steady}>{trend > 60 ? "▲" : trend < -60 ? "▼" : "•"} {Math.abs(Math.round(trend / 60)) > 0 ? `${trend > 0 ? "+" : "−"}${Math.abs(Math.round(trend / 60))}’` : ""}</span>
                 </button>
                 <span class="ledq">
-                  <button onClick={() => p.onPick(m, "yes")}><small>{msg.card.late}</small> ×{fmtOdds(Number(m.odds_yes), p.locale)}</button>
-                  <button onClick={() => p.onPick(m, "no")}><small>{msg.card.onTime}</small> ×{fmtOdds(Number(m.odds_no), p.locale)}</button>
+                  <button onClick={() => p.onPick(m, "yes")}><small>{msg.card.late}</small> {fmtMult(Number(m.odds_yes), p.locale)}</button>
+                  <button onClick={() => p.onPick(m, "no")}><small>{msg.card.onTime}</small> {fmtMult(Number(m.odds_no), p.locale)}</button>
                 </span>
               </li>
             );
@@ -111,7 +116,7 @@ export function TrainBoard(p: { variant?: "full" | "card"; markets: MarketRow[];
         </ul>
         <footer class="ledfoot">
           <span class="ledclock num" aria-label={clock}>{clock}</span>
-          <span class="ledstat">{Math.round((late5 / rows.length) * 100)}% {msg.board.over5} · {avg}’ {msg.board.avg}</span>
+          <span class="ledstat">{fmtPct(late5 / rows.length, p.locale)} {msg.board.over5} · {avg}’ {msg.board.avg}</span>
           <span class="ledmarq" aria-hidden="true"><span>{msg.board.marquee} · {msg.board.marquee}</span></span>
         </footer>
       </div>

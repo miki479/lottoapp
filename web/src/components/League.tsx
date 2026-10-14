@@ -11,6 +11,7 @@ import { Sheet } from "./Sheet.tsx";
 import { Look } from "./looks/Look.tsx";
 import { M } from "./looks/art.ts";
 import "./league.css";
+import { fmtInt } from "../lib/num.ts";
 
 /** Monthly leagues: card on top of the Ranking view, the board of each league, and a small badge for the profile. Strings live here, per locale. */
 const T = {
@@ -67,7 +68,7 @@ export function Badge({ league, size = 44 }: { league: number; size?: number }) 
 }
 
 function Board({ league, locale, onProfile }: { league: number; locale: Locale; onProfile: (id: string) => void }) {
-  const t = tx(locale), nf = new Intl.NumberFormat(INTL_TAG[locale]);
+  const t = tx(locale), nf = { format: (n: number) => fmtInt(n, locale) };
   const [rows, setRows] = useState<{ rank: number; user_id: string; display_name: string; credits: number; is_me: boolean }[] | null>(null);
   useEffect(() => {
     setRows(null); let live = true;
@@ -98,7 +99,7 @@ export function LeaguePanel(p: { locale: Locale; registered: boolean; onProfile:
   const [view, setView] = useState<number | null>(null);
   const [how, setHow] = useState(false);
   if (!d) return null;
-  const nf = new Intl.NumberFormat(INTL_TAG[p.locale]);
+  const nf = { format: (n: number) => fmtInt(n, p.locale) };
   const gap = promotionGap(d.league, d.credits, d.threshold);
   const progress = d.league >= 4 ? 1 : Math.min(1, d.credits / Math.max(1, d.threshold != null ? Math.min(d.threshold, PROMOTE_CREDITS) : PROMOTE_CREDITS));
   const line = d.league >= 4 ? t.top : d.rank == null ? t.none : gap === 0 || (d.rank <= promoteSlots(d.players)) ? t.zone : t.gap(nf.format(gap ?? 0));

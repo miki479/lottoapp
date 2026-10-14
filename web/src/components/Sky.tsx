@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
+import { fmtDec } from "../lib/num.ts";
 
 type SkyState = "clear" | "light" | "heavy";
 /** From the forecast millimetres of the hour: nothing, a drizzle, or a proper downpour. */
@@ -18,7 +19,7 @@ export function Sky({ mm, hint, msg }: { mm: number | undefined; hint: "yes" | "
       <span class="sun"><i /></span>
       <span class="cl c1" /><span class="cl c2" />
       <span class="rain">{Array.from({ length: drops }, (_, i) => <i key={i} style={`left:${(i * 100) / drops + 3}%;animation-delay:${-((i * 137) % 900)}ms;animation-duration:${shown === "heavy" ? 480 : 820}ms`} />)}</span>
-      <span class="skycap">{shown === "clear" ? msg.weather.clear : shown === "light" ? msg.weather.light : msg.weather.heavy}{mm !== undefined && !hint ? ` · ${mm.toFixed(1)} mm` : ""}</span>
+      <span class="skycap">{shown === "clear" ? msg.weather.clear : shown === "light" ? msg.weather.light : msg.weather.heavy}{mm !== undefined && !hint ? ` · ${fmtDec(mm, 1)} mm` : ""}</span>
     </div>
   );
 }

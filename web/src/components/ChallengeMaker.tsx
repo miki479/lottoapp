@@ -4,6 +4,7 @@ import type { Locale, Messages } from "../i18n/index.ts";
 import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
 import { Sheet } from "./Sheet.tsx";
+import { fmtInt } from "../lib/num.ts";
 
 type CatKey = keyof Messages["friends"]["cats"];
 const MAIN: CatKey[] = ["friends", "family", "work", "dinner", "trip", "sport"];
@@ -81,7 +82,7 @@ export function ChallengeMaker(p: { msg: Messages; locale: Locale; registered: b
         <p class="hint">{p.msg.fx.judgeHint}</p>
       </>}
       <span class="detail">{f.stake}</span>
-      <div class="mkchips" style={pub ? "opacity:.5;pointer-events:none" : ""}>{STAKES.map((s) => <button key={s} class={`mkchip ${stake === s && customStake === "" ? "on" : ""}`} aria-pressed={stake === s && customStake === ""} onClick={() => { setCustomStake(""); setStake(s); }}>{s === 0 ? f.noStake : s}</button>)}</div>
+      <div class="mkchips" style={pub ? "opacity:.5;pointer-events:none" : ""}>{STAKES.map((s) => <button key={s} class={`mkchip ${stake === s && customStake === "" ? "on" : ""}`} aria-pressed={stake === s && customStake === ""} onClick={() => { setCustomStake(""); setStake(s); }}>{s === 0 ? f.noStake : fmtInt(s)}</button>)}</div>
       {!pub && <input class="field" type="number" inputMode="numeric" min={0} max={1000} step={1} placeholder={f.customStake} value={customStake} onInput={(e) => { const raw = (e.target as HTMLInputElement).value; const n = Math.floor(Number(raw)); if (raw === "" || !Number.isFinite(n)) { setCustomStake(""); setStake(0); return; } const v = Math.max(0, Math.min(1000, n)); setCustomStake(String(v)); setStake(v); }} />}
       {!pub && stake > 0 && <p class="hint">{f.stakeNote}</p>}
       <p class="hint">{f.rules}</p>

@@ -3,23 +3,24 @@ import { Q } from "./Q.tsx";
 import { Check, RotateCcw, Share2, X } from "lucide-preact";
 import { useEffect } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
-import { fmtOdds, money, resultAmount } from "../lib/format.ts";
+import { fmtOdds, money, resultAmount, tickValueText } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { ReportLink } from "./ReportLink.tsx";
 import type { MyBet } from "../lib/types.ts";
+import { fmtDec, fmtNum } from "../lib/num.ts";
 
 /** What the market measured, in words ("Measured delay: 1 min 44 s"). */
 export function evidenceLines(b: MyBet, msg: Messages): string[] {
   const m = b.markets, ev = m.evidence;
   if (m.kind === "bus_full") return typeof ev?.level === "number" ? [msg.result.fullMeasured(msg.occ.levels[ev.level] ?? "")] : [];
   if (m.kind === "match_bet") return typeof ev?.home === "number" ? [msg.result.matchScore(ev.home, Number(ev.away))] : [];
-  if (m.kind === "tick_gt") return typeof ev?.value === "number" ? [msg.result.tickMeasured(String(m.params.series) === "kp" ? ev.value.toFixed(1) : new Intl.NumberFormat().format(Math.round(ev.value)) + (String(m.params.series).startsWith("wiki:") ? "" : " $"))] : [];
+  if (m.kind === "tick_gt") return typeof ev?.value === "number" ? [msg.result.tickMeasured(tickValueText(String(m.params.series), ev.value, typeof m.params.digits === "number" ? m.params.digits : 0))] : [];
   if (m.kind === "traffic_speed_lt") return typeof ev?.avgKmh === "number" ? [msg.result.trafficMeasured(Math.round(ev.avgKmh), Number(m.params.thresholdKmh))] : [];
   if (m.kind === "strike_on") return typeof ev?.present === "number" ? [ev.present ? msg.result.strikeOn : msg.result.strikeOff] : [];
-  if (m.kind === "metric_gt") return typeof ev?.value === "number" ? [msg.result.metricMeasured(msg.wx.names[m.params.metric as "temp"], `${ev.value}${String(m.params.unit ?? "")}`)] : [];
-  if (m.kind === "quake_m") return typeof ev?.count === "number" ? [msg.result.quakeMeasured(ev.count, `M${Number(ev.maxMag ?? 0).toFixed(1)}`)] : [];
-  if (m.kind === "rain_at") return typeof ev?.precipitationMm === "number" ? [msg.result.rainMeasured(Math.round(ev.precipitationMm * 10) / 10)] : [];
+  if (m.kind === "metric_gt") return typeof ev?.value === "number" ? [msg.result.metricMeasured(msg.wx.names[m.params.metric as "temp"], `${fmtNum(ev.value, undefined, 1)}${String(m.params.unit ?? "")}`)] : [];
+  if (m.kind === "quake_m") return typeof ev?.count === "number" ? [msg.result.quakeMeasured(ev.count, `M${fmtDec(Number(ev.maxMag ?? 0), 1)}`)] : [];
+  if (m.kind === "rain_at") return typeof ev?.precipitationMm === "number" ? [msg.result.rainMeasured(fmtNum(ev.precipitationMm, undefined, 1))] : [];
   const out: string[] = [];
   if (typeof ev?.delaySec === "number") { const s = Math.abs(Math.round(ev.delaySec)); out.push(msg.result.measured(Math.floor(s / 60), s % 60)); }
   out.push(msg.result.threshold(Math.round(Number(m.params.thresholdSec ?? 180) / 60)));

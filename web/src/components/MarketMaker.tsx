@@ -15,6 +15,7 @@ import { CITIES } from "../lib/cities.ts";
 import { MatchPicker } from "./MatchPicker.tsx";
 import { STEAM, WIKI_ARTICLES, CRYPTO } from "../../../shared/ticks.ts";
 import { METRICS } from "../../../shared/metrics.ts";
+import { ALWAYS } from "../lib/num.ts";
 
 type Tab = "weather" | "crypto" | "games" | "culture" | "match";
 interface Preview { threshold: number; step?: number; odds_yes: number; odds_no: number; chance: number; forecast?: number; reference?: number; unit?: string }
@@ -24,7 +25,7 @@ const SPOT_OFFSETS = [1, 3, 6, 12, 24];
 const MAP_TXT: Record<string, string> = { it: "Scegli sulla mappa", "en-US": "Pick on the map", "en-GB": "Pick on the map", ja: "地図から選ぶ" };
 /** Build your own question from a template. The server checks, prices and refuses what would be too obvious. */
 export function MarketMaker(p: { msg: Messages; locale: Locale; places: { id: string; name: string }[]; onClose: () => void; onQuake: () => void; onFriends: () => void; onCreated: (m: MarketRow) => void; registered: boolean; origin: { lat: number; lon: number } | null }) {
-  const m = p.msg.maker, nf1 = new Intl.NumberFormat(INTL_TAG[p.locale], { maximumFractionDigits: 1 }), nf0 = new Intl.NumberFormat(INTL_TAG[p.locale], { maximumFractionDigits: 0 });
+  const m = p.msg.maker, nf1 = new Intl.NumberFormat(INTL_TAG[p.locale], { maximumFractionDigits: 1, useGrouping: ALWAYS }), nf0 = new Intl.NumberFormat(INTL_TAG[p.locale], { maximumFractionDigits: 0, useGrouping: ALWAYS });
   const nf = { format: (v: number) => (Math.abs(v) >= 1000 ? nf0 : nf1).format(v) };
   const [tab, setTab] = useState<Tab>("weather");
   const [place, setPlace] = useState(p.places[0]?.id ?? ""), [metric, setMetric] = useState<(typeof METRIC_LIST)[number]>("temp"), [dayOffset, setDayOffset] = useState(1), [hour, setHour] = useState(15);

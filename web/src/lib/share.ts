@@ -3,6 +3,7 @@ import { fmtOdds, money, question, resultAmount } from "./format.ts";
 import { cityName, cityOf } from "./cities.ts";
 import type { MyBet, MyStats } from "./types.ts";
 import { evidenceLines } from "../components/ResultScreen.tsx";
+import { fmtSigned } from "./num.ts";
 
 // Colours mirror tokens.css (dark theme) so shared images match the app.
 const C = { bg: "#0f1115", surface: "#181b21", border: "#272c35", text: "#f3f5f8", text2: "#b6bdca", muted: "#8a92a1", brand: "#6b5bff", wonBg: "#173a33", wonFg: "#7ee8bc", lostBg: "#40262a", lostFg: "#fca5a5" };
@@ -60,7 +61,7 @@ export async function makeProfileCard(d: { name: string | null; streak: number; 
   g.textAlign = "left"; g.fillStyle = C.text; g.font = F(800, 64); g.fillText(d.name ?? msg.profile.guest, 72, 260);
   const settled = (d.stats?.won ?? 0) + (d.stats?.lost ?? 0);
   const rate = settled ? Math.round(((d.stats?.won ?? 0) / settled) * 100) : null;
-  const tiles: [string, string][] = [[msg.profile.stats.streak, String(d.streak)], [msg.profile.stats.winRate, rate === null ? "—" : `${rate}%`], [msg.profile.stats.best, `+${d.stats?.best_win ?? 0}`], [msg.profile.stats.bets, String(d.stats?.total ?? 0)]];
+  const tiles: [string, string][] = [[msg.profile.stats.streak, String(d.streak)], [msg.profile.stats.winRate, rate === null ? "—" : `${rate}%`], [msg.profile.stats.best, fmtSigned(d.stats?.best_win ?? 0)], [msg.profile.stats.bets, String(d.stats?.total ?? 0)]];
   tiles.forEach(([label, val], i) => {
     const x = 72 + (i % 2) * 480, y = 330 + Math.floor(i / 2) * 270;
     g.fillStyle = C.surface; g.beginPath(); g.roundRect(x, y, 456, 246, 32); g.fill(); g.strokeStyle = C.border; g.lineWidth = 2; g.stroke();

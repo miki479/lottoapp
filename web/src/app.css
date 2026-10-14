@@ -79,7 +79,7 @@ p { margin: 0; }
 .event { display: flex; flex-direction: column; gap: var(--space-3); animation: rise var(--dur) var(--ease) both; animation-delay: calc(var(--i, 0) * 30ms); }
 .event .meta { display: flex; align-items: center; gap: 8px; }
 .event .meta .kind { width: 28px; height: 28px; border-radius: 9px; background: var(--surface-2); color: var(--text-2); display: grid; place-items: center; }
-.event .meta .detail { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event .meta .detail { flex: 1; min-width: 0; line-height: 1.25; overflow-wrap: break-word; hyphens: auto; }
 .event .meta .timer { font-size: var(--fs-detail); font-weight: 700; color: var(--text-2); }
 .event .meta .timer.hot { color: var(--warn-fg); }
 .event .q { font-size: var(--fs-body); font-weight: 600; line-height: 1.4; }
@@ -102,7 +102,7 @@ p { margin: 0; }
 .topcard .big:empty { display: none; }
 .topcard .big { font-size: 36px; font-weight: 800; letter-spacing: var(--ls-title); line-height: 1.05; margin-top: auto; }
 .topcard .big small { font-size: 18px; font-weight: 700; margin-left: 2px; color: var(--text-2); }
-.topcard .sub { font-size: 14px; color: var(--text-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.topcard .sub { font-size: 14px; color: var(--text-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow-wrap: break-word; hyphens: auto; }
 .sectionhead { display: flex; align-items: baseline; justify-content: space-between; margin-top: var(--space-3); }
 
 
@@ -167,6 +167,7 @@ button.row:hover { background: var(--surface-2); } button.row:active { transform
 @media (prefers-reduced-motion: reduce) { .btn[aria-busy="true"]::after { animation-duration: 2s; } }
 input.field { width: 100%; min-height: var(--touch); padding: 0 14px; border-radius: var(--radius-control); border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font: inherit; transition: border-color var(--dur-fast); }
 input.field:focus { outline: none; border-color: var(--brand); }
+select.field, textarea.field, option { font: inherit; }
 .fieldlabel { display: block; margin-bottom: 6px; }
 .formerr { color: var(--lost-fg); font-size: 14px; }
 .hint { color: var(--muted); font-size: 13px; }
@@ -316,7 +317,7 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 
 /* odds buttons: one-line label, big tabular number, small payout line */
 .opt { min-height: 72px; gap: 1px; }
-.opt .l { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; text-transform: uppercase; letter-spacing: var(--ls-detail); font-weight: 700; }
+.opt .l { white-space: normal; overflow-wrap: break-word; line-height: 1.2; text-align: center; font-size: 12px; text-transform: uppercase; letter-spacing: var(--ls-detail); font-weight: 700; }
 .opt b { font-size: 26px; font-variant-numeric: tabular-nums; }
 .opt .s { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .opt.boosted { box-shadow: 0 0 0 1.5px var(--star) inset; animation: glow 1.8s ease-in-out infinite; } .opt.boosted b { color: var(--star); }
@@ -521,7 +522,7 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 @keyframes raindrop { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: .9; } 100% { transform: translateY(70px); opacity: 0; } }
 @keyframes sunpulse { 50% { transform: scale(1.08); } }
 @media (prefers-reduced-motion: reduce) { .sky .rain i, .sky .sun i { animation: none !important; } .sky .rain i { opacity: .8; } }
-.sky .skycap { white-space: nowrap; }
+.sky .skycap { white-space: normal; }
 
 /* what-if on bus/train cards.
    "On time" (NO): nitro - the vehicle jolts, a flame lights up behind it, air streaks rush past and it races along the track.
@@ -613,7 +614,7 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 /* earthquake scene: skyscrapers sway while "yes" is held and settle slowly afterwards */
 .quakescene { position: relative; border-radius: var(--radius-md, 14px); overflow: hidden; background: #2a1a3a; }
 .quakescene svg { display: block; width: 100%; height: 110px; }
-.quakescene b { position: absolute; left: 10px; top: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.85); color: #222; font-size: 12px; }
+.quakescene b { position: absolute; left: 10px; top: 8px; max-width: calc(100% - 20px); line-height: 1.25; padding: 2px 8px; border-radius: 10px; background: rgba(255,255,255,.85); color: #222; font-size: 12px; }
 @property --amp { syntax: "<number>"; inherits: true; initial-value: 0; }
 .quakescene { --amp: 0; transition: --amp 2.6s ease-in; }
 .quakescene.shake { --amp: 1; }
@@ -659,7 +660,7 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 /* weather "what if" scenes (temperature, wind, snow, UV, air quality): YES pushes to the extreme, NO calms it */
 .mscene { position: relative; height: 84px; border-radius: 12px; overflow: hidden; background: #cfe6fa; }
 .mscene svg { display: block; width: 100%; height: 100%; }
-.mscene b { position: absolute; left: 10px; bottom: 6px; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: rgba(20, 30, 50, .78); background: rgba(255,255,255,.7); padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+.mscene b { position: absolute; left: 10px; bottom: 6px; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: rgba(20, 30, 50, .78); background: rgba(255,255,255,.7); padding: 1px 7px; border-radius: 10px; white-space: normal; max-width: calc(100% - 20px); line-height: 1.25; }
 .mscene svg * { transform-box: fill-box; }
 .mscene :is(.m-hot, .m-cold, .m-haze, .m-uvhaze, .m-ucloud, .m-merc, .m-sun, .m-sunw, .m-glow, .m-leafc, .m-snowf) { transition: opacity .7s ease, transform .8s cubic-bezier(.2,.8,.2,1); }
 /* temperature */
@@ -949,7 +950,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 @media (prefers-reduced-motion: reduce) { .dmrow, .dmchest, .dmbtn, .dmico, .dmbar i, .dmbar i::after, .dmstreak svg, .dmok { animation: none !important; } }
 
 .plrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
-.plname { display: flex; flex-direction: column; min-width: 0; } .plname b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .plname em { font-style: normal; font-size: 11px; color: var(--muted); font-weight: 700; }
+.plname { display: flex; flex-direction: column; min-width: 0; } .plname b { font-size: 14px; overflow-wrap: break-word; } .plname em { font-style: normal; font-size: 11px; color: var(--muted); font-weight: 700; }
 .pls { display: grid; grid-template-columns: repeat(3, 64px); gap: 6px; } .oddsbtn.mini { min-height: 44px; padding: 4px 2px; gap: 0; } .oddsbtn.mini span { font-size: 10.5px; } .oddsbtn.mini b { font-size: 14px; }
 
 /* metals, fuel, oil scenes */
@@ -1084,7 +1085,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 .ledrows { list-style: none; margin: 0; padding: 0; } .ledrow { padding: 5px 0 6px; border-bottom: 1px dashed #231c06; } .ledrow:last-child { border-bottom: 0; }
 .ledmain { display: grid; grid-template-columns: 26px max-content minmax(0, 1fr) 40px; gap: 6px; align-items: baseline; width: 100%; background: transparent; border: 0; padding: 0 2px; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .ledkind { font-size: 9px; letter-spacing: .04em; border: 1px solid #6b4a00; border-radius: 3px; padding: 0 2px; text-align: center; color: #d99200; } .lednum { font-size: 15px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
-.leddest { font-size: 13px; letter-spacing: .06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.leddest { font-size: 13px; letter-spacing: .06em; white-space: normal; overflow-wrap: break-word; line-height: 1.15; min-width: 0; }
 .leddelay { font-size: 15px; font-weight: 700; text-align: right; display: inline-flex; justify-content: flex-end; align-items: center; gap: 4px; }
 .ledrow.late .leddelay { color: #ffd24a; text-shadow: 0 0 8px rgba(255, 210, 74, .8); }
 .ledq { display: flex; justify-content: flex-end; gap: 8px; padding: 3px 2px 0 94px; } .ledq button { font: inherit; font-size: 11px; font-weight: 700; color: #ffb000; background: transparent; border: 1px solid #4a3a10; border-radius: 4px; padding: 2px 6px; cursor: pointer; } .ledq button:hover, .ledq button:focus-visible { border-color: #ffb000; background: rgba(255,176,0,.1); } .ledq button { display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; } .ledq small { display: inline; font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: #a86f00; font-weight: 600; }

@@ -9,6 +9,7 @@ import { DailyMissions } from "./DailyMissions.tsx";
 import { ShopArea } from "./ShopArea.tsx";
 import "./RewardsHub.css";
 import { Sheet } from "./Sheet.tsx";
+import { moneySigned, currencySymbol } from "../lib/num.ts";
 
 /** Time left until local midnight in the player's time zone ("5h 12m"), when the daily missions renew. */
 export function untilReset(tz: string, nowMs: number): string {
@@ -39,7 +40,7 @@ export function RewardsSheet(p: {
     const act = q.claimed ? <span class="qdone"><Check size={16} strokeWidth={2.6} />{m.claimed}</span>
       : q.done ? <button class="btn primary qbtn" disabled={claiming !== null} aria-busy={claiming === q.id} onClick={() => claim(q.id)}>{m.claim(money(q.reward, p.locale))}</button>
       : q.id === "o_nick" || q.id === "o_push" ? <button class="btn secondary qbtn" onClick={() => p.onGo(q.id)}>{m.go}</button>
-      : <span class="qreward">+{money(q.reward, p.locale)}</span>;
+      : <span class="qreward">{moneySigned(q.reward, p.locale)}</span>;
     return (
       <li key={q.id} class={`quest ${q.claimed ? "claimed" : q.done ? "ready" : ""}`}>
         <div class="qt"><b>{t?.t ?? q.id}</b><span>{t?.d}</span></div>
@@ -50,7 +51,7 @@ export function RewardsSheet(p: {
   return (
     <Sheet onClose={p.onClose} label={m.title}>
       <div class="shead"><h2>{m.title}</h2><button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>
-      <div class="rbal"><span class="coin" aria-hidden="true">€</span><b class="num">{money(p.profile?.credits ?? 0, p.locale)}</b>
+      <div class="rbal"><span class="coin" aria-hidden="true">{currencySymbol(p.locale)}</span><b class="num">{money(p.profile?.credits ?? 0, p.locale)}</b>
         <span class="rstock"><Snowflake size={15} />{p.profile?.freezes ?? 0}</span><span class="rstock"><Rocket size={15} />{p.profile?.boosts ?? 0}</span></div>
       <div class="seg rhtabs" role="tablist">{(["today", "shop", "album"] as const).map((k) => <button key={k} role="tab" aria-selected={tab === k} class={tab === k ? "on" : ""} onClick={() => setTab(k)}>{ht.tabs[k]}</button>)}</div>
       {tab !== "today" && <ShopArea tab={tab} locale={p.locale} msg={p.msg} credits={p.profile?.credits ?? 0} registered={p.registered} onTab={setTab} onChanged={() => p.onChanged?.()} onAuth={() => p.onGo("o_nick")} />}

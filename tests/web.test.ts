@@ -98,7 +98,7 @@ describe("play money and rewards", () => {
   it("shows the currency of the audience", () => {
     expect(money(1000, "en-US")).toBe("$1,000");
     expect(money(1000, "en-GB")).toBe("£1,000");
-    expect(money(1000, "it").replace(/\s/g, " ")).toMatch(/^1\.?000\s?€$/);
+    expect(money(1000, "it").replace(/\s/g, " ")).toBe("1.000 €");
     expect(currencySymbol("it")).toBe("€");
   });
   it("formats outcomes with sign", () => {

@@ -10,6 +10,7 @@ import { Sheet } from "./Sheet.tsx";
 import { Look } from "./looks/Look.tsx";
 import { PlayerTitle } from "./PlayerTitle.tsx";
 import { useLooks } from "../lib/looks.ts";
+import { moneySigned } from "../lib/num.ts";
 
 export interface Challenge {
   id: string; code: string; title: string; category: keyof Messages["friends"]["cats"]; stake: number; closes_at: string; status: "open" | "resolved" | "void"; outcome: "yes" | "no" | null; judge_mode: "creator" | "vote"; visibility: "private" | "public"; my_vote: "yes" | "no" | null; voted: number;
@@ -69,7 +70,7 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
         <span><em>{f.pot}</em><b class="num">{money(c.pot, p.locale)}</b></span>
         <span><em>{f.yes} / {f.no}</em><b class="num">{c.yes} / {c.no}</b></span>
       </div>
-      {c.status === "resolved" && <p class="resultline"><b>{c.outcome === "yes" ? f.resolvedYes : f.resolvedNo}</b>{c.my_pick && c.my_payout !== null && c.my_payout > 0 ? ` · +${money(c.my_payout, p.locale)}` : ""}</p>}
+      {c.status === "resolved" && <p class="resultline"><b>{c.outcome === "yes" ? f.resolvedYes : f.resolvedNo}</b>{c.my_pick && c.my_payout !== null && c.my_payout > 0 ? ` · ${moneySigned(c.my_payout, p.locale)}` : ""}</p>}
       {c.status === "void" && <p class="resultline"><b>{f.voided}</b></p>}
       {isOpen && !c.my_pick && c.judge_mode === "creator" && c.is_creator && <p class="hint">{p.msg.fx.judgeCant}</p>}
       {isOpen && !c.my_pick && !(c.judge_mode === "creator" && c.is_creator) && <>

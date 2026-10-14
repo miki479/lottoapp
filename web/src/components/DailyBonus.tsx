@@ -8,6 +8,7 @@ import { claimDaily, errorCode, loadDaily, type DailyState } from "../lib/shop.t
 import { hubText, milestoneList } from "../lib/shopText.ts";
 import { untilReset } from "./RewardsSheet.tsx";
 import "./RewardsHub.css";
+import { fmtInt } from "../lib/num.ts";
 
 /**
  * The seven-day calendar. It is the streak the game already keeps: streak day n pays 100 x n, claimed once per local day
@@ -38,7 +39,7 @@ export function DailyBonus({ locale, now, tz, onPlay, onChanged }: { locale: Loc
           return (
             <li key={n} class={`dbtile ${st} ${n === cd && pop ? "pop" : ""}`} aria-label={`${d.day(n)}: ${money(a, locale)}`} aria-current={n === cd ? "date" : undefined}>
               <small>{n}</small>
-              <b class="num">{a}</b>
+              <b class="num">{fmtInt(a, locale)}</b>
               <span class="dbmark" aria-hidden="true">{st === "past" || st === "done" ? <Check size={14} strokeWidth={3} /> : st === "ready" ? <Gift size={14} /> : st === "lock" ? <Lock size={13} /> : null}</span>
               {n === 7 && <span class="dbfreeze" title={d.freezeTile} aria-label={d.freezeTile}><Snowflake size={11} /></span>}
             </li>

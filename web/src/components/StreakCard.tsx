@@ -2,6 +2,7 @@ import { Flame, Snowflake } from "lucide-preact";
 import { nextMilestone } from "../../../shared/rewards.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { money } from "../lib/format.ts";
+import { moneySigned } from "../lib/num.ts";
 
 /** Current streak, the next reward on the way and the freezes in stock. Rewards are paid by the server. */
 export function StreakCard({ streak, freezes, msg, locale }: { streak: number; freezes: number; msg: Messages; locale: Locale }) {
@@ -15,7 +16,7 @@ export function StreakCard({ streak, freezes, msg, locale }: { streak: number; f
         <span class="freezes"><Snowflake size={16} />{freezes}</span>
       </div>
       <div class="bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><i style={`width:${pct}%`} /></div>
-      <p class="hint">{next ? msg.streak.next(next.day, `+${money(next.bonus, locale)}`) : msg.streak.max}</p>
+      <p class="hint">{next ? msg.streak.next(next.day, moneySigned(next.bonus, locale)) : msg.streak.max}</p>
     </section>
   );
 }

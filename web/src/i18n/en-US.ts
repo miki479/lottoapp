@@ -1,3 +1,4 @@
+import { fmtInt } from "../lib/num.ts";
 import type { Messages } from "./types.ts";
 
 const enUS: Messages = {
@@ -42,7 +43,7 @@ const enUS: Messages = {
  near: { title: "Near you", ask: "See what people in your area are betting on most.", privacy: "Your location stays on your phone: the server only gets the name of the nearest city.", locate: "Use my location", denied: "Can't read your location. You can pick a city from “More cities”.", zone: (n) => `Area: ${n}`, bets: (n) => (n === 1 ? "1 bet" : `${n} bets`), first: "Nobody has bet here today yet: here are the nearest events.", nothing: "No open events in this area right now.", refresh: "Refresh" },
   places: { more: "More cities", title: "Weather for a town", hint: "Search any city or town: its rain questions open right away.", search: "Search a city…", recent: "Your latest", capitals: "Italian regional capitals", famous: "Famous cities worldwide", withData: "With buses, trains and weather", none: "No results. Try the full name.", searchError: "Can't search right now. Try again.", limit: "You've already added 5 new places today. Try again tomorrow or pick an existing one.", full: "Too many active places right now. Pick an existing one.", credit: "City search: Open-Meteo.com (CC BY 4.0). Weather only, for now." },
   top: { best: "Best odds", draw: "Draw!?", goal: "Goal odds", upset: "Upset?", coin: "Coin toss", spotlight: "In the spotlight", wild: "Plot twist", sky: "Eyes on the sky", late: "Most delayed now", popular: "Most played", city: "Most delayed city", closing: "Closing soon", avg: (m) => `${m} min average delay`, players: (n) => (n === 1 ? "1 bet" : `${n} bets`), ontime: "On time", open: "Open" },
-  card: { noLive: "No live data yet: it shows once the vehicle is on its way", late: "Late", onTime: "On time", per10: (w) => `10 → ${w}`, closes: "Closes", forecast: "forecast", live: "Live", yes: "Yes", no: "No", topOdds: "Top odds", hot: "Closing soon", over: (m) => `over ${m} min` },
+  card: { noLive: "No live data yet: it shows once the vehicle is on its way", late: "Late", onTime: "On time", closes: "Closes", forecast: "forecast", live: "Live", yes: "Yes", no: "No", topOdds: "Top odds", hot: "Closing soon" },
   alertNames: { yellow: "yellow", orange: "orange", red: "red" },
   nearby: { title: "Nearby bets", hint: "Challenges and matches around you, the closest and most played first.", radius: "Radius", none: "No bets in your area yet. Create one!", home: "Your town", homeHint: "Optional: unlocks bets near home, without sharing your exact position.", homeSet: "Set", homeClear: "Remove", homeSearch: "Search your town…", homeNone: "No town set", askLocate: "Use my location", statsTitle: "Area statistics", statsIntro: "Who picked what, by town and distance (only groups of at least 3 people).", towns: "By town", bands: "By distance", yes: "Yes", notEnough: "At least 3 people are needed to show percentages.", people: "people", total: "total", km: "km" },
   sportui: { dec: ".", totalPts: "Total points", totalGoals: "Total goals", handicap: "Handicap", ptsUnit: "points", goalsUnit: "goals", searchTeam: "Search a team", opp: { notWin: (t) => `${t} do not win`, noDraw: "No draw", atMost: (n) => `At most ${n} goals`, notBoth: "Not both teams score", concede: (t) => `${t} concede at least once`, no: "No" }, all: "All", allMarkets: "All markets", result: "Match result", double: "Double chance", goals: "Under / Over", over: "Over", under: "Under", goalNo: "Goal / No goal", goal: "Goal", noGoal: "No goal", clean: "Clean sheet", cleanHome: "Home", cleanAway: "Away", pickOne: "Pick what to bet on", needAccount: "You need an account to open a new market.", busy: "Opening…", noMatches: "No match for this search.", firstHalf: "First half", secondHalf: "Second half", cornersT: "Corners", cardsT: "Cards", redT: "Red card", halfGoal: "At least one goal", yes: "Yes", no: "No", simple: "Simple", advanced: "Advanced", players: "Players", pgL: "Scores", paL: "Assist", psL: "Subbed off", noLineup: "Lineups come out about an hour before kick-off: check back later.", wins: (t) => `${t} win`, unavailable: "This market is not available right now.", halves: "Halves", finalT: "Full time" },
@@ -105,8 +106,7 @@ const enUS: Messages = {
     voidReason: { cancelled: "The service was cancelled: bet refunded.", feed_down: "The data feed was down. We never settle on a guess.", no_observation: "No valid reading for this trip.", implausible_data: "The reading looked wrong." },
   },
   result: {
-    won: "Won", lost: "Lost", void: "Refunded", amountWon: (n) => `+${n}`, amountLost: (n) => `−${n}`, amountVoid: (n) => `${n}`,
-    subWon: "You called it.", subLost: "The data said otherwise this time.", subVoid: "The data wasn't reliable, so your stake came back in full.",
+    won: "Won", lost: "Lost", void: "Refunded",     subWon: "You called it.", subLost: "The data said otherwise this time.", subVoid: "The data wasn't reliable, so your stake came back in full.",
     fullMeasured: (l) => `The bus was: ${l}`,
     measured: (m, s) => (m > 0 ? `Measured delay: ${m} min ${s} s` : `Measured delay: ${s} s`), threshold: (m) => `Line: over ${m} min`, matchScore: (h, a) => `Final score: ${h}–${a}`, tickMeasured: (v) => `Measured value: ${v}`, trafficMeasured: (a, t) => `Average speed measured: ${a} km/h (threshold ${t})`, strikeOn: "Strike still on", strikeOff: "Strike revoked or moved", metricMeasured: (n, v) => `${n} measured: ${v}`, quakeMeasured: (c, m) => (c === 0 ? "No earthquakes in that window" : `${c} earthquake${c === 1 ? "" : "s"}, strongest ${m}`), rainMeasured: (mm) => `Measured rain: ${mm} mm`,
     stake: "Stake", odds: "Odds", share: "Share result", shareText: "My result on LateBet", close: "Close", more: (n) => `${n} more results to see`, saved: "Image saved",
@@ -177,7 +177,7 @@ const enUS: Messages = {
     saved: "Look updated",
     none: "None",
     level: (n) => `Level ${n}`,
-    xp: (a, b) => `${a} / ${b} XP`,
+    xp: (a, b) => `${fmtInt(a, "en-US")} / ${fmtInt(b, "en-US")} XP`,
     unlockAt: (n) => `Level ${n}`,
     dropOnly: "Found in chests and flash missions",
     next: (n, name) => `At level ${n}: ${name}`,

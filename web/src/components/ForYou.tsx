@@ -8,7 +8,7 @@ import { leisureTime } from "../lib/intent.ts";
 import { useIntent, type Arrival } from "../lib/useIntent.ts";
 
 type Pick = "yes" | "no";
-const timeOf = (epoch: number, locale: Locale) => new Date(epoch * 1000).toLocaleTimeString(locale === "ja" ? "ja-JP" : locale, { hour: "2-digit", minute: "2-digit" });
+const timeOf = (epoch: number, locale: Locale) => new Date(epoch * 1000).toLocaleTimeString(locale === "ja" ? "ja-JP" : locale, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 
 /**
  * One card with what the person most likely wants right now: the bus they are waiting for when they stand at a stop, or a match, the weather and a challenge

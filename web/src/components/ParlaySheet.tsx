@@ -10,6 +10,7 @@ import { JoinStep } from "./JoinStep.tsx";
 import { parlayStakeCap } from "../../../shared/wallet.ts";
 import { Sheet } from "./Sheet.tsx";
 import { StakeControl } from "./StakeControl.tsx";
+import { fmtMult } from "../lib/num.ts";
 
 export const slipOdds = (legs: SlipLeg[]) => Math.min(100, legs.reduce((a, l) => a * Number(l.pick === "yes" ? l.m.odds_yes : l.m.odds_no), 1));
 
@@ -53,7 +54,7 @@ export function ParlaySheet(p: {
           );
         })}
       </ul>
-      <div class="summary"><span>{m.slip.odds}</span><b class="num pop" key={odds.toFixed(2)} style="color:var(--c-pop)">{fmtOdds(odds, p.locale)}×</b></div>
+      <div class="summary"><span>{m.slip.odds}</span><b class="num pop" key={odds.toFixed(2)} style="color:var(--c-pop)">{fmtMult(odds, p.locale)}</b></div>
       {p.legs.length < 2 && <p class="note">{m.slip.need2}</p>}
       <StakeControl value={amount} onChange={setStake} cap={cap} balance={p.credits} odds={odds} boost={boost && p.boosts > 0} locale={p.locale} msg={m} />
       {p.boosts > 0 && <BoostRow on={boost} onToggle={setBoost} boosts={p.boosts} stake={amount} odds={odds} locale={p.locale} msg={m} />}

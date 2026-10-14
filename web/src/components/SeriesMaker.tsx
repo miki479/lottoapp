@@ -7,6 +7,7 @@ import { fmtOdds, type MarketRow } from "../lib/format.ts";
 import { episodesWindow, followedShows, searchShows, setFollowed, type EpisodeHit, type FollowedShow, type ShowHit } from "../lib/series.ts";
 import { INTL_TAG } from "../i18n/index.ts";
 import { Sheet } from "./Sheet.tsx";
+import { fmtDec } from "../lib/num.ts";
 
 interface Preview { reference: number; chance: number; odds_yes: number; odds_no: number }
 const code = async (error: unknown) => { try { return (await (error as { context?: Response })?.context?.json())?.error ?? "generic"; } catch { return "generic"; } };
@@ -81,8 +82,8 @@ export function SeriesMaker(p: { msg: Messages; locale: Locale; initial?: Follow
       </>}
       {ep && thr !== null && <div class="serating">
         <span class="detail">{m.threshold}</span>
-        <div class="stepper"><button class="iconbtn" aria-label="−0,1" onClick={() => setThr(Math.max(1, Math.round((thr - 0.1) * 10) / 10))}>−</button><b class="num">{thr.toFixed(1)}</b><button class="iconbtn" aria-label="+0,1" onClick={() => setThr(Math.min(10, Math.round((thr + 0.1) * 10) / 10))}>+</button></div>
-        {prev && <p class="hint">{m.priced(prev.reference.toFixed(1), Math.round(prev.chance * 100), fmtOdds(prev.odds_yes, p.locale), fmtOdds(prev.odds_no, p.locale))}</p>}
+        <div class="stepper"><button class="iconbtn" aria-label="−0,1" onClick={() => setThr(Math.max(1, Math.round((thr - 0.1) * 10) / 10))}>−</button><b class="num">{fmtDec(thr, 1, p.locale)}</b><button class="iconbtn" aria-label="+0,1" onClick={() => setThr(Math.min(10, Math.round((thr + 0.1) * 10) / 10))}>+</button></div>
+        {prev && <p class="hint">{m.priced(fmtDec(prev.reference, 1, p.locale), Math.round(prev.chance * 100), fmtOdds(prev.odds_yes, p.locale), fmtOdds(prev.odds_no, p.locale))}</p>}
       </div>}
       {err && <p class="formerr" role="alert">{err}</p>}
       <button class="btn primary wide" disabled={busy || !ep || !prev} aria-busy={busy} onClick={create}>{busy ? m.creating : m.create}</button>

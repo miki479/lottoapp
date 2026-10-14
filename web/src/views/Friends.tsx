@@ -10,6 +10,7 @@ import { countdown } from "../lib/format.ts";
 import { loadFriends, type FriendRow } from "../lib/friends.ts";
 import { PlayerTitle } from "../components/PlayerTitle.tsx";
 import { useLooks } from "../lib/looks.ts";
+import { fmtInt } from "../lib/num.ts";
 
 interface FeedRow { code: string; title: string; creator: string; stake: number; closes_at: string; judge_mode: string }
 interface Req { user_id: string; display_name: string | null }
@@ -60,7 +61,7 @@ export function Friends(p: { locale: Locale; msg: Messages; registered: boolean;
           {feed.map((c) => (
             <button key={c.code} class="card pressable stack" style="text-align:left" onClick={() => p.onOpen(c.code)}>
               <b>{c.title}</b>
-              <span class="detail">{f.by} {c.creator || f.anon} · {c.stake > 0 ? `${c.stake} ${f.credits}` : f.noStake} · {f.closesIn} {countdown(Date.parse(c.closes_at) - p.now)}</span>
+              <span class="detail">{f.by} {c.creator || f.anon} · {c.stake > 0 ? `${fmtInt(c.stake)} ${f.credits}` : f.noStake} · {f.closesIn} {countdown(Date.parse(c.closes_at) - p.now)}</span>
             </button>
           ))}
         </div>

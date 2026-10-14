@@ -29,6 +29,7 @@ import { offerText, type OfferUse } from "./PersonalOffer.tsx";
 import { OFFER_MIN_BASE_ODDS, offerOdds } from "../../../shared/offers.ts";
 import { Remind } from "./Remind.tsx";
 import { StopsBoard } from "./StopsBoard.tsx";
+import { fmtMult } from "../lib/num.ts";
 
 /** Bet slip for one event: pick, stake, then place it (guests do the "last step" sign-up right here when it is required). */
 /** Shown near the limit of 40 open bets (closed ones that wait for their result count too), so a refusal never comes as a surprise. */
@@ -123,7 +124,7 @@ export function BetSheet(p: {
         </div>
       )}
       {!offer && vicePct > 0 && pick === "yes" && <label class={`boosttoggle vicetoggle ${vice ? "on" : ""}`}><input type="checkbox" checked={vice} onChange={(e) => setVice((e.target as HTMLInputElement).checked)} /><Sparkles size={20} /><span><b>{p.msg.house.viceTitle}</b> · +{vicePct}%<small>{p.msg.house.viceBody(vicePct)}</small></span></label>}
-      <p class="oddsword">{fmtOdds(shownOf(pick), p.locale)}× · {oddsWord(shownOf(pick), p.locale)}</p>
+      <p class="oddsword">{fmtMult(shownOf(pick), p.locale)} · {oddsWord(shownOf(pick), p.locale)}</p>
       {(decided || nearly) && <p class="note warn" role="status">{p.msg.errors.odds_too_low}</p>}
       <StakeControl value={amount} onChange={setStake} cap={cap} balance={p.credits} odds={odds} boost={boost && p.boosts > 0} vice={vice && pick === "yes" ? vicePct : 0} fancy={exclusive} locale={p.locale} msg={p.msg} />
       {!offer && p.boosts > 0 && <BoostRow on={boost} onToggle={setBoost} boosts={p.boosts} stake={amount} odds={odds} locale={p.locale} msg={p.msg} />}

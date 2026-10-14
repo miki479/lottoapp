@@ -35,6 +35,7 @@ import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
 import { every } from "./lib/poll.ts";
 import { computeOdds } from "../../shared/odds.ts";
+import { fmtInt, fmtMult, fmtTimes, moneySigned, setNumLocale } from "./lib/num.ts";
 import { countdown, setDayUnit, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
@@ -98,6 +99,7 @@ export function App() {
   const now = useNow(5000);
   const [locale, setLocale] = useState<Locale>(() => (store.get("locale") as Locale) || pickLocale(navigator.languages ?? [navigator.language]));
   setDayUnit(locale === "it" ? "g" : locale === "ja" ? "日" : "d");
+  setNumLocale(locale);
   const [filter, setFilter] = useState<string>(() => store.get("filter") || "world");
   const [cat, setCat] = useState<CatId>("bus");
   const [catChosen, setCatChosen] = useState(false);
@@ -413,7 +415,7 @@ export function App() {
   const top: TopItem[] = useMemo(() => {
     const items: TopItem[] = [];
     const fl = open.filter((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now && (filter === "world" || m.city_id === filter))[0];
-    if (fl) items.push({ mid: fl.id, id: "flash", icon: Zap, label: superText(fl, msg) ? msg.sup.top : msg.streak.flash, big: <>×{fl.flash_multiplier}<small class="num">{countdown(Date.parse(fl.flash_until!) - now)}</small></>, sub: superText(fl, msg) ?? question(fl, msg, locale, cityName(cityOf(fl.city_id), locale), cityOf(fl.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: fl, pick: "yes" }) });
+    if (fl) items.push({ mid: fl.id, id: "flash", icon: Zap, label: superText(fl, msg) ? msg.sup.top : msg.streak.flash, big: <>{fmtTimes(Number(fl.flash_multiplier), locale)}<small class="num">{countdown(Date.parse(fl.flash_until!) - now)}</small></>, sub: superText(fl, msg) ?? question(fl, msg, locale, cityName(cityOf(fl.city_id), locale), cityOf(fl.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: fl, pick: "yes" }) });
     const facts = inFilter.filter((m) => live[m.id] && !live[m.id]!.is_forecast && live[m.id]!.delay_sec >= 60).sort((a, b) => live[b.id]!.delay_sec - live[a.id]!.delay_sec)[0];
     if (facts) items.push({ mid: facts.id, id: "late", icon: TrendingUp, label: msg.top.late, big: null, extra: <DelayMeter sec={live[facts.id]!.delay_sec} prev={live[facts.id]!.prev_delay_sec} limitSec={Number(facts.params.thresholdSec ?? 180)} msg={msg} big />, sub: `${facts.params.routeName ?? ""} → ${facts.params.headsign ?? ""}`, onClick: () => setSheet({ m: facts, pick: "yes" }) });
     const pop = popular.map((p) => ({ p, m: inFilter.find((m) => m.id === p.market_id) })).find((x) => x.m);
@@ -437,25 +439,25 @@ export function App() {
     const three = open1("sport", 72).filter((m) => ["home_win", "draw", "away_win"].includes(String(m.params.bet)));
     const prior = (m: MarketRow, k: string) => Number((m.params.priors as Record<string, number> | undefined)?.[k]);
     const dr = daily(three.filter((m) => m.params.bet === "draw").sort((x, y) => Number(x.odds_yes) - Number(y.odds_yes)));
-    feat("sport-draw", Trophy, msg.top.draw, dr, dr ? <>×{fmtOdds(Number(dr.odds_yes), locale)}</> : null);
+    feat("sport-draw", Trophy, msg.top.draw, dr, dr ? <>{fmtMult(Number(dr.odds_yes), locale)}</> : null);
     const gl = three.filter((m) => m.params.bet === "draw" && Number.isFinite(prior(m, "btts"))).sort((x, y) => prior(y, "btts") - prior(x, "btts"))[0];
-    if (gl) { const o = computeOdds(Math.min(0.9, Math.max(0.1, prior(gl, "btts")))).yes; items.push({ id: "sport-goal", icon: Trophy, label: msg.top.goal, big: <>×{fmtOdds(o, locale)}</>, sub: question({ ...gl, params: { ...gl.params, bet: "btts" } } as MarketRow, msg, locale, "", "UTC", new Date(now)), onClick: () => void openMatchBet(gl, "btts") }); }
+    if (gl) { const o = computeOdds(Math.min(0.9, Math.max(0.1, prior(gl, "btts")))).yes; items.push({ id: "sport-goal", icon: Trophy, label: msg.top.goal, big: <>{fmtMult(o, locale)}</>, sub: question({ ...gl, params: { ...gl.params, bet: "btts" } } as MarketRow, msg, locale, "", "UTC", new Date(now)), onClick: () => void openMatchBet(gl, "btts") }); }
     const up = daily(three.filter((m) => m.params.bet === "away_win" && Number(m.odds_yes) >= 4).sort((x, y) => Number(y.odds_yes) - Number(x.odds_yes)));
-    feat("sport-upset", Trophy, msg.top.upset, up, up ? <>×{fmtOdds(Number(up.odds_yes), locale)}</> : null);
+    feat("sport-upset", Trophy, msg.top.upset, up, up ? <>{fmtMult(Number(up.odds_yes), locale)}</> : null);
     const toss = daily(open1("finance", 24).sort((x, y) => Math.abs(Number(x.odds_yes) - Number(x.odds_no)) - Math.abs(Number(y.odds_yes) - Number(y.odds_no))));
     feat("coin", Bitcoin, msg.top.coin, toss, toss ? <>{fmtOdds(Number(toss.odds_yes), locale)}<small> / {fmtOdds(Number(toss.odds_no), locale)}</small></> : null);
     const spot = open1("culture", 48).sort((x, y) => Date.parse(x.closes_at) - Date.parse(y.closes_at))[0];
     feat("culture", Clapperboard, msg.top.spotlight, spot, <span class="num">{spot ? countdown(Date.parse(spot.closes_at) - now) : ""}</span>);
     const wild = daily(open1("nature", 36).filter((m) => Number(m.odds_yes) < 25).sort((x, y) => Number(y.odds_yes) - Number(x.odds_yes)));
-    feat("wild", Activity, msg.top.wild, wild, wild ? <>×{fmtOdds(Number(wild.odds_yes), locale)}</> : null);
+    feat("wild", Activity, msg.top.wild, wild, wild ? <>{fmtMult(Number(wild.odds_yes), locale)}</> : null);
     const sky = daily(open1("weather", 24).sort((x, y) => Number(y.odds_yes) - Number(x.odds_yes)));
-    feat("sky", CloudLightning, msg.top.sky, sky, sky ? <>×{fmtOdds(Number(sky.odds_yes), locale)}</> : null);
+    feat("sky", CloudLightning, msg.top.sky, sky, sky ? <>{fmtMult(Number(sky.odds_yes), locale)}</> : null);
     const hotId = Object.entries(friendBets).sort((x, y) => y[1] - x[1]).find(([id]) => inFilter.some((m) => m.id === id));
     const hotM = hotId && inFilter.find((m) => m.id === hotId[0]);
     if (hotM && hotId) items.unshift({ mid: hotM.id, id: "friends", icon: Users, label: msg.frd.hot, big: <>{hotId[1]}<small>{msg.frd.friendsOn(hotId[1]).replace(/^\d+\s*/, "")}</small></>, sub: sub(hotM), onClick: () => setSheet({ m: hotM, pick: "yes" }) });
     const best = open1("", 48);
     const bestM = inFilter.filter((m) => Date.parse(m.closes_at) > now && Date.parse(m.closes_at) - now < 48 * 3600_000 && !(m.params as { testOnly?: boolean }).testOnly && !m.params.ladderOf && Number(m.odds_yes) < 20).sort((x, y) => Number(y.odds_yes) - Number(x.odds_yes))[0];
-    void best; feat("best", TrendingUp, msg.top.best, bestM, bestM ? <>×{fmtOdds(Number(bestM.odds_yes), locale)}</> : null);
+    void best; feat("best", TrendingUp, msg.top.best, bestM, bestM ? <>{fmtMult(Number(bestM.odds_yes), locale)}</> : null);
     const soon = inFilter[0];
     if (soon) items.push({ mid: soon.id, id: "soon", icon: Clock, label: msg.top.closing, big: <span class="num">{countdown(Date.parse(soon.closes_at) - now)}</span>, sub: question(soon, msg, locale, cityName(cityOf(soon.city_id), locale), cityOf(soon.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: soon, pick: "no" }) });
     // Not everything at once: what matters now stays (friends, trend, flash, the most delayed), the rest rotates every few hours, five cards at most.
@@ -475,7 +477,7 @@ export function App() {
     for (const a of activity) {
       const c = cityOf(a.city_id), isDelay = a.market_kind === "bus_delay_gt" || a.market_kind === "train_delay_gt", what = isDelay && a.label ? `${a.market_kind === "bus_delay_gt" ? msg.tabs.bus : msg.tabs.train} ${a.label} · ${cityName(c, locale)}` : a.label || cityName(c, locale);
       const verb = msg.ticker[a.kind];
-      out.push({ id: `a${a.at}${a.who}${a.amount}`, node: <><b>{a.who ?? msg.ticker.anon}</b> {verb} <i class={`amt ${a.kind}`}>{a.kind === "won" ? "+" : a.kind === "lost" ? "−" : ""}{money(a.amount, locale)}</i> {msg.ticker.on} {what}</> });
+      out.push({ id: `a${a.at}${a.who}${a.amount}`, node: <><b>{a.who ?? msg.ticker.anon}</b> {verb} <i class={`amt ${a.kind}`}>{a.kind === "won" ? moneySigned(a.amount, locale) : a.kind === "lost" ? moneySigned(-a.amount, locale) : money(a.amount, locale)}</i> {msg.ticker.on} {what}</> });
     }
     for (const r of results) {
       const c = cityOf(r.city_id), route = String(r.params.routeName ?? "");
@@ -564,8 +566,8 @@ export function App() {
       const [pr, tr] = await Promise.all([loadProgress(), loadTrophies()]);
       const won = TROPHY_IDS.filter((id) => tr.has(id) && !before.trophies.has(id));
       if (won.length) { setFresh(new Set(won)); flash(`${msg.profile.trophy[won[0]!].name}`); }
-      else if (reached) { flash(msg.streak.milestone(pf!.streak, `+${money(reached, locale)}`)); haptic.success(); }
-      else if (pr?.bonus_claimed && !before.bonus) flash(`${msg.home.missionsDone} · +${money(RING_BONUS, locale)}`);
+      else if (reached) { flash(msg.streak.milestone(pf!.streak, moneySigned(reached, locale))); haptic.success(); }
+      else if (pr?.bonus_claimed && !before.bonus) flash(`${msg.home.missionsDone} · ${moneySigned(RING_BONUS, locale)}`);
       if (pushAvailable() && !pushAsked() && !pushDenied()) setTimeout(() => setAskPush(true), 1500);
     })();
     return null;
@@ -632,14 +634,14 @@ export function App() {
   const claimQuest = async (id: string) => {
     const { data, error } = await sb.rpc("claim_quest", { p_id: id });
     if (error) { flash(msg.errors.generic!, "err"); return; }
-    if (+data > 0) { flash(`+${money(+data, locale)}`); haptic.success(); }
+    if (+data > 0) { flash(moneySigned(+data, locale)); haptic.success(); }
     await Promise.all([loadProfile(), loadQuests()]);
   };
   const goQuest = (id: string) => { setRewardsOpen(false); if (id === "o_nick") { if (registered) setNick(true); else setAuth(true); } else if (id === "o_push") { go("profile"); turnPush(true); } };
   const claimMission = async (id: string) => {
     const { data, error } = await sb.rpc("claim_mission", { p_id: id });
     if (error) { flash(msg.errors.generic!, "err"); return; }
-    if (+data > 0) { flash(msg.dm.got(`+${money(+data, locale)}`)); haptic.success(); }
+    if (+data > 0) { flash(msg.dm.got(moneySigned(+data, locale))); haptic.success(); }
     await Promise.all([loadProfile(), loadQuests()]);
   };
   const claimFlash = async () => {
@@ -647,7 +649,7 @@ export function App() {
     if (error) { flash(msg.errors.generic!, "err"); return; }
     const r = data as { credits: number; boosts: number; decoration?: string | null };
     if (r.decoration) setTimeout(() => { flash(msg.look.newDrop(msg.look.deco[r.decoration!] ?? r.decoration!)); loadLook(); }, 2600);
-    if (r.credits > 0) { flash(msg.dm.flash.got(`+${money(r.credits, locale)}`, r.boosts)); haptic.success(); }
+    if (r.credits > 0) { flash(msg.dm.flash.got(moneySigned(r.credits, locale), r.boosts)); haptic.success(); }
     await Promise.all([loadProfile(), loadQuests()]);
   };
   const claimChest = async () => {
@@ -655,7 +657,7 @@ export function App() {
     if (error) { flash(msg.errors.generic!, "err"); return; }
     const r = data as { credits: number; boosts: number; decoration?: string | null };
     if (r.decoration) setTimeout(() => { flash(msg.look.newDrop(msg.look.deco[r.decoration!] ?? r.decoration!)); loadLook(); }, 2600);
-    if (r.credits > 0) { flash(msg.dm.chestOpened(`+${money(r.credits, locale)}`, r.boosts)); haptic.success(); }
+    if (r.credits > 0) { flash(msg.dm.chestOpened(moneySigned(r.credits, locale), r.boosts)); haptic.success(); }
     await Promise.all([loadProfile(), loadQuests()]);
   };
   const dailyReady = useDailyReady(profile);
@@ -710,7 +712,7 @@ export function App() {
     <div class={`shell${ready ? "" : " booting"}`} aria-busy={!ready}>
       <Sidebar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} rankBadge={reqCount} social={social} />
       <div>
-        <Header satire={msg.home.satire} claimable={claimable} onWallet={() => setRewardsOpen(true)} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} wallet={profile ? new Intl.NumberFormat(INTL_TAG[locale]).format(Math.round(wallet)) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
+        <Header satire={msg.home.satire} claimable={claimable} onWallet={() => setRewardsOpen(true)} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} wallet={profile ? fmtInt(wallet, locale) : "···"} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
         <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
         <Ticker items={tickerItems} />
         <main class="content">

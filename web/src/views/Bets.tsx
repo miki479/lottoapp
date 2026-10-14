@@ -12,6 +12,7 @@ import { countdown, fmtOdds, isYesNo, money, potentialWin, question } from "../l
 import type { Challenge } from "../components/ChallengeSheet.tsx";
 import type { MyBet, ParlayRow } from "../lib/types.ts";
 import type { MarketRow } from "../lib/format.ts";
+import { moneySigned } from "../lib/num.ts";
 
 export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlays, bets, msg, locale, now, onOpen, onHome }: { canMore: boolean; onMore: () => void; invites: (Challenge & { invited_by: string })[]; challenges: Challenge[]; onChallenge: (code: string) => void; parlays: ParlayRow[]; bets: MyBet[]; msg: Messages; locale: Locale; now: number; onOpen: (b: MyBet) => void; onHome: () => void }) {
   const [tab, setTab] = useState<"open" | "settled">("open");
@@ -50,7 +51,7 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
               <div class="row1">
                 <span class={`pill ${st === "won" ? "won" : st === "lost" ? "lost" : ""}`}><Icon size={14} strokeWidth={2.6} />{label}</span>
                 <span class="detail">{msg.slip.title} · {msg.slip.legs(x.parlay_legs.length)}</span>
-                {st === "won" && <span class="amt won num">+{money(x.payout - x.stake, locale)}</span>}
+                {st === "won" && <span class="amt won num">{moneySigned(x.payout - x.stake, locale)}</span>}
                 {st === "lost" && <span class="amt lost num">−{money(x.stake, locale)}</span>}
                 {st === "void" && <span class="amt num">{money(x.stake, locale)}</span>}
               </div>
@@ -76,7 +77,7 @@ export function Bets({ canMore, onMore, invites, challenges, onChallenge, parlay
             <button class="card bet pressable" style={`--i:${Math.min(i, 10)}; text-align:left`} onClick={() => (st !== "open" ? onOpen(b) : undefined)} disabled={st === "open"}>
               <div class="row1">
                 <span class={`pill ${st === "won" ? "won" : st === "lost" ? "lost" : ""}`}><Icon size={14} strokeWidth={2.6} />{label}</span>
-                {st === "won" && <span class="amt won num">+{money(b.payout - b.stake, locale)}</span>}
+                {st === "won" && <span class="amt won num">{moneySigned(b.payout - b.stake, locale)}</span>}
                 {st === "lost" && <span class="amt lost num">−{money(b.stake, locale)}</span>}
                 {st === "void" && <span class="amt num">{money(b.stake, locale)}</span>}
                 {st === "open" && <span class="detail">{Date.parse(m.target_at) > now ? <>{msg.bets.settles} · {countdown(Date.parse(m.target_at) - now)}</> : msg.bets.waiting[(Math.floor(now / 6000) + b.id.charCodeAt(0)) % msg.bets.waiting.length]}</span>}

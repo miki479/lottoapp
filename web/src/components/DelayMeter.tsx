@@ -1,6 +1,7 @@
 import { Minus, TrendingDown, TrendingUp } from "lucide-preact";
 import type { Messages } from "../i18n/index.ts";
 import { useCountUp } from "../lib/anim.ts";
+import { fmtSigned, minUnit } from "../lib/num.ts";
 
 const CELLS = 12;
 /** Severity colour: violet -> magenta -> amber. Deliberately not red/green, those mean lost/won. */
@@ -21,7 +22,7 @@ export function DelayMeter(p: { sec: number; prev: number | null; limitSec: numb
   return (
     <div class={`meter ${p.big ? "big" : ""}`} aria-label={`${shown} min ${msg.meter.late}`}>
       <div class="mtop">
-        <b class="mnum num" style={`color:hsl(${hue(ratio)} 95% 66%)`}>{sec < 0 ? "−" : "+"}{Math.abs(shown)}<small> min</small></b>
+        <b class="mnum num" style={`color:hsl(${hue(ratio)} 95% 66%)`}>{fmtSigned(sec < 0 ? -Math.abs(shown) : Math.abs(shown))}<small> {minUnit()}</small></b>
         <span class="mtrend"><Trend size={14} />{p.prev === null ? (p.forecast ? msg.meter.forecast : msg.meter.late) : text}</span>
       </div>
       <div class="cells" aria-hidden="true">

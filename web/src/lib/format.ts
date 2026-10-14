@@ -1,4 +1,8 @@
 import { INTL_TAG, type Locale, type Messages } from "../i18n/index.ts";
+import { ALWAYS, currencySymbol, fmtDec, fmtInt, fmtNum, fmtOdds, money, MINUS, numLocale } from "./num.ts";
+
+// every figure on screen is written by lib/num.ts; these stay importable from here
+export { currencySymbol, fmtOdds, money };
 
 export interface MarketRow {
   id: string;
@@ -63,15 +67,15 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
   if (m.kind === "match_bet") return msg.question.match({ bet: m.params.bet as "home_win", home: String(m.params.home), away: String(m.params.away), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
   if (m.kind === "tick_gt" && /^tv:\d+$/.test(String(m.params.series))) {
     const ep = `S${String(m.params.season ?? 0).padStart(2, "0")}E${String(m.params.number ?? 0).padStart(2, "0")}`;
-    return msg.question.episode({ show: String(m.params.label ?? ""), ep, value: Number(m.params.threshold).toFixed(1).replace(".", locale === "it" ? "," : "."), date: new Intl.DateTimeFormat(INTL_TAG[locale], { weekday: "short", day: "numeric", month: "short" }).format(new Date(m.target_at)) });
+    return msg.question.episode({ show: String(m.params.label ?? ""), ep, value: fmtDec(Number(m.params.threshold), 1, locale), date: new Intl.DateTimeFormat(INTL_TAG[locale], { weekday: "short", day: "numeric", month: "short" }).format(new Date(m.target_at)) });
   }
   if (m.kind === "tick_gt" && String(m.params.series).startsWith("tm:")) {
     const dm = (iso: unknown) => new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(String(iso)));
-    return msg.question.concerts({ place: String(m.params.label ?? "").replace(/^Concerti /, ""), from: dm(m.params.from), to: dm(m.params.to), value: String(Math.round(Number(m.params.threshold))), time: formatWhen(m.target_at, locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
+    return msg.question.concerts({ place: String(m.params.label ?? "").replace(/^Concerti /, ""), from: dm(m.params.from), to: dm(m.params.to), value: fmtDec(Math.round(Number(m.params.threshold)), 0, locale), time: formatWhen(m.target_at, locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
   }
   if (m.kind === "tick_gt") {
     const series = String(m.params.series), at = m.target_at, thr = Number(m.params.threshold);
-    const nf = new Intl.NumberFormat(INTL_TAG[locale], { maximumFractionDigits: series === "kp" ? 0 : 0 });
+    const nf = new Intl.NumberFormat(INTL_TAG[locale], { maximumFractionDigits: 0, useGrouping: ALWAYS });
     const own = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (series.startsWith("alert:")) return msg.question.tick({ kind: "alert", label: String(m.params.label), value: msg.alertNames[String(m.params.note) as "yellow"] ?? String(m.params.note), time: "", from: "", to: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(new Date(Date.parse(at) - 3600_000)) });
     if (series.startsWith("storm:")) return msg.question.tick({ kind: "storm", label: String(m.params.label), value: `${thr} kt${m.params.note ? ` (${m.params.note})` : ""}`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
@@ -80,7 +84,7 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     if (series.startsWith("steam:")) return msg.question.tick({ kind: "players", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series === "kp") return msg.question.tick({ kind: "kp", label: "Kp", value: String(thr), time: "", from: formatWhen(new Date(Date.parse(at) - 3 * 3600_000).toISOString(), locale, own, now), to: formatWhen(at, locale, own, now), day: "" });
     if (series.startsWith("wiki:")) return msg.question.tick({ kind: "wiki", label: String(m.params.label), value: nf.format(thr), time: "", from: "", to: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3600_000)) });
-    const dg = typeof m.params.digits === "number" ? m.params.digits : 0, nd = new Intl.NumberFormat(INTL_TAG[locale], { minimumFractionDigits: dg, maximumFractionDigits: dg }), lab = msg.cm[String(m.params.label)] ?? String(m.params.label);
+    const dg = typeof m.params.digits === "number" ? m.params.digits : 0, nd = new Intl.NumberFormat(INTL_TAG[locale], { minimumFractionDigits: dg, maximumFractionDigits: dg, useGrouping: ALWAYS }), lab = msg.cm[String(m.params.label)] ?? String(m.params.label);
     const day = new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3600_000));
     // Italian puts the currency after the number ("4.200 $"); English and Japanese put it in front ("$4,200")
     const cur = (sym: string) => (locale === "it" ? `${nd.format(thr)} ${sym}` : `${sym}${nd.format(thr)}`);
@@ -102,7 +106,7 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     const regionKey = m.params.region as string | undefined;
     const tz = regionKey ? String(m.params.tz ?? timeZone) : Intl.DateTimeFormat().resolvedOptions().timeZone;
     const circle = m.params.circle as number[] | undefined;
-    return msg.question.quake({ mag: Number(m.params.minMag).toFixed(1), from: formatWhen(m.closes_at, locale, tz, now), to: formatWhen(m.target_at, locale, tz, now), region: regionKey === "custom" ? `${String(m.params.place)} (${circle?.[2] ?? ""} km)` : regionKey ? msg.wx.regions[regionKey] ?? regionKey : undefined });
+    return msg.question.quake({ mag: fmtDec(Number(m.params.minMag), 1, locale), from: formatWhen(m.closes_at, locale, tz, now), to: formatWhen(m.target_at, locale, tz, now), region: regionKey === "custom" ? `${String(m.params.place)} (${circle?.[2] ?? ""} km)` : regionKey ? msg.wx.regions[regionKey] ?? regionKey : undefined });
   }
   const p = m.params;
   const q = {
@@ -115,8 +119,16 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
   return m.kind === "train_delay_gt" ? msg.question.train(q) : msg.question.bus(q);
 }
 
+/** A text cut to about `max` characters at the end of a whole word, with an ellipsis only when something was left out. */
+export function clip(text: string, max: number): string {
+  const t = text.trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max + 1), at = cut.lastIndexOf(" ");
+  return `${(at > max * 0.5 ? cut.slice(0, at) : t.slice(0, max)).replace(/[\s,;:.\-–—]+$/, "")}\u2026`;
+}
+
 /** A line like 226.5 written with the locale's decimal sign. */
-export const fmtLine = (n: number, locale: Locale) => String(n).replace(".", locale === "it" ? "," : ".");
+export const fmtLine = (n: number, locale: Locale) => fmtNum(n, locale);
 
 /** Whole days from now to an instant (0 on the day itself). */
 export const daysUntil = (ms: number, now = Date.now()) => Math.max(0, Math.ceil((ms - now) / 86_400_000));
@@ -150,21 +162,24 @@ export function seasonDaysLeft(now = new Date()): number {
   return Math.max(1, Math.ceil((end - now.getTime()) / 86400000));
 }
 
-/** "3,07" in Italian, "3.07" in English. */
-export const fmtOdds = (odds: number, locale: Locale) => new Intl.NumberFormat(INTL_TAG[locale], { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(odds);
-
-/** Play money is shown with the currency of the audience ($ / € / £). It is fake: the disclaimer says so everywhere. */
-const CURRENCY: Record<Locale, string> = { it: "EUR", "en-US": "USD", "en-GB": "GBP", ja: "JPY" };
-export function currencySymbol(locale: Locale): string {
-  return new Intl.NumberFormat(INTL_TAG[locale], { style: "currency", currency: CURRENCY[locale], currencyDisplay: "narrowSymbol" }).formatToParts(0).find((p) => p.type === "currency")?.value ?? "";
-}
-export function money(n: number, locale: Locale): string {
-  return new Intl.NumberFormat(INTL_TAG[locale], { style: "currency", currency: CURRENCY[locale], currencyDisplay: "narrowSymbol", maximumFractionDigits: 0 }).format(n);
+/** A reading of a tick series written with its unit, the way the questions write their lines (prices with the currency, physical readings with their unit, counts plain). */
+export function tickValueText(series: string, v: number, digits: number, locale: Locale = numLocale()): string {
+  const nd = (x: number) => fmtDec(x, digits, locale), cur = (sym: string) => (locale === "it" ? `${nd(v)} ${sym}` : `${sym}${nd(v)}`);
+  if (series === "kp") return fmtDec(v, 1, locale);
+  if (series.startsWith("storm:")) return `${fmtInt(v, locale)} kt`;
+  if (/^(lastfm|bikes|steam|wiki|tv|tm|alert):/.test(series)) return fmtInt(v, locale);
+  if (series.startsWith("fuel:")) return cur("€");
+  if (series.startsWith("fx:") || series === "feargreed" || series === "nws:us") return nd(v);
+  if (series === "carbon:gb") return `${nd(v)} g/kWh`;
+  if (series === "power:it") return `${nd(v)} €/MWh`;
+  if (series.startsWith("tide:")) return `${nd(v)} m`;
+  if (series.startsWith("river:")) return `${nd(v)} cm`;
+  return cur("$");
 }
 
 /** "+€40" / "−€10" / "€10" for the outcome screen, card and list. */
 export function resultAmount(st: "won" | "lost" | "void", stake: number, payout: number, locale: Locale): string {
-  return st === "won" ? `+${money(payout - stake, locale)}` : st === "lost" ? `−${money(stake, locale)}` : money(stake, locale);
+  return st === "won" ? `+${money(payout - stake, locale)}` : st === "lost" ? `${MINUS}${money(stake, locale)}` : money(stake, locale);
 }
 
 /** Delay questions have a "late / on time" answer; everything else (rain, temperature, quakes…) is a plain yes / no. */

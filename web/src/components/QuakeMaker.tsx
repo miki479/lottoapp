@@ -8,6 +8,7 @@ import type { MarketRow } from "../lib/format.ts";
 import { localDayStart } from "../../../shared/time.ts";
 import { Flag } from "./Flag.tsx";
 import { Sheet } from "./Sheet.tsx";
+import { fmtDec } from "../lib/num.ts";
 
 const RADII = [100, 300, 1000], MAGS = [4, 4.5, 5, 5.5, 6, 7], LENGTHS = [1, 3, 6, 12, 24];
 
@@ -56,7 +57,7 @@ export function QuakeMaker(p: { msg: Messages; locale: Locale; onClose: () => vo
           </>}
       <div class="qmgrid">
         {sel(m.radius, radius, RADII, m.km, setRadius)}
-        {sel(m.mag, mag, MAGS, (n) => `M${n.toFixed(1)}+`, setMag)}
+        {sel(m.mag, mag, MAGS, (n) => `M${fmtDec(n, 1, p.locale)}+`, setMag)}
         {sel(m.day, day, [0, 1, 2, 3], (n) => (n === 0 ? m.today : n === 1 ? m.tomorrow : `+${n}`), setDay)}
         {sel(m.hour, hour, Array.from({ length: 24 }, (_, i) => i), (n) => `${String(n).padStart(2, "0")}:00`, setHour)}
         {sel(m.length, len, LENGTHS, m.hours, setLen)}

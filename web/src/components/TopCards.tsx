@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-preact";
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef } from "preact/hooks";
+import { clip } from "../lib/format.ts";
 
 export interface TopItem { cls?: string; mid?: string; id: string; icon: LucideIcon; label: string; big: ComponentChildren; sub: string; extra?: ComponentChildren; onClick: () => void }
 
@@ -48,7 +49,7 @@ export function TopCards({ items, lead }: { items: TopItem[]; lead?: ComponentCh
             <span class="head"><Icon size={16} /><span class="detail">{it.label}</span></span>
             <span class="big">{it.big}</span>
             {it.extra}
-            <span class="sub">{it.sub}</span>
+            <span class="sub">{clip(it.sub, 96)}</span>
           </button>
         );
       })}

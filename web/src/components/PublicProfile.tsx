@@ -9,6 +9,7 @@ import { Trophy3D } from "./looks/Trophy3D.tsx";
 import { Look } from "./looks/Look.tsx";
 import { PlayerTitle } from "./PlayerTitle.tsx";
 import { Sheet } from "./Sheet.tsx";
+import { moneySigned } from "../lib/num.ts";
 
 /** What another player shows: level, streak, biggest win, trophies. Only what makes you want to catch up: never losses. */
 export function PublicProfile({ id, msg, locale, onClose, onToast }: { id: string; msg: Messages; locale: Locale; onClose: () => void; onToast: (s: string) => void }) {
@@ -38,7 +39,7 @@ export function PublicProfile({ id, msg, locale, onClose, onToast }: { id: strin
           <div class="lkprev"><Look avatar={d.avatar} decoration={d.decoration} size={132} /><b style="font-size:20px">{d.name || msg.frd.anon}</b><PlayerTitle id={d.title} locale={locale} /><span class="hint">{t.level(d.level)}</span></div>
           <div class="pstats">
             <div class="card"><Flame size={18} /><b class="num">{d.best_streak}</b><small>{t.streak}</small></div>
-            <div class="card"><b class="num">+{money(d.best_win, locale)}</b><small>{t.bestWin}</small></div>
+            <div class="card"><b class="num">{moneySigned(d.best_win, locale)}</b><small>{t.bestWin}</small></div>
             <div class="card"><b class="num">{d.month_wins}</b><small>{t.monthWins}</small></div>
             {d.balance !== null && <div class="card"><b class="num">{money(d.balance, locale)}</b><small>{t.balanceLabel}</small></div>}
           </div>

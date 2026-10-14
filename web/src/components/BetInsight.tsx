@@ -4,6 +4,7 @@ import type { Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 import { every } from "../lib/poll.ts";
 import type { MarketRow } from "../lib/format.ts";
+import { fmtMin } from "../lib/num.ts";
 
 interface Pt { observed_at: string; delay_sec: number; is_forecast: boolean }
 interface Game { kickoff: string; home: string; away: string; hg: number; ag: number }
@@ -28,7 +29,7 @@ function DelayInsight({ m, pick, msg, now }: { m: M; pick: "yes" | "no"; msg: Me
   const winning = (pick === "yes") === over;
   return (
     <div class="insight">
-      <div class="insrow"><span class="detail">{t.delayNow}</span><b class={`num ${winning ? "pos" : "neg"}`}>{cur > 0 ? "+" : ""}{cur} min</b></div>
+      <div class="insrow"><span class="detail">{t.delayNow}</span><b class={`num ${winning ? "pos" : "neg"}`}>{fmtMin(cur, undefined, true)}</b></div>
       <svg viewBox={`0 0 ${W} ${H}`} class="inschart" role="img" aria-label={t.chartLabel}>
         <line x1={P} x2={W - P} y1={Y(lineMin)} y2={Y(lineMin)} class="insline" />
         <text x={W - P} y={Y(lineMin) - 3} text-anchor="end" class="inslabel">{t.line(Math.round(lineMin))}</text>

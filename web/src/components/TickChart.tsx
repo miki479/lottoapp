@@ -4,6 +4,7 @@ import type { Locale } from "../i18n/index.ts";
 import { INTL_TAG } from "../i18n/index.ts";
 import type { MarketRow } from "../lib/format.ts";
 import { sb } from "../lib/api.ts";
+import { fmtPct } from "../lib/num.ts";
 
 interface Pt { at: number; v: number }
 
@@ -51,7 +52,7 @@ export function TickChart({ m, msg, locale }: { m: MarketRow; msg: Messages; loc
       <div class="tcstats">
         <span><em>{msg.chart.min}</em><b class="num">{fmt(Math.min(...all))}</b></span>
         <span><em>{msg.chart.max}</em><b class="num">{fmt(hi)}</b></span>
-        {kind === "price" && <span><em>{msg.chart.change}</em><b class={`num ${change >= 0 ? "up" : "down"}`}>{change >= 0 ? "+" : ""}{change.toFixed(1)}%</b></span>}
+        {kind === "price" && <span><em>{msg.chart.change}</em><b class={`num ${change >= 0 ? "up" : "down"}`}>{fmtPct(change / 100, locale, { digits: 1, signed: true })}</b></span>}
         <span><em>{msg.chart.line}</em><b class="num">{fmt(thr)}</b></span>
         <span><em>{msg.chart.above}</em><b class="num">{above}/{pts.length}</b></span>
       </div>

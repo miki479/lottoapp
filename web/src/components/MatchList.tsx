@@ -11,6 +11,7 @@ import { sb } from "../lib/api.ts";
 import { Sheet } from "./Sheet.tsx";
 import { Crest, MatchVs, twoSides } from "./MatchVs.tsx";
 import { Users, X } from "lucide-preact";
+import { fmtNum } from "../lib/num.ts";
 
 interface LinePlayer { id: number; name: string; pos: string; side: "home" | "away"; pg: { yes: number; no: number } | null; pa: { yes: number; no: number } | null; ps: { yes: number; no: number } | null }
 /** Lineups already seen (an hour before a match they do not change): asked once, not at every tap. */
@@ -74,7 +75,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
     return () => { live = false; };
   }, [tab, open?.eventId]);
   const hasDetails = !!open && p.details && DETAIL_LEAGUES.includes(open.league);
-  const line = (l: string) => (p.locale === "it" ? l.replace("_", ",") : l.replace("_", "."));
+  const line = (l: string) => fmtNum(Number(l.replace("_", ".")), p.locale, 1);
   const leagues = useMemo(() => [...new Set(p.matches.map((m) => m.league))], [p.matches]);
   const [league, setLeague] = useState(""), [q, setQ] = useState("");
   const when = (e: number) => new Intl.DateTimeFormat(INTL_TAG[p.locale], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(e * 1000));
@@ -156,7 +157,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
             <OddsBtn label="2" odds={oddsOf(open, "away_win", "yes")} locale={p.locale} busy={busy} onClick={() => go(open, "away_win", "yes")} />
           </>)}
           {group(u.double, (["dc_1x", "dc_x2", "dc_12"] as const).map((b) => <OddsBtn key={b} label={b === "dc_1x" ? "1X" : b === "dc_x2" ? "X2" : "12"} odds={oddsOf(open, b, "yes")} locale={p.locale} busy={busy} onClick={() => go(open, b, "yes")} />))}
-          {([["over_1_5", "1,5"], ["over_2_5", "2,5"], ["over_3_5", "3,5"]] as const).map(([b, line]) => group(`${u.goals} ${p.locale === "it" ? line : line.replace(",", ".")}`, <>
+          {([["over_1_5", "1,5"], ["over_2_5", "2,5"], ["over_3_5", "3,5"]] as const).map(([b, line]) => group(`${u.goals} ${fmtNum(Number(line.replace(",", ".")), p.locale, 1)}`, <>
             <OddsBtn label={u.over} odds={oddsOf(open, b, "yes")} locale={p.locale} busy={busy} onClick={() => go(open, b, "yes")} />
             <OddsBtn label={u.under} odds={oddsOf(open, b, "no")} locale={p.locale} busy={busy} onClick={() => go(open, b, "no")} />
           </>))}

@@ -6,6 +6,7 @@ import { INTL_TAG } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 import { useBusy } from "../lib/busy.ts";
 import { money } from "../lib/format.ts";
+import { fmtDec } from "../lib/num.ts";
 
 interface BankDeposit { id: string; amount: number; matures_at: string; matured: boolean; mult_bps: number; value: number }
 interface BankState { on: boolean; cap: number; locked: number; matured: number; claimable: number; next_maturity: string | null; deposits: BankDeposit[] }
@@ -55,7 +56,7 @@ export function BankCard({ locale, credits }: { locale: Locale; credits?: number
           <div class="facts"><div><span class="detail">{t.locked}</span><b class="num">{money(st.locked, locale)}</b></div><div><span class="detail">{t.matured}</span><b class="num">{money(st.matured, locale)}</b></div></div>
           {st.next_maturity && <p class="hint">{t.next(day(st.next_maturity))}</p>}
           <div class="bar" role="progressbar" aria-label={t.mult} aria-valuenow={bps / 10000} aria-valuemin={1} aria-valuemax={1.5}><i style={`width:${pct}%`} /></div>
-          <p class="hint">{t.mult}: {(bps / 10000).toFixed(2)}x / 1.50x</p>
+          <p class="hint">{t.mult}: {fmtDec(bps / 10000, 2, locale)}× / {fmtDec(1.5, 2, locale)}×</p>
           <button class="btn primary wide" disabled={busy || st.claimable <= 0} aria-busy={busy} onClick={claim}>{t.claim}{st.claimable > 0 ? ` ${money(st.claimable, locale)}` : ""}</button>
         </>
       )}
