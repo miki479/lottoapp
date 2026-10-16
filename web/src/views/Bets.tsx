@@ -1,5 +1,5 @@
 import { Q } from "../components/Q.tsx";
-import { ArrowDownToLine, Check, Clock, Flame, RotateCcw, Ticket, TrendingDown, X } from "lucide-preact";
+import { ArrowDownToLine, Check, Clock, Flame, RotateCcw, Ticket, TrendingDown, X, ChevronDown } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { sb } from "../lib/api.ts";
 import { INTL_TAG } from "../i18n/index.ts";
@@ -133,7 +133,7 @@ export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge
           );
         })}
       </div>
-      {canMore && tab === "settled" && <button class="btn secondary wide" onClick={onMore}>{msg.hist.more}</button>}
+      {canMore && tab === "settled" && <button class="btn secondary wide" onClick={onMore}><ChevronDown size={18} />{msg.hist.more}</button>}
     </div>
   );
 }

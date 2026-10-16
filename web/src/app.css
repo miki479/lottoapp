@@ -1742,3 +1742,6 @@ textarea.field { resize: vertical; min-height: 84px; }
 /* every featured card is as tall as the tallest one in the row */
 .top-scroll { align-items: stretch; }
 .top-scroll > .topcard { align-self: stretch; height: auto; }
+/* buttons that are only an icon: keep them tappable and square-ish, the meaning lives in aria-label */
+.btn:has(> svg:only-child) { min-width: var(--touch); padding: 0 14px; }
+.link:has(> svg:only-child) { display: inline-grid; place-items: center; min-width: var(--touch); min-height: var(--touch); }

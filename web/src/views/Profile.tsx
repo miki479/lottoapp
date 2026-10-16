@@ -1,4 +1,4 @@
-import { MapPin, Bell, Gift, Rocket, ChevronRight, Flame, LogOut, Pencil, Percent, Share2, Snowflake, Trash2, Trophy, User, Volume2, Zap } from "lucide-preact";
+import { MapPin, Bell, Gift, Rocket, ChevronRight, Flame, LogOut, Pencil, Percent, Share2, Snowflake, Trash2, Trophy, User, Volume2, Zap, Check } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Sheet } from "../components/Sheet.tsx";
 import { StreakCard } from "../components/StreakCard.tsx";
@@ -51,7 +51,7 @@ export function ProfileView(p: {
         <section class="card giftcard">
           <span class="refico"><Gift size={22} /></span>
           <div style="flex:1"><b>{p.msg.boost.gift}</b><p class="hint">{p.msg.boost.explain}</p></div>
-          <button class="btn primary" onClick={p.onGiftSeen}>{p.msg.common.ok}</button>
+          <button class="btn primary" onClick={p.onGiftSeen} aria-label={p.msg.common.ok} title={p.msg.common.ok}><Check size={18} /></button>
         </section>
       )}
       <div class="profile-grid">

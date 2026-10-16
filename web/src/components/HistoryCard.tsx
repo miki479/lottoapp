@@ -1,3 +1,4 @@
+import { memo, forget } from "../lib/cache.ts";
 import { TrendingDown, TrendingUp } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -14,8 +15,8 @@ interface Cat { category: string; bets: number; won: number; lost: number; net: 
 export function HistoryCard({ msg, locale }: { msg: Messages; locale: Locale }) {
   const h = msg.hist;
   const [days, setDays] = useState<Day[] | null>(null), [cats, setCats] = useState<Cat[]>([]), [span, setSpan] = useState(30);
-  useEffect(() => { let live = true; sb.rpc("my_balance_series", { p_days: span }).then(({ data }) => { if (live) setDays(((data ?? []) as Day[]).map((d) => ({ ...d, net: Number(d.net), bets: Number(d.bets) }))); }); return () => { live = false; }; }, [span]);
-  useEffect(() => { let live = true; sb.rpc("my_category_stats").then(({ data }) => { if (live) setCats(((data ?? []) as Cat[]).map((c) => ({ ...c, bets: Number(c.bets), won: Number(c.won), lost: Number(c.lost), net: Number(c.net) }))); }); return () => { live = false; }; }, []);
+  useEffect(() => { let live = true; memo(`mbs:${span}`, 120_000, () => sb.rpc("my_balance_series", { p_days: span })).then(({ data }) => { if (live) setDays(((data ?? []) as Day[]).map((d) => ({ ...d, net: Number(d.net), bets: Number(d.bets) }))); }); return () => { live = false; }; }, [span]);
+  useEffect(() => { let live = true; memo("mcs", 120_000, () => sb.rpc("my_category_stats")).then(({ data }) => { if (live) setCats(((data ?? []) as Cat[]).map((c) => ({ ...c, bets: Number(c.bets), won: Number(c.won), lost: Number(c.lost), net: Number(c.net) }))); }); return () => { live = false; }; }, []);
   if (days === null) return <section class="card hist"><div class="sk s" /></section>;
   if (days.length === 0 && cats.length === 0) return <section class="card hist"><b>{h.title}</b><p class="hint">{h.empty}</p></section>;
   let run = 0; const pts = days.map((d) => ({ ...d, cum: (run += d.net) }));

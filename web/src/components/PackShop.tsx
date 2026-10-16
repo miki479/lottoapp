@@ -1,4 +1,4 @@
-import { Check, Crown, Gem, Lock, Sparkles, Star } from "lucide-preact";
+import { Check, Crown, Gem, Lock, Sparkles, Star, X } from "lucide-preact";
 import type { LucideIcon } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { PACK_RARITIES, PACKS, dealOf, dealPrice, lookChance, packRefund, REFUND_PCT, type PackDef, type PackRarity } from "../../../shared/shop.ts";
@@ -99,7 +99,7 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
         {err && <p class="dberr" role="alert">{err}</p>}
         {!ok && credits < priceOf(pack) && <p class="dberr">{s.notEnough}</p>}
         <button class="btn primary wide" disabled={!ok || stage.phase === "buying"} aria-busy={stage.phase === "buying"} onClick={() => buy(pack.tier)}>{s.pay(money(priceOf(pack), locale))}</button>
-        <button class="btn secondary wide" disabled={stage.phase === "buying"} onClick={close}>{s.notNow}</button>
+        <button class="btn secondary wide" disabled={stage.phase === "buying"} onClick={close} aria-label={s.notNow} title={s.notNow}><X size={18} /></button>
       </section>
     );
   }
@@ -141,7 +141,7 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
         <p class="rvmeta"><span class={`rchip r-${r.rarity}`}>{t.album.rar[r.rarity]}</span><span>{card ? t.album.number(card.n) : r.kind === "avatar" ? t.album.avatar : t.album.decoration}</span></p>
         {card && <p class="rvcap">“{cardCaption(card.n, locale)}”</p>}
         <p class={`rvline ${r.duplicate ? "dup" : ""}`}><Check size={16} strokeWidth={3} />{r.duplicate ? s.dupBack(money(r.refund, locale)) : s.added}</p>
-        <button class="btn primary wide" onClick={close}>{s.done}</button>
+        <button class="btn primary wide" onClick={close} aria-label={s.done} title={s.done}><Check size={18} /></button>
         <button class="btn secondary wide" onClick={() => { close(); onAlbum(); }}>{s.seeAlbum}</button>
       </section>
     );

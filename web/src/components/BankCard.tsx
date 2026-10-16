@@ -1,3 +1,4 @@
+import { memo, forget } from "../lib/cache.ts";
 import { Landmark, Lock, LockOpen } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { BANK_CAP } from "../../../shared/bank.ts";
@@ -53,8 +54,8 @@ export function BankCard({ locale, credits }: { locale: Locale; credits?: number
     } else setShown({ locked: next.locked, claimable: next.claimable });
     remember({ locked: next.locked, claimable: next.claimable });
   };
-  const load = () => sb.rpc("my_bank").then(({ data }) => { if (data) apply(data as BankState); });
-  useEffect(() => { let live = true; sb.rpc("my_bank").then(({ data }) => { if (live && data) apply(data as BankState); }); return () => { live = false; }; }, [credits]);
+  const load = () => { forget("my_bank"); return memo("my_bank", 60_000, () => sb.rpc("my_bank")).then(({ data }) => { if (data) apply(data as BankState); }); };
+  useEffect(() => { let live = true; memo("my_bank", 60_000, () => sb.rpc("my_bank")).then(({ data }) => { if (live && data) apply(data as BankState); }); return () => { live = false; }; }, [credits]);
   // the moment the next deposit matures the card asks again, so the move plays while it is on screen
   useEffect(() => { const at = st?.next_maturity; if (at && Date.parse(at) <= now && reloaded.current !== at) { reloaded.current = at; void load(); } }, [now, st?.next_maturity]);
   const lockedShown = useCountUp(shown?.locked ?? 0, 900), readyShown = useCountUp(shown?.claimable ?? 0, 900);

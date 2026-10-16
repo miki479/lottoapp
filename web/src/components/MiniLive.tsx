@@ -1,3 +1,5 @@
+import { every } from "../lib/poll.ts";
+import { memo } from "../lib/cache.ts";
 import { useEffect, useState } from "preact/hooks";
 import { isCrypto } from "../../../shared/ticks.ts";
 import { INTL_TAG, type Locale, type Messages } from "../i18n/index.ts";
@@ -60,17 +62,17 @@ export function MiniLive({ m, live, now, locale, msg }: { m: MarketRow; live?: L
     if (!isTick) return;
     let alive = true;
     const key = isCrypto(series) ? `px:${series}` : series;
-    const go = () => sb.rpc("tick_history", { p_series: key, p_limit: 24 }).then(({ data }: { data: unknown }) => { if (alive) setHist(((data ?? []) as { value: number | string }[]).map((r) => Number(r.value)).filter(Number.isFinite)); });
-    go(); const t = setInterval(go, 120_000);
-    return () => { alive = false; clearInterval(t); };
+    const go = () => memo(`th:${key}`, 100_000, () => sb.rpc("tick_history", { p_series: key, p_limit: 24 })).then(({ data }: { data: unknown }) => { if (alive) setHist(((data ?? []) as { value: number | string }[]).map((r) => Number(r.value)).filter(Number.isFinite)); });
+    go(); const stop = every(go, 180_000);
+    return () => { alive = false; stop(); };
   }, [m.id, isTick, series]);
   // a match that is on: the score, every 30 seconds
   useEffect(() => {
     if (!onAir) { setScore(null); return; }
     let alive = true;
-    const go = () => sb.from("live_scores").select("home_score,away_score,state,clock").eq("event_id", String(m.params.eventId ?? "")).maybeSingle().then(({ data }: { data: { home_score: number; away_score: number; state: string; clock: string } | null }) => { if (alive) setScore(data ? `${data.home_score} – ${data.away_score}${data.clock ? ` · ${data.clock}` : ""}` : null); });
-    go(); const t = setInterval(go, 30_000);
-    return () => { alive = false; clearInterval(t); };
+    const go = () => memo(`ls:${m.params.eventId}`, 50_000, () => sb.from("live_scores").select("home_score,away_score,state,clock").eq("event_id", String(m.params.eventId ?? "")).maybeSingle()).then(({ data }: { data: { home_score: number; away_score: number; state: string; clock: string } | null }) => { if (alive) setScore(data ? `${data.home_score} – ${data.away_score}${data.clock ? ` · ${data.clock}` : ""}` : null); });
+    go(); const stop = every(go, 60_000);
+    return () => { alive = false; stop(); };
   }, [m.id, onAir]);
   // the chance of "yes" as the server has followed it: this market is asked to be followed, then its snapshots are read every minute
   useEffect(() => {
@@ -78,8 +80,8 @@ export function MiniLive({ m, live, now, locale, msg }: { m: MarketRow; live?: L
     let alive = true;
     followOnce(m.id);
     const go = () => history(m.id).then((v) => { if (alive && v) setSrv(v); });
-    const t0 = setTimeout(go, 1500), t = setInterval(go, 120_000);
-    return () => { alive = false; clearTimeout(t0); clearInterval(t); };
+    const t0 = setTimeout(go, 1500), stop = every(go, 180_000);
+    return () => { alive = false; clearTimeout(t0); stop(); };
   }, [m.id, isTick]);
   // trains and buses: the delay each time it was read here
   const delayMin = isDelay ? Math.round(live!.delay_sec / 60) : 0;

@@ -27,7 +27,7 @@ export function ChestScene(p: { msg: Messages; locale: Locale; reward: number; o
           </div>
         </div>
         <div class="chestprize" aria-live="polite"><span class="detail">{t.chest}</span><b class="num">{money(shown, p.locale)}</b></div>
-        <button class="btn primary wide" disabled={stage !== "open" || busy} aria-busy={busy} onClick={collect}>{t.collect}</button>
+        <button class="btn primary wide" disabled={stage !== "open" || busy} aria-busy={busy} onClick={collect}><Gift size={18} />{t.collect}</button>
       </div>
     </Sheet>
   );

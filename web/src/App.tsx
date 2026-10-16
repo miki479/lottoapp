@@ -1,3 +1,4 @@
+import { memo } from "./lib/cache.ts";
 import { Activity, Bitcoin, Clapperboard, Clock, CloudLightning, Crown, Gamepad2, MapPin, Trophy, TrendingUp, Train, Users, Zap } from "lucide-preact";
 import { RING_BONUS, STREAK_MILESTONES } from "../../shared/rewards.ts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
@@ -359,7 +360,7 @@ export function App() {
     const { data: pop } = await sb.rpc("popular_markets", { p_limit: 5 }); setPopular(((pop ?? []) as PopularRow[]).map((x) => ({ ...x, bets: +x.bets })));
     await trendTail();
   }, []);
-  const loadActivity = useCallback(async () => { sb.rpc("recent_limit_breaks").then(({ data }) => setLimitBuys(((data ?? []) as { who: string; at: string }[]).slice(0, 2)), () => {}); const snap = await getSnapshot(import.meta.env.VITE_SUPABASE_URL as string); const { data } = snap ? { data: snap.activity } : await sb.rpc("activity_feed", { p_limit: 12 }); setActivity(((data ?? []) as ActivityRow[]).map((r) => ({ ...r, amount: +r.amount }))); }, []);
+  const loadActivity = useCallback(async () => { memo("recent_limit_breaks", 240_000, () => sb.rpc("recent_limit_breaks")).then(({ data }) => setLimitBuys(((data ?? []) as { who: string; at: string }[]).slice(0, 2)), () => {}); const snap = await getSnapshot(import.meta.env.VITE_SUPABASE_URL as string); const { data } = snap ? { data: snap.activity } : await sb.rpc("activity_feed", { p_limit: 12 }); setActivity(((data ?? []) as ActivityRow[]).map((r) => ({ ...r, amount: +r.amount }))); }, []);
   /** The four towns people bet on most (public aggregate), skipping the ones that already have a permanent chip. */
   const loadTrending = useCallback(async () => {
     const snap = await getSnapshot(import.meta.env.VITE_SUPABASE_URL as string);
@@ -385,12 +386,12 @@ export function App() {
   // a push can open the app on a given screen (?open=ranking)
   useEffect(() => { const o = new URLSearchParams(location.search).get("open"); if (o === "loss") { setLossOpen(true); const u = new URL(location.href); u.searchParams.delete("open"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash); } else if (o === "shop") { setRewardsTab("shop"); setRewardsOpen(true); const u = new URL(location.href); u.searchParams.delete("open"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash); } else if (o === "ranking" || o === "friends" || o === "bets" || o === "profile") { setScreen(o); const u = new URL(location.href); u.searchParams.delete("open"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash); } }, []);
   const loadReqs = useCallback(async () => { if (!registered) { setReqCount(0); return; } const { data } = await sb.rpc("friend_requests_in"); setReqCount(((data ?? []) as unknown[]).length); }, [registered]);
-  useEffect(() => { loadReqs(); if (!registered) return; return every(loadReqs, 120_000); }, [registered, loadReqs]);
+  useEffect(() => { loadReqs(); if (!registered) return; return every(loadReqs, 300_000); }, [registered, loadReqs]);
   useEffect(() => { loadChallenges(); }, [registered]);
   useEffect(() => { if (registered) loadLook(); else setLook(null); }, [registered, profile?.credits]);
   useEffect(() => { if (screen === "bets") loadChallenges(); }, [screen]);
   useEffect(() => { if (ready) loadBets(); }, [betsLimit]);
-  useEffect(() => { if (!registered) return; return every(loadChallenges, 120_000); }, [registered, loadChallenges]);
+  useEffect(() => { if (!registered) return; return every(loadChallenges, 180_000); }, [registered, loadChallenges]);
   /** A shared link (?m=<market id>) opens that question straight away. */
   useEffect(() => {
     const id = new URLSearchParams(location.search).get("m");
@@ -420,7 +421,7 @@ export function App() {
       setSheet((sh) => (sh && sh.m.id === data.id && (String(sh.m.odds_yes) !== String(data.odds_yes) || String(sh.m.odds_no) !== String(data.odds_no)) ? { ...sh, m: { ...sh.m, odds_yes: data.odds_yes, odds_no: data.odds_no } } : sh));
     }, () => {});
     go();
-    return every(go, 15_000);
+    return every(go, 30_000);
   }, [sheetId]);
   useEffect(() => {
     setSheet((sh) => {
@@ -429,10 +430,11 @@ export function App() {
       return fresh && (fresh.odds_yes !== sh.m.odds_yes || fresh.odds_no !== sh.m.odds_no) ? { ...sh, m: { ...sh.m, odds_yes: fresh.odds_yes, odds_no: fresh.odds_no } } : sh;
     });
   }, [markets]);
-  useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = every(loadMarkets, 60_000), b = every(() => { loadResults(); loadActivity(); loadTrending(); }, 90_000); return () => { a(); b(); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
+  useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = every(loadMarkets, 60_000), b = every(() => { loadResults(); loadActivity(); loadTrending(); }, 120_000); return () => { a(); b(); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
   // every minute while a bet is open (a win or a loss must show up with the app open: the balance, the result sheet), every five minutes otherwise
   const hasOpenBet = bets.some((b) => b.status === "open");
-  useEffect(() => { if (!ready) return; return every(() => { loadBets(); loadProfile(); loadQuests(); }, hasOpenBet ? 60_000 : 300_000); }, [ready, hasOpenBet]);
+  useEffect(() => { if (!ready) return; return every(() => { loadBets(); loadProfile(); }, hasOpenBet ? 60_000 : 300_000); }, [ready, hasOpenBet]);
+  useEffect(() => { if (!ready) return; return every(loadQuests, 600_000); }, [ready]);
 
   const rainIds = useMemo(() => (markets ?? []).filter((m) => m.kind === "rain_at").map((m) => m.id), [markets]);
   useEffect(() => {
@@ -446,7 +448,7 @@ export function App() {
   useEffect(() => {
     if (trackable.length === 0) { setLive({}); return; }
     const go = () => sb.rpc("live_delays", { p_markets: trackable }).then(({ data }) => setLive(Object.fromEntries(((data ?? []) as LiveDelay[]).map((d) => [d.market_id, d]))));
-    go(); return every(go, 20_000);
+    go(); return every(go, 60_000);
   }, [trackable.join(), liveTick]);
   // how full the buses are (only some operators report it: the answer lists just those)
   const busIds = useMemo(() => (markets ?? []).filter((m) => m.category === "bus" && Date.parse(m.target_at) - Date.now() < 3 * 3600_000).slice(0, 150).map((m) => m.id), [markets]);
@@ -731,7 +733,7 @@ export function App() {
     if (!near) return;
     if (!placeIds.current.includes(near.id) && near.id.startsWith("p-")) { placeIds.current = [near.id, ...placeIds.current].slice(0, 7); }
     const go = () => sb.rpc("popular_in_city", { p_city: near.id, p_limit: 5 }).then(({ data }) => setNearRows(((data ?? []) as { market_id: string; bets: number }[]).map((r) => ({ market_id: r.market_id, bets: +r.bets }))));
-    go(); return every(go, 120_000);
+    go(); return every(go, 300_000);
   }, [near?.id]);
   const origin = useMemo(() => {
     if (geo) return { lat: geo.lat, lon: geo.lon, name: "" };

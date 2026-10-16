@@ -1,4 +1,4 @@
-import { Bell, X } from "lucide-preact";
+import { Bell, X, Check } from "lucide-preact";
 import type { Locale, Messages } from "../i18n/index.ts";
 
 export type PushVariant = "first" | "nag" | "blocked";
@@ -52,7 +52,7 @@ export function PushAsk({ msg, locale, variant, n = 0, lifted, onYes, onNo }: { 
       <div class="pt"><b>{line.t}</b><span>{line.b}</span></div>
       <div class="pb">
         {variant === "blocked"
-          ? <button class="btn primary" onClick={onNo}>{t.ok}</button>
+          ? <button class="btn primary" onClick={onNo} aria-label={t.ok} title={t.ok}><Check size={18} /></button>
           : <><button class="btn primary" onClick={onYes}>{msg.push.yes}</button><button class="btn secondary" onClick={onNo}><X size={16} />{msg.push.later}</button></>}
       </div>
     </div>

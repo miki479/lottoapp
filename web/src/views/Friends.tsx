@@ -40,7 +40,7 @@ export function Friends(p: { locale: Locale; msg: Messages; registered: boolean;
       <LeaguePanel locale={p.locale} msg={p.msg} registered={p.registered} onProfile={p.onProfile} />
       {reqs.length > 0 && (
         <section class="card stack reqcard">
-          <div class="reqhead"><b>{p.msg.look.requests} · {reqs.length}</b>{reqs.length > 2 && <button class="linkbtn" disabled={busy} onClick={declineAll}>{p.msg.look.declineAll}</button>}</div>
+          <div class="reqhead"><b>{p.msg.look.requests} · {reqs.length}</b>{reqs.length > 2 && <button class="linkbtn" disabled={busy} onClick={declineAll} aria-label={p.msg.look.declineAll} title={p.msg.look.declineAll}><X size={18} /></button>}</div>
           {(showAll ? reqs : reqs.slice(0, 5)).map((r) => (
             <div class="reqrow" key={r.user_id}>
               {face(r.user_id)}

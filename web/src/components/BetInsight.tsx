@@ -1,3 +1,4 @@
+import { memo, forget } from "../lib/cache.ts";
 import { Activity, ChevronDown } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
@@ -14,9 +15,9 @@ type M = Pick<MarketRow, "id" | "kind" | "category" | "params" | "target_at">;
 function DelayInsight({ m, pick, msg, now }: { m: M; pick: "yes" | "no"; msg: Messages; now: number }) {
   const t = msg.insight, [pts, setPts] = useState<Pt[] | null>(null);
   useEffect(() => {
-    const go = () => sb.rpc("bet_delay_series", { p_market: m.id }).then(({ data }) => setPts(((data ?? []) as Pt[]).slice().reverse()));
+    const go = () => memo(`bds:${m.id}`, 50_000, () => sb.rpc("bet_delay_series", { p_market: m.id })).then(({ data }) => setPts(((data ?? []) as Pt[]).slice().reverse()));
     go();
-    return every(go, 30_000);
+    return every(go, 60_000);
   }, [m.id]);
   const lineMin = Number(m.params.thresholdSec ?? 300) / 60;
   if (pts === null) return <div class="sk s" />;
@@ -63,16 +64,16 @@ function MatchInsight({ m, pick, msg, now }: { m: M; pick: "yes" | "no"; msg: Me
   const [h, setH] = useState<Game[] | null>(null), [a, setA] = useState<Game[] | null>(null);
   useEffect(() => {
     let live = true;
-    sb.rpc("team_recent", { p_team: home }).then(({ data }) => { if (live) setH((data ?? []) as Game[]); });
-    sb.rpc("team_recent", { p_team: away }).then(({ data }) => { if (live) setA((data ?? []) as Game[]); });
+    memo(`tr:${home}`, 600_000, () => sb.rpc("team_recent", { p_team: home })).then(({ data }) => { if (live) setH((data ?? []) as Game[]); });
+    memo(`tr:${away}`, 600_000, () => sb.rpc("team_recent", { p_team: away })).then(({ data }) => { if (live) setA((data ?? []) as Game[]); });
     return () => { live = false; };
   }, [home, away]);
   const [live, setLive] = useState<{ home_score: number; away_score: number; state: "in" | "post"; clock: string } | null>(null);
   useEffect(() => {
-    const go = () => sb.from("live_scores").select("home_score,away_score,state,clock").eq("event_id", String(m.params.eventId ?? "")).maybeSingle().then(({ data }) => setLive((data as typeof live) ?? null));
+    const go = () => memo(`ls:${m.params.eventId}`, 50_000, () => sb.from("live_scores").select("home_score,away_score,state,clock").eq("event_id", String(m.params.eventId ?? "")).maybeSingle()).then(({ data }) => setLive((data as typeof live) ?? null));
     if (!m.params.eventId) return;
     go();
-    return every(go, 30_000);
+    return every(go, 60_000);
   }, [m.params.eventId]);
   const pr = (m.params.priors as Record<string, number> | undefined)?.[String(m.params.bet)];
   const chance = Number.isFinite(pr) ? Math.round((pick === "yes" ? pr! : 1 - pr!) * 100) : null;

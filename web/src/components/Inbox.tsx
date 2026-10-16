@@ -1,5 +1,6 @@
+import { memo, forget } from "../lib/cache.ts";
 import { createPortal } from "preact/compat";
-import { Coins, Gift, Mail, Snowflake, X, Zap } from "lucide-preact";
+import { Coins, Gift, Mail, Snowflake, X, Zap, Check } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { sb } from "../lib/api.ts";
 import { loadMyProgress, type MyProgress } from "../lib/looks.ts";
@@ -26,18 +27,18 @@ const T: Record<string, { got: string; err: string; ok: string; pick: string; fr
 export function Inbox({ registered, ok, locale }: { registered: boolean; ok: string; locale: Locale }) {
   const [list, setList] = useState<Msg[]>([]);
   const [me, setMe] = useState<MyProgress | null>(null), [busy, setBusy] = useState(false), [got, setGot] = useState<{ credits: number; boosts: number; freezes: number; card: string | null } | null>(null), [failed, setFailed] = useState(false);
-  useEffect(() => { if (!registered) return; let live = true; sb.rpc("my_messages").then(({ data }) => { if (live) setList((data ?? []) as Msg[]); }); return () => { live = false; }; }, [registered]);
+  useEffect(() => { if (!registered) return; let live = true; memo("my_messages", 90_000, () => sb.rpc("my_messages")).then(({ data }) => { if (live) setList((data ?? []) as Msg[]); }); return () => { live = false; }; }, [registered]);
   const m = list[0];
   const gifted = !!m?.gifts && (m.gifts.credits || m.gifts.boosts || m.gifts.decoration || m.gifts.choose?.length);
   useEffect(() => { if (!gifted) return; let live = true; void loadMyProgress().then((x) => { if (live) setMe(x); }); return () => { live = false; }; }, [gifted]);
   if (!m) return null;
-  const done = () => { void sb.rpc("read_message", { p_id: m.id }); setList((l) => l.filter((x) => x.id !== m.id)); };
+  const done = () => { void sb.rpc("read_message", { p_id: m.id }); forget("my_messages"); setList((l) => l.filter((x) => x.id !== m.id)); };
   if (!gifted) {
     return (
       <section class="card stack inbox" role="status">
         <div class="fyhead"><Mail size={20} /><b>{m.heading}</b><span class="grow" /><button class="iconbtn" onClick={done} aria-label={ok}><X size={18} /></button></div>
         <p>{m.body}</p>
-        <button class="btn primary" onClick={done}>{ok}</button>
+        <button class="btn primary" onClick={done} aria-label={ok} title={ok}><Check size={18} /></button>
       </section>
     );
   }
@@ -96,7 +97,7 @@ export function Inbox({ registered, ok, locale }: { registered: boolean; ok: str
         </>}
         {failed && <p class="rwbody" role="alert">{t.err}</p>}
         <p class="rwjoke">{joke}</p>
-        {!g.choose?.length && <button class="btn primary wide" onClick={done}>{t.go}</button>}
+        {!g.choose?.length && <button class="btn primary wide" onClick={done} aria-label={t.go} title={t.go}><Check size={18} /></button>}
       </div>
     </div>,
     document.body,

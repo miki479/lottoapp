@@ -1,3 +1,4 @@
+import { memo, forget } from "../lib/cache.ts";
 import { X } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { LEAGUES, LEAGUE_BONUS, PROMOTE_CREDITS, PROMOTE_TOP, promoteSlots, promotionGap, resetBalance } from "../../../shared/leagues.ts";
@@ -83,7 +84,7 @@ function Board({ league, locale, msg, onProfile }: { league: number; locale: Loc
   const [rows, setRows] = useState<{ rank: number; user_id: string; display_name: string; credits: number; is_me: boolean }[] | null>(null);
   useEffect(() => {
     setRows(null); let live = true;
-    sb.rpc("league_board", { p_league: league, p_limit: 20 }).then(({ data }) => { if (live) setRows(((data ?? []) as typeof rows & object[]).map((r) => ({ ...r, rank: Number(r.rank), credits: Number(r.credits) }))); });
+    memo(`lgb:${league}:20`, 150_000, () => sb.rpc("league_board", { p_league: league, p_limit: 20 })).then(({ data }) => { if (live) setRows(((data ?? []) as typeof rows & object[]).map((r) => ({ ...r, rank: Number(r.rank), credits: Number(r.credits) }))); });
     return () => { live = false; };
   }, [league]);
   const looks = useLooks((rows ?? []).map((r) => r.user_id));

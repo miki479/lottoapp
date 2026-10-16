@@ -1,4 +1,4 @@
-import { Bus, MapPin, Swords, Trophy, X } from "lucide-preact";
+import { Bus, MapPin, Swords, Trophy, X, Check } from "lucide-preact";
 import { useRef, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
@@ -26,7 +26,7 @@ export function ForYou(p: { msg: Messages; locale: Locale; now: number; markets:
       <section class="card stack foryou" aria-label={t.title}>
         <div class="fyhead"><MapPin size={20} /><b>{t.consentTitle}</b></div>
         <p class="hint">{t.consentBody}</p>
-        <div class="fyactions"><button class="btn secondary" onClick={it.disable}>{t.consentNo}</button><button class="btn primary" onClick={it.enable}>{t.consentYes}</button></div>
+        <div class="fyactions"><button class="btn secondary" onClick={it.disable} aria-label={t.consentNo} title={t.consentNo}><X size={18} /></button><button class="btn primary" onClick={it.enable} aria-label={t.consentYes} title={t.consentYes}><Check size={18} /></button></div>
       </section>
     );
   }
