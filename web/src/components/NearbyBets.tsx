@@ -51,7 +51,7 @@ export function NearbyBets(p: { msg: Messages; locale: Locale; now: number; orig
       {open && <div class="nbbody">
         <p class="hint">{n.hint}</p>
         {!p.origin && <><button class="btn secondary" disabled={p.busy} onClick={p.onLocate}><MapPin size={16} />{n.askLocate}</button><HomePlaceField msg={p.msg} locale={p.locale} value={p.home} onChange={p.onHome} /></>}
-        {p.origin && <StopsNear msg={p.msg} locale={p.locale} origin={p.origin} onPick={p.onPick} />}
+        <StopsNear msg={p.msg} locale={p.locale} fallback={p.origin} onPick={p.onPick} />
         {p.origin && <div class="mkchips">{RADII.map((r) => <button key={r} class={`mkchip ${km === r ? "on" : ""}`} aria-pressed={km === r} onClick={() => setKm(r)}>{r} {n.km}</button>)}</div>}
         {p.origin && chal.length > 0 && <span class="detail">{p.msg.fx.nearTitle}</span>}
         {chal.map(({ c, km: d, players }) => <button key={c.id} class="nbitem" onClick={() => p.onChallenge(c.code)}><span class="q"><b>{c.title}</b></span><span class="nbmeta"><span>{d < 1 ? "<1" : Math.round(d)} {n.km}</span><span>{players} {p.msg.fx.players}</span></span></button>)}

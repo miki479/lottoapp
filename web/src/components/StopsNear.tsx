@@ -10,13 +10,15 @@ import type { Arrival } from "../lib/useIntent.ts";
 
 const timeOf = (epoch: number, locale: Locale) => new Date(epoch * 1000).toLocaleTimeString(locale === "ja" ? "ja-JP" : locale, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 
-/** The buses and trains due at the stops within 250 m of the chosen place (home or where the player is): bet on the one that passes outside the door. */
-export function StopsNear(p: { msg: Messages; locale: Locale; origin: { lat: number; lon: number }; onPick: (m: MarketRow, pick: Pick) => void }) {
+/** The buses and trains due at the stops within 250 m of where the player is right now (the position stays on the phone; the profile town is not used). A stop can also be searched by name. */
+export function StopsNear(p: { msg: Messages; locale: Locale; fallback: { lat: number; lon: number } | null; onPick: (m: MarketRow, pick: Pick) => void }) {
   const t = p.msg.fy, n = p.msg.nearby;
   const [pos, setPos] = useState<{ lat: number; lon: number } | null>(null), [q, setQ] = useState(""), [query, setQuery] = useState(""), [locating, setLocating] = useState(false);
-  const at = pos ?? p.origin;
+  // "near me" is the real position; the profile town only centres a search by name when the position is not known
+  const at = pos ?? (query ? p.fallback : null);
   const [list, setList] = useState<Arrival[] | null>(null), [busy, setBusy] = useState<string | null>(null), [err, setErr] = useState(false), going = useRef(false);
   useEffect(() => {
+    if (!at) { setList(null); return; }
     let live = true;
     const go = async () => {
       const { data, error } = await sb.functions.invoke("nearby", { body: { lat: roundCoord(at.lat), lon: roundCoord(at.lon), radiusM: 250, ...(query ? { q: query } : {}) } });
@@ -27,7 +29,9 @@ export function StopsNear(p: { msg: Messages; locale: Locale; origin: { lat: num
     go().catch(() => { if (live) setList((l) => l ?? []); });
     const stop = every(() => { go().catch(() => {}); }, 60_000);
     return () => { live = false; stop(); };
-  }, [at.lat, at.lon, query]);
+  }, [at?.lat, at?.lon, query]);
+  // when the phone already allowed the position, take it without asking again
+  useEffect(() => { try { (navigator as Navigator & { permissions?: Permissions }).permissions?.query({ name: "geolocation" as PermissionName }).then((s) => { if (s.state === "granted") locate(); }, () => {}); } catch { /* no permissions API */ } }, []);
   const locate = () => { if (!navigator.geolocation) return; setLocating(true); navigator.geolocation.getCurrentPosition((g) => { setQuery(""); setQ(""); setList(null); setPos({ lat: g.coords.latitude, lon: g.coords.longitude }); setLocating(false); }, () => setLocating(false), { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }); };
   const search = (e: Event) => { e.preventDefault(); const v = q.trim(); if (v.length >= 3 || v === "") { setList(null); setQuery(v); } };
   const open = async (a: Arrival) => {
@@ -40,7 +44,7 @@ export function StopsNear(p: { msg: Messages; locale: Locale; origin: { lat: num
       if (row) p.onPick(row, "yes"); else setErr(true);
     } catch { setErr(true); } finally { going.current = false; setBusy(null); }
   };
-  if (list === null) return <div class="sk s" />;
+  if (list === null && at) return <div class="sk s" />;
   return (
     <div class="stack stopsnear">
       <span class="detail"><Bus size={14} style="vertical-align:-2px" /> {n.passing}</span>
@@ -49,8 +53,9 @@ export function StopsNear(p: { msg: Messages; locale: Locale; origin: { lat: num
         <button class="iconbtn" type="submit" aria-label={n.searchStop}><Search size={18} /></button>
         <button class="iconbtn" type="button" onClick={locate} disabled={locating} aria-label={n.useMyPos} title={n.useMyPos}><LocateFixed size={18} /></button>
       </form>
-      {list.length === 0 && <p class="hint">{n.passingNone}</p>}
-      {list.map((a) => (
+      {!at && <p class="hint">{n.askPos}</p>}
+      {at && (list ?? []).length === 0 && <p class="hint">{n.passingNone}</p>}
+      {(list ?? []).map((a) => (
         <div class="fyrow" key={a.tripId + a.stopId}>
           <div class="grow"><b>{a.routeName || "—"}</b>{a.headsign ? ` → ${a.headsign}` : ""}<span class="detail">{a.stopName} · {t.line(timeOf(a.scheduledAt ?? a.predictedAt, p.locale), a.delaySec === null ? "" : a.delaySec >= 60 ? t.late(Math.round(a.delaySec / 60)) : t.onTime)}</span></div>
           <button class="btn primary" disabled={busy !== null} onClick={() => open(a)}>{busy === a.tripId ? "…" : t.bet}</button>

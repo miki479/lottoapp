@@ -465,7 +465,8 @@ export function App() {
   const countryOf = (id: string) => CITIES.find((c) => c.id === id)?.country ?? placeById(id)?.country ?? (near?.id === id ? near.country : undefined);
   const hasMine = !!myCountry && open.some((m) => m.category !== "nature" && m.category !== "strike" && m.category !== "finance" && m.category !== "culture" && m.category !== "sport" && m.category !== "law" && countryOf(m.city_id) === myCountry);
   /** "Near you": what is within RADIUS_KM of the player's town (the town they set, or the one they were located in); with no town known, the whole country. */
-  const originPt = home ? { lat: home.lat, lon: home.lon } : near ? locOf(near.id) : null;
+  // "near me" follows where the phone is (when the player located themselves); the profile town is only the fallback and the key of the local ranking
+  const originPt = geo ? { lat: geo.lat, lon: geo.lon } : home ? { lat: home.lat, lon: home.lon } : near ? locOf(near.id) : null;
   const withinRadius = (m: MarketRow) => { const l = originPt ? locOf(m.city_id) : null; return !!(originPt && l) && distanceM(originPt.lat, originPt.lon, l.lat, l.lon) / 1000 <= (REGION_IDS.has(m.city_id) ? REGION_KM : RADIUS_KM); };
   // a local category with nothing inside the radius falls back to the player's country, and says so (trains are national anyway)
   const mineWide = useMemo(() => { const s = new Set<string>(); if (filter === "mine" && originPt) for (const c of ["bus", "weather", "traffic"]) if (!open.some((m) => m.category === c && withinRadius(m))) s.add(c); return s; }, [open, filter, home?.id, near?.id]);
@@ -715,8 +716,8 @@ export function App() {
     go(); return every(go, 120_000);
   }, [near?.id]);
   const origin = useMemo(() => {
-    if (home) return { lat: home.lat, lon: home.lon, name: home.name };
     if (geo) return { lat: geo.lat, lon: geo.lon, name: "" };
+    if (home) return { lat: home.lat, lon: home.lon, name: home.name };
     if (near) { const c = cityOf(near.id); if (c.location && (c.location.lat || c.location.lon)) return { lat: c.location.lat, lon: c.location.lon, name: near.name }; }
     return null;
   }, [home?.id, home?.lat, near?.id, geo?.lat, geo?.lon]);
