@@ -1,7 +1,25 @@
 import { createClient } from "@supabase/supabase-js";
 
+/**
+ * Every request gets a 25 s limit (a hung connection must not leave a button spinning for ever), and a read that fails because the network dropped is tried once more.
+ * Calls that change something are never repeated: they could be applied twice.
+ */
+const robustFetch: typeof fetch = async (input, init) => {
+  const method = String(init?.method ?? (typeof Request !== "undefined" && input instanceof Request ? input.method : "GET")).toUpperCase();
+  const reads = method === "GET" || method === "HEAD";
+  for (let attempt = 1; ; attempt++) {
+    const ctl = typeof AbortController === "function" ? new AbortController() : null, timer = ctl ? setTimeout(() => ctl.abort(), 25_000) : 0;
+    try {
+      return await fetch(input, ctl && !init?.signal ? { ...init, signal: ctl.signal } : init);
+    } catch (e) {
+      if (!reads || attempt >= 2 || (e as Error)?.name === "AbortError" && init?.signal?.aborted) throw e;
+      await new Promise((r) => setTimeout(r, 400));
+    } finally { clearTimeout(timer); }
+  }
+};
 export const sb = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+  global: { fetch: robustFetch },
 });
 
 /**

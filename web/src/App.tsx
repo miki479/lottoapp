@@ -1,7 +1,6 @@
 import { Activity, Bitcoin, Clapperboard, Clock, CloudLightning, Crown, Gamepad2, MapPin, Trophy, TrendingUp, Train, Users, Zap } from "lucide-preact";
 import { RING_BONUS, STREAK_MILESTONES } from "../../shared/rewards.ts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { AuthSheet } from "./components/AuthSheet.tsx";
 import { LevelUpFx } from "./components/LevelUpFx.tsx";
 import "./components/LevelUpFx.css";
 import { BetSheet } from "./components/BetSheet.tsx";
@@ -12,7 +11,6 @@ import { DelayMeter } from "./components/DelayMeter.tsx";
 import { OfflineBar } from "./components/OfflineBar.tsx";
 import { shortStation, TrainBoard } from "./components/TrainBoard.tsx";
 import { MiniLive } from "./components/MiniLive.tsx";
-import { LossSheet } from "./components/LossSheet.tsx";
 import { getSnapshot } from "./lib/snapshot.ts";
 import { Ticker } from "./components/Ticker.tsx";
 import { ParlayBar } from "./components/ParlayBar.tsx";
@@ -24,16 +22,14 @@ import { NearbyBets } from "./components/NearbyBets.tsx";
 import { HomePlaceField } from "./components/HomePlaceField.tsx";
 import { CityChip } from "./components/CityChip.tsx";
 import { loadHome, saveHome } from "./lib/home.ts";
-import { ChallengeSheet, type Challenge } from "./components/ChallengeSheet.tsx";
+import type { Challenge } from "./components/ChallengeSheet.tsx";
 import { Sidebar, TabBar, type Screen } from "./components/Nav.tsx";
-import { NicknameSheet } from "./components/NicknameSheet.tsx";
 import { loadMyProgress, type MyProgress } from "./lib/looks.ts";
 import { useDailyReady, pending } from "./lib/shop.ts";
 import { hubText } from "./lib/shopText.ts";
 import { dealOf } from "../../shared/shop.ts";
 import { limitBreakState } from "../../shared/wallet.ts";
 import { DECORATIONS } from "../../shared/looks";
-import { ResultScreen } from "./components/ResultScreen.tsx";
 import { Toast } from "./components/Toast.tsx";
 import type { TopItem } from "./components/TopCards.tsx";
 import { INTL_TAG, loadMessages, t, TROPHY_IDS, type Locale, type TrophyId } from "./i18n/index.ts";
@@ -59,11 +55,7 @@ import { disablePush, enablePush, pushAsked, pushAvailable, pushDenied, pushEnab
 import { announce, setVoice, voiceEnabled, voiceSupported } from "./lib/voice.ts";
 import { makeProfileCard, makeResultCard, shareImage } from "./lib/share.ts";
 import type { FlashData, DailyMissionsData, QuestRow, ActivityRow, ParlayRow, SlipLeg, LiveDelay, LiveOcc, MyBet, MyStats, Pick, PopularRow, Profile, Progress, ResultRow } from "./lib/types.ts";
-import { Bets } from "./views/Bets.tsx";
 import { Home, type Trend } from "./views/Home.tsx";
-import { ProfileView } from "./views/Profile.tsx";
-import { Ranking } from "./views/Ranking.tsx";
-import { Friends } from "./views/Friends.tsx";
 import { Suspense, lazy } from "preact/compat";
 import { alertLabelOf, matchName, operatorOf } from "./lib/names.ts";
 import { AppFooter } from "./components/AppFooter.tsx";
@@ -71,6 +63,16 @@ import { AppFooter } from "./components/AppFooter.tsx";
 /** A component loaded only when it is first shown (these sheets are not needed to paint the home screen), each with its own empty fallback. */
 // deno-lint-ignore no-explicit-any
 const lazyNamed = <P,>(load: () => Promise<(p: P) => any>) => { const C = lazy(() => load().then((c) => ({ default: c }))) as unknown as (p: any) => any; return (p: P) => <Suspense fallback={null}><C {...p} /></Suspense>; };
+// every screen but the home one is its own chunk: the first paint does not wait for them
+const AuthSheet = lazyNamed<Parameters<typeof import("./components/AuthSheet.tsx")["AuthSheet"]>[0]>(() => import("./components/AuthSheet.tsx").then((m) => m.AuthSheet));
+const LossSheet = lazyNamed<Parameters<typeof import("./components/LossSheet.tsx")["LossSheet"]>[0]>(() => import("./components/LossSheet.tsx").then((m) => m.LossSheet));
+const NicknameSheet = lazyNamed<Parameters<typeof import("./components/NicknameSheet.tsx")["NicknameSheet"]>[0]>(() => import("./components/NicknameSheet.tsx").then((m) => m.NicknameSheet));
+const ResultScreen = lazyNamed<Parameters<typeof import("./components/ResultScreen.tsx")["ResultScreen"]>[0]>(() => import("./components/ResultScreen.tsx").then((m) => m.ResultScreen));
+const Bets = lazyNamed<Parameters<typeof import("./views/Bets.tsx")["Bets"]>[0]>(() => import("./views/Bets.tsx").then((m) => m.Bets));
+const ProfileView = lazyNamed<Parameters<typeof import("./views/Profile.tsx")["ProfileView"]>[0]>(() => import("./views/Profile.tsx").then((m) => m.ProfileView));
+const Ranking = lazyNamed<Parameters<typeof import("./views/Ranking.tsx")["Ranking"]>[0]>(() => import("./views/Ranking.tsx").then((m) => m.Ranking));
+const Friends = lazyNamed<Parameters<typeof import("./views/Friends.tsx")["Friends"]>[0]>(() => import("./views/Friends.tsx").then((m) => m.Friends));
+const ChallengeSheet = lazyNamed<Parameters<typeof import("./components/ChallengeSheet.tsx")["ChallengeSheet"]>[0]>(() => import("./components/ChallengeSheet.tsx").then((m) => m.ChallengeSheet));
 const QuakeMaker = lazyNamed<Parameters<typeof import("./components/QuakeMaker.tsx")["QuakeMaker"]>[0]>(() => import("./components/QuakeMaker.tsx").then((m) => m.QuakeMaker));
 const SeriesMaker = lazyNamed<Parameters<typeof import("./components/SeriesMaker.tsx")["SeriesMaker"]>[0]>(() => import("./components/SeriesMaker.tsx").then((m) => m.SeriesMaker));
 const MarketMaker = lazyNamed<Parameters<typeof import("./components/MarketMaker.tsx")["MarketMaker"]>[0]>(() => import("./components/MarketMaker.tsx").then((m) => m.MarketMaker));
@@ -180,6 +182,8 @@ export function App() {
   const [rewardsOpen, setRewardsOpen] = useState(false), [rewardsTab, setRewardsTab] = useState<"today" | "shop">("today"), [shopSeen, setShopSeen] = useState(() => store.get("shopseen") === new Date().toISOString().slice(0, 10)), [lossOpen, setLossOpen] = useState(false);
   const [pushOn, setPushOn] = useState(false);
   const [askPush, setAskPush] = useState(false);
+  // once the home screen is up, the other screens are fetched quietly in the background so the first tap on a tab does not wait for the network
+  useEffect(() => { const warm = () => { void import("./views/Bets.tsx"); void import("./views/Ranking.tsx"); void import("./views/Friends.tsx"); void import("./views/Profile.tsx"); void import("./components/RewardsSheet.tsx"); void import("./components/AuthSheet.tsx"); }; const ric = (globalThis as { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => number }).requestIdleCallback; const id = ric ? ric(warm, { timeout: 6000 }) : (setTimeout(warm, 3000) as unknown as number); return () => { if (!ric) clearTimeout(id); }; }, []);
   const [pushVariant, setPushVariant] = useState<PushVariant>("first"), nagN = useMemo(() => Math.floor(Date.now() / 86_400_000), []);
   const [slip, setSlip] = useState<SlipLeg[]>([]);
   const [parlayOpen, setParlayOpen] = useState(false);
