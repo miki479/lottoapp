@@ -1,11 +1,13 @@
 import type { Messages } from "../i18n/index.ts";
 import type { MarketRow } from "../lib/format.ts";
 import { teamName } from "../lib/names.ts";
+import { useLiveScore } from "../lib/scores.ts";
 
 type Hint = "yes" | "no" | null | undefined;
 
 /** A football pitch: YES sends the ball into the net, NO sends it wide. */
 export function SportScene({ m, hint }: { m: MarketRow; hint: Hint; msg: Messages }) {
+  const score = useLiveScore(m.params.eventId);
   return (
     <div class={`mscene sport ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
       <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
@@ -17,6 +19,7 @@ export function SportScene({ m, hint }: { m: MarketRow; hint: Hint; msg: Message
         <g class="ball"><circle cx="0" cy="0" r="6.500" fill="#fff" stroke="#1d2433" stroke-width="1.200" /><path d="M0 -3.500 L3.200 -1 L2 2.800 H-2 L-3.200 -1 Z" fill="#1d2433" /></g>
       </svg>
       <b>{teamName(String(m.params.home))} – {teamName(String(m.params.away))}</b>
+      {score && <span class="livescore num"><i class="livedot" />{score.home} – {score.away}{score.clock ? ` · ${score.clock}` : ""}</span>}
     </div>
   );
 }
