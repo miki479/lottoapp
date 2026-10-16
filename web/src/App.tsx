@@ -1,4 +1,4 @@
-import { Activity, Bitcoin, Clapperboard, Clock, CloudLightning, Gamepad2, MapPin, Trophy, TrendingUp, Train, Users, Zap } from "lucide-preact";
+import { Activity, Bitcoin, Clapperboard, Clock, CloudLightning, Crown, Gamepad2, MapPin, Trophy, TrendingUp, Train, Users, Zap } from "lucide-preact";
 import { RING_BONUS, STREAK_MILESTONES } from "../../shared/rewards.ts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { AuthSheet } from "./components/AuthSheet.tsx";
@@ -191,7 +191,7 @@ export function App() {
 
   const msg = t(locale);
   const tz = profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const [activity, setActivity] = useState<ActivityRow[]>([]);
+  const [activity, setActivity] = useState<ActivityRow[]>([]), [limitBuys, setLimitBuys] = useState<{ who: string; at: string }[]>([]);
   const toastTimer = useRef<number | undefined>(undefined);
   const flash = (text: string, kind: "ok" | "err" = "ok") => { setToast({ text, kind }); clearTimeout(toastTimer.current); toastTimer.current = window.setTimeout(() => setToast(null), 3600); };
   const seenKey = `seen.${profile?.id ?? "x"}`;
@@ -354,7 +354,7 @@ export function App() {
     const { data: pop } = await sb.rpc("popular_markets", { p_limit: 5 }); setPopular(((pop ?? []) as PopularRow[]).map((x) => ({ ...x, bets: +x.bets })));
     await trendTail();
   }, []);
-  const loadActivity = useCallback(async () => { const snap = await getSnapshot(import.meta.env.VITE_SUPABASE_URL as string); const { data } = snap ? { data: snap.activity } : await sb.rpc("activity_feed", { p_limit: 12 }); setActivity(((data ?? []) as ActivityRow[]).map((r) => ({ ...r, amount: +r.amount }))); }, []);
+  const loadActivity = useCallback(async () => { sb.rpc("recent_limit_breaks").then(({ data }) => setLimitBuys(((data ?? []) as { who: string; at: string }[]).slice(0, 2)), () => {}); const snap = await getSnapshot(import.meta.env.VITE_SUPABASE_URL as string); const { data } = snap ? { data: snap.activity } : await sb.rpc("activity_feed", { p_limit: 12 }); setActivity(((data ?? []) as ActivityRow[]).map((r) => ({ ...r, amount: +r.amount }))); }, []);
   /** The four towns people bet on most (public aggregate), skipping the ones that already have a permanent chip. */
   const loadTrending = useCallback(async () => {
     const snap = await getSnapshot(import.meta.env.VITE_SUPABASE_URL as string);
@@ -592,8 +592,9 @@ export function App() {
     open.filter((m) => !m.params.ladderOf && Date.parse(m.closes_at) - now < 8 * 60_000 && Date.parse(m.closes_at) > now).slice(0, 2).forEach((m) => system.push({ id: `c${m.id}`, text: `${msg.ticker.closing} · ${q(m)}`, node: <><b>{msg.ticker.closing}</b> · {q(m)}</> }));
     if (isItalian) { const s = open.filter((m) => m.category === "strike").sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at))[0]; if (s) { const line = msg.ticker.strike(new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(new Date(s.target_at))); system.push({ id: `s${s.id}`, text: line, node: <>{line}</> }); } }
     msg.home.idle.slice(1).forEach((line, i) => system.splice(Math.min(system.length, 1 + i * 2), 0, { id: `t${i}`, text: line, node: <>{line}</> }));
-    return pickFeed(users, system);
-  }, [activity, results, locale, open, live, popular, isItalian, Math.floor(now / 30000)]);
+    const pins: FeedItem[] = limitBuys.map((b) => ({ id: `lb${b.at}${b.who}`, who: b.who, pin: true, text: `${b.who} ${msg.ticker.limitBuy}`, node: <span class="tkgold"><Crown size={13} aria-hidden="true" /> <b>{b.who}</b> {msg.ticker.limitBuy}</span> }));
+    return [...pins, ...pickFeed(users, system)];
+  }, [limitBuys, activity, results, locale, open, live, popular, isItalian, Math.floor(now / 30000)]);
 
   const sources = useMemo(() => {
     const map = new Map<string, (typeof CITIES)[number]["feeds"][number]["attribution"]>();

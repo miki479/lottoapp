@@ -1731,3 +1731,9 @@ textarea.field { resize: vertical; min-height: 84px; }
 .livedot { width: 8px; height: 8px; border-radius: 50%; background: #ff4d4d; animation: livedot 1.2s ease-in-out infinite; }
 @keyframes livedot { 50% { opacity: .25; } }
 @media (prefers-reduced-motion: reduce) { .livedot { animation: none; } }
+
+/* a legendary purchase on the moving strip: gold, with the same shine as the shop card */
+.tkgold { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 2px 12px; border-radius: 999px; overflow: hidden; color: #3a2400; font-weight: 700; background: linear-gradient(90deg, #ffe27a, var(--rc-legendary), #ffd24a); box-shadow: 0 0 14px color-mix(in srgb, var(--rc-legendary) 70%, transparent); }
+.tkgold::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, .7) 50%, transparent 65%); transform: translateX(-130%); animation: tkshine 2.4s ease-in-out infinite; }
+@keyframes tkshine { 0%, 55% { transform: translateX(-130%); } 100% { transform: translateX(130%); } }
+@media (prefers-reduced-motion: reduce) { .tkgold::after { animation: none; } }
