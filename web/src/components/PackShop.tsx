@@ -112,7 +112,7 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
         <p class={`pkcount halo h-${r.rarity}`} aria-live="polite"><span class="sr">{s.tap(left)}</span>{!opening && <b key={left} aria-hidden="true">{left}</b>}</p>
         <div class={`pkplace pk3d halo h-${r.rarity} ${opening ? "burst" : ""}`} data-taps={stage.taps}>
           <i class="pkhalo" aria-hidden="true" />
-          <button class="pkbtn" onClick={tap} disabled={opening} aria-label={s.tapAria(left)}>
+          <button class="pkbtn" data-repeat onClick={tap} disabled={opening} aria-label={s.tapAria(left)}>
             <span class={`pkwrap s${shake % 2}`} key={shake}><PackArt pack={pack} name={s.packs[pack.tier - 1]!} taps={stage.taps} open={opening} big /></span>
           </button>
           {shake > 0 && <Burst key={`b${shake}${opening}`} n={opening ? 44 : 8 + stage.taps * 6} big={opening} />}

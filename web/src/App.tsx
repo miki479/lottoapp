@@ -36,7 +36,7 @@ import { DECORATIONS } from "../../shared/looks";
 import { ResultScreen } from "./components/ResultScreen.tsx";
 import { Toast } from "./components/Toast.tsx";
 import type { TopItem } from "./components/TopCards.tsx";
-import { INTL_TAG, t, TROPHY_IDS, type Locale, type TrophyId } from "./i18n/index.ts";
+import { INTL_TAG, loadMessages, t, TROPHY_IDS, type Locale, type TrophyId } from "./i18n/index.ts";
 import { ensureGuest, guestState, sb } from "./lib/api.ts";
 import { CITIES, cityInfos, cityName, cityOf } from "./lib/cities.ts";
 import { useNow } from "./lib/clock.ts";
@@ -821,7 +821,7 @@ export function App() {
     await sb.auth.signOut({ scope: "local" }); setProfile(null); setBets([]); setParlays([]); setProgress(null); setTrophies(new Set()); setReferral(null); setMissions(null); setFlashM(null); setQuests([]); setLook(null); setReqCount(0); store.set("lvl", ""); setReady(false); setScreen("home");
     await bootstrap(); flash(msg.profile.delete.done);
   };
-  const changeLocale = (l: Locale) => { store.set("locale", l); setLocale(l); };
+  const changeLocale = (l: Locale) => { void loadMessages(l).then(() => { store.set("locale", l); setLocale(l); }); };
   const social = registered && !!profile?.display_name;
   useEffect(() => { if (screen === "friends" && !social && ready) setScreen("home"); }, [screen, social, ready]);
   const go = (s: Screen) => { if (s === "profile" && giftDot) { store.set("giftdot", "0"); setGiftDot(false); } setScreen(s); scrollTo({ top: 0 }); haptic.tap(); };

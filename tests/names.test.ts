@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MESSAGES } from "../web/src/i18n/index.ts";
+import { MESSAGES } from "../web/src/i18n/all.ts";
 import { alertLabel, alertLabelOf, leagueName, matchName, placeName, teamName } from "../web/src/lib/names.ts";
 import { question, type MarketRow } from "../web/src/lib/format.ts";
 

@@ -1739,3 +1739,6 @@ textarea.field { resize: vertical; min-height: 84px; }
 @keyframes tkhalo { 0%, 100% { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--rc-legendary) 55%, transparent)); } 50% { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--rc-legendary) 95%, transparent)); } }
 @keyframes tkgloss { 0%, 40% { background-position: 130% 0, 0 0; } 100% { background-position: -30% 0, 0 0; } }
 @media (prefers-reduced-motion: reduce) { .tkgold, .tkgold b { animation: none; } }
+/* every featured card is as tall as the tallest one in the row */
+.top-scroll { align-items: stretch; }
+.top-scroll > .topcard { align-self: stretch; height: auto; }

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { MESSAGES } from "../web/src/i18n/index.ts";
+import { MESSAGES } from "../web/src/i18n/all.ts";
 import { bestSide, boardRows, boardStats, sortBoard } from "../web/src/lib/board.ts";
 import { friendRows } from "../web/src/lib/feed.ts";
 import type { MarketRow } from "../web/src/lib/format.ts";

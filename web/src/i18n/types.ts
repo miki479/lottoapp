@@ -19,10 +19,10 @@ export interface FullQ { occ: "empty" | "few" | "standing"; route: string; stop:
 export interface TrafficQ { site: string; toward: string; from: string; to: string; kmh: number }
 export interface StrikeQ { date: string; day: string; who: string; hours: string }
 export interface QuakeQ { mag: string; from: string; to: string; region?: string }
-export type TrophyId = "first_win" | "long_shot" | "rain_man" | "train_whisperer" | "ghost_feed" | "high_roller" | "all_rings" | "streak_7" | "streak_30" | "wins_100" | "wins_500" | "streak_100" | "bets_500" | "all_categories" | "win_row_10" | "big_odds" | "parlay_5" | "friends_10" | "level_25" | "level_50" | "chest_30" | "collector";
-export const TROPHY_IDS: TrophyId[] = ["first_win", "all_rings", "long_shot", "rain_man", "streak_7", "train_whisperer", "high_roller", "streak_30", "ghost_feed", "wins_100", "wins_500", "streak_100", "bets_500", "all_categories", "win_row_10", "big_odds", "parlay_5", "friends_10", "level_25", "level_50", "chest_30", "collector"];
+export type TrophyId = "limit_breaker" | "first_win" | "long_shot" | "rain_man" | "train_whisperer" | "ghost_feed" | "high_roller" | "all_rings" | "streak_7" | "streak_30" | "wins_100" | "wins_500" | "streak_100" | "bets_500" | "all_categories" | "win_row_10" | "big_odds" | "parlay_5" | "friends_10" | "level_25" | "level_50" | "chest_30" | "collector";
+export const TROPHY_IDS: TrophyId[] = ["limit_breaker", "first_win", "all_rings", "long_shot", "rain_man", "streak_7", "train_whisperer", "high_roller", "streak_30", "ghost_feed", "wins_100", "wins_500", "streak_100", "bets_500", "all_categories", "win_row_10", "big_odds", "parlay_5", "friends_10", "level_25", "level_50", "chest_30", "collector"];
 export const TROPHY_RARITY: Record<TrophyId, "common" | "rare" | "epic" | "legendary" | "mythic"> = {
-  first_win: "common", all_rings: "common", long_shot: "rare", rain_man: "rare", streak_7: "rare",
+  limit_breaker: "legendary", first_win: "common", all_rings: "common", long_shot: "rare", rain_man: "rare", streak_7: "rare",
   train_whisperer: "epic", high_roller: "epic", streak_30: "epic", ghost_feed: "epic",
   wins_100: "epic", wins_500: "mythic", streak_100: "legendary", bets_500: "legendary", all_categories: "epic", win_row_10: "legendary", big_odds: "epic", parlay_5: "legendary", friends_10: "epic", level_25: "legendary", level_50: "mythic", chest_30: "epic", collector: "mythic",
 };

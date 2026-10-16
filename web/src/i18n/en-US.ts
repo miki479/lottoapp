@@ -150,6 +150,7 @@ const enUS: Messages = {
       parlay_5: { name: "Five-Leg Hero", desc: "A 5-leg parlay, won." },
       friends_10: { name: "Squad", desc: "10 friends on your board." },
       level_25: { name: "Level 25", desc: "You reached level 25." },
+      limit_breaker: { name: "Limit Breaker", desc: "You used the Limit Breaker: for one day no limit stops you." },
       level_50: { name: "Level 50", desc: "You reached level 50. Very few do." },
       chest_30: { name: "Steady Hands", desc: "30 daily chests opened." },
       collector: { name: "Collector", desc: "Every other trophy unlocked." },

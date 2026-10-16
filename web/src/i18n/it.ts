@@ -150,6 +150,7 @@ const it: Messages = {
       parlay_5: { name: "Cinquina", desc: "Una multipla da 5 eventi, vinta." },
       friends_10: { name: "Compagnia", desc: "10 amici in classifica." },
       level_25: { name: "Livello 25", desc: "Hai raggiunto il livello 25." },
+      limit_breaker: { name: "Rompilimiti", desc: "Hai usato il Rompilimiti: per un giorno nessun limite ti ferma." },
       level_50: { name: "Livello 50", desc: "Hai raggiunto il livello 50: pochissimi ci arrivano." },
       chest_30: { name: "Costanza", desc: "30 bauli giornalieri aperti." },
       collector: { name: "Collezionista", desc: "Tutti gli altri trofei sbloccati." },

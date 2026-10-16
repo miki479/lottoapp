@@ -150,6 +150,7 @@ const ja: Messages = {
       parlay_5: { name: "5本立ての達人", desc: "5つの予想を組み合わせて的中。" },
       friends_10: { name: "仲間たち", desc: "友だち10人。" },
       level_25: { name: "レベル25", desc: "レベル25に到達。" },
+      limit_breaker: { name: "リミットブレイカー", desc: "リミットブレイカーを使用：1日だけ、どんな上限も止められません。" },
       level_50: { name: "レベル50", desc: "レベル50に到達。到達者はごくわずかです。" },
       chest_30: { name: "コツコツ派", desc: "デイリー宝箱を30回開封。" },
       collector: { name: "コレクター", desc: "ほかのトロフィーをすべて獲得。" },

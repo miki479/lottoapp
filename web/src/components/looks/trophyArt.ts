@@ -43,6 +43,7 @@ const SPEC: Record<string, () => Spec> = {
   parlay_5: () => ({ shape: stamp(50, 11), metal: M.amethyst!, enamel: ["#a77bff", "#321a7a"] }),
   friends_10: () => ({ shape: squircleOf(53), metal: M.mithril!, enamel: ["#ff9ec0", "#b0245f"] }),
   level_25: () => ({ shape: smooth([[-36, -52, 6], [36, -52, 6], [54, -30, 6], [54, 18, 8], [28, 50, 10], [-28, 50, 10], [-54, 18, 8], [-54, -30, 6]], 5), metal: M.platinum!, enamel: ["#2a3350", "#080b18"], stars: true }),
+  limit_breaker: () => ({ shape: starOf(10, 60, 50, 2.4), metal: M.gold!, enamel: ["#ffd24a", "#6b3f00"], stars: true }),
   level_50: () => ({ shape: starOf(12, 60, 48, 2), metal: M.diamond!, enamel: ["#6a3de8", "#150a40"], stars: true }),
   chest_30: () => ({ shape: octagonOf(57), metal: M.gold!, enamel: ["#c97b2d", "#4a2200"] }),
   collector: () => ({ shape: rosetteOf(20, 54, 4), metal: M.opal!, enamel: ["#1b1450", "#05030f"], stars: true }),
