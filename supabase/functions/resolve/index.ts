@@ -7,7 +7,7 @@ import { OCC_WINDOW_SEC } from "../_shared/shared/occupancy.ts";
 import type { DelayObservation, MetricObservation, OccupancyObservation, QuakeReading, StrikeReading, TickObservation, TrafficObservation, WeatherObservation } from "../_shared/shared/types.ts";
 import { db, loadCities, requireCron, safe } from "../_lib/common.ts";
 import { cancelledMarkets } from "../_shared/shared/cancel.ts";
-import { notifyOffers, notifyDirect, notifyComeback, notifyLiveDelay, notifyRecap, notifyRewards, notifyBroadcast, lastNotifyError, notifyFlash, notifyFriendWins, notifyInvites, notifyFriendRequests, notifyReminders, notifySupers, notifyModeration, notifyResults, notifyStreak } from "../_lib/notify.ts";
+import { notifyOffers, notifyDirect, notifyComeback, notifyLiveDelay, notifyRecap, notifyRewards, notifyBroadcast, lastNotifyError, notifyFlash, notifyFriendWins, notifyInvites, notifyFriendRequests, notifyReminders, notifySupers, notifyModeration, notifyResults, notifyStreak, notifyOvertaken, notifyVotes, notifyLoss, notifyDaily, notifyTips } from "../_lib/notify.ts";
 
 /** Markets that were still waiting for their data, and until when they are left alone (kept in the worker between runs). */
 const pendingUntil = new Map<string, number>();
@@ -143,7 +143,7 @@ Deno.serve(safe(async (req) => {
   }
   const minute = new Date().getUTCMinutes();
   const safeCount = (p: Promise<number>) => p.catch((e) => { console.error("notify failed", e); return 0; });
-  const notified = await safeCount(notifyResults(sb)) + await safeCount(notifyFlash(sb)) + await safeCount(notifyStreak(sb)) + await safeCount(notifyModeration(sb)) + await safeCount(notifyInvites(sb)) + await safeCount(notifySupers(sb)) + await safeCount(notifyFriendWins(sb)) + await safeCount(notifyFriendRequests(sb)) + await safeCount(notifyReminders(sb)) + await safeCount(notifyBroadcast(sb)) + await safeCount(notifyDirect(sb)) + await safeCount(notifyLiveDelay(sb)) + await safeCount(notifyOffers(sb)) + (minute % 2 === 0 ? await safeCount(notifyRewards(sb)) : 0) + (minute % 10 === 0 ? await safeCount(notifyRecap(sb)) + await safeCount(notifyComeback(sb)) : 0);
+  const notified = await safeCount(notifyResults(sb)) + await safeCount(notifyFlash(sb)) + await safeCount(notifyStreak(sb)) + await safeCount(notifyModeration(sb)) + await safeCount(notifyInvites(sb)) + await safeCount(notifySupers(sb)) + await safeCount(notifyFriendWins(sb)) + await safeCount(notifyFriendRequests(sb)) + await safeCount(notifyReminders(sb)) + await safeCount(notifyBroadcast(sb)) + await safeCount(notifyDirect(sb)) + await safeCount(notifyLiveDelay(sb)) + await safeCount(notifyOffers(sb)) + (minute % 2 === 0 ? await safeCount(notifyRewards(sb)) : 0) + await safeCount(notifyTips(sb)) + (minute % 5 === 1 ? await safeCount(notifyOvertaken(sb)) : 0) + (minute % 10 === 3 ? await safeCount(notifyDaily(sb)) + await safeCount(notifyVotes(sb)) : 0) + (minute % 10 === 7 ? await safeCount(notifyLoss(sb)) : 0) + (minute % 10 === 0 ? await safeCount(notifyRecap(sb)) + await safeCount(notifyComeback(sb)) : 0);
   return Response.json({ ...out, notified, notifyError: lastNotifyError.msg });
 }));
 

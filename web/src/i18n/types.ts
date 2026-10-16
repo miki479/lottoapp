@@ -57,6 +57,7 @@ export interface Messages {
   slip: { bar: (n: number) => string; title: string; add: string; added: string; remove: string; odds: string; confirm: string; maxWin: string; need2: string; placed: (win: string) => string; legs: (n: number) => string; clear: string };
   stake: { label: string; min: string; max: (m: string) => string };
   join: { step: string; title: string; body: (credits: string) => string; nickname: string; password: string; hint: string; cta: (stake: string) => string; haveProfile: string; newProfile: string; emailInstead: string; checkMail: string };
+  tip: { btn: string; title: string; hint: string; send: (n: number) => string; sent: (n: number) => string; none: string; noFriends: string; banner: (who: string) => string; error: string };
   loss: { title: string; body: (balance: string, bonus: string) => string; share: string; signup: string; later: string };
   referral: { title: string; body: (bonus: string) => string; code: string; copy: string; copied: string; share: string; shareText: (code: string) => string; counts: (invited: number, paid: number) => string; guest: string; accepted: string };
   voice: { on: string; off: string; placed: (win: string) => string; won: (amount: string) => string; lost: string; flash: string; label: string };

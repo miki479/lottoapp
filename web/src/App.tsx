@@ -131,7 +131,7 @@ export function App() {
   const [reqCount, setReqCount] = useState(0), [reqTick, setReqTick] = useState(0);
   const [look, setLook] = useState<MyProgress | null>(null), [lookOpen, setLookOpen] = useState(false), [pubUser, setPubUser] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [sheet, setSheet] = useState<{ m: MarketRow; pick: Pick; offer?: OfferUse } | null>(null);
+  const [sheet, setSheet] = useState<{ m: MarketRow; pick: Pick; offer?: OfferUse; tipFrom?: string } | null>(null);
   const [auth, setAuth] = useState(false);
   const [nick, setNick] = useState(false);
   const [googleOn, setGoogleOn] = useState(false);
@@ -385,8 +385,14 @@ export function App() {
     if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return;
     sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("id", id).maybeSingle().then(({ data }) => {
       const row = data as unknown as MarketRow | null;
-      if (row) setSheet({ m: row, pick: "yes" });
-      const u = new URL(location.href); u.searchParams.delete("m"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
+      const tip = new URLSearchParams(location.search).get("tip");
+      if (row && tip && /^[0-9a-f-]{36}$/i.test(tip)) {
+        sb.rpc("tip_info", { p_id: tip }).then(({ data: ti }) => {
+          const x = ((ti ?? []) as { pick: string; from_name: string }[])[0];
+          setSheet({ m: row, pick: x?.pick === "no" ? "no" : "yes", tipFrom: x ? x.from_name : undefined });
+        }, () => setSheet({ m: row, pick: "yes" }));
+      } else if (row) setSheet({ m: row, pick: "yes" });
+      const u = new URL(location.href); u.searchParams.delete("m"); u.searchParams.delete("tip"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
     });
   }, []);
   // a new filter or home town needs its own questions (regions and "near you" read towns the first page does not hold)
@@ -831,7 +837,7 @@ export function App() {
       {rewardsOpen && <RewardsSheet flash={flashM} onClaimFlash={claimFlash} missions={missions} onClaimMission={claimMission} onClaimChest={claimChest} msg={msg} locale={locale} now={now} profile={profile} quests={quests} referral={referral} registered={registered} onClaim={claimQuest} onGo={goQuest} onShare={shareReferral} onChanged={() => { loadProfile(); }} onClose={() => setRewardsOpen(false)} />}
       {askPush && <PushAsk variant={pushVariant} n={nagN} locale={locale} lifted={slip.length > 0} msg={msg} onYes={() => turnPush(true)} onNo={() => { if (pushVariant === "first") rememberPush(false); markNag(); setAskPush(false); }} />}
       <ParlayBar count={slip.length} odds={slipOdds(slip)} msg={msg} locale={locale} onOpen={() => setParlayOpen(true)} />
-      {sheet && <BetSheet openBets={bets.filter((b) => b.status === "open").length} offer={sheet.offer} now={now} live={live[sheet.m.id]} occ={occ[sheet.m.id]} mm={outlook[sheet.m.id]} boosts={profile?.boosts ?? 0} stakeFactor={profile?.stake_factor} key={String(sheet.m.params.ladderOf ?? sheet.m.id)} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
+      {sheet && <BetSheet tipFrom={sheet.tipFrom ?? null} canTip={registered} openBets={bets.filter((b) => b.status === "open").length} offer={sheet.offer} now={now} live={live[sheet.m.id]} occ={occ[sheet.m.id]} mm={outlook[sheet.m.id]} boosts={profile?.boosts ?? 0} stakeFactor={profile?.stake_factor} key={String(sheet.m.params.ladderOf ?? sheet.m.id)} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
       {parlayOpen && slip.length > 0 && <ParlaySheet boosts={profile?.boosts ?? 0} legs={slip} msg={msg} locale={locale} credits={profile?.credits ?? 0} needJoin={needJoin} googleOn={googleOn} onClose={() => setParlayOpen(false)} onRemove={(id) => setSlip((s) => s.filter((l) => l.m.id !== id))} onClear={() => { setSlip([]); setParlayOpen(false); }} onJoined={async () => {}} onPlace={placeParlay} />}
       {auth && <AuthSheet msg={msg} guest={!registered} googleOn={googleOn} onClose={() => setAuth(false)} onDone={(text) => { setAuth(false); flash(text); }} />}
       {lookOpen && look && <LookSheet progress={look} msg={msg} myId={profile?.id ?? ""} onClose={() => setLookOpen(false)} onSaved={(p) => { setLook(p); flash(msg.look.saved); }} />}

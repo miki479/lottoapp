@@ -4,7 +4,8 @@ import { FUN_STAKE, balanceStakeCap, delayStakeCap, singleStakeCap } from "../..
 import { BetHead } from "./BetHead.tsx";
 import { BetFoot } from "./BetFoot.tsx";
 import { MarketVs, noOf, reasonOf } from "./MatchVs.tsx";
-import { Gift, Layers, Share2, Sparkles, X } from "lucide-preact";
+import { Gift, Layers, Share2, Sparkles, UserPlus, X } from "lucide-preact";
+import { TipPicker } from "./TipPicker.tsx";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { fmtOdds, isYesNo, money, question, type MarketRow } from "../lib/format.ts";
@@ -38,8 +39,9 @@ const OPEN_HINT: Record<string, string> = { it: "Puntate aperte (contano anche q
 export function BetSheet(p: {
   m: MarketRow; initial: Pick; msg: Messages; locale: Locale; credits: number; stakeFactor?: number; ready: boolean; needJoin: boolean; googleOn: boolean; inSlip: boolean; boosts: number; now: number; mm?: number; live?: LiveDelay; occ?: { level: number }; ladder: MarketRow[]; onSwitch: (m: MarketRow) => void;
   onClose: () => void; onAddSlip: (m: MarketRow, pick: Pick) => void; onJoined: () => Promise<void>; onPlace: (m: MarketRow, pick: Pick, stake: number, boost: boolean, bonus?: string | null, vice?: boolean, offerId?: string | null) => Promise<string | null>;
-  offer?: OfferUse; openBets?: number;
+  offer?: OfferUse; openBets?: number; tipFrom?: string | null; canTip?: boolean;
 }) {
+  const [tipOpen, setTipOpen] = useState(false);
   const [pick, setPick] = useState<Pick>(p.initial);
   const [stake, setStake] = useState(50);
   const [busy, setBusy] = useState(false);
@@ -90,7 +92,9 @@ export function BetSheet(p: {
   if (joining) return <JoinStep msg={p.msg} locale={p.locale} googleOn={p.googleOn} stakeLabel={money(amount, p.locale)} onBack={() => setJoining(false)} onClose={p.onClose} onJoined={place} />;
   return (
     <Sheet foot onClose={p.onClose} label={p.msg.sheet.title}>
-      <div class="shead"><h2>{p.msg.sheet.title}</h2><span class="grow" /><button class="iconbtn" onClick={share} aria-label={p.msg.maker.share}><Share2 size={20} /></button><button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>
+      <div class="shead"><h2>{p.msg.sheet.title}</h2><span class="grow" />{p.canTip && <button class="iconbtn" onClick={() => setTipOpen((v) => !v)} aria-expanded={tipOpen} aria-label={p.msg.tip.btn} title={p.msg.tip.btn}><UserPlus size={20} /></button>}<button class="iconbtn" onClick={share} aria-label={p.msg.maker.share}><Share2 size={20} /></button><button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>
+      {p.tipFrom !== undefined && p.tipFrom !== null && <p class="tipbanner" role="status"><UserPlus size={15} />{p.msg.tip.banner(p.tipFrom)}</p>}
+      {tipOpen && <TipPicker marketId={p.m.id} pick={pick} locale={p.locale} msg={p.msg} />}
       {copied && <p class="hint" role="status">{p.msg.maker.copied}</p>}
       {offer && <div class="pobanner" role="status"><Gift size={18} />{offerText(p.locale).banner(offer.mult, offer.maxStake)}</div>}
       <BetHead m={p.m} msg={p.msg} locale={p.locale} now={p.now} live={p.live} occ={p.occ} />

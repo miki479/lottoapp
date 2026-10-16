@@ -1693,3 +1693,6 @@ textarea.field { resize: vertical; min-height: 84px; }
 .losssheet { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 8px 0 4px; }
 .lossico { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; color: var(--c-pop); background: color-mix(in srgb, var(--c-pop) 16%, var(--surface-2)); }
 .losssheet h2 { margin: 0; }
+
+.tipbanner{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--action) 14%,transparent);font-size:var(--fs-sm);font-weight:600}
+.tippick{margin:0 0 12px}
