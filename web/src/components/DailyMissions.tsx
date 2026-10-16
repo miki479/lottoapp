@@ -1,3 +1,4 @@
+import { ChestScene } from "./ChestScene.tsx";
 import { Zap, Activity, Bus, Check, Clapperboard, CloudRain, Coins, Crown, Droplet, Flame, Fuel, Gem, Gift, Globe, Layers, Moon, PackageOpen, Scale, Sparkles, Sunrise, Target, ThumbsDown, ThumbsUp, Ticket, Timer, TrainFront, Trophy, UserRound, Users } from "lucide-preact";
 import type { LucideIcon } from "lucide-preact";
 import { useRef, useState } from "preact/hooks";
@@ -17,7 +18,7 @@ const ICON: Record<string, LucideIcon> = {
 /** Three missions a day with progress bars and rewards, and a chest when all three are done. The server counts and pays; this only shows and presses "collect". */
 export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages; locale: Locale; now: number; tz: string; streak: number; onClaim: (id: string) => Promise<void>; onChest: () => Promise<void>; flash?: FlashData | null; onFlash?: () => Promise<void>; compact?: boolean }) {
   const t = p.msg.dm;
-  const [pop, setPop] = useState<string | null>(null), [busy, setBusy] = useState<string | null>(null), going = useRef(false);
+  const [pop, setPop] = useState<string | null>(null), [busy, setBusy] = useState<string | null>(null), going = useRef(false), [chestOpen, setChestOpen] = useState(false);
   if (!p.data) return <section class="card dm"><div class="sk s" /></section>;
   const ms = p.data.missions, doneN = ms.filter((m) => m.progress >= m.target).length, c = p.data.chest;
   const burst = async (id: string, fn: () => Promise<void>) => {
@@ -76,10 +77,11 @@ export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages
           <span class="dmdots" aria-hidden="true">{[0, 1, 2].map((i) => <i key={i} class={i < doneN ? "on" : ""} />)}</span></div>
         <span class="dmact">
           {c.claimed ? <span class="dmok"><Check size={16} strokeWidth={3} />{t.done}</span>
-            : c.ready ? <button class="btn primary dmbtn" disabled={busy !== null} aria-busy={busy === "chest"} onClick={() => burst("chest", p.onChest)}>{t.chestOpen}</button>
+            : c.ready ? <button class="btn primary dmbtn" disabled={busy !== null} aria-busy={busy === "chest"} onClick={() => setChestOpen(true)}>{t.chestOpen}</button>
             : <em class="num">{t.chestLocked(3 - doneN)}</em>}
         </span>
       </div>
+      {chestOpen && <ChestScene msg={p.msg} locale={p.locale} reward={c.reward} onCollect={() => burst("chest", p.onChest)} onClose={() => setChestOpen(false)} />}
     </section>
   );
 }

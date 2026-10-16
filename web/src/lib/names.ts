@@ -79,11 +79,19 @@ export function alertLabelOf(label: string, msg: Messages): string {
 }
 
 /** What a card says it is about, under its picture: the league, the series, the line with its town, or the town — always in the language of the interface. `place` is the town already written for the language. */
-export function subjectOf(m: { kind: string; params: Record<string, unknown> }, msg: Messages, locale: Locale, place: string): string {
+/** The operator behind a regional feed: "Romagna" says nothing about who runs the bus, "START Romagna" does. */
+const OPERATOR: Record<string, string> = { romagna: "START Romagna", toscana: "Toscana", lazio: "COTRAL", trentino: "Trentino Trasporti", "alto-adige": "STA Alto Adige", "friuli-venezia-giulia": "TPL FVG" };
+export const operatorOf = (cityId: string): string | null => OPERATOR[cityId] ?? null;
+
+export function subjectOf(m: { kind: string; params: Record<string, unknown>; city_id?: string }, msg: Messages, locale: Locale, place: string): string {
   const p = m.params;
   if (m.kind === "match_bet") return leagueName(String(p.league ?? ""), locale);
   if (m.kind === "tick_gt") return alertLabel(String(p.series ?? ""), msg) || (msg.cm[String(p.label ?? "")] ?? String(p.label ?? ""));
-  if (m.kind.endsWith("_delay_gt") || m.kind === "bus_full") return `${String(p.routeName ?? "")} · ${place}`;
+  if (m.kind.endsWith("_delay_gt") || m.kind === "bus_full") {
+    // a regional feed names the stop and the operator instead of the region
+    const op = (m as { city_id?: string }).city_id ? operatorOf((m as { city_id: string }).city_id) : null, stop = String(p.stopName ?? "");
+    return op ? `${String(p.routeName ?? "")} · ${stop ? `${stop} · ` : ""}${op}` : `${String(p.routeName ?? "")} · ${place}`;
+  }
   // an earthquake is about a zone and a size, not about the city the market happens to be filed under
   if (m.kind === "quake_m") { const r = String(p.region ?? ""); return `M${Number(p.minMag).toLocaleString(INTL_TAG[locale], { maximumFractionDigits: 1 })}+ · ${r === "custom" ? String(p.place ?? "") : r ? (msg.wx.regions[r] ?? r) : msg.world}`; }
   return place;

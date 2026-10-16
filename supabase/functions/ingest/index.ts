@@ -19,7 +19,7 @@ import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, bui
 import { bookPriors, buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, MIN_FORM_GAMES, type Fixture, type Geo, type MatchBet, type TableRow } from "../_shared/shared/sport.ts";
 import { apiFootball, apiKey, deepTable, discoverFixtures, fetchBookQuotes, fetchDetails, fetchPlayerFacts, isItalianClub, loadTable, tsdbGate } from "../_lib/football.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
-import { DEFAULT_YES_PROBABILITY, computeOdds, delayContextAt, learnedPrior, liveYesProbability, rainYesProbability } from "../_shared/shared/odds.ts";
+import { DEFAULT_YES_PROBABILITY, TRAIN_START_FLOOR, TRAIN_START_STOPS, calibrateTrainYes, computeOdds, delayContextAt, learnedPrior, liveYesProbability, rainYesProbability, routePrior } from "../_shared/shared/odds.ts";
 import { allowUnverified, db, feedUrl, loadCities, requireCron, safe, usableFeeds, type CityConfig, type FeedConfig } from "../_lib/common.ts";
 
 const FETCH_TIMEOUT_MS = 25_000;
@@ -97,7 +97,7 @@ Deno.serve(safe(async (req) => {
       const tf = Date.now();
       while (rtCache.size > 2) rtCache.delete(rtCache.keys().next().value as string); // keep only the latest decoded feeds: the big ones add up inside one run
       try {
-        const n = await ingestFeed(sb, city, feed, now, tracked.get(feed.id) ?? new Map(), rtCache);
+        const n = feed.occupancyOnly ? 0 : await ingestFeed(sb, city, feed, now, tracked.get(feed.id) ?? new Map(), rtCache); // occupancyOnly: no delay question exists, only the vehicles are read
         okRows.push({ feed_id: feed.id, last_ok_at: new Date().toISOString(), last_error: null });
         report[feed.id] = `ok ${n} ${Date.now() - tf}ms`;
         if (feed.vehiclesUrl) report[`${feed.id}-vehicles`] = await ingestVehicles(sb, feed, now, trackedVeh.get(feed.id) ?? new Set()).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
@@ -128,7 +128,9 @@ async function ingestVehicles(sb: ReturnType<typeof db>, feed: FeedConfig, now: 
   if (trips.size === 0) return "idle";
   const headers = { ...(feed.headers ?? {}) };
   if (headers["X-BusOne-Client"] && Deno.env.get("CONTACT_EMAIL")) headers["X-BusOne-Client"] += `; contact: ${Deno.env.get("CONTACT_EMAIL")}`;
-  const bytes = await fetchBytes(feed.vehiclesUrl!, headers);
+  let vurl = feed.vehiclesUrl!;
+  if (feed.requiresKey && feed.keyIn !== "header") { const k = Deno.env.get(feed.requiresKey); if (!k) throw new Error(`missing env ${feed.requiresKey}`); vurl += `${vurl.includes("?") ? "&" : "?"}acl:consumerKey=${encodeURIComponent(k)}`; }
+  const bytes = await fetchBytes(vurl, headers);
   const msg = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(bytes), { longs: Number }) as RtFeed;
   const pos = parseVehiclePositions(msg, now).filter((o) => trips.has(o.tripId) && o.at > now - 900 && o.at <= now + 120);
   if (pos.length) {
@@ -200,19 +202,34 @@ async function repriceRain(sb: ReturnType<typeof db>): Promise<string> {
   return `ok ${out.length}/${rows.length}`;
 }
 
+/** What each line did in the last 45 days (settled questions): the base of the "this train is usually late / usually on time" memory. Kept for half an hour. */
+let routeCache: { at: number; map: Map<string, { n: number; yes: number }> } | null = null;
+async function learnedRoutes(sb: ReturnType<typeof db>, now: number): Promise<(cityId: string, route: string | null | undefined, countryPrior: number) => number> {
+  if (!routeCache || now - routeCache.at > 1800) {
+    const { data } = await sb.rpc("route_results");
+    const map = new Map<string, { n: number; yes: number }>();
+    for (const r of (data ?? []) as { city_id: string; route: string; n: number | string; yes: number | string }[]) map.set(`${r.city_id}|${r.route}`, { n: Number(r.n), yes: Number(r.yes) });
+    routeCache = { at: now, map };
+  }
+  const map = routeCache.map;
+  return (cityId, route, countryPrior) => { const h = route ? map.get(`${cityId}|${route}`) : undefined; return h ? routePrior(countryPrior, h.n, h.yes) : countryPrior; };
+}
+
 async function repriceDelays(sb: ReturnType<typeof db>): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  const priorOf = await learnedPriors(sb, now);
-  const tzOf = new Map((await loadCities()).map((c) => [c.id, c.timezone]));
+  const priorOf = await learnedPriors(sb, now), routePriorOf = await learnedRoutes(sb, now);
+  const cityList = await loadCities(), tzOf = new Map(cityList.map((c) => [c.id, c.timezone])), countryOf = new Map(cityList.map((c) => [c.id, c.country]));
   const { data, error } = await sb.rpc("live_pricing_inputs");
   if (error) throw new Error(error.message);
-  const rows = (data ?? []) as { market_id: string; city_id: string; kind: string; threshold_sec: number; target_seq: number; obs_seq: number; delay_sec: number; odds_yes: number; odds_no: number; flash_multiplier: number }[];
+  const rows = (data ?? []) as { market_id: string; city_id: string; kind: string; threshold_sec: number; target_seq: number; obs_seq: number; delay_sec: number; odds_yes: number; odds_no: number; flash_multiplier: number; route: string | null }[];
   const out: { id: string; prior: number; yes: number; no: number }[] = [];
   const live = new Set<string>();
   for (const r of rows) {
     live.add(r.market_id);
-    const prior = priorOf(r.city_id, r.kind);
-    const p = liveYesProbability(prior, r.delay_sec, r.threshold_sec, r.target_seq - r.obs_seq, r.kind === "train_delay_gt", delayContextAt(tzOf.get(r.city_id), now));
+    const prior = routePriorOf(r.city_id, r.route, priorOf(r.city_id, r.kind)), stopsLeft = r.target_seq - r.obs_seq;
+    let p = liveYesProbability(prior, r.delay_sec, r.threshold_sec, stopsLeft, r.kind === "train_delay_gt", delayContextAt(tzOf.get(r.city_id), now));
+    // Italian trains: the model's chance is put on what the settled questions showed, and a train that has just started (many stops to go, not late yet) is not priced as a sure thing on time
+    if (r.kind === "train_delay_gt" && countryOf.get(r.city_id) === "IT") { p = calibrateTrainYes(p); if (stopsLeft >= TRAIN_START_STOPS && r.delay_sec < r.threshold_sec) p = Math.max(p, TRAIN_START_FLOOR); }
     const o = computeOdds(p);
     const cur = Number(r.odds_yes) / Math.max(1, Number(r.flash_multiplier));
     if (Math.abs(o.yes - cur) / cur < 0.03 && Math.abs(o.no - Number(r.odds_no)) < 0.03) continue;
@@ -220,9 +237,9 @@ async function repriceDelays(sb: ReturnType<typeof db>): Promise<string> {
   }
   let stale = 0;
   const { data: old } = await sb.rpc("stale_prior_markets");
-  for (const r of (old ?? []) as { market_id: string; city_id: string; kind: string; odds_yes: number }[]) {
+  for (const r of (old ?? []) as { market_id: string; city_id: string; kind: string; odds_yes: number; route: string | null }[]) {
     if (live.has(r.market_id)) continue;
-    const prior = priorOf(r.city_id, r.kind), o = computeOdds(prior);
+    const prior = routePriorOf(r.city_id, r.route, priorOf(r.city_id, r.kind)), o = computeOdds(prior);
     out.push({ id: r.market_id, prior, yes: o.yes, no: o.no }); stale++;
   }
   if (out.length) { const { error: e2 } = await sb.rpc("apply_live_odds", { p: out }); if (e2) throw new Error(e2.message); }

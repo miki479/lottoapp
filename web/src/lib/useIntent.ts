@@ -60,7 +60,7 @@ export function useIntent(o: { registered: boolean; home: { lat: number; lon: nu
     };
     const start = () => {
       if (watch !== null) return;
-      watch = navigator.geolocation.watchPosition(onPos, (e) => { if (e.code === 1) { setDenied(true); } }, { enableHighAccuracy: false, maximumAge: 30_000, timeout: 20_000 });
+      watch = navigator.geolocation.watchPosition(onPos, (e) => { if (e.code === 1) { setDenied(true); } }, { enableHighAccuracy: true, maximumAge: 5_000, timeout: 20_000 });
     };
     const stop = () => { if (watch !== null) { navigator.geolocation.clearWatch(watch); watch = null; } };
     const onVis = () => { if (document.visibilityState === "visible") start(); else { stop(); anchor = null; lastAsk = null; nearest = null; } };

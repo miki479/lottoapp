@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, Trophy, TrendingDown, TrendingUp, Users } from "lucide-preact";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
+import { every } from "../lib/poll.ts";
 import { Empty } from "../components/Empty.tsx";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { useBusy } from "../lib/busy.ts";
@@ -36,6 +37,22 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
   const board = tab === "friends" && fsub === "board";
   const refreshFriends = async () => setFriends(await loadFriends());
   useEffect(() => { if (p.registered && board) refreshFriends(); }, [p.registered, board]);
+  const listRef = useRef<HTMLDivElement>(null), seen = useRef(new Map<string, { top: number; rank: number }>()), [climbed, setClimbed] = useState<Set<string>>(new Set());
+  useLayoutEffect(() => {
+    const box = listRef.current; if (!box || !rows) return;
+    const next = new Map<string, { top: number; rank: number }>(), up = new Set<string>();
+    box.querySelectorAll<HTMLElement>("[data-uid]").forEach((el) => {
+      const id = el.dataset.uid!, rank = Number(el.dataset.rank), top = el.offsetTop, prev = seen.current.get(id);
+      next.set(id, { top, rank });
+      if (prev && prev.top !== top && typeof el.animate === "function" && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        const climbing = prev.top > top;
+        if (climbing && rank < prev.rank) up.add(id);
+        el.animate([{ transform: `translateY(${prev.top - top}px)`, zIndex: climbing ? 2 : 1 }, { transform: "none", zIndex: climbing ? 2 : 1 }], { duration: 900, easing: "cubic-bezier(.2,.9,.25,1)" });
+      }
+    });
+    seen.current = next;
+    if (up.size) { setClimbed(up); const to = setTimeout(() => setClimbed(new Set()), 3500); return () => clearTimeout(to); }
+  }, [rows]);
   const looks = useLooks([...(rows ?? []).map((r) => r.user_id), ...(friends ?? []).map((r) => r.user_id)]);
   const face = (id: string) => { const l = looks[id]; return l ? <Look avatar={l.avatar} decoration={l.decoration} size={36} /> : <span class="lkph" />; };
 
@@ -51,12 +68,15 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
     if (scope === "near" && !p.home) { setRows([]); return; }
     setRows(null);
     let live = true; // a slower answer for a scope the player already left must not replace the current list
-    sb.rpc("leaderboard", { p_scope: scope === "friends" ? "group" : scope, p_key: key ?? null, p_limit: 50 }).then(({ data }) => {
+    const load = () => sb.rpc("leaderboard", { p_scope: scope === "friends" ? "group" : scope, p_key: key ?? null, p_limit: 50 }).then(({ data }) => {
       if (!live) return;
       const r = ((data ?? []) as LbRow[]).map((x) => ({ ...x, rank: Number(x.rank), score: Number(x.score) }));
       setRows(r); if (scope === "global") p.onRank(r.find((x) => x.is_me)?.rank ?? null, m.scopes.global);
     });
-    return () => { live = false; };
+    load();
+    // the board refreshes by itself while it is on screen: people who climb slide up past the others
+    const stop = every(() => { if (document.visibilityState === "visible") void load(); }, 45_000);
+    return () => { live = false; stop(); };
   }, [scope, key, p.registered, p.home?.id, board]);
 
   const [gbusy, run] = useBusy();
@@ -116,11 +136,11 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
       {!board && rows && rows.length === 0 && <div class="card"><Empty icon={Trophy} title={m.empty.title} body={m.empty.body} /></div>}
       {!board && rows && rows.length > 0 && p.profile && <p class="detail scorelegend">{m.balanceLbl} <b class="num">{money(p.profile.credits, p.locale)}</b> · {m.seasonLegend}</p>}
       {!board && rows && rows.length > 0 && (
-        <div class="list">
+        <div class="list" ref={listRef}>
           {rows.map((r) => (
-            <div class={`row ${r.is_me ? "me" : ""}`} key={r.user_id}>
+            <div class={`row ${r.is_me ? "me" : ""} ${climbed.has(r.user_id) ? "climbed" : ""}`} key={r.user_id} data-uid={r.user_id} data-rank={r.rank}>
               <span class={`rank ${r.rank <= 3 ? "top" : ""}`}>{r.rank}</span>
-              {face(r.user_id)}
+              {face(r.user_id)}{climbed.has(r.user_id) && <ArrowUp size={16} class="climbarrow" aria-hidden="true" />}
               <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><span class="nick"><b>{r.display_name}</b><LevelBadge level={looks[r.user_id]?.level} msg={p.msg} /></span><span class="subline">{r.is_me && <em class="youtag">{m.you}</em>}<PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} /></span></button>
               <span class="scorebox"><span class={`score num ${r.score > 0 ? "pos" : r.score < 0 ? "neg" : "zero"}`}>{r.score > 0 ? <TrendingUp size={14} /> : r.score < 0 ? <TrendingDown size={14} /> : null}{fmtSigned(r.score, p.locale)}</span><small class="scorelbl">{m.seasonLbl}</small></span>
             </div>

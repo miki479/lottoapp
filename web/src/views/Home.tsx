@@ -34,6 +34,13 @@ import type { MarketRow } from "../lib/format.ts";
 import type { LiveDelay, LiveOcc, Pick } from "../lib/types.ts";
 import { placeName as placeLabel } from "../lib/names.ts";
 
+/** The small cross inside the chip of the selected place: it clears the selection (a span, because a button cannot hold another button). */
+function ChipX({ on, onClear, label }: { on: boolean; onClear: () => void; label: string }) {
+  if (!on) return null;
+  const go = (e: Event) => { e.stopPropagation(); e.preventDefault(); onClear(); };
+  return <span class="chipx" role="button" tabIndex={0} aria-label={label} onClick={go} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") go(e); }}><X size={13} /></span>;
+}
+
 /** Only these depend on a place: the city chips are shown for them and nowhere else, so a global category is never emptied by a city. */
 const LOCAL_CATS: CatId[] = ["bus", "train", "weather", "traffic"];
 const safe = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
@@ -42,7 +49,7 @@ const REG_MORE: Record<string, string> = { it: "Regioni", "en-US": "Regions", "e
 const NEAR_WIDE: Record<string, string> = { it: "Niente entro 50 km: ecco le più vicine nel tuo paese.", "en-US": "Nothing within 50 km: here is the closest in your country.", "en-GB": "Nothing within 50 km: here is the closest in your country.", ja: "50km以内にはありません。お住まいの国で一番近いものを表示します。" };
 export interface HomeProps {
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>; occ: Record<string, LiveOcc>;
-  cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null; radiusKm?: number | null; mineWide?: boolean; country?: string | null; homePos?: { lat: number; lon: number } | null;
+  cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null; radiusKm?: string | null; mineWide?: boolean; country?: string | null; homePos?: { lat: number; lon: number } | null;
   onRefreshBoard?: () => void; onQuakeMaker: () => void; onSeries: (s?: FollowedShow) => void; onCreate: () => void; registered: boolean; onAuth: () => void; italian: boolean; nearNode?: preact.ComponentChildren; nearbyNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
   stale?: boolean; details: boolean; friendBets: Record<string, number>; onOffer?: (m: MarketRow, o: OfferUse) => void;
   installEvt: Event | null;
@@ -69,6 +76,9 @@ export function Home(p: HomeProps) {
   const [catsOpen, setCatsOpen] = useState(() => EXTRA_CATS.includes(p.cat));
   const extraCount = EXTRA_CATS.reduce((n, c) => n + (p.counts[c] ?? 0), 0);
   useEffect(() => { if (EXTRA_CATS.includes(p.cat)) setCatsOpen(true); }, [p.cat]);
+  // how many open questions each place has in the category being looked at, shown on the place chips
+  const perCity = useMemo(() => { const g = new Map<string, number>(), r = new Map<string, number>(); const nowMs = Date.now(); for (const m of p.markets ?? []) { if (m.category !== p.cat || m.params.ladderOf || Date.parse(m.closes_at) <= nowMs) continue; g.set(m.city_id, (g.get(m.city_id) ?? 0) + 1); const rg = regionOfCity(m.city_id); if (rg) r.set(rg, (r.get(rg) ?? 0) + 1); } return { g, r }; }, [p.markets, p.cat]);
+  const nc = (id: string, region = false) => { const n = (region ? perCity.r : perCity.g).get(id) ?? 0; return n > 0 ? <em class="chipn">{n}</em> : null; };
   const wxKinds = order.filter((k) => p.list.some((m) => wxKey(m) === k));
   const wx = wxKinds.includes(wxSel) ? wxSel : "all";
   const picked = wx !== "all" ? p.list.filter((m) => wxKey(m) === wx) : p.list;
@@ -145,15 +155,15 @@ export function Home(p: HomeProps) {
           {LOCAL_CATS.includes(p.cat) && (
             <div class="chiprow" role="tablist">
               <button class={`chip ${p.filter === "world" ? "on" : ""}`} role="tab" aria-selected={p.filter === "world"} onClick={() => p.onFilter("world")}><Globe size={16} />{msg.world}</button>
-              {p.mine && <button class={`chip ${p.filter === "mine" ? "on" : ""}`} role="tab" aria-selected={p.filter === "mine"} onClick={() => p.onFilter("mine")}><Flag cc={p.mine} size={13} />{msg.near.title}{p.radiusKm ? ` · ${p.radiusKm} km` : ""}</button>}
-              {regionChips.map((r) => <button key={r} class={`chip ${p.filter === REGION_FILTER + r ? "on" : ""}`} role="tab" aria-selected={p.filter === REGION_FILTER + r} onClick={() => p.onFilter(REGION_FILTER + r)}>{regionLabel(r, p.locale)}</button>)}
+              {p.mine && <button class={`chip ${p.filter === "mine" ? "on" : ""}`} role="tab" aria-selected={p.filter === "mine"} onClick={() => p.onFilter("mine")}><Flag cc={p.mine} size={13} />{msg.near.title}{p.radiusKm ? ` · ${p.radiusKm}` : ""}<ChipX on={p.filter === "mine"} onClear={() => p.onFilter("world")} label={msg.common.close} /></button>}
+              {regionChips.map((r) => <><button key={r} class={`chip ${p.filter === REGION_FILTER + r ? "on" : ""}`} role="tab" aria-selected={p.filter === REGION_FILTER + r} onClick={() => p.onFilter(REGION_FILTER + r)}>{regionLabel(r, p.locale)}{nc(r, true)}<ChipX on={p.filter === REGION_FILTER + r} onClear={() => p.onFilter("world")} label={msg.common.close} /></button></>)}
               {p.italian && <button class="chip more" aria-haspopup="dialog" onClick={() => setRegOpen(true)}><ChevronDown size={16} />{REG_MORE[p.locale] ?? REG_MORE["en-US"]}</button>}
-              {p.italian && p.filter !== "world" && p.filter !== "mine" && !isRegionFilter(p.filter) && !p.places.some((pl) => pl.id === p.filter) && <button class="chip on" role="tab" aria-selected><Flag cc={selCountry} size={13} />{placeLabel(placeName, p.locale)}</button>}
-              {(p.italian ? [] : startChips(p.country, p.locale)).map((ch) => { const pl = ch.place; return ch.city
-                ? <button key={ch.city.id} class={`chip ${p.filter === ch.city.id ? "on" : ""}`} role="tab" aria-selected={p.filter === ch.city.id} onClick={() => p.onFilter(ch.city!.id)}><Flag cc={ch.city.country} size={13} />{cityName(ch.city, p.locale)}</button>
-                : <button key={pl!.id} class={`chip ${p.filter === pl!.id ? "on" : ""}`} role="tab" aria-selected={p.filter === pl!.id} onClick={() => p.onPlace(pl!)}><Flag cc={pl!.country} size={13} />{placeLabel(pl!.name, p.locale)}</button>; })}
-              {p.trending.filter((t) => !cities.find((c) => c.id === t.id)?.region && !startChips(p.country, p.locale).some((ch) => (ch.city?.id ?? ch.place?.id) === t.id)).map((t) => <button key={t.id} class={`chip trend ${p.filter === t.id ? "on" : ""}`} role="tab" aria-selected={p.filter === t.id} onClick={() => (t.place ? p.onPlace(t.place) : p.onFilter(t.id))}><Flag cc={t.country} size={13} />{placeLabel(t.name, p.locale)}<Flame size={13} /></button>)}
-              {p.places.filter((pl) => !FEATURED_PLACES.some((f) => f.id === pl.id) && !p.trending.some((t) => t.id === pl.id)).map((pl) => <button key={pl.id} class="chip on" role="tab" aria-selected><Flag cc={pl.country} size={13} />{placeLabel(pl.name, p.locale)}</button>)}
+              {p.italian && p.filter !== "world" && p.filter !== "mine" && !isRegionFilter(p.filter) && !p.places.some((pl) => pl.id === p.filter) && <button class="chip on" role="tab" aria-selected><Flag cc={selCountry} size={13} />{placeLabel(placeName, p.locale)}<ChipX on={true} onClear={() => p.onFilter("world")} label={msg.common.close} /></button>}
+              {(p.italian ? [] : startChips(p.country, p.locale)).map((ch) => { const pl = ch.place; return <>{ch.city
+                ? <button key={ch.city.id} class={`chip ${p.filter === ch.city.id ? "on" : ""}`} role="tab" aria-selected={p.filter === ch.city.id} onClick={() => p.onFilter(ch.city!.id)}><Flag cc={ch.city.country} size={13} />{cityName(ch.city, p.locale)}{nc(ch.city.id)}<ChipX on={p.filter === ch.city.id} onClear={() => p.onFilter("world")} label={msg.common.close} /></button>
+                : <button key={pl!.id} class={`chip ${p.filter === pl!.id ? "on" : ""}`} role="tab" aria-selected={p.filter === pl!.id} onClick={() => p.onPlace(pl!)}><Flag cc={pl!.country} size={13} />{placeLabel(pl!.name, p.locale)}{nc(pl!.id)}<ChipX on={p.filter === pl!.id} onClear={() => p.onFilter("world")} label={msg.common.close} /></button>}</>; })}
+              {p.trending.filter((t) => !cities.find((c) => c.id === t.id)?.region && !startChips(p.country, p.locale).some((ch) => (ch.city?.id ?? ch.place?.id) === t.id)).map((t) => <><button key={t.id} class={`chip trend ${p.filter === t.id ? "on" : ""}`} role="tab" aria-selected={p.filter === t.id} onClick={() => (t.place ? p.onPlace(t.place) : p.onFilter(t.id))}><Flag cc={t.country} size={13} />{placeLabel(t.name, p.locale)}{nc(t.id)}<Flame size={13} /><ChipX on={p.filter === t.id} onClear={() => p.onFilter("world")} label={msg.common.close} /></button></>)}
+              {p.places.filter((pl) => !FEATURED_PLACES.some((f) => f.id === pl.id) && !p.trending.some((t) => t.id === pl.id)).map((pl) => <><button key={pl.id} class="chip on" role="tab" aria-selected><Flag cc={pl.country} size={13} />{placeLabel(pl.name, p.locale)}{nc(pl.id)}<ChipX on={p.filter === pl.id} onClear={() => p.onFilter("world")} label={msg.common.close} /></button></>)}
               <button class="chip more" onClick={p.onMorePlaces}><Plus size={16} />{msg.places.more}</button>
             </div>
           )}

@@ -39,7 +39,9 @@ async function learnedPriorYes(category) {
   const kind = category === "train" ? "train_delay_gt" : "bus_delay_gt", base = DEFAULT_YES_PROBABILITY[kind];
   if (!SB || !KEY) return base;
   const same = readdirSync(new URL("../cities/", import.meta.url)).filter((f) => f.endsWith(".json")).map((f) => JSON.parse(readFileSync(new URL(`../cities/${f}`, import.meta.url), "utf8"))).filter((c) => c.country === city.country).map((c) => c.id);
-  const rows = await sb(`markets?category=eq.${category}&kind=eq.${kind}&status=eq.resolved&params->>ladderOf=is.null&city_id=in.(${same.join(",")})&select=outcome&limit=1000`);
+  // a slow or refused request must not stop the questions from being made: the fixed guess is used instead
+  const rows = await sb(`markets?category=eq.${category}&kind=eq.${kind}&status=eq.resolved&params->>ladderOf=is.null&city_id=in.(${same.join(",")})&select=outcome&limit=1000`).catch((e) => { console.error(`[${city.country} ${category}] prior not learned: ${String(e.message).slice(0, 120)}`); return null; });
+  if (!rows) return base;
   const yes = rows.filter((r) => r.outcome === "yes").length;
   const p = learnedPrior(yes, rows.length, base);
   console.error(`[${city.country} ${category}] chance of "late": ${(p * 100).toFixed(1)}% (${yes} of ${rows.length} settled, guess ${(base * 100).toFixed(0)}%)`);
@@ -48,7 +50,7 @@ async function learnedPriorYes(category) {
 
 async function historyLookup() {
   if (!SB || !KEY) return () => null;
-  const rows = await sb(`odds_history?city_id=eq.${city.id}&select=kind,route_id,hour_of_day,threshold,n,yes`);
+  const rows = await sb(`odds_history?city_id=eq.${city.id}&select=kind,route_id,hour_of_day,threshold,n,yes`).catch((e) => { console.error(`[${city.id}] history not read: ${String(e.message).slice(0, 120)}`); return []; });
   const m = new Map(rows.map((r) => [`${r.kind}|${r.route_id}|${r.hour_of_day}|${r.threshold}`, { n: r.n, yes: r.yes }]));
   return (k) => m.get(`${k.kind}|${k.routeId}|${k.hourOfDay}|${k.threshold}`) ?? null;
 }
@@ -133,9 +135,9 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
     // Re-price with real history now that the event exists.
     const key = historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone);
     const priced = buildDelayMarket({ ...{ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: nameOf(trip), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold }, history: hist(key), priorYes });
-    markets.push(withExtras(priced, stop.stopId));
+    if (!feed.occupancyOnly) markets.push(withExtras(priced, stop.stopId));
     // Buses that report how full they are: one more question on the same trip (empty / few seats left / standing room), a third of the time or so.
-    if (feed.occupancy && rand() < 0.5) {
+    if (feed.occupancy && (feed.occupancyOnly || rand() < 0.5)) {
       const r = rand(), occ = r < 0.4 ? "empty" : r < 0.75 ? "few" : "standing";
       const oargs = { cityId: city.id, tz: city.timezone, feedId: feed.id, routeId: trip.route_id, routeName: nameOf(trip), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, kind: occ };
       const od = buildOccupancyMarket({ ...oargs, history: null });

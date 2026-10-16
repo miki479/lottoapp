@@ -2,7 +2,7 @@
  * How a player looks: one of the app's cartoon characters, inside a decoration ring made of a material.
  * Ring decorations unlock with the level (copper, bronze ... adamantium) or drop at random from the daily chest and the flash mission.
  */
-export const AVATARS = ["conductor", "busbot", "cloud", "fox", "ball", "bolt", "alien", "astro", "clock", "kandinsky"] as const;
+export const AVATARS = ["conductor", "busbot", "cloud", "fox", "ball", "bolt", "alien", "astro", "clock", "kandinsky", "robot", "panda", "wizard", "samurai", "dragon", "lion"] as const;
 export type AvatarId = (typeof AVATARS)[number];
 export const isAvatar = (s: unknown): s is AvatarId => (AVATARS as readonly string[]).includes(String(s));
 

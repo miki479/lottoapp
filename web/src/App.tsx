@@ -2,6 +2,8 @@ import { Activity, Bitcoin, Clapperboard, Clock, CloudLightning, Gamepad2, MapPi
 import { RING_BONUS, STREAK_MILESTONES } from "../../shared/rewards.ts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { AuthSheet } from "./components/AuthSheet.tsx";
+import { LevelUpFx } from "./components/LevelUpFx.tsx";
+import "./components/LevelUpFx.css";
 import { BetSheet } from "./components/BetSheet.tsx";
 import { offerOdds } from "../../shared/offers.ts";
 import { OFFER_EVENT, offerErrorText, type OfferUse } from "./components/PersonalOffer.tsx";
@@ -10,6 +12,7 @@ import { DelayMeter } from "./components/DelayMeter.tsx";
 import { OfflineBar } from "./components/OfflineBar.tsx";
 import { shortStation, TrainBoard } from "./components/TrainBoard.tsx";
 import { MiniLive } from "./components/MiniLive.tsx";
+import { LossSheet } from "./components/LossSheet.tsx";
 import { getSnapshot } from "./lib/snapshot.ts";
 import { Ticker } from "./components/Ticker.tsx";
 import { ParlayBar } from "./components/ParlayBar.tsx";
@@ -25,7 +28,8 @@ import { ChallengeSheet, type Challenge } from "./components/ChallengeSheet.tsx"
 import { Sidebar, TabBar, type Screen } from "./components/Nav.tsx";
 import { NicknameSheet } from "./components/NicknameSheet.tsx";
 import { loadMyProgress, type MyProgress } from "./lib/looks.ts";
-import { useDailyReady } from "./lib/shop.ts";
+import { useDailyReady, pending } from "./lib/shop.ts";
+import { hubText } from "./lib/shopText.ts";
 import { DECORATIONS } from "../../shared/looks";
 import { ResultScreen } from "./components/ResultScreen.tsx";
 import { Toast } from "./components/Toast.tsx";
@@ -59,7 +63,7 @@ import { ProfileView } from "./views/Profile.tsx";
 import { Ranking } from "./views/Ranking.tsx";
 import { Friends } from "./views/Friends.tsx";
 import { Suspense, lazy } from "preact/compat";
-import { alertLabelOf, matchName } from "./lib/names.ts";
+import { alertLabelOf, matchName, operatorOf } from "./lib/names.ts";
 import { AppFooter } from "./components/AppFooter.tsx";
 
 /** A component loaded only when it is first shown (these sheets are not needed to paint the home screen), each with its own empty fallback. */
@@ -128,9 +132,10 @@ export function App() {
   const [email, setEmail] = useState<string | null>(null);
   const [registered, setRegistered] = useState(false);
   const [reqCount, setReqCount] = useState(0), [reqTick, setReqTick] = useState(0);
+  const [levelFx, setLevelFx] = useState<{ from: number; to: number } | null>(null);
   const [look, setLook] = useState<MyProgress | null>(null), [lookOpen, setLookOpen] = useState(false), [pubUser, setPubUser] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [sheet, setSheet] = useState<{ m: MarketRow; pick: Pick; offer?: OfferUse } | null>(null);
+  const [sheet, setSheet] = useState<{ m: MarketRow; pick: Pick; offer?: OfferUse; tipFrom?: string } | null>(null);
   const [auth, setAuth] = useState(false);
   const [nick, setNick] = useState(false);
   const [googleOn, setGoogleOn] = useState(false);
@@ -170,7 +175,7 @@ export function App() {
   const [betsLimit, setBetsLimit] = useState(60);
   const [flashM, setFlashM] = useState<FlashData | null>(null);
   const [missions, setMissions] = useState<DailyMissionsData | null>(null);
-  const [rewardsOpen, setRewardsOpen] = useState(false);
+  const [rewardsOpen, setRewardsOpen] = useState(false), [rewardsTab, setRewardsTab] = useState<"today" | "shop">("today"), [shopSeen, setShopSeen] = useState(() => store.get("shopseen") === new Date().toISOString().slice(0, 10)), [lossOpen, setLossOpen] = useState(false);
   const [pushOn, setPushOn] = useState(false);
   const [askPush, setAskPush] = useState(false);
   const [pushVariant, setPushVariant] = useState<PushVariant>("first"), nagN = useMemo(() => Math.floor(Date.now() / 86_400_000), []);
@@ -205,6 +210,7 @@ export function App() {
     const before = Number(store.get("lvl") ?? 0);
     if (before > 0 && p.level > before) {
       const got = DECORATIONS.filter((d) => d.level !== undefined && d.level > before && d.level <= p.level).sort((a, b) => b.level! - a.level!)[0];
+      setLevelFx({ from: before, to: p.level });
       flash(msg.look.levelUp(p.level, got ? msg.look.deco[got.id] ?? got.id : null)); haptic.success();
     }
     if (p.level !== before) store.set("lvl", String(p.level));
@@ -370,7 +376,7 @@ export function App() {
     const u = new URL(location.href); u.searchParams.delete("c"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
   }, []);
   // a push can open the app on a given screen (?open=ranking)
-  useEffect(() => { const o = new URLSearchParams(location.search).get("open"); if (o === "ranking" || o === "friends" || o === "bets" || o === "profile") { setScreen(o); const u = new URL(location.href); u.searchParams.delete("open"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash); } }, []);
+  useEffect(() => { const o = new URLSearchParams(location.search).get("open"); if (o === "loss") { setLossOpen(true); const u = new URL(location.href); u.searchParams.delete("open"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash); } else if (o === "ranking" || o === "friends" || o === "bets" || o === "profile") { setScreen(o); const u = new URL(location.href); u.searchParams.delete("open"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash); } }, []);
   const loadReqs = useCallback(async () => { if (!registered) { setReqCount(0); return; } const { data } = await sb.rpc("friend_requests_in"); setReqCount(((data ?? []) as unknown[]).length); }, [registered]);
   useEffect(() => { loadReqs(); if (!registered) return; return every(loadReqs, 120_000); }, [registered, loadReqs]);
   useEffect(() => { loadChallenges(); }, [registered]);
@@ -384,8 +390,14 @@ export function App() {
     if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return;
     sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").eq("id", id).maybeSingle().then(({ data }) => {
       const row = data as unknown as MarketRow | null;
-      if (row) setSheet({ m: row, pick: "yes" });
-      const u = new URL(location.href); u.searchParams.delete("m"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
+      const tip = new URLSearchParams(location.search).get("tip");
+      if (row && tip && /^[0-9a-f-]{36}$/i.test(tip)) {
+        sb.rpc("tip_info", { p_id: tip }).then(({ data: ti }) => {
+          const x = ((ti ?? []) as { pick: string; from_name: string }[])[0];
+          setSheet({ m: row, pick: x?.pick === "no" ? "no" : "yes", tipFrom: x ? x.from_name : undefined });
+        }, () => setSheet({ m: row, pick: "yes" }));
+      } else if (row) setSheet({ m: row, pick: "yes" });
+      const u = new URL(location.href); u.searchParams.delete("m"); u.searchParams.delete("tip"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
     });
   }, []);
   // a new filter or home town needs its own questions (regions and "near you" read towns the first page does not hold)
@@ -453,11 +465,22 @@ export function App() {
   const countryOf = (id: string) => CITIES.find((c) => c.id === id)?.country ?? placeById(id)?.country ?? (near?.id === id ? near.country : undefined);
   const hasMine = !!myCountry && open.some((m) => m.category !== "nature" && m.category !== "strike" && m.category !== "finance" && m.category !== "culture" && m.category !== "sport" && m.category !== "law" && countryOf(m.city_id) === myCountry);
   /** "Near you": what is within RADIUS_KM of the player's town (the town they set, or the one they were located in); with no town known, the whole country. */
-  const originPt = home ? { lat: home.lat, lon: home.lon } : near ? locOf(near.id) : null;
-  const withinRadius = (m: MarketRow) => { const l = originPt ? locOf(m.city_id) : null; return !!(originPt && l) && distanceM(originPt.lat, originPt.lon, l.lat, l.lon) / 1000 <= (REGION_IDS.has(m.city_id) ? REGION_KM : RADIUS_KM); };
+  // "near me" follows where the phone is (when the player located themselves); the profile town is only the fallback and the key of the local ranking
+  const originPt = geo ? { lat: geo.lat, lon: geo.lon } : home ? { lat: home.lat, lon: home.lon } : near ? locOf(near.id) : null;
+  /** Distance in metres from where the phone is to the stop a bus or train question is about (needs the real position and the stop's coordinates). */
+  const stopDist = (m: MarketRow): number | null => { const la = Number(m.params.stopLat), lo = Number(m.params.stopLon); return geo && Number.isFinite(la) && Number.isFinite(lo) ? distanceM(geo.lat, geo.lon, la, lo) : null; };
+  /** "Near you" for buses and trains is about the stop: within 250 m of the player, else within 2 km, else the town/region rule below. */
+  const stopTier = useMemo(() => { const out: Record<string, number | null> = {}; for (const c of ["bus", "train"]) { let tier: number | null = null; for (const m of open) { if (m.category !== c) continue; const d = stopDist(m); if (d === null) continue; if (d <= 250) { tier = 250; break; } if (d <= 2000) tier = 2000; } out[c] = tier; } return out; }, [open, geo?.lat, geo?.lon]);
+  const withinRadius = (m: MarketRow) => {
+    if (!originPt) return false;
+    // a regional feed (Toscana, Romagna…) is "near" only when the player is inside that region: a region whose centre is 80 km away is not near
+    if (REGION_IDS.has(m.city_id)) { const here = regionOfPoint(originPt.lat, originPt.lon), there = regionOfCity(m.city_id); if (here && there) return here === there; }
+    const l = locOf(m.city_id);
+    return !!l && distanceM(originPt.lat, originPt.lon, l.lat, l.lon) / 1000 <= (REGION_IDS.has(m.city_id) ? REGION_KM : RADIUS_KM);
+  };
   // a local category with nothing inside the radius falls back to the player's country, and says so (trains are national anyway)
-  const mineWide = useMemo(() => { const s = new Set<string>(); if (filter === "mine" && originPt) for (const c of ["bus", "weather", "traffic"]) if (!open.some((m) => m.category === c && withinRadius(m))) s.add(c); return s; }, [open, filter, home?.id, near?.id]);
-  const mineMatch = (m: MarketRow) => (originPt ? withinRadius(m) || (countryOf(m.city_id) === myCountry && (mineWide.has(m.category) || (m.category === "train" && NATIONAL.has(m.city_id)))) : countryOf(m.city_id) === myCountry);
+  const mineWide = useMemo(() => { const s = new Set<string>(); if (filter === "mine" && originPt) for (const c of ["bus", "weather", "traffic"]) if (!stopTier[c] && !open.some((m) => m.category === c && withinRadius(m))) s.add(c); return s; }, [open, filter, home?.id, near?.id, geo?.lat, geo?.lon, stopTier]);
+  const mineMatch = (m: MarketRow) => (stopTier[m.category] ? (stopDist(m) ?? Infinity) <= stopTier[m.category]! : originPt ? withinRadius(m) || (countryOf(m.city_id) === myCountry && (mineWide.has(m.category) || (m.category === "train" && NATIONAL.has(m.city_id)))) : countryOf(m.city_id) === myCountry);
   const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter || m.category === "nature" || m.category === "strike" || m.category === "finance" || m.category === "culture" || m.category === "sport" || m.category === "law" || (m.category === "traffic" && m.city_id === "world") || (filter === "mine" && mineMatch(m)) || (isRegionFilter(filter) && (regionOfCity(m.city_id) === filter.slice(4) || (m.category === "train" && NATIONAL.has(m.city_id) && countryOf(m.city_id) === "IT"))) || (NATIONAL.has(m.city_id) && countryOf(filter) === countryOf(m.city_id))), [open, filter, myCountry, near?.id, home?.id, mineWide]);
   useEffect(() => { if (hasMine && filter === "world" && !store.get("filter")) setFilter("mine"); }, [hasMine]);
   // a question already bet on leaves the lists (it stays in "My bets"), so it cannot be played twice by mistake
@@ -467,7 +490,7 @@ export function App() {
   const flashFirst = (a: MarketRow[]) => [...a].sort((x, y) => Number((y.flash_multiplier ?? 1) > 1) - Number((x.flash_multiplier ?? 1) > 1));
   // trains and buses: the most delayed right now first, then the rest
   const byDelay = (x: MarketRow[]) => [...x].sort((m1, m2) => Number(!!live[m2.id] && !live[m2.id]!.is_forecast) - Number(!!live[m1.id] && !live[m1.id]!.is_forecast) || (live[m2.id]?.delay_sec ?? -1e9) - (live[m1.id]?.delay_sec ?? -1e9));
-  const list = cat === "train" || cat === "bus" ? byDelay(byCat(cat)) : flashFirst(byCat(cat));
+  const list = cat === "train" || cat === "bus" ? (filter === "mine" && stopTier[cat] ? [...byCat(cat)].sort((a, b) => (stopDist(a) ?? 1e9) - (stopDist(b) ?? 1e9)) : byDelay(byCat(cat))) : flashFirst(byCat(cat));
   const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: byCat("nature").length, strike: isItalian ? byCat("strike").length : 0, traffic: byCat("traffic").length, finance: byCat("finance").length, culture: byCat("culture").length, sport: new Set(byCat("sport").map((m) => String(m.params.eventId))).size, law: byCat("law").length, gov: 0 };
 
   const top: TopItem[] = useMemo(() => {
@@ -537,7 +560,7 @@ export function App() {
     const users: FeedItem[] = [], system: FeedItem[] = [];
     for (const a of activity) {
       const c = cityOf(a.city_id), isDelay = a.market_kind === "bus_delay_gt" || a.market_kind === "train_delay_gt";
-      const subject = a.label ? (isDelay ? a.label : a.market_kind === "match_bet" ? matchName(a.label, locale) : msg.cm[a.label] ?? alertLabelOf(a.label, msg)) : "", what = isDelay && subject ? `${subject} · ${cityName(c, locale)}` : subject || cityName(c, locale);
+      const subject = a.label ? (isDelay ? a.label : a.market_kind === "match_bet" ? matchName(a.label, locale) : msg.cm[a.label] ?? alertLabelOf(a.label, msg)) : "", what = isDelay && subject ? `${subject} · ${operatorOf(a.city_id) ?? cityName(c, locale)}` : subject || cityName(c, locale);
       const who = a.who ?? msg.ticker.anon, verb = msg.ticker[a.kind];
       const amt = a.kind === "won" ? moneySigned(a.amount, locale) : a.kind === "lost" ? moneySigned(-a.amount, locale) : money(a.amount, locale);
       users.push({ id: `a${a.at}${a.who}${a.amount}`, who, text: `${who} ${verb} ${amt} ${msg.ticker.on} ${what}`, node: <><b>{who}</b> {verb} <i class={`amt ${a.kind}`}>{a.kind === "won" ? "▲ " : a.kind === "lost" ? "▼ " : ""}{amt}</i> {msg.ticker.on} {what}</> });
@@ -703,8 +726,8 @@ export function App() {
     go(); return every(go, 120_000);
   }, [near?.id]);
   const origin = useMemo(() => {
-    if (home) return { lat: home.lat, lon: home.lon, name: home.name };
     if (geo) return { lat: geo.lat, lon: geo.lon, name: "" };
+    if (home) return { lat: home.lat, lon: home.lon, name: home.name };
     if (near) { const c = cityOf(near.id); if (c.location && (c.location.lat || c.location.lon)) return { lat: c.location.lat, lon: c.location.lon, name: near.name }; }
     return null;
   }, [home?.id, home?.lat, near?.id, geo?.lat, geo?.lon]);
@@ -768,6 +791,16 @@ export function App() {
   const needJoin = needSignup && !registered;
   guestState.hasProgress = !registered && bets.length + parlays.length > 0;
   const slipIds = new Set(slip.map((l) => l.m.id));
+  // the balance falls under 1000 after a loss: once a day, a friendly sheet with a way back (invite a friend), never a nudge to bet more
+  const prevCredits = useRef<number | null>(null);
+  useEffect(() => {
+    const c = profile?.credits; if (c === undefined) return;
+    const was = prevCredits.current; prevCredits.current = c;
+    if (was === null || was < 1000 || c >= 1000) return;
+    const day = new Date().toISOString().slice(0, 10);
+    if (store.get("lossday") === day) return;
+    store.set("lossday", day); setLossOpen(true);
+  }, [profile?.credits]);
   const shareReferral = async () => {
     if (!referral) return; const url = `${location.origin}/?ref=${referral.code}`;
     try { if (navigator.share) { await navigator.share({ title: "LateBet", text: msg.referral.shareText(referral.code), url }); return; } await navigator.clipboard.writeText(url); flash(msg.referral.copied); } catch { /* cancelled */ }
@@ -795,16 +828,16 @@ export function App() {
     <div class={`shell${ready ? "" : " booting"}`} aria-busy={!ready}>
       <Sidebar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} rankBadge={reqCount} social={social} />
       <div>
-        <Header satire={msg.home.satire} claimable={claimable} onWallet={() => setRewardsOpen(true)} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} credits={profile ? profile.credits : null} who={profile?.id ?? null} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
+        <Header satire={msg.home.satire} claimable={claimable} onWallet={() => { setRewardsTab("today"); setRewardsOpen(true); }} onShop={() => { store.set("shopseen", new Date().toISOString().slice(0, 10)); setShopSeen(true); setRewardsTab("shop"); setRewardsOpen(true); }} shopNew={!shopSeen || !!pending.get()} shopLabel={hubText(locale).tabs.shop} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} credits={profile ? profile.credits : null} who={profile?.id ?? null} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
         <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
         <Ticker items={tickerItems} label={msg.ticker.label} />
         <main class="content">
-          {screen === "home" && <Home onRefreshBoard={() => setLiveTick((n) => n + 1)} onOffer={(m, o) => setSheet({ m, pick: "yes", offer: o })} onSeries={(s) => setSeriesMaker({ show: s ?? null })} occ={occ} friendBets={friendBets} details={detailsOn} stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} radiusKm={originPt ? RADIUS_KM : null} mineWide={filter === "mine" && mineWide.has(cat)} country={myCountry} homePos={home ? { lat: home.lat, lon: home.lon } : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} installEvt={installEvt} />}
+          {screen === "home" && <Home onRefreshBoard={() => setLiveTick((n) => n + 1)} onOffer={(m, o) => setSheet({ m, pick: "yes", offer: o })} onSeries={(s) => setSeriesMaker({ show: s ?? null })} occ={occ} friendBets={friendBets} details={detailsOn} stale={staleCats.includes(cat)} registered={registered} onAuth={() => setAuth(true)} nearbyNode={<NearbyBets msg={msg} locale={locale} now={now} origin={origin} home={home} onHome={changeHome} onLocate={locate} onChallenge={(code) => setChallengeCode(code)} country={near?.country ?? profile?.country ?? region()} busy={locating} popular={nearItems.items} fallback={nearItems.fallback} zone={near ? msg.near.zone(near.name) : null} onPick={(m, pick) => setSheet({ m, pick })} />} onCreate={() => (registered ? setMaker(true) : setAuth(true))} onQuakeMaker={() => setQuakeMaker(true)} italian={isItalian} msg={msg} locale={locale} now={now} markets={markets} list={list} live={live} cat={cat} counts={counts} onCat={(c) => { setCatChosen(true); setCat(c); haptic.tap(); }} mine={hasMine ? myCountry : null} radiusKm={originPt ? (filter === "mine" && stopTier[cat] === 250 ? "250 m" : filter === "mine" && stopTier[cat] === 2000 ? "2 km" : `${RADIUS_KM} km`) : null} mineWide={filter === "mine" && mineWide.has(cat)} country={myCountry} homePos={home ? { lat: home.lat, lon: home.lon } : null} filter={filter} onFilter={(f) => { store.set("filter", f); setFilter(f); setCatChosen(true); }} top={top} onPick={(m, pick) => setSheet({ m, pick })} trending={trending} places={myPlaces.filter((pl) => pl.id === filter)} onPlace={(pl) => { setPlacePending(pl); pickPlace(pl); }} onMorePlaces={() => setPlacePicker(true)} ladders={ladders} outlook={outlook} installEvt={installEvt} />}
           {screen === "bets" && <Bets streak={profile?.streak ?? 0} canMore={bets.length >= betsLimit} onMore={() => setBetsLimit((n) => n + 60)} invites={invites} challenges={myChallenges} onChallenge={(code) => setChallengeCode(code)} parlays={parlays} bets={bets} msg={msg} locale={locale} now={now} onOpen={setResultBet} onHome={() => go("home")} />}
           {screen === "friends" && <Friends reqTick={reqTick} onReqs={loadReqs} onProfile={setPubUser} referral={referral} onShareReferral={shareReferral} onChallenge={() => (registered ? setChallengeMaker(true) : setAuth(true))} onOpen={(code) => setChallengeCode(code)} locale={locale} msg={msg} registered={registered} onToast={flash} onAuth={() => setAuth(true)} now={now} />}
           {screen === "ranking" && <Ranking onProfile={setPubUser} home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
           {screen === "admin" && <AdminPage msg={msg} onBack={() => go("profile")} />}
-          {screen === "profile" && <ProfileView look={look} onLook={() => setLookOpen(true)} homeNode={<CityChip msg={msg} locale={locale} value={home} onChange={changeHome} />} onAdmin={() => go("admin")} giftCard={giftCard} onGiftSeen={() => { store.set("giftcard", "0"); setGiftCard(false); }} push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, friends: !!profile?.push_friends, setPrefs: async (f: boolean, s: boolean, fr: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s, p_friends: fr }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} />}
+          {screen === "profile" && <ProfileView voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} look={look} onLook={() => setLookOpen(true)} homeNode={<CityChip msg={msg} locale={locale} value={home} onChange={changeHome} />} onAdmin={() => go("admin")} giftCard={giftCard} onGiftSeen={() => { store.set("giftcard", "0"); setGiftCard(false); }} push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, friends: !!profile?.push_friends, setPrefs: async (f: boolean, s: boolean, fr: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s, p_friends: fr }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} />}
           {screen !== "admin" && <AppFooter msg={msg} sources={sources} />}
         </main>
       </div>
@@ -816,12 +849,14 @@ export function App() {
       {seriesMaker && <SeriesMaker msg={msg} locale={locale} initial={seriesMaker.show} onClose={() => setSeriesMaker(null)} onCreated={(m) => { setSeriesMaker(null); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
       {quakeMaker && <QuakeMaker msg={msg} locale={locale} onClose={() => setQuakeMaker(false)} onCreated={(m) => { setQuakeMaker(false); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
       {placePicker && <PlacePicker msg={msg} locale={locale} recent={myPlaces} onPick={pickPlace} onCity={(id) => { store.set("filter", id); setFilter(id); setCatChosen(true); setPlacePicker(false); }} onClose={() => setPlacePicker(false)} />}
-      {rewardsOpen && <RewardsSheet flash={flashM} onClaimFlash={claimFlash} missions={missions} onClaimMission={claimMission} onClaimChest={claimChest} msg={msg} locale={locale} now={now} profile={profile} quests={quests} referral={referral} registered={registered} onClaim={claimQuest} onGo={goQuest} onShare={shareReferral} onChanged={() => { loadProfile(); }} onClose={() => setRewardsOpen(false)} />}
+      {lossOpen && <LossSheet msg={msg} locale={locale} credits={profile?.credits ?? 0} canShare={!!referral} onShare={() => { setLossOpen(false); void shareReferral(); }} onAuth={() => { setLossOpen(false); setAuth(true); }} onClose={() => setLossOpen(false)} />}
+      {rewardsOpen && <RewardsSheet initialTab={rewardsTab} flash={flashM} onClaimFlash={claimFlash} missions={missions} onClaimMission={claimMission} onClaimChest={claimChest} msg={msg} locale={locale} now={now} profile={profile} quests={quests} referral={referral} registered={registered} onClaim={claimQuest} onGo={goQuest} onShare={shareReferral} onChanged={() => { loadProfile(); }} onAlbum={() => go("profile")} onClose={() => setRewardsOpen(false)} />}
       {askPush && <PushAsk variant={pushVariant} n={nagN} locale={locale} lifted={slip.length > 0} msg={msg} onYes={() => turnPush(true)} onNo={() => { if (pushVariant === "first") rememberPush(false); markNag(); setAskPush(false); }} />}
       <ParlayBar count={slip.length} odds={slipOdds(slip)} msg={msg} locale={locale} onOpen={() => setParlayOpen(true)} />
-      {sheet && <BetSheet openBets={bets.filter((b) => b.status === "open").length} offer={sheet.offer} now={now} live={live[sheet.m.id]} occ={occ[sheet.m.id]} mm={outlook[sheet.m.id]} boosts={profile?.boosts ?? 0} stakeFactor={profile?.stake_factor} key={String(sheet.m.params.ladderOf ?? sheet.m.id)} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
+      {sheet && <BetSheet tipFrom={sheet.tipFrom ?? null} canTip={registered} openBets={bets.filter((b) => b.status === "open").length} offer={sheet.offer} now={now} live={live[sheet.m.id]} occ={occ[sheet.m.id]} mm={outlook[sheet.m.id]} boosts={profile?.boosts ?? 0} stakeFactor={profile?.stake_factor} key={String(sheet.m.params.ladderOf ?? sheet.m.id)} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
       {parlayOpen && slip.length > 0 && <ParlaySheet boosts={profile?.boosts ?? 0} legs={slip} msg={msg} locale={locale} credits={profile?.credits ?? 0} needJoin={needJoin} googleOn={googleOn} onClose={() => setParlayOpen(false)} onRemove={(id) => setSlip((s) => s.filter((l) => l.m.id !== id))} onClear={() => { setSlip([]); setParlayOpen(false); }} onJoined={async () => {}} onPlace={placeParlay} />}
       {auth && <AuthSheet msg={msg} guest={!registered} googleOn={googleOn} onClose={() => setAuth(false)} onDone={(text) => { setAuth(false); flash(text); }} />}
+      {levelFx && <LevelUpFx from={levelFx.from} to={levelFx.to} msg={msg} onDone={() => setLevelFx(null)} />}
       {lookOpen && look && <LookSheet progress={look} msg={msg} myId={profile?.id ?? ""} onClose={() => setLookOpen(false)} onSaved={(p) => { setLook(p); flash(msg.look.saved); }} />}
       {pubUser && <PublicProfile id={pubUser} msg={msg} locale={locale} onClose={() => { setPubUser(null); loadReqs(); setReqTick((n) => n + 1); }} onToast={flash} />}
       {nick && <NicknameSheet msg={msg} current={profile?.display_name ?? null} onClose={() => setNick(false)} onSaved={(n) => { setNick(false); loadProfile(); loadQuests(); flash(n); }} />}

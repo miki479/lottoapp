@@ -57,9 +57,11 @@ export interface Messages {
   slip: { bar: (n: number) => string; title: string; add: string; added: string; remove: string; odds: string; confirm: string; maxWin: string; need2: string; placed: (win: string) => string; legs: (n: number) => string; clear: string };
   stake: { label: string; min: string; max: (m: string) => string };
   join: { step: string; title: string; body: (credits: string) => string; nickname: string; password: string; hint: string; cta: (stake: string) => string; haveProfile: string; newProfile: string; emailInstead: string; checkMail: string };
+  tip: { btn: string; title: string; hint: string; send: (n: number) => string; sent: (n: number) => string; none: string; noFriends: string; banner: (who: string) => string; error: string };
+  loss: { title: string; body: (balance: string, bonus: string) => string; share: string; signup: string; later: string };
   referral: { title: string; body: (bonus: string) => string; code: string; copy: string; copied: string; share: string; shareText: (code: string) => string; counts: (invited: number, paid: number) => string; guest: string; accepted: string };
   voice: { on: string; off: string; placed: (win: string) => string; won: (amount: string) => string; lost: string; flash: string; label: string };
-  ladder: { title: string; sub: (min: number) => string; estimate: string; chip: string };
+  ladder: { info: string; infoLabel: string; base: string; title: string; sub: (min: number) => string; estimate: string; chip: string };
   push: { active: string; events: string; friendsPref: string; flashPref: string; streakPref: string; prefsHint: string; title: string; body: string; enable: string; disable: string; on: string; off: string; denied: string; later: string; askTitle: string; askBody: string; yes: string };
   boost: { gain: (from: string, to: string) => string; title: string; toggle: string; hint: string; have: (n: number) => string; none: string; gift: string; explain: string };
   rewards: { title: string; subtitle: string; daily: string; dailyReset: (t: string) => string; once: string; claim: (amount: string) => string; claimed: string; go: string; invite: string; inviteBody: (amount: string, max: number) => string; invited: (n: number, max: number) => string; allDone: string; streakRisk: (n: number) => string; open: string; quest: Record<string, { t: string; d: string }> };
@@ -71,7 +73,7 @@ export interface Messages {
   alertNames: { yellow: string; orange: string; red: string };
   alertHazards: { idraulica: string; idrogeologica: string; temporali: string };
   alertAreas: { romagna: string; bologna: string; modena: string; parma: string };
-  nearby: { title: string; hint: string; radius: string; none: string; home: string; homeHint: string; homeSet: string; homeClear: string; homeSearch: string; homeNone: string; askLocate: string; statsTitle: string; statsIntro: string; towns: string; bands: string; yes: string; notEnough: string; people: string; total: string; km: string };
+  nearby: { askPos: string; searchStop: string; useMyPos: string; passing: string; passingNone: string; title: string; hint: string; radius: string; none: string; home: string; homeHint: string; homeSet: string; homeClear: string; homeSearch: string; homeNone: string; askLocate: string; statsTitle: string; statsIntro: string; towns: string; bands: string; yes: string; notEnough: string; people: string; total: string; km: string };
   sportui: { dec: string; searchTeam: string; totalPts: string; totalGoals: string; handicap: string; ptsUnit: string; goalsUnit: string; opp: { notWin: (t: string) => string; noDraw: string; atMost: (n: number) => string; notBoth: string; concede: (t: string) => string; no: string }; all: string; allMarkets: string; result: string; double: string; goals: string; over: string; under: string; goalNo: string; goal: string; noGoal: string; clean: string; cleanHome: string; cleanAway: string; pickOne: string; needAccount: string; busy: string; noMatches: string; firstHalf: string; secondHalf: string; cornersT: string; cardsT: string; redT: string; halfGoal: string; yes: string; no: string; unavailable: string; wins: (t: string) => string; players: string; pgL: string; paL: string; psL: string; noLineup: string; simple: string; advanced: string; halves: string; finalT: string };
   teamSearch: string;
   matchmaker: { tab: string; pick: string; reason: string; exists: string; none: string; open: string; bets: Record<MatchBetKey, string> };
@@ -118,7 +120,7 @@ export interface Messages {
   cm: Record<string, string>;
   sup: { badge: string; top: string; fuel_move: (l: string, v: number) => string; price_move: (l: string, v: number) => string; quake: (v: number) => string; storm: (v: number) => string };
   hist: { title: string; empty: string; days: (n: number) => string; best: string; worst: string; byCategory: string; all: string; won: string; lost: string; void: string; more: string; showing: (a: number) => string };
-  dm: {
+  dm: { collect: string;
     title: string; resets: (t: string) => string; claim: string; done: string; chest: string; chestBody: (c: string) => string; chestOpen: string; chestOpened: (c: string, b: number) => string; chestLocked: (n: number) => string; got: (c: string) => string;
     streak: (n: number) => string; titles: Record<string, string>; legend: string;
     flash: { title: string; soon: (t: string) => string; live: (left: string) => string; missed: string; prize: (c: string, b: number) => string; claim: string; titles: Record<string, string>; got: (c: string, b: number) => string };

@@ -26,7 +26,7 @@ const TEXT = {
 } as const;
 
 export const lastNotifyError: { msg: string | null } = { msg: null };
-async function send(userIds: string[], heading: string, body: string, url = "https://latelotto.web.app/?open=bets"): Promise<boolean> {
+export async function send(userIds: string[], heading: string, body: string, url = "https://latelotto.web.app/?open=bets"): Promise<boolean> {
   const key = Deno.env.get("ONESIGNAL_REST_API_KEY")?.trim().replace(/^(Key|Basic)\s+/i, ""), app = Deno.env.get("ONESIGNAL_APP_ID");
   if (!key || !app || userIds.length === 0) return false;
   const r = await fetch("https://api.onesignal.com/notifications", {
@@ -41,7 +41,7 @@ async function send(userIds: string[], heading: string, body: string, url = "htt
   return true;
 }
 
-const localParts = (tz: string, d = new Date()) => {
+export const localParts = (tz: string, d = new Date()) => {
   const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: tz, hour: "2-digit", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d).map((x) => [x.type, x.value]));
   return { hour: Number(p.hour), day: `${p.year}-${p.month}-${p.day}` };
 };
@@ -286,9 +286,9 @@ const BROADCAST = {
   bomb_v1: {
     headings: { en: "A 💣 is waiting for you", it: "C'è una 💣 che ti aspetta", ja: "💣があなたを待っています" },
     contents: {
-      en: "The others are already playing a round. We left a 💣 inside the app for you: 1,500 pretend credits and 2 boosts. Come and have a game, there is a fresh question on your bus.",
-      it: "Gli altri stanno già facendo la loro partita. Ti abbiamo lasciato una 💣 nell'app: 1.500 crediti finti e 2 boost. Vieni a farti una partita, c'è una domanda fresca sul tuo bus.",
-      ja: "みんなはもう一局始めています。アプリの中に💣を置いておきました：ニセクレジット1,500と、ブースト2つ。ひと勝負どうぞ。あなたのバスに新しい予想があります。",
+      en: "The others are already playing a round. We left a 💣 inside the app for you: 1,500 credits and 2 boosts. Come and have a game, there is a fresh question on your bus.",
+      it: "Gli altri stanno già facendo la loro partita. Ti abbiamo lasciato una 💣 nell'app: 1.500 crediti e 2 boost. Vieni a farti una partita, c'è una domanda fresca sul tuo bus.",
+      ja: "みんなはもう一局始めています。アプリの中に💣を置いておきました：クレジット1,500と、ブースト2つ。ひと勝負どうぞ。あなたのバスに新しい予想があります。",
     },
     url: "https://latelotto.web.app/",
   },
@@ -517,27 +517,27 @@ export async function notifyDirect(sb: Db): Promise<number> {
 const OFFER_TXT = {
   it: {
     head: "Una quota solo per te",
-    absent: (x: number, s: number) => `Ti abbiamo tenuto il posto caldo. Una quota ×${x} su una domanda scelta per te, puntata massima ${s} crediti finti. Nessun debito, giuro.`,
-    losses: (x: number, s: number) => `Un regalo, non un invito: una quota ×${x} su una domanda scelta per te, puntata massima ${s} crediti finti. Guardala con calma, o ignorala senza rimorsi.`,
-    random: (x: number, s: number) => `Oggi il caso ti ha scelto: una quota ×${x} tutta tua, puntata massima ${s} crediti finti. Il caso ha i suoi capricci.`,
+    absent: (x: number, s: number) => `Ti abbiamo tenuto il posto caldo. Una quota ×${x} su una domanda scelta per te, puntata massima ${s} crediti. Nessun debito, giuro.`,
+    losses: (x: number, s: number) => `Un regalo, non un invito: una quota ×${x} su una domanda scelta per te, puntata massima ${s} crediti. Guardala con calma, o ignorala senza rimorsi.`,
+    random: (x: number, s: number) => `Oggi il caso ti ha scelto: una quota ×${x} tutta tua, puntata massima ${s} crediti. Il caso ha i suoi capricci.`,
   },
   "en-US": {
     head: "Odds just for you",
-    absent: (x: number, s: number) => `We kept your seat warm. Odds of ×${x} on a question picked for you, max stake ${s} pretend credits. No debt, promise.`,
-    losses: (x: number, s: number) => `A gift, not an invitation: odds of ×${x} on a question picked for you, max stake ${s} pretend credits. Look at it calmly, or ignore it with a clear conscience.`,
-    random: (x: number, s: number) => `Chance picked you today: odds of ×${x} all your own, max stake ${s} pretend credits. Chance has its whims.`,
+    absent: (x: number, s: number) => `We kept your seat warm. Odds of ×${x} on a question picked for you, max stake ${s} credits. No debt, promise.`,
+    losses: (x: number, s: number) => `A gift, not an invitation: odds of ×${x} on a question picked for you, max stake ${s} credits. Look at it calmly, or ignore it with a clear conscience.`,
+    random: (x: number, s: number) => `Chance picked you today: odds of ×${x} all your own, max stake ${s} credits. Chance has its whims.`,
   },
   "en-GB": {
     head: "Odds just for you",
-    absent: (x: number, s: number) => `We kept your seat warm. Odds of ×${x} on a question picked for you, max stake ${s} pretend credits. No debt, promise.`,
-    losses: (x: number, s: number) => `A gift, not an invitation: odds of ×${x} on a question picked for you, max stake ${s} pretend credits. Have a calm look, or ignore it with a clear conscience.`,
-    random: (x: number, s: number) => `Chance picked you today: odds of ×${x} all your own, max stake ${s} pretend credits. Chance does like its whims.`,
+    absent: (x: number, s: number) => `We kept your seat warm. Odds of ×${x} on a question picked for you, max stake ${s} credits. No debt, promise.`,
+    losses: (x: number, s: number) => `A gift, not an invitation: odds of ×${x} on a question picked for you, max stake ${s} credits. Have a calm look, or ignore it with a clear conscience.`,
+    random: (x: number, s: number) => `Chance picked you today: odds of ×${x} all your own, max stake ${s} credits. Chance does like its whims.`,
   },
   ja: {
     head: "あなただけのオッズ",
-    absent: (x: number, s: number) => `席を温めておきました。あなたのために選んだ予想にオッズ×${x}。上限は${s}ニセクレジット。貸しはありません。`,
-    losses: (x: number, s: number) => `お誘いではなく、ただの贈り物です。あなたのために選んだ予想にオッズ×${x}。上限は${s}ニセクレジット。ゆっくり見ても、見送ってもかまいません。`,
-    random: (x: number, s: number) => `今日は偶然があなたを選びました。あなただけのオッズ×${x}。上限は${s}ニセクレジット。`,
+    absent: (x: number, s: number) => `席を温めておきました。あなたのために選んだ予想にオッズ×${x}。上限は${s}クレジット。貸しはありません。`,
+    losses: (x: number, s: number) => `お誘いではなく、ただの贈り物です。あなたのために選んだ予想にオッズ×${x}。上限は${s}クレジット。ゆっくり見ても、見送ってもかまいません。`,
+    random: (x: number, s: number) => `今日は偶然があなたを選びました。あなただけのオッズ×${x}。上限は${s}クレジット。`,
   },
 } as const;
 
@@ -559,6 +559,182 @@ export async function notifyOffers(sb: Db): Promise<number> {
     }
     if (!(p.push_flash || p.push_streak) || !Deno.env.get("ONESIGNAL_REST_API_KEY")) { await sb.from("personal_offers").update({ notified: true }).eq("id", r.id); continue; }
     if (await sendOptional(sb, [p], () => body) > 0) { await sb.from("personal_offers").update({ notified: true }).eq("id", r.id); n++; }
+  }
+  return n;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Smart pushes: one thing a day at the player's own hour, overtakes, vote reminders, loss help, bet tips.
+// Every kind is logged in push_log (player, kind, local day) so it never repeats on the same day.
+// ---------------------------------------------------------------------------------------------------------------------
+const SMART = {
+  it: {
+    over: (by: string, rank: number) => `${by || "Qualcuno"} ti ha superato in classifica: ora sei ${rank}º. Una buona puntata e torni su.`,
+    vote: (t: string, v: number, n: number) => `Manca il tuo voto: «${t}» (${v} su ${n} hanno già votato).`,
+    loss: "Il saldo è sceso, capita a tutti. Invita un amico: ricevi 1500 crediti per ripartire.",
+    dayLoss: "Si riparte? Con un amico invitato ricevi 1500 crediti: tocca per recuperare.",
+    soon: (n: number) => (n === 1 ? "Una tua puntata si decide entro oggi. Vai a guardarla." : `${n} tue puntate si decidono entro oggi. Vai a guardarle.`),
+    open: (n: number) => (n === 1 ? "Hai una puntata aperta: guarda come sta andando." : `Hai ${n} puntate aperte: guarda come stanno andando.`),
+    streak: (n: number) => `La tua serie di ${n} giorni è in gioco: una puntata e la tieni viva.`,
+    fresh: "Nuove domande per oggi: treni, meteo e altro. Dai un'occhiata.",
+    tip: (by: string) => `${by || "Un amico"} ti consiglia di scommettere su questo.`,
+  },
+  "en-US": {
+    over: (by: string, rank: number) => `${by || "Someone"} just passed you on the ranking: you're now #${rank}. One good bet and you're back up.`,
+    vote: (t: string, v: number, n: number) => `Your vote is missing: “${t}” (${v} of ${n} have voted).`,
+    loss: "Your balance dropped, it happens to everyone. Invite a friend: you get 1,500 credits to start again.",
+    dayLoss: "Ready to bounce back? Invite a friend and get 1,500 credits: tap to recover.",
+    soon: (n: number) => (n === 1 ? "One of your bets is decided today. Go and take a look." : `${n} of your bets are decided today. Go and take a look.`),
+    open: (n: number) => (n === 1 ? "You have an open bet: see how it's going." : `You have ${n} open bets: see how they're going.`),
+    streak: (n: number) => `Your ${n}-day streak is at stake: one bet keeps it alive.`,
+    fresh: "New questions today: trains, weather and more. Have a look.",
+    tip: (by: string) => `${by || "A friend"} suggests you bet on this.`,
+  },
+  "en-GB": {
+    over: (by: string, rank: number) => `${by || "Someone"} has just passed you on the ranking: you're now #${rank}. One good bet and you're back up.`,
+    vote: (t: string, v: number, n: number) => `Your vote is missing: “${t}” (${v} of ${n} have voted).`,
+    loss: "Your balance has dropped, it happens to everyone. Invite a friend: you get 1,500 credits to start again.",
+    dayLoss: "Ready to bounce back? Invite a friend and get 1,500 credits: tap to recover.",
+    soon: (n: number) => (n === 1 ? "One of your bets is decided today. Go and take a look." : `${n} of your bets are decided today. Go and take a look.`),
+    open: (n: number) => (n === 1 ? "You have an open bet: see how it's going." : `You have ${n} open bets: see how they're going.`),
+    streak: (n: number) => `Your ${n}-day streak is at stake: one bet keeps it going.`,
+    fresh: "New questions today: trains, weather and more. Have a look.",
+    tip: (by: string) => `${by || "A friend"} suggests you bet on this.`,
+  },
+  ja: {
+    over: (by: string, rank: number) => `${by || "誰か"}さんにランキングで抜かれました（現在${rank}位）。もう1回当てれば挽回できます。`,
+    vote: (t: string, v: number, n: number) => `あなたの投票がまだです：「${t}」（${n}人中${v}人が投票済み）`,
+    loss: "残高が減りましたが、誰にでもあることです。友達を招待すると1,500クレジットで再スタートできます。",
+    dayLoss: "巻き返しませんか？友達を招待すると1,500クレジット。タップして受け取る。",
+    soon: (n: number) => `今日中に結果が決まる予想が${n}件あります。見に行きましょう。`,
+    open: (n: number) => `進行中の予想が${n}件あります。状況を見てみましょう。`,
+    streak: (n: number) => `${n}日連続中：今日1回予想すれば記録が続きます。`,
+    fresh: "今日の新しい質問：電車、天気など。のぞいてみましょう。",
+    tip: (by: string) => `${by || "友達"}さんがこの予想をおすすめしています。`,
+  },
+} as const;
+const HOME = "https://latelotto.web.app/";
+const LOSS_AT = 1000;
+
+/** Claims (player, kind, day) in push_log; false when it was already taken today. */
+async function claim(sb: Db, id: string, kind: string, day: string): Promise<boolean> {
+  const { error } = await sb.from("push_log").insert({ user_id: id, kind, day });
+  return !error;
+}
+const ofLoc = (l: string): keyof typeof SMART => (l in SMART ? l as keyof typeof SMART : "en-US");
+
+/** Somebody passed you on the monthly ranking. Between 09:00 and 22:00 local time, once a day. */
+export async function notifyOvertaken(sb: Db): Promise<number> {
+  if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
+  const { data } = await sb.from("rank_events").select("id,user_id,by_name,new_rank").eq("sent", false).order("id").limit(100);
+  const ev = (data ?? []) as { id: number; user_id: string; by_name: string; new_rank: number }[];
+  if (ev.length === 0) return 0;
+  const { data: ps } = await sb.from("profiles").select("id,locale,timezone,push_streak").in("id", ev.map((e) => e.user_id));
+  const prof = new Map(((ps ?? []) as { id: string; locale: string; timezone: string; push_streak: boolean }[]).map((p) => [p.id, p]));
+  let n = 0;
+  for (const e of ev) {
+    const p = prof.get(e.user_id);
+    if (!p || !p.push_streak) { await sb.from("rank_events").update({ sent: true }).eq("id", e.id); continue; }
+    const lp = localParts(p.timezone || "UTC");
+    if (lp.hour < 9 || lp.hour >= 22) continue; // keep it for the morning
+    await sb.from("rank_events").update({ sent: true }).eq("id", e.id);
+    if (!(await claim(sb, p.id, "over", lp.day))) continue;
+    if (await send([p.id], "LateBet", SMART[ofLoc(p.locale)].over(e.by_name, e.new_rank), `${HOME}?open=ranking`)) n++;
+  }
+  return n;
+}
+
+/** Private vote challenges that closed: remind everyone who bet and did not vote yet (once a day, daytime). */
+export async function notifyVotes(sb: Db): Promise<number> {
+  if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
+  const { data } = await sb.rpc("vote_pending");
+  const rows = (data ?? []) as { user_id: string; code: string; title: string; voted: number; total: number }[];
+  if (rows.length === 0) return 0;
+  const { data: ps } = await sb.from("profiles").select("id,locale,timezone,push_streak,push_ok").in("id", [...new Set(rows.map((r) => r.user_id))]);
+  const prof = new Map(((ps ?? []) as { id: string; locale: string; timezone: string; push_streak: boolean; push_ok: boolean }[]).map((p) => [p.id, p]));
+  const sentTo = new Set<string>();
+  let n = 0;
+  for (const r of rows) {
+    const p = prof.get(r.user_id);
+    if (!p || !(p.push_streak || p.push_ok) || sentTo.has(r.user_id)) continue; // one reminder a day per player, even with several challenges
+    const lp = localParts(p.timezone || "UTC");
+    if (lp.hour < 10 || lp.hour >= 21) continue;
+    if (!(await claim(sb, p.id, "vote", lp.day))) continue;
+    sentTo.add(p.id);
+    if (await send([p.id], "LateBet", SMART[ofLoc(p.locale)].vote(r.title.slice(0, 60), r.voted, r.total), `${HOME}?open=bets&c=${r.code}`)) n++;
+  }
+  return n;
+}
+
+/** A player's balance fell under 1000: one kind push (daytime, at most every second day) opening the "recover" screen. */
+export async function notifyLoss(sb: Db): Promise<number> {
+  if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
+  const since = new Date(Date.now() - 6 * 86400_000).toISOString().slice(0, 10);
+  const { data } = await sb.from("profiles").select(PCOLS).eq("push_streak", true).lt("credits", LOSS_AT).gte("last_play_date", since).limit(300);
+  let n = 0;
+  for (const p of (data ?? []) as unknown as Pref[]) {
+    const lp = localParts(p.timezone || "UTC");
+    if (lp.hour < 10 || lp.hour >= 21) continue;
+    const yesterday = new Date(Date.parse(`${lp.day}T00:00:00Z`) - 86400_000).toISOString().slice(0, 10);
+    const { data: seen } = await sb.from("push_log").select("day").eq("user_id", p.id).eq("kind", "loss").gte("day", yesterday).limit(1);
+    if ((seen ?? []).length > 0) continue;
+    if (!(await claim(sb, p.id, "loss", lp.day))) continue;
+    if (await send([p.id], "LateBet", SMART[ofLoc(p.locale)].loss, `${HOME}?open=loss`)) n++;
+  }
+  return n;
+}
+
+const bucket = (id: string) => id.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+/** The daily nudge. Each player is reached once a day at the hour they usually play (lunch 11-14 or the evening 19-23; players without history get 12 or 21),
+ *  with the message that fits their moment: balance low, bets deciding today, bets open, streak at risk, or fresh questions.
+ *  Nothing is sent to someone who already played today, and the shared 2-a-day cap and quiet hours still apply. */
+export async function notifyDaily(sb: Db): Promise<number> {
+  if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
+  const { data } = await sb.from("profiles").select(`${PCOLS},credits,nudge_hour`).eq("push_streak", true).limit(3000);
+  const due: (Pref & { credits: number; nudge_hour: number | null })[] = [];
+  for (const p of (data ?? []) as unknown as (Pref & { credits: number; nudge_hour: number | null })[]) {
+    const lp = localParts(p.timezone || "UTC");
+    const want = p.nudge_hour ?? (bucket(p.id) % 2 === 0 ? 12 : 21);
+    if (lp.hour !== want || p.last_play_date === lp.day) continue;
+    due.push(p);
+  }
+  if (due.length === 0) return 0;
+  const counts = new Map<string, { open_n: number; soon_n: number }>();
+  const { data: oc } = await sb.rpc("open_bet_counts", { p_ids: due.map((p) => p.id) });
+  for (const r of (oc ?? []) as { user_id: string; open_n: number; soon_n: number }[]) counts.set(r.user_id, r);
+  let n = 0;
+  for (const p of due) {
+    const lp = localParts(p.timezone || "UTC"), S = SMART[ofLoc(p.locale)], c = counts.get(p.id);
+    let text: string = S.fresh, url = HOME;
+    if (p.credits < LOSS_AT) { text = S.dayLoss; url = `${HOME}?open=loss`; }
+    else if (c && c.soon_n > 0) { text = S.soon(c.soon_n); url = `${HOME}?open=bets`; }
+    else if (c && c.open_n > 0) { text = S.open(c.open_n); url = `${HOME}?open=bets`; }
+    else if (p.streak >= 2 && lp.hour >= 17) text = S.streak(p.streak);
+    const count = p.push_day === lp.day ? p.push_count : 0;
+    if (count >= 2 || lp.hour >= 22 || lp.hour < 8) continue;
+    if (!(await claim(sb, p.id, "daily", lp.day))) continue;
+    if (!(await send([p.id], "LateBet", text, url))) continue;
+    await sb.from("profiles").update({ push_day: lp.day, push_count: count + 1 }).eq("id", p.id);
+    n++;
+  }
+  return n;
+}
+
+/** "X suggests you bet on this": opens the shared question with the tip banner. */
+export async function notifyTips(sb: Db): Promise<number> {
+  if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
+  const { data } = await sb.from("bet_tips").select("id,from_user,to_user,market_id").eq("pushed", false).order("created_at").limit(100);
+  const tips = (data ?? []) as { id: string; from_user: string; to_user: string; market_id: string }[];
+  if (tips.length === 0) return 0;
+  const ids = [...new Set(tips.flatMap((t) => [t.from_user, t.to_user]))];
+  const { data: ps } = await sb.from("profiles").select("id,display_name,locale").in("id", ids);
+  const prof = new Map(((ps ?? []) as { id: string; display_name: string | null; locale: string }[]).map((p) => [p.id, p]));
+  let n = 0;
+  for (const t of tips) {
+    await sb.from("bet_tips").update({ pushed: true }).eq("id", t.id);
+    const to = prof.get(t.to_user), from = prof.get(t.from_user);
+    if (!to) continue;
+    if (await send([t.to_user], "LateBet", SMART[ofLoc(to.locale)].tip(from?.display_name ?? ""), `${HOME}?m=${t.market_id}&tip=${t.id}`)) n++;
   }
   return n;
 }
