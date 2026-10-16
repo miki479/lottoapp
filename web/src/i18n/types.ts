@@ -57,6 +57,7 @@ export interface Messages {
   slip: { bar: (n: number) => string; title: string; add: string; added: string; remove: string; odds: string; confirm: string; maxWin: string; need2: string; placed: (win: string) => string; legs: (n: number) => string; clear: string };
   stake: { label: string; min: string; max: (m: string) => string };
   join: { step: string; title: string; body: (credits: string) => string; nickname: string; password: string; hint: string; cta: (stake: string) => string; haveProfile: string; newProfile: string; emailInstead: string; checkMail: string };
+  loss: { title: string; body: (balance: string, bonus: string) => string; share: string; signup: string; later: string };
   referral: { title: string; body: (bonus: string) => string; code: string; copy: string; copied: string; share: string; shareText: (code: string) => string; counts: (invited: number, paid: number) => string; guest: string; accepted: string };
   voice: { on: string; off: string; placed: (win: string) => string; won: (amount: string) => string; lost: string; flash: string; label: string };
   ladder: { title: string; sub: (min: number) => string; estimate: string; chip: string };
@@ -118,7 +119,7 @@ export interface Messages {
   cm: Record<string, string>;
   sup: { badge: string; top: string; fuel_move: (l: string, v: number) => string; price_move: (l: string, v: number) => string; quake: (v: number) => string; storm: (v: number) => string };
   hist: { title: string; empty: string; days: (n: number) => string; best: string; worst: string; byCategory: string; all: string; won: string; lost: string; void: string; more: string; showing: (a: number) => string };
-  dm: {
+  dm: { collect: string;
     title: string; resets: (t: string) => string; claim: string; done: string; chest: string; chestBody: (c: string) => string; chestOpen: string; chestOpened: (c: string, b: number) => string; chestLocked: (n: number) => string; got: (c: string) => string;
     streak: (n: number) => string; titles: Record<string, string>; legend: string;
     flash: { title: string; soon: (t: string) => string; live: (left: string) => string; missed: string; prize: (c: string, b: number) => string; claim: string; titles: Record<string, string>; got: (c: string, b: number) => string };

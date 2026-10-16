@@ -10,6 +10,7 @@ import { DelayMeter } from "./components/DelayMeter.tsx";
 import { OfflineBar } from "./components/OfflineBar.tsx";
 import { shortStation, TrainBoard } from "./components/TrainBoard.tsx";
 import { MiniLive } from "./components/MiniLive.tsx";
+import { LossSheet } from "./components/LossSheet.tsx";
 import { getSnapshot } from "./lib/snapshot.ts";
 import { Ticker } from "./components/Ticker.tsx";
 import { ParlayBar } from "./components/ParlayBar.tsx";
@@ -170,7 +171,7 @@ export function App() {
   const [betsLimit, setBetsLimit] = useState(60);
   const [flashM, setFlashM] = useState<FlashData | null>(null);
   const [missions, setMissions] = useState<DailyMissionsData | null>(null);
-  const [rewardsOpen, setRewardsOpen] = useState(false);
+  const [rewardsOpen, setRewardsOpen] = useState(false), [lossOpen, setLossOpen] = useState(false);
   const [pushOn, setPushOn] = useState(false);
   const [askPush, setAskPush] = useState(false);
   const [pushVariant, setPushVariant] = useState<PushVariant>("first"), nagN = useMemo(() => Math.floor(Date.now() / 86_400_000), []);
@@ -370,7 +371,7 @@ export function App() {
     const u = new URL(location.href); u.searchParams.delete("c"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
   }, []);
   // a push can open the app on a given screen (?open=ranking)
-  useEffect(() => { const o = new URLSearchParams(location.search).get("open"); if (o === "ranking" || o === "friends" || o === "bets" || o === "profile") { setScreen(o); const u = new URL(location.href); u.searchParams.delete("open"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash); } }, []);
+  useEffect(() => { const o = new URLSearchParams(location.search).get("open"); if (o === "loss") { setLossOpen(true); const u = new URL(location.href); u.searchParams.delete("open"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash); } else if (o === "ranking" || o === "friends" || o === "bets" || o === "profile") { setScreen(o); const u = new URL(location.href); u.searchParams.delete("open"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash); } }, []);
   const loadReqs = useCallback(async () => { if (!registered) { setReqCount(0); return; } const { data } = await sb.rpc("friend_requests_in"); setReqCount(((data ?? []) as unknown[]).length); }, [registered]);
   useEffect(() => { loadReqs(); if (!registered) return; return every(loadReqs, 120_000); }, [registered, loadReqs]);
   useEffect(() => { loadChallenges(); }, [registered]);
@@ -768,6 +769,16 @@ export function App() {
   const needJoin = needSignup && !registered;
   guestState.hasProgress = !registered && bets.length + parlays.length > 0;
   const slipIds = new Set(slip.map((l) => l.m.id));
+  // the balance falls under 1000 after a loss: once a day, a friendly sheet with a way back (invite a friend), never a nudge to bet more
+  const prevCredits = useRef<number | null>(null);
+  useEffect(() => {
+    const c = profile?.credits; if (c === undefined) return;
+    const was = prevCredits.current; prevCredits.current = c;
+    if (was === null || was < 1000 || c >= 1000) return;
+    const day = new Date().toISOString().slice(0, 10);
+    if (store.get("lossday") === day) return;
+    store.set("lossday", day); setLossOpen(true);
+  }, [profile?.credits]);
   const shareReferral = async () => {
     if (!referral) return; const url = `${location.origin}/?ref=${referral.code}`;
     try { if (navigator.share) { await navigator.share({ title: "LateBet", text: msg.referral.shareText(referral.code), url }); return; } await navigator.clipboard.writeText(url); flash(msg.referral.copied); } catch { /* cancelled */ }
@@ -816,6 +827,7 @@ export function App() {
       {seriesMaker && <SeriesMaker msg={msg} locale={locale} initial={seriesMaker.show} onClose={() => setSeriesMaker(null)} onCreated={(m) => { setSeriesMaker(null); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
       {quakeMaker && <QuakeMaker msg={msg} locale={locale} onClose={() => setQuakeMaker(false)} onCreated={(m) => { setQuakeMaker(false); loadMarkets(); setSheet({ m, pick: "yes" }); }} />}
       {placePicker && <PlacePicker msg={msg} locale={locale} recent={myPlaces} onPick={pickPlace} onCity={(id) => { store.set("filter", id); setFilter(id); setCatChosen(true); setPlacePicker(false); }} onClose={() => setPlacePicker(false)} />}
+      {lossOpen && <LossSheet msg={msg} locale={locale} credits={profile?.credits ?? 0} canShare={!!referral} onShare={() => { setLossOpen(false); void shareReferral(); }} onAuth={() => { setLossOpen(false); setAuth(true); }} onClose={() => setLossOpen(false)} />}
       {rewardsOpen && <RewardsSheet flash={flashM} onClaimFlash={claimFlash} missions={missions} onClaimMission={claimMission} onClaimChest={claimChest} msg={msg} locale={locale} now={now} profile={profile} quests={quests} referral={referral} registered={registered} onClaim={claimQuest} onGo={goQuest} onShare={shareReferral} onChanged={() => { loadProfile(); }} onClose={() => setRewardsOpen(false)} />}
       {askPush && <PushAsk variant={pushVariant} n={nagN} locale={locale} lifted={slip.length > 0} msg={msg} onYes={() => turnPush(true)} onNo={() => { if (pushVariant === "first") rememberPush(false); markNag(); setAskPush(false); }} />}
       <ParlayBar count={slip.length} odds={slipOdds(slip)} msg={msg} locale={locale} onOpen={() => setParlayOpen(true)} />

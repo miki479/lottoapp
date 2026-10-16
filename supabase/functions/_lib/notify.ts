@@ -286,9 +286,9 @@ const BROADCAST = {
   bomb_v1: {
     headings: { en: "A 💣 is waiting for you", it: "C'è una 💣 che ti aspetta", ja: "💣があなたを待っています" },
     contents: {
-      en: "The others are already playing a round. We left a 💣 inside the app for you: 1,500 pretend credits and 2 boosts. Come and have a game, there is a fresh question on your bus.",
-      it: "Gli altri stanno già facendo la loro partita. Ti abbiamo lasciato una 💣 nell'app: 1.500 crediti finti e 2 boost. Vieni a farti una partita, c'è una domanda fresca sul tuo bus.",
-      ja: "みんなはもう一局始めています。アプリの中に💣を置いておきました：ニセクレジット1,500と、ブースト2つ。ひと勝負どうぞ。あなたのバスに新しい予想があります。",
+      en: "The others are already playing a round. We left a 💣 inside the app for you: 1,500 credits and 2 boosts. Come and have a game, there is a fresh question on your bus.",
+      it: "Gli altri stanno già facendo la loro partita. Ti abbiamo lasciato una 💣 nell'app: 1.500 crediti e 2 boost. Vieni a farti una partita, c'è una domanda fresca sul tuo bus.",
+      ja: "みんなはもう一局始めています。アプリの中に💣を置いておきました：クレジット1,500と、ブースト2つ。ひと勝負どうぞ。あなたのバスに新しい予想があります。",
     },
     url: "https://latelotto.web.app/",
   },
@@ -517,27 +517,27 @@ export async function notifyDirect(sb: Db): Promise<number> {
 const OFFER_TXT = {
   it: {
     head: "Una quota solo per te",
-    absent: (x: number, s: number) => `Ti abbiamo tenuto il posto caldo. Una quota ×${x} su una domanda scelta per te, puntata massima ${s} crediti finti. Nessun debito, giuro.`,
-    losses: (x: number, s: number) => `Un regalo, non un invito: una quota ×${x} su una domanda scelta per te, puntata massima ${s} crediti finti. Guardala con calma, o ignorala senza rimorsi.`,
-    random: (x: number, s: number) => `Oggi il caso ti ha scelto: una quota ×${x} tutta tua, puntata massima ${s} crediti finti. Il caso ha i suoi capricci.`,
+    absent: (x: number, s: number) => `Ti abbiamo tenuto il posto caldo. Una quota ×${x} su una domanda scelta per te, puntata massima ${s} crediti. Nessun debito, giuro.`,
+    losses: (x: number, s: number) => `Un regalo, non un invito: una quota ×${x} su una domanda scelta per te, puntata massima ${s} crediti. Guardala con calma, o ignorala senza rimorsi.`,
+    random: (x: number, s: number) => `Oggi il caso ti ha scelto: una quota ×${x} tutta tua, puntata massima ${s} crediti. Il caso ha i suoi capricci.`,
   },
   "en-US": {
     head: "Odds just for you",
-    absent: (x: number, s: number) => `We kept your seat warm. Odds of ×${x} on a question picked for you, max stake ${s} pretend credits. No debt, promise.`,
-    losses: (x: number, s: number) => `A gift, not an invitation: odds of ×${x} on a question picked for you, max stake ${s} pretend credits. Look at it calmly, or ignore it with a clear conscience.`,
-    random: (x: number, s: number) => `Chance picked you today: odds of ×${x} all your own, max stake ${s} pretend credits. Chance has its whims.`,
+    absent: (x: number, s: number) => `We kept your seat warm. Odds of ×${x} on a question picked for you, max stake ${s} credits. No debt, promise.`,
+    losses: (x: number, s: number) => `A gift, not an invitation: odds of ×${x} on a question picked for you, max stake ${s} credits. Look at it calmly, or ignore it with a clear conscience.`,
+    random: (x: number, s: number) => `Chance picked you today: odds of ×${x} all your own, max stake ${s} credits. Chance has its whims.`,
   },
   "en-GB": {
     head: "Odds just for you",
-    absent: (x: number, s: number) => `We kept your seat warm. Odds of ×${x} on a question picked for you, max stake ${s} pretend credits. No debt, promise.`,
-    losses: (x: number, s: number) => `A gift, not an invitation: odds of ×${x} on a question picked for you, max stake ${s} pretend credits. Have a calm look, or ignore it with a clear conscience.`,
-    random: (x: number, s: number) => `Chance picked you today: odds of ×${x} all your own, max stake ${s} pretend credits. Chance does like its whims.`,
+    absent: (x: number, s: number) => `We kept your seat warm. Odds of ×${x} on a question picked for you, max stake ${s} credits. No debt, promise.`,
+    losses: (x: number, s: number) => `A gift, not an invitation: odds of ×${x} on a question picked for you, max stake ${s} credits. Have a calm look, or ignore it with a clear conscience.`,
+    random: (x: number, s: number) => `Chance picked you today: odds of ×${x} all your own, max stake ${s} credits. Chance does like its whims.`,
   },
   ja: {
     head: "あなただけのオッズ",
-    absent: (x: number, s: number) => `席を温めておきました。あなたのために選んだ予想にオッズ×${x}。上限は${s}ニセクレジット。貸しはありません。`,
-    losses: (x: number, s: number) => `お誘いではなく、ただの贈り物です。あなたのために選んだ予想にオッズ×${x}。上限は${s}ニセクレジット。ゆっくり見ても、見送ってもかまいません。`,
-    random: (x: number, s: number) => `今日は偶然があなたを選びました。あなただけのオッズ×${x}。上限は${s}ニセクレジット。`,
+    absent: (x: number, s: number) => `席を温めておきました。あなたのために選んだ予想にオッズ×${x}。上限は${s}クレジット。貸しはありません。`,
+    losses: (x: number, s: number) => `お誘いではなく、ただの贈り物です。あなたのために選んだ予想にオッズ×${x}。上限は${s}クレジット。ゆっくり見ても、見送ってもかまいません。`,
+    random: (x: number, s: number) => `今日は偶然があなたを選びました。あなただけのオッズ×${x}。上限は${s}クレジット。`,
   },
 } as const;
 

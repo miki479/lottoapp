@@ -1,5 +1,5 @@
 import { Q } from "./Q.tsx";
-import { Activity, Car, Clapperboard, Trophy, TrendingUp, Megaphone, Clock, Star, Zap, Users, Scale } from "lucide-preact";
+import { Activity, Car, ChevronRight, Clapperboard, Trophy, TrendingUp, Megaphone, Clock, Star, Zap, Users, Scale } from "lucide-preact";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { Countdown } from "./Countdown.tsx";
 import { countdown, fmtOdds, isYesNo, potentialWin, superText, type MarketRow } from "../lib/format.ts";
@@ -41,7 +41,7 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
   /** Short outcome words ("Sì" / "No") sit beside the odds; longer ones ("In ritardo") sit above them. One layout per card, so the two buttons line up. */
   const inlineWords = [isRain ? msg.card.yes : msg.card.late, isRain ? msg.card.no : msg.card.onTime].every((w) => w.length <= 5);
   return (
-    <article class={`card event ${(p.friends ?? 0) > 0 ? "has-friends" : ""} ${m.category} ${p.top ? "is-top" : ""} ${flashOn ? "is-flash" : ""}`} style={`--i:${Math.min(p.index, 10)}`}>
+    <article class={`card event ${(p.friends ?? 0) > 0 ? "has-friends" : ""} ${m.category} ${p.top ? "is-top" : ""} ${flashOn ? "is-flash" : ""}`} style={`--i:${Math.min(p.index, 10)}`} onClick={(e) => { if (!(e.target as HTMLElement).closest("button, a, input, select, label, .why")) p.onPick(m, "yes"); }}>
       {(p.friends ?? 0) > 0 && <span class="frbadge" role="img" title={msg.frd.friendsOn(p.friends!)} aria-label={msg.frd.friendsOn(p.friends!)}><Users size={13} />{p.friends}</span>}
       {(p.top || flashOn || p.hasLadder || left < 300_000) && <div class="badges">{p.hasLadder && <span class="badge-sorry"><Megaphone size={13} />{msg.ladder.chip}</span>}{flashOn && <span class={`badge-flash ${superText(m, msg) ? "super" : ""}`}><Zap size={13} fill="currentColor" />{superText(m, msg) ? msg.sup.badge : msg.streak.flash.toUpperCase()} {fmtTimes(Number(m.flash_multiplier), locale)} · {countdown(Date.parse(m.flash_until!) - now)}</span>}{p.top && <span class="badge-top"><Star size={13} fill="currentColor" />{msg.card.topOdds}</span>}{left < 300_000 && <span class="badge-hot"><Zap size={13} fill="currentColor" />{msg.card.hot}</span>}</div>}
       {flashOn && superText(m, msg) && <p class="supernote">{superText(m, msg)}</p>}
@@ -52,7 +52,7 @@ export function EventCard(p: { m: MarketRow; msg: Messages; locale: Locale; now:
         {p.showCity && m.city_id !== "world" && <Flag cc={city.country} size={13} />}
         <span class={`timer ${left < 300_000 ? "hot" : ""}`}><Clock size={12} style="vertical-align:-1px;margin-right:4px" /><Countdown to={Date.parse(m.closes_at)} /></span>
       </div>
-      <p class="q"><Q m={m} msg={msg} locale={locale} city={cityName(city, locale)} tz={city.timezone} now={new Date(now)} /></p>
+      <p class="q"><Q m={m} msg={msg} locale={locale} city={cityName(city, locale)} tz={city.timezone} now={new Date(now)} /><ChevronRight class="qgo" size={16} aria-hidden="true" /></p>
       {typeof m.params.by === "string" && m.params.by && <p class="byline">{msg.maker.by(m.params.by)}</p>}
       {p.occ && <OccMeter level={p.occ.level} msg={msg} />}
       {m.kind !== "bus_full" && !live && (m.category === "train" || m.category === "bus") && <p class="nolive">{msg.card.noLive}</p>}

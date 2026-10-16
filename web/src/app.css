@@ -1661,3 +1661,35 @@ textarea.field { resize: vertical; min-height: 84px; }
 .topcard.boardcard .ledmain { min-height: 40px; gap: 6px; }
 .topcard.boardcard .leddest { font-size: var(--fs-xs); overflow-wrap: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .meter .cells em.lo span { left: 0; transform: translateX(-6px); }
+
+/* the whole question card opens the bet sheet: it feels pressable (press feedback, a quiet arrow after the question) without a word about it */
+.card.event { cursor: pointer; transition: transform var(--dur-fast), border-color var(--dur); }
+.card.event:active { transform: scale(.988); }
+.card.event .q { position: relative; padding-right: 22px; }
+.card.event .q .qgo { position: absolute; right: 0; top: 2px; color: var(--muted); opacity: .6; transition: transform var(--dur-fast), opacity var(--dur-fast); }
+@media (hover: hover) { .card.event:hover { border-color: var(--border-strong); } .card.event:hover .qgo { transform: translateX(3px); opacity: 1; } }
+
+/* the daily chest: the box shakes, the lid flies open and the gifts come out */
+.chestscene { position: relative; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 18px 0 6px; overflow: hidden; }
+.chestglow { position: absolute; top: 10px; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, #ffd24a 55%, transparent), transparent 65%); opacity: 0; transform: scale(.6); transition: opacity .5s, transform .7s var(--ease); }
+.chestscene.open .chestglow { opacity: 1; transform: scale(1.15); }
+.chestbox { position: relative; width: 150px; height: 150px; margin-top: 40px; }
+.chestbody { position: absolute; left: 12px; right: 12px; bottom: 0; height: 84px; border-radius: 8px 8px 14px 14px; background: linear-gradient(180deg, #b8742c, #8a4f17); box-shadow: inset 0 -8px 0 rgba(0,0,0,.18), 0 10px 24px rgba(0,0,0,.35); }
+.chestbody i { position: absolute; left: 50%; top: -6px; width: 26px; height: 30px; margin-left: -13px; border-radius: 5px; background: linear-gradient(180deg, #ffe27a, #e0a000); box-shadow: 0 0 0 3px #8a4f17; }
+.chestlid { position: absolute; left: 4px; right: 4px; bottom: 76px; height: 44px; transform-origin: 8% 100%; transition: transform .6s cubic-bezier(.3, 1.5, .5, 1); z-index: 2; }
+.chestlid span { position: absolute; inset: 0; border-radius: 22px 22px 6px 6px; background: linear-gradient(180deg, #d58a38, #a9631f); box-shadow: inset 0 -6px 0 rgba(0,0,0,.18); }
+.chestscene.shake .chestbox { animation: chestshake .55s ease-in-out infinite; }
+.chestscene.open .chestlid { transform: rotate(-112deg) translateY(-6px); }
+.chestgifts { position: absolute; left: 0; right: 0; bottom: 70px; height: 0; z-index: 1; pointer-events: none; }
+.chestgifts b { position: absolute; left: 50%; bottom: 0; width: 28px; height: 28px; margin-left: -14px; display: grid; place-items: center; color: #ffd24a; opacity: 0; }
+.chestscene.open .chestgifts b { animation: chestfly 1.15s var(--ease) both; animation-delay: calc(var(--i) * 70ms + 250ms); }
+.chestscene.open .chestgifts b:nth-child(2n) { color: #ff6fae; } .chestscene.open .chestgifts b:nth-child(3n) { color: #62d7ff; }
+.chestprize { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 64px; }
+.chestprize b { font-size: var(--fs-hero); font-weight: 800; letter-spacing: var(--ls-title); line-height: 1; color: var(--gain); }
+@keyframes chestshake { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-5deg) translateY(-2px); } 40% { transform: rotate(5deg); } 60% { transform: rotate(-4deg) translateY(-2px); } 80% { transform: rotate(4deg); } }
+@keyframes chestfly { 0% { opacity: 0; transform: translate(0, 10px) scale(.4); } 25% { opacity: 1; } 100% { opacity: 1; transform: translate(calc((var(--i) - 3) * 30px), calc(-90px - (var(--i) % 3) * 26px)) scale(1) rotate(calc((var(--i) - 3) * 12deg)); } }
+@media (prefers-reduced-motion: reduce) { .chestscene.shake .chestbox, .chestscene.open .chestgifts b { animation: none; } .chestscene.open .chestgifts b { opacity: 1; transform: translate(calc((var(--i) - 3) * 30px), -100px); } .chestlid { transition: none; } }
+
+.losssheet { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 8px 0 4px; }
+.lossico { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; color: var(--c-pop); background: color-mix(in srgb, var(--c-pop) 16%, var(--surface-2)); }
+.losssheet h2 { margin: 0; }
