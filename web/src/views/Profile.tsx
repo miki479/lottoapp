@@ -24,6 +24,7 @@ import { moneySigned } from "../lib/num.ts";
 
 export function ProfileView(p: {
   look: MyProgress | null; onLook: () => void;
+  voice?: { on: boolean; label: string; toggle: () => void } | null;
   onAdmin: () => void; homeNode?: preact.ComponentChildren; missionsNode?: preact.ComponentChildren;
   giftCard: boolean; onGiftSeen: () => void; push: { on: boolean; denied: boolean; toggle: () => void; flash: boolean; streak: boolean; friends: boolean; setPrefs: (f: boolean, s: boolean, fr: boolean) => void } | null; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
   onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => Promise<void> | void; onDelete: () => Promise<void>;
@@ -141,6 +142,7 @@ export function ProfileView(p: {
               <p class="hint">{intentOn ? p.msg.fy.setOn : p.msg.fy.setOff}</p>
             </section>
           </div>
+          {p.voice && <section class="card stack"><label class="switchrow"><span class="swlabel"><Volume2 size={18} style="color:var(--action-ink);flex:none" /><span>{p.voice.label}</span></span><input type="checkbox" role="switch" checked={p.voice.on} onChange={p.voice.toggle} /></label></section>}
           <div class="list">
             <div class="row" style="flex-wrap:wrap"><span class="grow">{p.msg.common.language}</span>
               <div class="seg" style="width:100%">{LOCALES.map((l) => <button key={l.id} class={l.id === p.locale ? "on" : ""} aria-pressed={l.id === p.locale} onClick={() => p.onLocale(l.id)}>{l.short}</button>)}</div>

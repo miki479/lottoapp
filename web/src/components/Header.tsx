@@ -78,7 +78,7 @@ export function Header({ satire, claimable, onWallet, onShop, shopNew, shopLabel
         <div class="grow" />
         <div class="hdr-tools">
         <button class={`iconbtn shopbtn ${shopNew ? "new" : ""}`} onClick={onShop} aria-label={shopLabel} title={shopLabel}><ShoppingBag size={22} />{shopNew && <i class="shopdot" aria-hidden="true" />}</button>
-        {voice && <button class={`iconbtn ${voice.on ? "voiceon" : ""}`} onClick={voice.toggle} aria-pressed={voice.on} aria-label={voice.label}>{voice.on ? <Volume2 size={22} /> : <VolumeX size={22} />}</button>}
+        {voice && <button class={`iconbtn voicebtn ${voice.on ? "voiceon" : ""}`} onClick={voice.toggle} aria-pressed={voice.on} aria-label={voice.label}>{voice.on ? <Volume2 size={22} /> : <VolumeX size={22} />}</button>}
         <div class="relative" ref={box}>
           <button class="iconbtn" aria-haspopup="menu" aria-expanded={open} aria-label={languageLabel} onClick={() => setOpen(!open)}><Languages size={22} /></button>
           {open && (
