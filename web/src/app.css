@@ -1745,3 +1745,11 @@ textarea.field { resize: vertical; min-height: 84px; }
 /* buttons that are only an icon: keep them tappable and square-ish, the meaning lives in aria-label */
 .btn:has(> svg:only-child) { min-width: var(--touch); padding: 0 14px; }
 .link:has(> svg:only-child) { display: inline-grid; place-items: center; min-width: var(--touch); min-height: var(--touch); }
+/* the info dot on a bet and the little sheet of facts it opens */
+.betwrap, .parlaycard { position: relative; }
+.betinfo-dot { position: absolute; top: 6px; right: 6px; z-index: 2; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--text-2); background: var(--surface-2); border: 1px solid var(--border-strong); }
+.betinfo-dot::after { content: ""; position: absolute; inset: -8px; }
+.betinfo-dot:hover { color: var(--action-ink); border-color: var(--action); }
+.betinfo-pop { position: absolute; top: 38px; right: 6px; z-index: 3; margin: 0; min-width: 190px; max-width: calc(100% - 12px); display: grid; gap: 6px; padding: 12px; border-radius: var(--radius-control); background: var(--surface); border: 1px solid var(--border-strong); box-shadow: 0 8px 24px rgb(0 0 0 / .25); font-size: var(--fs-sm); }
+.betinfo-pop div { display: flex; justify-content: space-between; gap: 12px; } .betinfo-pop dt { color: var(--text-2); } .betinfo-pop dd { margin: 0; font-weight: 700; text-align: right; }
+.betwrap .row1, .parlaycard .row1 { padding-right: 36px; }

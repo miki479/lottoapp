@@ -111,7 +111,7 @@ async function capitalIdsFor(filter: string, origin: { lat: number; lon: number 
 const NATIONAL = new Set(CITIES.filter((c) => c.id === "italia" || c.id === "germany").map((c) => c.id));
 const region = () => { try { return new Intl.Locale(navigator.language).maximize().region ?? null; } catch { return null; } };
 const PROFILE_COLS = "id,credits,city_id,locale,timezone,country,streak,best_streak,freezes,boosts,push_flash,push_streak,push_friends,display_name,last_play_date,stake_factor,limit_break_until,limit_break_at";
-const BET_COLS = "id,pick,stake,odds,boosted,vice_pct,status,payout,settled_at,bonus,bonus_hit,markets(id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,void_reason,outcome,evidence)";
+const BET_COLS = "id,placed_at,pick,stake,odds,boosted,vice_pct,status,payout,settled_at,bonus,bonus_hit,markets(id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,void_reason,outcome,evidence)";
 
 export function App() {
   const now = useNow(5000);

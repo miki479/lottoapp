@@ -1,3 +1,4 @@
+import { BetInfo } from "../components/BetInfo.tsx";
 import { Q } from "../components/Q.tsx";
 import { ArrowDownToLine, Check, Clock, Flame, RotateCcw, Ticket, TrendingDown, X, ChevronDown } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
@@ -84,6 +85,7 @@ export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge
           const label = st === "won" ? msg.bets.won : st === "lost" ? msg.bets.lost : st === "void" ? msg.bets.void : msg.bets.open;
           return (
             <div class="card bet parlaycard" key={x.id} style={`--i:${Math.min(i, 10)}`}>
+              <BetInfo id={x.id} placedAt={x.placed_at} closesAt={null} targetAt={null} settledAt={x.settled_at} stake={x.stake} odds={Number(x.odds)} boosted={x.boosted} locale={locale} />
               <div class="row1">
                 <span class={`pill ${st === "won" ? "won" : st === "lost" ? "lost" : ""}`}><Icon size={14} strokeWidth={2.6} />{label}</span>
                 <span class="detail">{msg.slip.title} · {msg.slip.legs(x.parlay_legs.length)}</span>
@@ -111,6 +113,7 @@ export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge
           const label = st === "won" ? msg.bets.won : st === "lost" ? msg.bets.lost : st === "void" ? msg.bets.void : m.kind === "match_bet" && now < Number(m.params.kickoff ?? 0) * 1000 ? msg.bets.upcoming : msg.bets.open;
           return (
             <div class="betwrap" key={b.id}>
+            <BetInfo id={b.id} placedAt={b.placed_at} closesAt={m.closes_at} targetAt={m.target_at} settledAt={b.settled_at} stake={b.stake} odds={Number(b.odds)} boosted={b.boosted} locale={locale} />
             <button class="card bet pressable" style={`--i:${Math.min(i, 10)}; text-align:left`} onClick={() => (st !== "open" ? onOpen(b) : undefined)} disabled={st === "open"}>
               <div class="row1">
                 <span class={`pill ${st === "won" ? "won" : st === "lost" ? "lost" : ""}`}><Icon size={14} strokeWidth={2.6} />{label}</span>
