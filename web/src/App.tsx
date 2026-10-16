@@ -411,7 +411,9 @@ export function App() {
     });
   }, [markets]);
   useEffect(() => { loadMarkets(); loadResults(); loadActivity(); loadTrending(); const a = every(loadMarkets, 60_000), b = every(() => { loadResults(); loadActivity(); loadTrending(); }, 90_000); return () => { a(); b(); }; }, [loadMarkets, loadResults, loadActivity, loadTrending]);
-  useEffect(() => { if (!ready) return; return every(() => { loadBets(); loadProfile(); loadQuests(); }, 300_000); }, [ready]);
+  // every minute while a bet is open (a win or a loss must show up with the app open: the balance, the result sheet), every five minutes otherwise
+  const hasOpenBet = bets.some((b) => b.status === "open");
+  useEffect(() => { if (!ready) return; return every(() => { loadBets(); loadProfile(); loadQuests(); }, hasOpenBet ? 60_000 : 300_000); }, [ready, hasOpenBet]);
 
   const rainIds = useMemo(() => (markets ?? []).filter((m) => m.kind === "rain_at").map((m) => m.id), [markets]);
   useEffect(() => {
