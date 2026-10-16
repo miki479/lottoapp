@@ -1713,8 +1713,8 @@ textarea.field { resize: vertical; min-height: 84px; }
 @keyframes shopglow { 0%, 100% { filter: drop-shadow(0 0 0 transparent); transform: none; } 50% { filter: drop-shadow(0 0 7px var(--action)); transform: scale(1.12) rotate(-6deg); } }
 @media (prefers-reduced-motion: reduce) { .shopbtn.new { animation: none; } }
 @media (max-width: 479px) { .hdr-tools .voicebtn { display: none; } }
-.chip.chipx { margin-left: -8px; padding: 0 10px; min-width: var(--hit); justify-content: center; color: var(--muted); }
-.chip.chipx:hover, .chip.chipx:focus-visible { color: var(--loss); }
+.chip .chipx { display: inline-grid; place-items: center; width: 22px; height: 22px; margin: 0 -4px 0 2px; border-radius: 50%; background: color-mix(in srgb, currentColor 14%, transparent); color: inherit; cursor: pointer; }
+.chip .chipx:hover, .chip .chipx:focus-visible { background: var(--loss); color: #fff; }
 .chip .chipn { font-style: normal; font-size: var(--fs-xs); font-weight: 800; min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--surface); color: var(--text-2); text-align: center; margin-left: 2px; }
 .chip.on .chipn { background: var(--action-soft); color: var(--action-ink); }
 .list .row { position: relative; }
