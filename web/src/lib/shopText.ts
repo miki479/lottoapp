@@ -14,7 +14,7 @@ export interface HubText {
     title: string; intro: string; packs: [string, string, string, string]; odds: string; oddsLine: (p: Record<PackRarity, string>) => string; looksShare: (p: string) => string; dupRule: (pct: number, back: string) => string;
     buy: (price: string) => string; pay: (price: string) => string; notNow: string; confirm: string; opening: string; tap: (n: number) => string; tapAria: (n: number) => string;
     isNew: string; duplicate: string; dupBack: (a: string) => string; added: string; done: string; seeAlbum: string; limit: (n: number, cap: number) => string; limitHit: string; notEnough: string;
-    needAccount: string; makeProfile: string; sink: string; pending: string; hintHalo: string; balance: string;
+    needAccount: string; makeProfile: string; sink: string; pending: string; hintHalo: string; balance: string; deal: string;
     errors: Record<string, string>;
   };
   album: {
@@ -41,7 +41,7 @@ const IT: HubText = {
     isNew: "Nuova!", duplicate: "Doppia", dupBack: (a) => `La avevi già: ${a} ti tornano indietro`, added: "Aggiunta all’album", done: "Fatto", seeAlbum: "Vai all’album",
     limit: (n, cap) => `Bustine aperte oggi: ${n} su ${cap}`, limitHit: "Per oggi basta bustine: ne puoi aprire altre domani.", notEnough: "Crediti insufficienti",
     needAccount: "Crea un profilo per aprire le bustine e tenere la tua collezione.", makeProfile: "Crea un profilo", sink: "I crediti spesi qui escono dal gioco: non portano vantaggi nelle previsioni.",
-    pending: "Hai una bustina da aprire", hintHalo: "L’alone anticipa la rarità", balance: "Saldo",
+    deal: "Offerta del giorno", pending: "Hai una bustina da aprire", hintHalo: "L’alone anticipa la rarità", balance: "Saldo",
     errors: { play_first: "Fai prima una previsione oggi.", insufficient_credits: "Crediti insufficienti.", pack_limit: "Per oggi basta bustine: ne puoi aprire altre domani.", too_fast: "Un attimo: aspetta due secondi tra una bustina e l’altra.", registration_required: "Serve un profilo salvato per aprire le bustine.", not_authenticated: "Sto ancora preparando tutto. Riprova tra un secondo.", unknown_pack: "Questa bustina non esiste.", generic: "Qualcosa non ha funzionato. Riprova." },
   },
   album: {
@@ -70,7 +70,7 @@ const EN: HubText = {
     isNew: "New!", duplicate: "Duplicate", dupBack: (a) => `You already had it: ${a} back`, added: "Added to your album", done: "Done", seeAlbum: "See the album",
     limit: (n, cap) => `Packs opened today: ${n} of ${cap}`, limitHit: "That’s enough packs for today: more tomorrow.", notEnough: "Not enough credits",
     needAccount: "Create a profile to open packs and keep your collection.", makeProfile: "Create a profile", sink: "Credits spent here leave the game: they give no edge on predictions.",
-    pending: "You have a pack to open", hintHalo: "The glow hints at the rarity", balance: "Balance",
+    deal: "Deal of the day", pending: "You have a pack to open", hintHalo: "The glow hints at the rarity", balance: "Balance",
     errors: { play_first: "Make a prediction first today.", insufficient_credits: "Not enough credits.", pack_limit: "That’s enough packs for today: more tomorrow.", too_fast: "One moment: wait two seconds between packs.", registration_required: "You need a saved profile to open packs.", not_authenticated: "Still getting set up. Try again in a second.", unknown_pack: "That pack doesn’t exist.", generic: "Something broke. Give it another shot." },
   },
   album: {
@@ -99,7 +99,7 @@ const JA: HubText = {
     isNew: "NEW！", duplicate: "ダブり", dupBack: (a) => `すでに持っていたので${a}が戻ります`, added: "アルバムに追加しました", done: "OK", seeAlbum: "アルバムを見る",
     limit: (n, cap) => `今日開けたパック：${n} / ${cap}`, limitHit: "今日はここまで。続きは明日どうぞ。", notEnough: "クレジットが足りません",
     needAccount: "パックを開けてコレクションを残すには、プロフィールを作成してください。", makeProfile: "プロフィールを作成", sink: "ここで使ったクレジットはゲームから消えます。予想が有利になることはありません。",
-    pending: "開けていないパックがあります", hintHalo: "光の色でレア度がわかります", balance: "残高",
+    deal: "今日のお得", pending: "開けていないパックがあります", hintHalo: "光の色でレア度がわかります", balance: "残高",
     errors: { play_first: "まず今日1回予想してください。", insufficient_credits: "クレジットが足りません。", pack_limit: "今日はここまで。続きは明日どうぞ。", too_fast: "少しお待ちを。パックの間は2秒あけてください。", registration_required: "パックを開けるには保存済みのプロフィールが必要です。", not_authenticated: "準備中です。少ししてからもう一度どうぞ。", unknown_pack: "そのパックはありません。", generic: "うまくいきませんでした。もう一度お試しください。" },
   },
   album: {

@@ -4,7 +4,7 @@ import { CARDS, CARD_CATS, CARD_TOTAL, cardsOfCat } from "../shared/cards.ts";
 import { DECORATIONS } from "../shared/looks.ts";
 import {
   DAILY_AMOUNTS, DAILY_PACK_CAP, DAILY_WEEK_TOTAL, DEFAULT_AVATARS, PACKS, PACK_GAP_SEC, PACK_RARITIES, REFUND_PCT, SHOP_ITEMS, dailyAmount, dailyDay, daysBetween, duplicateChance,
-  expectedNetCost, expectedRefund, itemKey, itemsOfRarity, lookChance, maxExpectedRefund, packRefund, rarityForRoll, rollPack, streakDayToday,
+  expectedNetCost, expectedRefund, itemKey, itemsOfRarity, lookChance, maxExpectedRefund, packRefund, rarityForRoll, rollPack, streakDayToday, dealOf, dealPrice,
 } from "../shared/shop.ts";
 import { CARD_ICONS } from "../web/src/components/cardIcons.ts";
 import { CARD_TEXT_ROWS, cardCaption, cardName } from "../web/src/lib/cardText.ts";
@@ -140,4 +140,23 @@ describe("hub texts", () => {
     for (const l of ["it", "en-GB", "ja"] as const) expect(shape(hubText(l)), l).toEqual(ref);
   });
   it("have a message for every server error", () => { for (const l of ["it", "en-US", "ja"] as const) for (const k of ["play_first", "insufficient_credits", "pack_limit", "too_fast", "registration_required", "generic"]) expect(hubText(l).shop.errors[k], `${l} ${k}`).toBeTruthy(); });
+});
+
+describe("deal of the day", () => {
+  const sql128 = readFileSync(new URL("../supabase/migrations/0128_pack_deal.sql", import.meta.url), "utf8");
+  it("rotates over the three bigger packs and three discounts", () => {
+    const seen = new Set<string>();
+    for (let d = 0; d < 9; d++) { const x = dealOf(d * 86_400_000 + 3_600_000); expect([2, 3, 4]).toContain(x.tier); expect([20, 25, 30]).toContain(x.pct); seen.add(`${x.tier}:${x.pct}`); }
+    expect(seen.size).toBe(9);
+    expect(dealOf(0).tier).toBe(dealOf(86_399_999).tier); // the same all day
+  });
+  it("discounted prices", () => {
+    expect(dealPrice(250, 20)).toBe(200); expect(dealPrice(700, 25)).toBe(525); expect(dealPrice(2000, 30)).toBe(1400);
+  });
+  it("is mirrored by the SQL", () => {
+    expect(sql128).toContain("2 + (d % 3)");
+    expect(sql128).toContain("array[20, 30, 25]");
+    expect(sql128).toContain("1 + ((d / 3) % 3)");
+    expect(sql128).toContain("floor(pk.price * dl.pct / 100.0)");
+  });
 });

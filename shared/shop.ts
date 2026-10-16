@@ -143,3 +143,13 @@ export function lookChance(tier: number): number {
   }
   return p;
 }
+
+/**
+ * The deal of the day: one of the 250 / 700 / 2000 packs costs 20 / 25 / 30% less until midnight UTC, rotating every day.
+ * Mirrors public.shop_deal() (tested against the SQL).
+ */
+export function dealOf(ms: number): { tier: number; pct: number } {
+  const d = Math.floor(ms / 86_400_000);
+  return { tier: 2 + (d % 3), pct: [20, 30, 25][Math.floor(d / 3) % 3]! };
+}
+export const dealPrice = (price: number, pct: number): number => price - Math.floor((price * pct) / 100);

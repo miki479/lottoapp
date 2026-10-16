@@ -30,6 +30,7 @@ import { NicknameSheet } from "./components/NicknameSheet.tsx";
 import { loadMyProgress, type MyProgress } from "./lib/looks.ts";
 import { useDailyReady, pending } from "./lib/shop.ts";
 import { hubText } from "./lib/shopText.ts";
+import { dealOf } from "../../shared/shop.ts";
 import { DECORATIONS } from "../../shared/looks";
 import { ResultScreen } from "./components/ResultScreen.tsx";
 import { Toast } from "./components/Toast.tsx";
@@ -828,7 +829,7 @@ export function App() {
     <div class={`shell${ready ? "" : " booting"}`} aria-busy={!ready}>
       <Sidebar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} rankBadge={reqCount} social={social} />
       <div>
-        <Header satire={msg.home.satire} claimable={claimable} onWallet={() => { setRewardsTab("today"); setRewardsOpen(true); }} onShop={() => { store.set("shopseen", new Date().toISOString().slice(0, 10)); setShopSeen(true); setRewardsTab("shop"); setRewardsOpen(true); }} shopNew={!shopSeen || !!pending.get()} shopLabel={hubText(locale).tabs.shop} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} credits={profile ? profile.credits : null} who={profile?.id ?? null} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
+        <Header satire={msg.home.satire} claimable={claimable} onWallet={() => { setRewardsTab("today"); setRewardsOpen(true); }} onShop={() => { store.set("shopseen", new Date().toISOString().slice(0, 10)); setShopSeen(true); setRewardsTab("shop"); setRewardsOpen(true); }} shopNew={!shopSeen || !!pending.get()} shopLabel={hubText(locale).tabs.shop} shopDeal={dealOf(Date.now()).pct} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} credits={profile ? profile.credits : null} who={profile?.id ?? null} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
         <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
         <Ticker items={tickerItems} label={msg.ticker.label} />
         <main class="content">

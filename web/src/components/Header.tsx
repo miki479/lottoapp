@@ -54,7 +54,7 @@ function Balance({ credits, who, locale, coin, label, claimable, onClick }: { cr
   );
 }
 
-export function Header({ satire, claimable, onWallet, onShop, shopNew, shopLabel, voice, locale, onLocale, credits, who, coin, languageLabel, creditsLabel, onHome }: { satire?: string; locale: Locale; onLocale: (l: Locale) => void; credits: number | null; who: string | null; coin: string; claimable: number; onWallet: () => void; onShop: () => void; shopNew: boolean; shopLabel: string; voice: { on: boolean; label: string; toggle: () => void } | null; languageLabel: string; creditsLabel: string; onHome: () => void }) {
+export function Header({ satire, claimable, onWallet, onShop, shopNew, shopLabel, shopDeal, voice, locale, onLocale, credits, who, coin, languageLabel, creditsLabel, onHome }: { satire?: string; locale: Locale; onLocale: (l: Locale) => void; credits: number | null; who: string | null; coin: string; claimable: number; onWallet: () => void; onShop: () => void; shopNew: boolean; shopLabel: string; shopDeal?: number; voice: { on: boolean; label: string; toggle: () => void } | null; languageLabel: string; creditsLabel: string; onHome: () => void }) {
   const [scrolled, setScrolled] = useState(false), [compact, setCompact] = useState(false);
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -77,7 +77,7 @@ export function Header({ satire, claimable, onWallet, onShop, shopNew, shopLabel
         <button class="brand" onClick={onHome} aria-label="LateBet"><i><BrandMark /></i><span class="tx"><span class="wm">Late<b>BET</b></span>{satire && <em class="stag">{satire}</em>}</span></button>
         <div class="grow" />
         <div class="hdr-tools">
-        <button class={`iconbtn shopbtn ${shopNew ? "new" : ""}`} onClick={onShop} aria-label={shopLabel} title={shopLabel}><ShoppingBag size={22} />{shopNew && <i class="shopdot" aria-hidden="true" />}</button>
+        <button class={`iconbtn shopbtn ${shopNew ? "new" : ""}`} onClick={onShop} aria-label={shopLabel} title={shopLabel}><ShoppingBag size={22} />{(shopNew || !!shopDeal) && <i class={`shopdot ${shopDeal ? "deal" : ""}`} aria-hidden="true">{shopDeal ? `-${shopDeal}%` : ""}</i>}</button>
         {voice && <button class={`iconbtn voicebtn ${voice.on ? "voiceon" : ""}`} onClick={voice.toggle} aria-pressed={voice.on} aria-label={voice.label}>{voice.on ? <Volume2 size={22} /> : <VolumeX size={22} />}</button>}
         <div class="relative" ref={box}>
           <button class="iconbtn" aria-haspopup="menu" aria-expanded={open} aria-label={languageLabel} onClick={() => setOpen(!open)}><Languages size={22} /></button>

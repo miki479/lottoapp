@@ -1726,3 +1726,4 @@ textarea.field { resize: vertical; min-height: 84px; }
 @media (prefers-reduced-motion: reduce) { .row.climbed, .climbarrow { animation: none; } }
 .stopsearch { display: flex; align-items: center; gap: 4px; }
 .stopsearch input { flex: 1; min-width: 0; min-height: var(--hit); padding: 0 12px; border-radius: var(--radius-control); border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit; }
+.shopdot.deal { top: -2px; right: -4px; width: auto; height: auto; padding: 1px 5px; border-radius: 999px; font-size: var(--fs-xs); font-style: normal; font-weight: 900; color: #fff; line-height: 1.3; }
