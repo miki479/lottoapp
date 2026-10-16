@@ -35,6 +35,25 @@ export function learnedPrior(yes: number, n: number, base: number, strength = 10
   return Math.min(0.9, Math.max(0.03, p));
 }
 
+/**
+ * Italian trains: the live model was too sure of itself. On 10 days of settled questions the quotes that said 7-20% of "late" were right 11-27% of the time, and the ones
+ * that said 92% were right 74% of the time. This maps the model's chance onto what actually happened (piecewise linear between the measured points).
+ */
+const TRAIN_IT_CAL: readonly (readonly [number, number])[] = [[0.03, 0.07], [0.07, 0.112], [0.1, 0.125], [0.143, 0.18], [0.2, 0.27], [0.28, 0.28], [0.42, 0.4], [0.61, 0.6], [0.92, 0.78], [0.97, 0.85]];
+export function calibrateTrainYes(p: number): number {
+  const pts = TRAIN_IT_CAL;
+  if (p <= pts[0]![0]) return pts[0]![1];
+  for (let i = 1; i < pts.length; i++) {
+    const [x1, y1] = pts[i]!, [x0, y0] = pts[i - 1]!;
+    if (p <= x1) return y0 + ((y1 - y0) * (p - x0)) / (x1 - x0);
+  }
+  return pts[pts.length - 1]![1];
+}
+/** A train just added (many stops to go) starts near an even chance of being late and settles as the real readings come in: this is the lowest chance it can start from. */
+export const TRAIN_START_FLOOR = 0.35, TRAIN_START_STOPS = 6;
+/** The chance of "late" of ONE train (by its number): the rate of the country, pulled towards the rate of that train once it has enough settled questions. */
+export const routePrior = (countryPrior: number, n: number, yes: number, strength = 8): number => learnedPrior(yes, n, countryPrior, strength);
+
 export interface Odds {
   yes: number;
   no: number;

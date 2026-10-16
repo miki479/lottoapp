@@ -93,3 +93,20 @@ describe("train drift in live pricing", () => {
     expect(lyp(0.25, 0, 300, 30, true)).toBeGreaterThan(lyp(0.25, 0, 300, 3, true)); // further ahead, more chance
   });
 });
+
+import { TRAIN_START_FLOOR, calibrateTrainYes, routePrior } from "../shared/odds.ts";
+describe("Italian train calibration and per-line memory", () => {
+  it("puts the model's chance on what the settled questions showed", () => {
+    expect(calibrateTrainYes(0.07)).toBeCloseTo(0.112, 3);
+    expect(calibrateTrainYes(0.05)).toBeGreaterThan(0.07);
+    expect(calibrateTrainYes(0.92)).toBeLessThan(0.8);
+    expect(calibrateTrainYes(0.5)).toBeGreaterThan(0.4); expect(calibrateTrainYes(0.5)).toBeLessThan(0.5);
+    for (let p = 0.03; p < 0.97; p += 0.02) expect(calibrateTrainYes(p + 0.02)).toBeGreaterThanOrEqual(calibrateTrainYes(p)); // never turns around
+  });
+  it("a train that was almost always late gets a higher chance than the country, one that rarely was a lower one", () => {
+    expect(routePrior(0.26, 0, 0)).toBeCloseTo(0.26, 2);
+    expect(routePrior(0.26, 30, 24)).toBeGreaterThan(0.5);
+    expect(routePrior(0.26, 30, 1)).toBeLessThan(0.1);
+    expect(TRAIN_START_FLOOR).toBeGreaterThan(0.3);
+  });
+});
