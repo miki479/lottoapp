@@ -54,7 +54,7 @@ export function RewardsSheet(p: {
       <div class="rbal"><span class="coin" aria-hidden="true">{currencySymbol(p.locale)}</span><b class="num">{money(p.profile?.credits ?? 0, p.locale)}</b>
         <span class="rstock"><Snowflake size={15} />{p.profile?.freezes ?? 0}</span><span class="rstock"><Rocket size={15} />{p.profile?.boosts ?? 0}</span></div>
       <div class="seg rhtabs" role="tablist">{(["today", "shop"] as const).map((k) => <button key={k} role="tab" aria-selected={tab === k} class={tab === k ? "on" : ""} onClick={() => setTab(k)}>{ht.tabs[k]}</button>)}</div>
-      {tab === "shop" && <ShopArea tab="shop" locale={p.locale} msg={p.msg} credits={p.profile?.credits ?? 0} registered={p.registered} boosts={p.profile?.boosts ?? 0} freezes={p.profile?.freezes ?? 0} onTab={() => { p.onClose(); p.onAlbum?.(); }} onChanged={() => p.onChanged?.()} onAuth={() => p.onGo("o_nick")} />}
+      {tab === "shop" && <ShopArea tab="shop" locale={p.locale} msg={p.msg} credits={p.profile?.credits ?? 0} registered={p.registered} boosts={p.profile?.boosts ?? 0} freezes={p.profile?.freezes ?? 0} limitUntil={p.profile?.limit_break_until ?? null} limitAt={p.profile?.limit_break_at ?? null} onTab={() => { p.onClose(); p.onAlbum?.(); }} onChanged={() => p.onChanged?.()} onAuth={() => p.onGo("o_nick")} />}
       {tab === "today" && <>
       <p class="hint">{m.subtitle}</p>
       <DailyBonus locale={p.locale} now={p.now} tz={p.profile?.timezone ?? "UTC"} onPlay={p.onClose} onChanged={() => p.onChanged?.()} />

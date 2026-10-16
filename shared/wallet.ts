@@ -39,6 +39,24 @@ export const DELAY_MAX_PROFIT = 4999, SINGLE_MAX_PROFIT = 10_000;
  * of profit (4999 / (odds - 1)), with a floor of FUN_STAKE. Mirrors place_bet (migration 0124) and the BetSheet.
  */
 export const DELAY_KINDS: readonly string[] = ["bus_delay_gt", "train_delay_gt", "bus_full"];
+/**
+ * The Limit Breaker (legendary shop item): for 24 hours the delay limits (2000 stake, 4999 profit) and the 10000 profit limit on single bets are lifted
+ * to one ceiling of 50000 profit. One every 15 days. Mirrors buy_limit_break() and place_bet (migration 0130).
+ */
+export const LIMIT_BREAK = { price: 3500, hours: 24, cooldownDays: 15, maxProfit: 50_000 } as const;
+export type LimitBreakState = "ready" | "active" | "cooling";
+/** Where the item is: usable now, running (until `untilMs`), or resting until 15 days after it was bought. */
+export function limitBreakState(untilMs: number | null, atMs: number | null, nowMs: number): { state: LimitBreakState; endsAt: number | null; nextAt: number | null } {
+  const nextAt = atMs === null ? null : atMs + LIMIT_BREAK.cooldownDays * 86_400_000;
+  if (untilMs !== null && untilMs > nowMs) return { state: "active", endsAt: untilMs, nextAt };
+  if (nextAt !== null && nextAt > nowMs) return { state: "cooling", endsAt: null, nextAt };
+  return { state: "ready", endsAt: null, nextAt };
+}
+/** Stake limit with the Limit Breaker on (any kind of single bet): the odds-based cap and 50000 of profit at most. */
+export function unlockedStakeCap(odds: number): number {
+  const sc = stakeCap(odds);
+  return odds > 1 ? Math.max(FUN_STAKE, Math.min(sc, Math.floor(LIMIT_BREAK.maxProfit / (odds - 1)))) : sc;
+}
 export function delayStakeCap(odds: number): number {
   const sc = Math.min(stakeCap(odds), 2000);
   return odds > 1 ? Math.max(FUN_STAKE, Math.min(sc, Math.floor(DELAY_MAX_PROFIT / (odds - 1)))) : sc;

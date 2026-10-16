@@ -156,7 +156,7 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
         {PACKS.map((pack) => {
           const name = s.packs[pack.tier - 1]!, price = priceOf(pack), onDeal = pack.tier === deal.tier, can = registered && credits >= price && !full;
           return (
-            <li key={pack.tier} class={`pkrow pt${pack.tier} ${onDeal ? "deal" : ""}`}>
+            <li key={pack.tier} class={`pkrow pt${pack.tier} ${onDeal ? "deal" : ""} ${full ? "off" : ""}`}>
               <div class="pkmini"><PackArt pack={pack} name={name} />{onDeal && <span class="dealtag" aria-hidden="true">-{deal.pct}%</span>}</div>
               <div class="pkinfo">
                 <b>{name}{onDeal && <em class="dealname">{s.deal}</em>}</b>

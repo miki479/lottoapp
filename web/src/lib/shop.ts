@@ -47,6 +47,12 @@ export async function buySupply(item: string): Promise<SupplyBought | { error: s
   changed();
   return data as SupplyBought;
 }
+export async function buyLimitBreak(): Promise<{ balance: number; until: string; next: string } | { error: string }> {
+  const { data, error } = await sb.rpc("buy_limit_break");
+  if (error) return { error: error.message };
+  changed();
+  return data as { balance: number; until: string; next: string };
+}
 /** Avatars the player can wear: the free ones, the won ones and the one worn now. */
 export async function loadMyAvatars(): Promise<string[] | null> {
   const { data, error } = await sb.rpc("my_avatars");

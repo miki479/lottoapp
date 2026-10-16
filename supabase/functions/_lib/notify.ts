@@ -322,6 +322,16 @@ const BROADCAST = {
     },
     url: "https://latelotto.web.app/",
   },
+  // the Limit Breaker in the shop (legendary item): a plain push to everybody, per language
+  limit_v1: {
+    byLocale: {
+      it: { h: "Nuovo nel Negozio: il Rompilimiti ✨", c: "Oggetto Leggendario: per 24 ore toglie i limiti bassi alle puntate singole, treni e bus compresi. Se ne può comprare uno ogni 15 giorni." },
+      "en-US": { h: "New in the Shop: the Limit Breaker ✨", c: "Legendary item: for 24 hours it lifts the low limits on single bets, trains and buses included. You can buy one every 15 days." },
+      "en-GB": { h: "New in the Shop: the Limit Breaker ✨", c: "Legendary item: for 24 hours it lifts the low limits on single bets, trains and buses included. You can buy one every 15 days." },
+      ja: { h: "ショップに新登場：リミットブレイカー ✨", c: "レジェンドアイテム：24時間、電車やバスを含む単発の予想の低い上限を解除します。15日に1回購入できます。" },
+    },
+    url: "https://latelotto.web.app/?open=shop",
+  },
   // ready for the day the frisbee questions go live: set app_settings broadcast_pending = 'frisbee_v1'
   frisbee_v1: {
     headings: { en: "Frisbee has landed 🥏", it: "È arrivato il frisbee 🥏", ja: "フリスビーが登場 🥏" },
