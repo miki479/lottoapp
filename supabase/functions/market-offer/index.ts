@@ -124,6 +124,9 @@ Deno.serve(safe(async (req) => {
     const chance = Math.round(tickChance(series, ref, thr, Math.max(0.6, (target - now) / 3600), now) * 100) / 100;
     const info = { reference: ref, step, chance };
     if (thr <= 0 || chance < FAIR_MIN || chance > FAIR_MAX) return json({ error: "too_certain", ...info }, 422);
+    // a line the value has already crossed (and a short time to go) is no question: it cannot be offered at a long-shot quote ("will it reach 41k?" at 42k)
+    const hoursAhead = (target - now) / 3600;
+    if (ref >= thr && (hoursAhead <= 6 || chance < 0.35)) return json({ error: "too_certain", ...info }, 422);
     const m = buildCustomTick(series, ref, thr, target, now);
     if (preview) return json({ preview: { ...info, odds_yes: m.odds_yes, odds_no: m.odds_no, threshold: thr } });
     draft = { ...m, params: { ...m.params, custom: "true", by }, dedupe_key: `c|${series}|${target}|${thr}` };

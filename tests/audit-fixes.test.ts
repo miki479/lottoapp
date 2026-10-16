@@ -4,7 +4,7 @@ import { bankMultBps } from "../shared/bank.ts";
 import { closeSeason } from "../shared/leagues.ts";
 import { MAX_ODDS, computeOdds } from "../shared/odds.ts";
 import { offerPayout } from "../shared/offers.ts";
-import { FUN_STAKE, boostedPayout, delayStakeCap, parlayOdds, payout, stakeCap } from "../shared/wallet.ts";
+import { FUN_STAKE, boostedPayout, delayStakeCap, parlayOdds, payout, singleStakeCap, stakeCap } from "../shared/wallet.ts";
 
 describe("payout rounds like the database (exact cents, floor)", () => {
   it("does not lose a credit to floating point", () => {
@@ -28,20 +28,25 @@ describe("payout rounds like the database (exact cents, floor)", () => {
   });
 });
 
-describe("delay stake cap (mirrors place_bet 0112)", () => {
-  it("is 1000 at most and 2000 profit at most, never under the fun stake", () => {
-    expect(delayStakeCap(3)).toBe(1000);
-    expect(delayStakeCap(15)).toBe(142); // floor(2000 / 14)
+describe("delay stake cap (mirrors place_bet 0124)", () => {
+  it("is 2000 at most and 4999 profit at most, never under the fun stake", () => {
+    expect(delayStakeCap(3)).toBe(2000);
+    expect(delayStakeCap(15)).toBe(357); // floor(4999 / 14)
     expect(delayStakeCap(1.05)).toBe(FUN_STAKE);
-    expect(delayStakeCap(1.5)).toBe(Math.min(stakeCap(1.5), 1000));
+    expect(delayStakeCap(1.5)).toBe(Math.min(stakeCap(1.5), 2000));
+  });
+  it("any other question wins at most 10000 profit on one bet", () => {
+    expect(singleStakeCap(3)).toBe(5000);       // floor(10000 / 2) = 5000
+    expect(singleStakeCap(15)).toBe(714);       // floor(10000 / 14)
+    expect(singleStakeCap(1.05)).toBe(FUN_STAKE);
   });
 });
 
 describe("parlay odds", () => {
-  it("is the product rounded to cents and capped at 100", () => {
+  it("is the product rounded to cents and capped at 200", () => {
     expect(parlayOdds([1.5, 2])).toBe(3);
     expect(parlayOdds([1.33, 1.77])).toBe(2.35);
-    expect(parlayOdds([15, 15, 15])).toBe(100);
+    expect(parlayOdds([15, 15, 15])).toBe(200);
   });
 });
 
@@ -76,8 +81,8 @@ describe("migration 0113", () => {
 
 import { parlayStakeCap as psc } from "../shared/wallet.ts";
 describe("parlayStakeCap", () => {
-  it("is limited by the safest leg", () => { expect(psc([1.05, 3])).toBe(20); expect(psc([1.2, 2])).toBe(200); });
-  it("is limited by 20000 of profit and 5000", () => { expect(psc([2.5, 2.5])).toBe(3809); expect(psc([1.8, 1.8])).toBe(5000); expect(psc([6, 6, 6])).toBe(202); });
+  it("follows the combined quote, not the safest leg", () => { expect(psc([1.05, 3, 2])).toBe(5000); expect(psc([1.05, 1.05, 1.05])).toBe(200); });
+  it("is limited by 50000 of profit and 5000", () => { expect(psc([2.5, 2.5, 2])).toBe(4347); expect(psc([1.8, 1.8, 1.5])).toBe(5000); expect(psc([6, 6, 6])).toBe(251); });
 });
 
 import { liveYesProbability as lyp } from "../shared/odds.ts";

@@ -32,29 +32,34 @@ export function payout(stake: number, odds: number): number {
   return Math.floor((Math.round(odds * 100) * stake) / 100);
 }
 
+/** Profit limits of one bet (migration 0124): 4999 on a live delay / crowding question, 10000 on any other question. */
+export const DELAY_MAX_PROFIT = 4999, SINGLE_MAX_PROFIT = 10_000;
 /**
- * Stake limit of a bet on a live delay / crowding question, on top of `stakeCap`: at most 1000 whatever the quote, and never more than 2000
- * of profit (2000 / (odds - 1)), with a floor of FUN_STAKE. Mirrors place_bet (migration 0112) and the BetSheet.
+ * Stake limit of a bet on a live delay / crowding question, on top of `stakeCap`: at most 2000 whatever the quote, and never more than 4999
+ * of profit (4999 / (odds - 1)), with a floor of FUN_STAKE. Mirrors place_bet (migration 0124) and the BetSheet.
  */
 export const DELAY_KINDS: readonly string[] = ["bus_delay_gt", "train_delay_gt", "bus_full"];
 export function delayStakeCap(odds: number): number {
-  const sc = Math.min(stakeCap(odds), 1000);
-  return odds > 1 ? Math.max(FUN_STAKE, Math.min(sc, Math.floor(2000 / (odds - 1)))) : sc;
+  const sc = Math.min(stakeCap(odds), 2000);
+  return odds > 1 ? Math.max(FUN_STAKE, Math.min(sc, Math.floor(DELAY_MAX_PROFIT / (odds - 1)))) : sc;
+}
+/** Stake limit of a bet on any other question: the odds-based cap, and never more than 10000 of profit. Mirrors place_bet (migration 0124). */
+export function singleStakeCap(odds: number): number {
+  const sc = stakeCap(odds);
+  return odds > 1 ? Math.max(FUN_STAKE, Math.min(sc, Math.floor(SINGLE_MAX_PROFIT / (odds - 1)))) : sc;
 }
 
-/** Stake limit of a parlay, mirrors place_parlay (0114): the lowest single-bet cap among the legs, 20000 of profit at most (floor FUN_STAKE), 5000 at most. */
+/** Stake limit of a parlay, mirrors place_parlay (0124): the cap of the combined quote (not of the safest leg), 50000 of profit at most (floor FUN_STAKE), 5000 at most. */
 export function parlayStakeCap(legOdds: readonly number[]): number {
-  let cap = PARLAY_MAX_STAKE;
-  for (const o of legOdds) cap = Math.min(cap, stakeCap(o));
-  const odds = parlayOdds(legOdds);
-  return odds > 1 ? Math.min(cap, Math.max(FUN_STAKE, Math.floor(20000 / (odds - 1)))) : cap;
+  const odds = parlayOdds(legOdds), cap = Math.min(PARLAY_MAX_STAKE, stakeCap(odds));
+  return odds > 1 ? Math.min(cap, Math.max(FUN_STAKE, Math.floor(50000 / (odds - 1)))) : cap;
 }
 
-/** Parlays: 2 to 5 legs, stake 10..5000, combined odds are the product of the legs, rounded to cents and capped at 100. Mirrors place_parlay / settle_legs. */
-export const PARLAY_MIN_LEGS = 2;
+/** Parlays: 3 to 5 legs, stake 10..5000, combined odds are the product of the legs, rounded to cents and capped at 200. Mirrors place_parlay / settle_legs. */
+export const PARLAY_MIN_LEGS = 3;
 export const PARLAY_MAX_LEGS = 5;
 export const PARLAY_MAX_STAKE = 5000;
-export const PARLAY_MAX_ODDS = 100;
+export const PARLAY_MAX_ODDS = 200;
 export function parlayOdds(legOdds: readonly number[]): number {
   const prod = legOdds.reduce((a, o) => a * (Number.isFinite(o) && o > 0 ? o : 1), 1);
   return Math.min(PARLAY_MAX_ODDS, Math.round(prod * 100) / 100);

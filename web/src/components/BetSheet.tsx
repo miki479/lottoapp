@@ -1,6 +1,6 @@
 import { sb } from "../lib/api.ts";
 import { oddsWord } from "../lib/oddsWord.ts";
-import { FUN_STAKE, balanceStakeCap, stakeCap } from "../../../shared/wallet.ts";
+import { FUN_STAKE, balanceStakeCap, delayStakeCap, singleStakeCap } from "../../../shared/wallet.ts";
 import { BetHead } from "./BetHead.tsx";
 import { BetFoot } from "./BetFoot.tsx";
 import { MarketVs, noOf, reasonOf } from "./MatchVs.tsx";
@@ -70,7 +70,7 @@ export function BetSheet(p: {
   // Upper limit: what the odds allow (all-but-certain picks are closed), or the whole balance when it is lower (the server checks it again).
   // a personal offer has its own small stake limit instead of the odds-based one, and still refuses a pick whose real quote has become all but certain
   const factor = p.stakeFactor ?? 1;
-  const baseCap = offer ? offer.maxStake : ["bus_delay_gt", "train_delay_gt", "bus_full"].includes(p.m.kind) ? Math.max(FUN_STAKE, Math.min(stakeCap(odds), 1000, odds > 1 ? Math.floor(2000 / (odds - 1)) : 1000)) : stakeCap(odds);
+  const baseCap = offer ? offer.maxStake : ["bus_delay_gt", "train_delay_gt", "bus_full"].includes(p.m.kind) ? delayStakeCap(odds) : singleStakeCap(odds);
   // a reduced stake factor (someone who keeps cashing in on near-certain picks) shrinks the limit on such picks, as the server does
   const factored = !offer && baseCap > FUN_STAKE && factor < 1 ? Math.max(FUN_STAKE, Math.floor(baseCap * factor)) : baseCap;
   const oddsCap = offer ? factored : Math.min(factored, balanceStakeCap(p.credits));

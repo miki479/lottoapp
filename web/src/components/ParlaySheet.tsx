@@ -8,7 +8,7 @@ import { haptic } from "../lib/haptics.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
 import type { SlipLeg } from "../lib/types.ts";
 import { JoinStep } from "./JoinStep.tsx";
-import { parlayStakeCap } from "../../../shared/wallet.ts";
+import { PARLAY_MIN_LEGS, parlayStakeCap } from "../../../shared/wallet.ts";
 import { Sheet } from "./Sheet.tsx";
 import { StakeControl } from "./StakeControl.tsx";
 import { fmtMult } from "../lib/num.ts";
@@ -56,12 +56,12 @@ export function ParlaySheet(p: {
         })}
       </ul>
       <div class="summary"><span>{m.slip.odds}</span><b class="num pop" key={odds.toFixed(2)} style="color:var(--c-pop)">{fmtMult(odds, p.locale)}</b></div>
-      {p.legs.length < 2 && <p class="note">{m.slip.need2}</p>}
+      {p.legs.length < PARLAY_MIN_LEGS && <p class="note">{m.slip.need2}</p>}
       <StakeControl value={amount} onChange={setStake} cap={cap} balance={p.credits} odds={odds} boost={boost && p.boosts > 0} locale={p.locale} msg={m} />
       {p.boosts > 0 && <BoostRow on={boost} onToggle={setBoost} boosts={p.boosts} stake={amount} odds={odds} locale={p.locale} msg={m} />}
       <p class="hint">{m.slip.maxWin}</p>
       <button class="btn secondary wide" onClick={p.onClear}>{m.slip.clear}</button>
-      <BetFoot amount={amount} balance={p.credits} label={`${m.slip.confirm} · ${money(amount, p.locale)}`} busy={busy} disabled={p.legs.length < 2} err={err} msg={m} locale={p.locale} onGo={p.needJoin ? () => setJoining(true) : place} reset={`${boost}|${p.legs.length}`} />
+      <BetFoot amount={amount} balance={p.credits} label={`${m.slip.confirm} · ${money(amount, p.locale)}`} busy={busy} disabled={p.legs.length < PARLAY_MIN_LEGS} err={err} msg={m} locale={p.locale} onGo={p.needJoin ? () => setJoining(true) : place} reset={`${boost}|${p.legs.length}`} />
     </Sheet>
   );
 }
