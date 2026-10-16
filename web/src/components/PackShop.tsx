@@ -1,7 +1,7 @@
 import { Check, Crown, Gem, Lock, Sparkles, Star } from "lucide-preact";
 import type { LucideIcon } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { PACK_RARITIES, PACKS, lookChance, packRefund, REFUND_PCT, type PackDef, type PackRarity } from "../../../shared/shop.ts";
+import { PACK_RARITIES, PACKS, dealOf, dealPrice, lookChance, packRefund, REFUND_PCT, type PackDef, type PackRarity } from "../../../shared/shop.ts";
 import { cardById } from "../../../shared/cards.ts";
 import { INTL_TAG, type Locale, type Messages } from "../i18n/index.ts";
 import { reducedMotion } from "../lib/anim.ts";
@@ -57,6 +57,8 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
   const [err, setErr] = useState<string | null>(null), [shake, setShake] = useState(0);
   const timer = useRef<number | undefined>(undefined), tapsRef = useRef(0);
   useEffect(() => () => clearTimeout(timer.current), []);
+  // the deal of the day (UTC): one pack costs less, the server charges the same price
+  const deal = dealOf(Date.now()), priceOf = (pk: PackDef): number => (pk.tier === deal.tier ? dealPrice(pk.price, deal.pct) : pk.price);
   const packOf = (tier: number): PackDef => PACKS.find((p) => p.tier === tier) ?? PACKS[0]!;
   const full = (album?.opened_today ?? 0) >= (album?.daily_cap ?? 12);
 
@@ -85,7 +87,7 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
 
   // ---------- confirm ----------
   if (stage && (stage.phase === "confirm" || stage.phase === "buying")) {
-    const pack = packOf(stage.tier), name = s.packs[pack.tier - 1]!, ok = credits >= pack.price && !full && registered;
+    const pack = packOf(stage.tier), name = s.packs[pack.tier - 1]!, ok = credits >= priceOf(pack) && !full && registered;
     return (
       <section class="stack pkstage">
         <div class="pkplace"><PackArt pack={pack} name={name} big /></div>
@@ -93,10 +95,10 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
         <p class="pkodds">{s.oddsLine(Object.fromEntries(PACK_RARITIES.map((r) => [r, pct(pack.odds[r], locale)])) as Record<PackRarity, string>)}</p>
         <p class="hint">{s.confirm}</p>
         <p class="hint">{s.looksShare(pct(Math.round(lookChance(pack.tier) * 10000), locale))}</p>
-        <p class="hint">{s.dupRule(REFUND_PCT, money(packRefund(pack.price), locale))}</p>
+        <p class="hint">{s.dupRule(REFUND_PCT, money(packRefund(priceOf(pack)), locale))}</p>
         {err && <p class="dberr" role="alert">{err}</p>}
-        {!ok && credits < pack.price && <p class="dberr">{s.notEnough}</p>}
-        <button class="btn primary wide" disabled={!ok || stage.phase === "buying"} aria-busy={stage.phase === "buying"} onClick={() => buy(pack.tier)}>{s.pay(money(pack.price, locale))}</button>
+        {!ok && credits < priceOf(pack) && <p class="dberr">{s.notEnough}</p>}
+        <button class="btn primary wide" disabled={!ok || stage.phase === "buying"} aria-busy={stage.phase === "buying"} onClick={() => buy(pack.tier)}>{s.pay(money(priceOf(pack), locale))}</button>
         <button class="btn secondary wide" disabled={stage.phase === "buying"} onClick={close}>{s.notNow}</button>
       </section>
     );
@@ -152,17 +154,17 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
       {!registered && <div class="card pkguest"><Lock size={18} /><p>{s.needAccount}</p><button class="btn primary" onClick={onAuth}>{s.makeProfile}</button></div>}
       <ul class="pklist">
         {PACKS.map((pack) => {
-          const name = s.packs[pack.tier - 1]!, can = registered && credits >= pack.price && !full;
+          const name = s.packs[pack.tier - 1]!, price = priceOf(pack), onDeal = pack.tier === deal.tier, can = registered && credits >= price && !full;
           return (
-            <li key={pack.tier} class={`pkrow pt${pack.tier}`}>
-              <div class="pkmini"><PackArt pack={pack} name={name} /></div>
+            <li key={pack.tier} class={`pkrow pt${pack.tier} ${onDeal ? "deal" : ""}`}>
+              <div class="pkmini"><PackArt pack={pack} name={name} />{onDeal && <span class="dealtag" aria-hidden="true">-{deal.pct}%</span>}</div>
               <div class="pkinfo">
-                <b>{name}</b>
+                <b>{name}{onDeal && <em class="dealname">{s.deal}</em>}</b>
                 <span class="pkbar" role="img" aria-label={s.odds}>{PACK_RARITIES.filter((r) => pack.odds[r] > 0).map((r) => <i key={r} class={`r-${r}`} style={`flex:${pack.odds[r]}`} />)}</span>
                 <span class="pkodds">{s.oddsLine(Object.fromEntries(PACK_RARITIES.map((r) => [r, pct(pack.odds[r], locale)])) as Record<PackRarity, string>)}</span>
               </div>
-              <button class="btn primary pkbuy" disabled={!registered || full} onClick={() => { setErr(null); setStage({ phase: "confirm", tier: pack.tier }); }} aria-label={`${name}: ${s.buy(money(pack.price, locale))}`}>
-                <span>{money(pack.price, locale)}</span>{!can && registered && !full && <em>{s.notEnough}</em>}
+              <button class="btn primary pkbuy" disabled={!registered || full} onClick={() => { setErr(null); setStage({ phase: "confirm", tier: pack.tier }); }} aria-label={`${name}: ${s.buy(money(price, locale))}${onDeal ? ` (-${deal.pct}%)` : ""}`}>
+                {onDeal && <s class="was">{money(pack.price, locale)}</s>}<span>{money(price, locale)}</span>{!can && registered && !full && <em>{s.notEnough}</em>}
               </button>
             </li>
           );

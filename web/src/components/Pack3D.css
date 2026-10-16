@@ -49,3 +49,12 @@
 .rvtag.inl { position: static; align-self: center; margin-top: 6px; }
 .pkreveal .pkplace { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .pkreveal .pkhalo { top: 50%; left: 50%; transform: translate(-50%, -50%); animation: none; }
+
+/* deal of the day */
+.pkmini { position: relative; }
+.dealtag { position: absolute; top: -8px; left: -8px; padding: 2px 7px; border-radius: 999px; font-size: var(--fs-xs); font-weight: 900; background: var(--loss); color: #fff; box-shadow: 0 0 0 2px var(--surface), 0 0 14px color-mix(in srgb, var(--loss) 60%, transparent); animation: dealpulse 1.6s ease-in-out infinite; }
+@keyframes dealpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+.dealname { margin-left: 6px; font-style: normal; font-size: var(--fs-xs); font-weight: 800; color: var(--loss); }
+.pkrow.deal { outline: 2px solid color-mix(in srgb, var(--loss) 55%, transparent); }
+.pkbuy .was { font-size: var(--fs-xs); opacity: .7; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .dealtag { animation: none; } }
