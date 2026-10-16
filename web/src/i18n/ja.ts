@@ -117,7 +117,7 @@ const ja: Messages = {
   },
   rankTabs: { world: "世界", local: "地元", friends: "友達", near: "近く", country: "国", city: "都市", km: "km", needHome: "町を設定すると、近くのプレイヤーが表示されます。", radius: "範囲" },
   ranking: {
-    seasonLbl: "損益", seasonLegend: "ランキングは純損益（勝ち分−負け分）で決まります。プレゼントを含む残高とは別です。", balanceLbl: "残高", monthLbl: "今月", leagueLegend: "数字は今月の残高です。月末に全員リセットされます。",
+    seasonLbl: "今月", seasonLegend: "ランキングは月ごとで、月初からの純損益（勝ち分−負け分）で決まります。プレゼントを含む残高とは別です。", balanceLbl: "残高", monthLbl: "今月", leagueLegend: "数字は今月の残高です。月末に全員リセットされます。",
     title: "ランキング", season: (d) => (d <= 1 ? "シーズンは今日で終了" : `シーズン終了まであと${d}日`),
     scopes: { global: "世界", country: "国", city: "都市", friends: "友だち" }, you: "あなた", credits: "クレジット",
     empty: { title: "まだ誰もランクインしていません", body: "今月の1位はまだ空席です。" },
