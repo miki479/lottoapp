@@ -1,4 +1,4 @@
-import { MapPin, Bell, Gift, Rocket, ChevronRight, Flame, LogOut, Pencil, Percent, Share2, Snowflake, Trash2, Trophy, User, Zap } from "lucide-preact";
+import { MapPin, Bell, Gift, Rocket, ChevronRight, Flame, LogOut, Pencil, Percent, Share2, Snowflake, Trash2, Trophy, User, Volume2, Zap } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Sheet } from "../components/Sheet.tsx";
 import { StreakCard } from "../components/StreakCard.tsx";
