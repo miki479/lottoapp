@@ -36,17 +36,18 @@ describe("rate limiter", () => {
 describe("intent", () => {
   it("walking past never becomes waiting", () => {
     let a: Anchor | null = null;
-    for (let i = 0; i < 20; i++) a = updateAnchor(a, at(i * 0.0004, 0, i * 5000)); // ~45 m every 5 s
-    expect(dwellMs(a, 100_000)).toBeLessThanOrEqual(5_000);
-    expect(classify({ anchor: a, now: 100_000, nearestStopM: 20, home: null })).toBe("passing");
+    for (let i = 0; i < 20; i++) a = updateAnchor(a, at(i * 0.0004, 0, i * 2000)); // ~45 m every 2 s
+    expect(dwellMs(a, 40_000)).toBeLessThanOrEqual(2_000);
+    expect(classify({ anchor: a, now: 40_000, nearestStopM: 20, home: null })).toBe("passing");
   });
   it("staying next to a stop turns into waiting, a bit slower when further from it", () => {
     let a: Anchor | null = null;
     for (let i = 0; i <= 13; i++) a = updateAnchor(a, at(0.00001 * (i % 3), 0, i * 5000));
     expect(classify({ anchor: a, now: 65_000, nearestStopM: 25, home: null })).toBe("waiting");
-    expect(classify({ anchor: a, now: 15_000, nearestStopM: 25, home: null })).toBe("passing");
+    expect(classify({ anchor: a, now: 2_000, nearestStopM: 25, home: null })).toBe("passing");
+    expect(classify({ anchor: a, now: 4_000, nearestStopM: 25, home: null })).toBe("waiting"); // right under the stop: a few seconds are enough
     expect(classify({ anchor: a, now: 65_000, nearestStopM: 70, home: null })).toBe("waiting");
-    expect(classify({ anchor: a, now: 40_000, nearestStopM: 70, home: null })).toBe("passing");
+    expect(classify({ anchor: a, now: 10_000, nearestStopM: 70, home: null })).toBe("passing");
     expect(classify({ anchor: a, now: 65_000, nearestStopM: 150, home: null })).toBe("passing");
   });
   it("vague readings are ignored and small jitter keeps the same stay", () => {
@@ -68,10 +69,10 @@ describe("intent", () => {
   });
   it("asks the server after a short stay, then at most once a minute, sooner after moving", () => {
     const a = updateAnchor(null, at(0, 0, 0))!;
-    expect(shouldAsk(a, 10_000, null)).toBe(false);
-    expect(shouldAsk(a, 21_000, null)).toBe(true);
-    expect(shouldAsk(a, 40_000, { ...FORLI, at: 21_000 })).toBe(false);
-    expect(shouldAsk(a, 90_000, { ...FORLI, at: 21_000 })).toBe(true);
+    expect(shouldAsk(a, 1_000, null)).toBe(false);
+    expect(shouldAsk(a, 3_000, null)).toBe(true);
+    expect(shouldAsk(a, 40_000, { ...FORLI, at: 3_000 })).toBe(false);
+    expect(shouldAsk(a, 90_000, { ...FORLI, at: 3_000 })).toBe(true);
     const moved = { ...a, lat: a.lat + 0.01, since: 50_000 };
     expect(shouldAsk(moved, 80_000, { ...FORLI, at: 60_000 })).toBe(true);
   });

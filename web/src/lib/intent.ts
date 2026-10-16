@@ -11,9 +11,9 @@ export type Situation = "unknown" | "passing" | "waiting" | "home";
 export const ANCHOR_RADIUS_M = 25;
 /** A reading that is this vague says nothing about where the person is. */
 export const MAX_ACCURACY_M = 100;
-export const ASK_AFTER_MS = 20_000;
-export const WAIT_NEAR_M = 30, WAIT_NEAR_MS = 30_000;
-export const WAIT_FAR_M = 80, WAIT_FAR_MS = 60_000;
+export const ASK_AFTER_MS = 2_000;
+export const WAIT_NEAR_M = 30, WAIT_NEAR_MS = 3_000;
+export const WAIT_FAR_M = 80, WAIT_FAR_MS = 15_000;
 export const HOME_RADIUS_M = 200, HOME_STAY_MS = 15 * 60_000;
 
 /** Folds a reading into the anchor: inside the radius the person is still in the same place, outside it a new stay starts. Vague readings are ignored. */
