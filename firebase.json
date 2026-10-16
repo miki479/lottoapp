@@ -70,7 +70,7 @@
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; object-src 'none'; script-src 'self' https://cdn.onesignal.com https://api.onesignal.com; style-src 'self'; img-src 'self' data: https://*.onesignal.com https://cdn.cloudflare.steamstatic.com https://r2.thesportsdb.com https://www.thesportsdb.com https://tile.openstreetmap.org; font-src 'self'; connect-src 'self' https://api.tvmaze.com https://*.supabase.co https://geocoding-api.open-meteo.com https://onesignal.com https://*.onesignal.com; manifest-src 'self'; worker-src 'self'; frame-src https://*.onesignal.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+            "value": "default-src 'self'; object-src 'none'; script-src 'self' https://cdn.onesignal.com https://api.onesignal.com; style-src 'self'; img-src 'self' data: https://*.onesignal.com https://cdn.cloudflare.steamstatic.com https://r2.thesportsdb.com https://www.thesportsdb.com; font-src 'self'; connect-src 'self' https://api.tvmaze.com https://*.supabase.co https://geocoding-api.open-meteo.com https://onesignal.com https://*.onesignal.com; manifest-src 'self'; worker-src 'self'; frame-src https://*.onesignal.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
           }
         ]
       },
