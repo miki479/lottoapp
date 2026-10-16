@@ -467,7 +467,13 @@ export function App() {
   /** "Near you": what is within RADIUS_KM of the player's town (the town they set, or the one they were located in); with no town known, the whole country. */
   // "near me" follows where the phone is (when the player located themselves); the profile town is only the fallback and the key of the local ranking
   const originPt = geo ? { lat: geo.lat, lon: geo.lon } : home ? { lat: home.lat, lon: home.lon } : near ? locOf(near.id) : null;
-  const withinRadius = (m: MarketRow) => { const l = originPt ? locOf(m.city_id) : null; return !!(originPt && l) && distanceM(originPt.lat, originPt.lon, l.lat, l.lon) / 1000 <= (REGION_IDS.has(m.city_id) ? REGION_KM : RADIUS_KM); };
+  const withinRadius = (m: MarketRow) => {
+    if (!originPt) return false;
+    // a regional feed (Toscana, Romagna…) is "near" only when the player is inside that region: a region whose centre is 80 km away is not near
+    if (REGION_IDS.has(m.city_id)) { const here = regionOfPoint(originPt.lat, originPt.lon), there = regionOfCity(m.city_id); if (here && there) return here === there; }
+    const l = locOf(m.city_id);
+    return !!l && distanceM(originPt.lat, originPt.lon, l.lat, l.lon) / 1000 <= (REGION_IDS.has(m.city_id) ? REGION_KM : RADIUS_KM);
+  };
   // a local category with nothing inside the radius falls back to the player's country, and says so (trains are national anyway)
   const mineWide = useMemo(() => { const s = new Set<string>(); if (filter === "mine" && originPt) for (const c of ["bus", "weather", "traffic"]) if (!open.some((m) => m.category === c && withinRadius(m))) s.add(c); return s; }, [open, filter, home?.id, near?.id]);
   const mineMatch = (m: MarketRow) => (originPt ? withinRadius(m) || (countryOf(m.city_id) === myCountry && (mineWide.has(m.category) || (m.category === "train" && NATIONAL.has(m.city_id)))) : countryOf(m.city_id) === myCountry);
