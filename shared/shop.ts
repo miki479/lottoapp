@@ -153,3 +153,19 @@ export function dealOf(ms: number): { tier: number; pct: number } {
   return { tier: 2 + (d % 3), pct: [20, 30, 25][Math.floor(d / 3) % 3]! };
 }
 export const dealPrice = (price: number, pct: number): number => price - Math.floor((price * pct) / 100);
+
+/**
+ * Supplies sold for credits. A boost doubles the net win of one bet (extra capped at 1000: worth up to ~800 on the best bet), so it is priced above that
+ * and credits cannot be printed by buying them; a freeze saves a streak. Bundles are about 13% cheaper than the singles. Stock caps: 20 boosts, 2 freezes.
+ * Mirrors public.shop_supplies() (tested).
+ */
+export interface Supply { id: "boost1" | "boost5" | "freeze1" | "kit"; price: number; boosts: number; freezes: number }
+export const SUPPLIES: readonly Supply[] = [
+  { id: "boost1", price: 750, boosts: 1, freezes: 0 },
+  { id: "boost5", price: 3250, boosts: 5, freezes: 0 },
+  { id: "freeze1", price: 400, boosts: 0, freezes: 1 },
+  { id: "kit", price: 2650, boosts: 3, freezes: 2 },
+];
+export const MAX_BOOSTS = 20, MAX_FREEZES = 2;
+/** True when buying this supply would go past the stock caps. */
+export const supplyFull = (s: Supply, boosts: number, freezes: number): boolean => boosts + s.boosts > MAX_BOOSTS || freezes + s.freezes > MAX_FREEZES;

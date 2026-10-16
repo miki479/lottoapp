@@ -16,6 +16,7 @@ export interface HubText {
     isNew: string; duplicate: string; dupBack: (a: string) => string; added: string; done: string; seeAlbum: string; limit: (n: number, cap: number) => string; limitHit: string; notEnough: string;
     needAccount: string; makeProfile: string; sink: string; pending: string; hintHalo: string; balance: string; deal: string;
     errors: Record<string, string>;
+    supply: { title: string; hint: string; names: Record<"boost1" | "boost5" | "freeze1" | "kit", [string, string]>; have: (b: number, f: number) => string; full: string; bought: string; save: (pct: number) => string };
   };
   album: {
     title: string; progress: (a: number, b: number) => string; cards: string; looks: string; all: string; back: string; missing: string; number: (n: number) => string;
@@ -42,7 +43,8 @@ const IT: HubText = {
     limit: (n, cap) => `Bustine aperte oggi: ${n} su ${cap}`, limitHit: "Per oggi basta bustine: ne puoi aprire altre domani.", notEnough: "Crediti insufficienti",
     needAccount: "Crea un profilo per aprire le bustine e tenere la tua collezione.", makeProfile: "Crea un profilo", sink: "I crediti spesi qui escono dal gioco: non portano vantaggi nelle previsioni.",
     deal: "Offerta del giorno", pending: "Hai una bustina da aprire", hintHalo: "L’alone anticipa la rarità", balance: "Saldo",
-    errors: { play_first: "Fai prima una previsione oggi.", insufficient_credits: "Crediti insufficienti.", pack_limit: "Per oggi basta bustine: ne puoi aprire altre domani.", too_fast: "Un attimo: aspetta due secondi tra una bustina e l’altra.", registration_required: "Serve un profilo salvato per aprire le bustine.", not_authenticated: "Sto ancora preparando tutto. Riprova tra un secondo.", unknown_pack: "Questa bustina non esiste.", generic: "Qualcosa non ha funzionato. Riprova." },
+    errors: { play_first: "Fai prima una previsione oggi.", insufficient_credits: "Crediti insufficienti.", pack_limit: "Per oggi basta bustine: ne puoi aprire altre domani.", too_fast: "Un attimo: aspetta due secondi tra una bustina e l’altra.", registration_required: "Serve un profilo salvato per aprire le bustine.", not_authenticated: "Sto ancora preparando tutto. Riprova tra un secondo.", unknown_pack: "Questa bustina non esiste.", generic: "Qualcosa non ha funzionato. Riprova.", stock_full: "Scorta piena: usa prima qualche boost o ghiaccio." },
+    supply: { title: "Scorte", hint: "Boost e ghiaccio per le tue serie di giorni e le tue puntate migliori.", names: { boost1: ["Boost", "Raddoppia la vincita netta di una puntata (fino a +1.000)."], boost5: ["5 Boost", "Cinque boost insieme, a prezzo di scorta."], freeze1: ["Ghiaccio", "Salva la tua serie se salti un giorno."], kit: ["Kit del pendolare", "3 boost e 2 ghiacci: parti attrezzato."] }, have: (b, f) => `Hai ${b} boost e ${f} ghiacci`, full: "Scorta piena", bought: "Aggiunto alle tue scorte", save: (p) => `-${p}%` },
   },
   album: {
     title: "Album", progress: (a, b) => `${a} di ${b} trovate`, cards: "Figurine", looks: "Look", all: "Tutte le categorie", back: "Indietro", missing: "Non ancora trovata", number: (n) => `n. ${n} di 100`,
@@ -71,7 +73,8 @@ const EN: HubText = {
     limit: (n, cap) => `Packs opened today: ${n} of ${cap}`, limitHit: "That’s enough packs for today: more tomorrow.", notEnough: "Not enough credits",
     needAccount: "Create a profile to open packs and keep your collection.", makeProfile: "Create a profile", sink: "Credits spent here leave the game: they give no edge on predictions.",
     deal: "Deal of the day", pending: "You have a pack to open", hintHalo: "The glow hints at the rarity", balance: "Balance",
-    errors: { play_first: "Make a prediction first today.", insufficient_credits: "Not enough credits.", pack_limit: "That’s enough packs for today: more tomorrow.", too_fast: "One moment: wait two seconds between packs.", registration_required: "You need a saved profile to open packs.", not_authenticated: "Still getting set up. Try again in a second.", unknown_pack: "That pack doesn’t exist.", generic: "Something broke. Give it another shot." },
+    errors: { play_first: "Make a prediction first today.", insufficient_credits: "Not enough credits.", pack_limit: "That’s enough packs for today: more tomorrow.", too_fast: "One moment: wait two seconds between packs.", registration_required: "You need a saved profile to open packs.", not_authenticated: "Still getting set up. Try again in a second.", unknown_pack: "That pack doesn’t exist.", generic: "Something broke. Give it another shot.", stock_full: "Stock full: use some boosts or freezes first." },
+    supply: { title: "Supplies", hint: "Boosts and freezes for your streaks and your best bets.", names: { boost1: ["Boost", "Doubles the net win of one bet (up to +1,000)."], boost5: ["5 Boosts", "Five boosts together, at a bulk price."], freeze1: ["Freeze", "Saves your streak if you miss a day."], kit: ["Commuter kit", "3 boosts and 2 freezes: start fully equipped."] }, have: (b, f) => `You have ${b} boosts and ${f} freezes`, full: "Stock full", bought: "Added to your supplies", save: (p) => `-${p}%` },
   },
   album: {
     title: "Album", progress: (a, b) => `${a} of ${b} found`, cards: "Cards", looks: "Looks", all: "All categories", back: "Back", missing: "Not found yet", number: (n) => `No. ${n} of 100`,
@@ -100,7 +103,8 @@ const JA: HubText = {
     limit: (n, cap) => `今日開けたパック：${n} / ${cap}`, limitHit: "今日はここまで。続きは明日どうぞ。", notEnough: "クレジットが足りません",
     needAccount: "パックを開けてコレクションを残すには、プロフィールを作成してください。", makeProfile: "プロフィールを作成", sink: "ここで使ったクレジットはゲームから消えます。予想が有利になることはありません。",
     deal: "今日のお得", pending: "開けていないパックがあります", hintHalo: "光の色でレア度がわかります", balance: "残高",
-    errors: { play_first: "まず今日1回予想してください。", insufficient_credits: "クレジットが足りません。", pack_limit: "今日はここまで。続きは明日どうぞ。", too_fast: "少しお待ちを。パックの間は2秒あけてください。", registration_required: "パックを開けるには保存済みのプロフィールが必要です。", not_authenticated: "準備中です。少ししてからもう一度どうぞ。", unknown_pack: "そのパックはありません。", generic: "うまくいきませんでした。もう一度お試しください。" },
+    errors: { play_first: "まず今日1回予想してください。", insufficient_credits: "クレジットが足りません。", pack_limit: "今日はここまで。続きは明日どうぞ。", too_fast: "少しお待ちを。パックの間は2秒あけてください。", registration_required: "パックを開けるには保存済みのプロフィールが必要です。", not_authenticated: "準備中です。少ししてからもう一度どうぞ。", unknown_pack: "そのパックはありません。", generic: "うまくいきませんでした。もう一度お試しください。", stock_full: "上限です。先にブーストかフリーズを使ってください。" },
+    supply: { title: "ストック", hint: "連続記録と勝負どころのためのブーストとフリーズ。", names: { boost1: ["ブースト", "1回の予想の純利益を2倍に（最大+1,000）。"], boost5: ["ブースト5個", "まとめ買いのお得な5個セット。"], freeze1: ["フリーズ", "1日休んでも連続記録を守ります。"], kit: ["通勤キット", "ブースト3個とフリーズ2個のセット。"] }, have: (b, f) => `ブースト${b}個・フリーズ${f}個を所有`, full: "上限に達しています", bought: "ストックに追加しました", save: (p) => `-${p}%` },
   },
   album: {
     title: "アルバム", progress: (a, b) => `${b}個中${a}個ゲット`, cards: "カード", looks: "ルック", all: "すべてのカテゴリ", back: "戻る", missing: "まだ見つかっていません", number: (n) => `No.${n} / 100`,

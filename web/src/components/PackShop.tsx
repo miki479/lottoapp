@@ -47,8 +47,8 @@ function Burst({ n, big = false }: { n: number; big?: boolean }) {
 /** Odds as the player reads them: "77%", "3.5%", "0.5%". */
 const pct = (bps: number, locale: Locale): string => new Intl.NumberFormat(INTL_TAG[locale], { maximumFractionDigits: 1 }).format(bps / 100) + "%";
 
-export function PackShop({ locale, msg, album, credits, registered, onBought, onAlbum, onAuth }: {
-  locale: Locale; msg: Messages; album: AlbumData | null; credits: number; registered: boolean;
+export function PackShop({ locale, msg, album, credits, registered, onBought, onAlbum, onAuth, extra }: {
+  locale: Locale; msg: Messages; album: AlbumData | null; credits: number; registered: boolean; extra?: preact.ComponentChildren;
   onBought: (r: PackOpen) => void; onAlbum: () => void; onAuth: () => void;
 }) {
   const t = hubText(locale), s = t.shop;
@@ -173,6 +173,7 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
       {album && <p class="hint">{full ? s.limitHit : s.limit(album.opened_today, album.daily_cap)}</p>}
       <p class="hint">{s.dupRule(REFUND_PCT, `${money(packRefund(60), locale)}–${money(packRefund(2000), locale)}`)}</p>
       <p class="hint">{s.sink}</p>
+      {extra}
     </section>
   );
 }

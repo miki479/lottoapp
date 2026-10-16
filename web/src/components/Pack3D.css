@@ -58,3 +58,8 @@
 .pkrow.deal { outline: 2px solid color-mix(in srgb, var(--loss) 55%, transparent); }
 .pkbuy .was { font-size: var(--fs-xs); opacity: .7; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .dealtag { animation: none; } }
+
+/* supplies */
+.supico { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 16px; background: var(--surface); color: var(--action-ink); border: 1px solid var(--border); }
+.pkrow.supply.freeze1 .supico { color: #2b8fd6; } .pkrow.supply.kit .supico { color: var(--rc-legendary); }
+.supplies > h3 { margin: 6px 0 0; }

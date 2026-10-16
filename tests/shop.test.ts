@@ -4,7 +4,7 @@ import { CARDS, CARD_CATS, CARD_TOTAL, cardsOfCat } from "../shared/cards.ts";
 import { DECORATIONS } from "../shared/looks.ts";
 import {
   DAILY_AMOUNTS, DAILY_PACK_CAP, DAILY_WEEK_TOTAL, DEFAULT_AVATARS, PACKS, PACK_GAP_SEC, PACK_RARITIES, REFUND_PCT, SHOP_ITEMS, dailyAmount, dailyDay, daysBetween, duplicateChance,
-  expectedNetCost, expectedRefund, itemKey, itemsOfRarity, lookChance, maxExpectedRefund, packRefund, rarityForRoll, rollPack, streakDayToday, dealOf, dealPrice,
+  expectedNetCost, expectedRefund, itemKey, itemsOfRarity, lookChance, maxExpectedRefund, packRefund, rarityForRoll, rollPack, streakDayToday, dealOf, dealPrice, SUPPLIES, supplyFull,
 } from "../shared/shop.ts";
 import { CARD_ICONS } from "../web/src/components/cardIcons.ts";
 import { CARD_TEXT_ROWS, cardCaption, cardName } from "../web/src/lib/cardText.ts";
@@ -158,5 +158,24 @@ describe("deal of the day", () => {
     expect(sql128).toContain("array[20, 30, 25]");
     expect(sql128).toContain("1 + ((d / 3) % 3)");
     expect(sql128).toContain("floor(pk.price * dl.pct / 100.0)");
+  });
+});
+
+describe("supplies", () => {
+  const sql129 = readFileSync(new URL("../supabase/migrations/0129_shop_supplies.sql", import.meta.url), "utf8");
+  it("is mirrored by the SQL", () => {
+    const rows = [...sql129.matchAll(/\('(\w+)', +(\d+), (\d+), (\d+)\)/g)].map((m) => [m[1], Number(m[2]), Number(m[3]), Number(m[4])]);
+    expect(rows).toEqual(SUPPLIES.map((s) => [s.id, s.price, s.boosts, s.freezes]));
+  });
+  it("bundles are cheaper than the singles and a boost costs more than the most it can earn", () => {
+    const by = Object.fromEntries(SUPPLIES.map((s) => [s.id, s]));
+    expect(by.boost5!.price).toBeLessThan(5 * by.boost1!.price);
+    expect(by.kit!.price).toBeLessThan(3 * by.boost1!.price + 2 * by.freeze1!.price);
+    expect(by.boost1!.price).toBeLessThan(by.boost5!.price / 4);
+    expect(by.boost1!.price).toBeGreaterThan(700);
+  });
+  it("respects the stock caps", () => {
+    const kit = SUPPLIES.find((s) => s.id === "kit")!;
+    expect(supplyFull(kit, 17, 0)).toBe(false); expect(supplyFull(kit, 18, 0)).toBe(true); expect(supplyFull(kit, 0, 1)).toBe(true);
   });
 });
