@@ -1724,3 +1724,5 @@ textarea.field { resize: vertical; min-height: 84px; }
 @keyframes climbglow { 0%, 60% { background: var(--gain-soft); box-shadow: 0 0 0 2px var(--gain), 0 0 22px var(--gain); } 100% { box-shadow: 0 0 0 0 transparent; } }
 @keyframes climbup { 0% { transform: translateY(6px); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateY(-6px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .row.climbed, .climbarrow { animation: none; } }
+.stopsearch { display: flex; align-items: center; gap: 4px; }
+.stopsearch input { flex: 1; min-width: 0; min-height: var(--hit); padding: 0 12px; border-radius: var(--radius-control); border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit; }

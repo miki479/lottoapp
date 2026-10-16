@@ -1,4 +1,4 @@
-import { Bus } from "lucide-preact";
+import { Bus, LocateFixed, Search } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { roundCoord } from "../../../shared/geo.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -13,11 +13,13 @@ const timeOf = (epoch: number, locale: Locale) => new Date(epoch * 1000).toLocal
 /** The buses and trains due at the stops within 250 m of the chosen place (home or where the player is): bet on the one that passes outside the door. */
 export function StopsNear(p: { msg: Messages; locale: Locale; origin: { lat: number; lon: number }; onPick: (m: MarketRow, pick: Pick) => void }) {
   const t = p.msg.fy, n = p.msg.nearby;
+  const [pos, setPos] = useState<{ lat: number; lon: number } | null>(null), [q, setQ] = useState(""), [query, setQuery] = useState(""), [locating, setLocating] = useState(false);
+  const at = pos ?? p.origin;
   const [list, setList] = useState<Arrival[] | null>(null), [busy, setBusy] = useState<string | null>(null), [err, setErr] = useState(false), going = useRef(false);
   useEffect(() => {
     let live = true;
     const go = async () => {
-      const { data, error } = await sb.functions.invoke("nearby", { body: { lat: roundCoord(p.origin.lat), lon: roundCoord(p.origin.lon), radiusM: 250 } });
+      const { data, error } = await sb.functions.invoke("nearby", { body: { lat: roundCoord(at.lat), lon: roundCoord(at.lon), radiusM: 250, ...(query ? { q: query } : {}) } });
       if (!live) return;
       if (error) { setList((l) => l ?? []); return; }
       setList(((data as { arrivals?: Arrival[] } | null)?.arrivals ?? []).filter((a) => a.marketId || a.offerable).slice(0, 6));
@@ -25,7 +27,9 @@ export function StopsNear(p: { msg: Messages; locale: Locale; origin: { lat: num
     go().catch(() => { if (live) setList((l) => l ?? []); });
     const stop = every(() => { go().catch(() => {}); }, 60_000);
     return () => { live = false; stop(); };
-  }, [p.origin.lat, p.origin.lon]);
+  }, [at.lat, at.lon, query]);
+  const locate = () => { if (!navigator.geolocation) return; setLocating(true); navigator.geolocation.getCurrentPosition((g) => { setQuery(""); setQ(""); setList(null); setPos({ lat: g.coords.latitude, lon: g.coords.longitude }); setLocating(false); }, () => setLocating(false), { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }); };
+  const search = (e: Event) => { e.preventDefault(); const v = q.trim(); if (v.length >= 3 || v === "") { setList(null); setQuery(v); } };
   const open = async (a: Arrival) => {
     if (going.current) return;
     going.current = true; setBusy(a.tripId); setErr(false);
@@ -40,6 +44,11 @@ export function StopsNear(p: { msg: Messages; locale: Locale; origin: { lat: num
   return (
     <div class="stack stopsnear">
       <span class="detail"><Bus size={14} style="vertical-align:-2px" /> {n.passing}</span>
+      <form class="stopsearch" onSubmit={search}>
+        <input type="search" value={q} placeholder={n.searchStop} aria-label={n.searchStop} maxLength={40} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
+        <button class="iconbtn" type="submit" aria-label={n.searchStop}><Search size={18} /></button>
+        <button class="iconbtn" type="button" onClick={locate} disabled={locating} aria-label={n.useMyPos} title={n.useMyPos}><LocateFixed size={18} /></button>
+      </form>
       {list.length === 0 && <p class="hint">{n.passingNone}</p>}
       {list.map((a) => (
         <div class="fyrow" key={a.tripId + a.stopId}>

@@ -3,7 +3,7 @@
 // never stored or logged. Everything degrades to an empty list: no stops, no feed, no arrivals.
 import { db, safe } from "../_lib/common.ts";
 import { CORS, allowCall, arrivalsAt, json, player, routeNames, servedFeeds } from "../_lib/nearby.ts";
-import { ROUNDING_ERROR_M } from "../_shared/shared/geo.ts";
+import { ROUNDING_ERROR_M, distanceM } from "../_shared/shared/geo.ts";
 import { MAX_ARRIVALS, MAX_ARRIVALS_PER_STOP, MAX_STOPS, offerWindowOk, parseNearbyRequest } from "../_shared/shared/nearby.ts";
 
 interface StopRow { feed_id: string; stop_id: string; name: string; lat: number; lon: number; city_id: string; distance_m: number }
@@ -14,11 +14,18 @@ Deno.serve(safe(async (req) => {
   const sb = db();
   const me = await player(req, sb);
   if (!me) return json({ error: "unauthorized" }, 401);
-  const r = parseNearbyRequest(await req.json().catch(() => null));
+  const body = await req.json().catch(() => null) as { q?: unknown } | null;
+  const r = parseNearbyRequest(body);
   if (!r) return json({ error: "bad_request" }, 400);
   if (!(await allowCall(sb, me.uid))) return json({ error: "rate_limited" }, 429);
 
-  const { data: found } = await sb.rpc("nearby_stops", { p_lat: r.lat, p_lon: r.lon, p_radius_m: r.radiusM + ROUNDING_ERROR_M, p_limit: MAX_STOPS });
+  // a stop searched by name (the player lives on "Via Seganti" and the home town is only a point in the middle of it): stops of that name within ~30 km of the point
+  const q = typeof body?.q === "string" ? body.q.trim().replace(/[%_,()]/g, "").slice(0, 40) : "";
+  let found: unknown;
+  if (q.length >= 3) {
+    const d = 0.3, { data: byName } = await sb.from("gtfs_stops").select("feed_id,stop_id,name,lat,lon,city_id").ilike("name", `%${q}%`).gte("lat", r.lat - d).lte("lat", r.lat + d).gte("lon", r.lon - d).lte("lon", r.lon + d).limit(40);
+    found = ((byName ?? []) as Omit<StopRow, "distance_m">[]).map((s) => ({ ...s, distance_m: distanceM(r.lat, r.lon, s.lat, s.lon) })).sort((a, b) => a.distance_m - b.distance_m).slice(0, MAX_STOPS);
+  } else found = (await sb.rpc("nearby_stops", { p_lat: r.lat, p_lon: r.lon, p_radius_m: r.radiusM + ROUNDING_ERROR_M, p_limit: MAX_STOPS })).data;
   const feeds = await servedFeeds();
   const stops = ((found ?? []) as StopRow[]).filter((s) => feeds.has(s.feed_id));
   if (stops.length === 0) return json({ stops: [], arrivals: [] });
