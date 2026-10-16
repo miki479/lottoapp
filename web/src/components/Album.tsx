@@ -7,6 +7,7 @@ import { money } from "../lib/format.ts";
 import type { AlbumData } from "../lib/shop.ts";
 import { hubText } from "../lib/shopText.ts";
 import { Figurine } from "./Figurine.tsx";
+import { Card3D } from "./Card3D.tsx";
 import { Look } from "./looks/Look.tsx";
 import { Sheet } from "./Sheet.tsx";
 import "./RewardsHub.css";
@@ -30,7 +31,7 @@ export function Album({ locale, msg, data, onRetry }: { locale: Locale; msg: Mes
   const sheet = zc && (
     <Sheet onClose={() => setZoom(null)} label={cardName(zc.n, locale)}>
       <div class="stack pkreveal" style="align-items:center;text-align:center">
-        <div class={`pkplace halo h-${zc.rarity} shown`}><i class="pkhalo" aria-hidden="true" /><div class="rvcard"><Figurine card={zc} name={cardName(zc.n, locale)} numText={a.number(zc.n)} owned={has(zc.id)} big /></div></div>
+        <div class={`pkplace halo h-${zc.rarity} shown`}><i class="pkhalo" aria-hidden="true" />{has(zc.id) ? <Card3D rarity={zc.rarity} spin={false} front={<Figurine card={zc} name={cardName(zc.n, locale)} numText={a.number(zc.n)} big />} /> : <div class="rvcard"><Figurine card={zc} name={cardName(zc.n, locale)} numText={a.number(zc.n)} owned={false} big /></div>}</div>
         <h3 class="pktitle">{has(zc.id) ? cardName(zc.n, locale) : a.missing}</h3>
         <p class="rvmeta"><span class={`rchip r-${zc.rarity}`}>{a.rar[zc.rarity]}</span><span>{a.number(zc.n)} · {a.cats[zc.cat]}</span></p>
         {has(zc.id) && <p class="rvcap">“{cardCaption(zc.n, locale)}”</p>}

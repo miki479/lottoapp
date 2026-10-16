@@ -11,6 +11,8 @@ import { haptic } from "../lib/haptics.ts";
 import { buyPack, errorCode, pending, type AlbumData, type PackOpen } from "../lib/shop.ts";
 import { hubText } from "../lib/shopText.ts";
 import { Figurine } from "./Figurine.tsx";
+import { Card3D } from "./Card3D.tsx";
+import "./Pack3D.css";
 import { Look } from "./looks/Look.tsx";
 import "./RewardsHub.css";
 
@@ -31,6 +33,17 @@ function PackArt({ pack, name, taps = 0, open = false, big = false }: { pack: Pa
   );
 }
 
+/** A burst of sparks, flying bars, a shock ring and (for the final one) a white flash. Remount it (new key) to play it again. */
+function Burst({ n, big = false }: { n: number; big?: boolean }) {
+  return (
+    <span class="pkfx" aria-hidden="true">
+      {big && <i class="flash" />}
+      <i class="ring" />
+      {Array.from({ length: n }, (_, i) => <i key={i} class={i % 3 === 0 ? "sq" : ""} style={`--a:${Math.round((i * 360) / n + (i % 2) * 7)}deg;--d:${(big ? 110 : 70) + ((i * 37) % (big ? 130 : 60))}px`} />)}
+    </span>
+  );
+}
+
 /** Odds as the player reads them: "77%", "3.5%", "0.5%". */
 const pct = (bps: number, locale: Locale): string => new Intl.NumberFormat(INTL_TAG[locale], { maximumFractionDigits: 1 }).format(bps / 100) + "%";
 
@@ -42,7 +55,7 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
   type Stage = { phase: "confirm"; tier: number } | { phase: "buying"; tier: number } | { phase: "sealed" | "opening" | "revealed"; r: PackOpen; taps: number };
   const [stage, setStage] = useState<Stage | null>(() => { const p = pending.get(); return p ? { phase: "sealed", r: p, taps: 0 } : null; });
   const [err, setErr] = useState<string | null>(null), [shake, setShake] = useState(0);
-  const timer = useRef<number | undefined>(undefined);
+  const timer = useRef<number | undefined>(undefined), tapsRef = useRef(0);
   useEffect(() => () => clearTimeout(timer.current), []);
   const packOf = (tier: number): PackDef => PACKS.find((p) => p.tier === tier) ?? PACKS[0]!;
   const full = (album?.opened_today ?? 0) >= (album?.daily_cap ?? 12);
@@ -54,20 +67,21 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
     let r: PackOpen | { error: string };
     try { r = await buyPack(tier); } catch { r = { error: "generic" }; } finally { buying.current = false; }
     if ("error" in r) { setErr(s.errors[errorCode(r.error, Object.keys(s.errors))] ?? s.errors.generic!); setStage({ phase: "confirm", tier }); return; }
-    pending.set(r); onBought(r); haptic.tap();
+    pending.set(r); onBought(r); haptic.tap(); tapsRef.current = 0;
     setStage({ phase: "sealed", r, taps: 0 });
   };
   const tap = () => {
     if (!stage || stage.phase !== "sealed") return;
-    const taps = stage.taps + 1;
+    // the count lives in a ref: very fast taps never read a stale number and none is lost
+    const taps = ++tapsRef.current;
     haptic.tap(); setShake((n) => n + 1);
-    if (taps < 3) { setStage({ ...stage, taps }); return; }
+    if (taps < 3) { setStage((s) => (s && s.phase === "sealed" ? { ...s, taps } : s)); return; }
     haptic.success();
     if (reducedMotion()) { pending.clear(); setStage({ phase: "revealed", r: stage.r, taps }); return; }
     setStage({ phase: "opening", r: stage.r, taps });
-    timer.current = window.setTimeout(() => { pending.clear(); setStage({ phase: "revealed", r: stage.r, taps }); }, 650);
+    timer.current = window.setTimeout(() => { pending.clear(); setStage({ phase: "revealed", r: stage.r, taps }); }, 900);
   };
-  const close = () => { setStage(null); setErr(null); };
+  const close = () => { tapsRef.current = 0; setStage(null); setErr(null); };
 
   // ---------- confirm ----------
   if (stage && (stage.phase === "confirm" || stage.phase === "buying")) {
@@ -93,15 +107,14 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
     const r = stage.r, pack = packOf(r.tier), left = 3 - stage.taps, opening = stage.phase === "opening";
     return (
       <section class="stack pkstage">
-        <p class="pkhint" aria-live="polite">{opening ? "" : stage.taps === 0 ? s.opening : s.tap(left)}</p>
-        <div class={`pkplace halo h-${r.rarity} ${opening ? "burst" : ""}`} data-taps={stage.taps}>
+        <p class={`pkcount halo h-${r.rarity}`} aria-live="polite"><span class="sr">{s.tap(left)}</span>{!opening && <b key={left} aria-hidden="true">{left}</b>}</p>
+        <div class={`pkplace pk3d halo h-${r.rarity} ${opening ? "burst" : ""}`} data-taps={stage.taps}>
           <i class="pkhalo" aria-hidden="true" />
           <button class="pkbtn" onClick={tap} disabled={opening} aria-label={s.tapAria(left)}>
             <span class={`pkwrap s${shake % 2}`} key={shake}><PackArt pack={pack} name={s.packs[pack.tier - 1]!} taps={stage.taps} open={opening} big /></span>
           </button>
+          {shake > 0 && <Burst key={`b${shake}${opening}`} n={opening ? 44 : 8 + stage.taps * 6} big={opening} />}
         </div>
-        <div class="pkpips" aria-hidden="true">{[0, 1, 2].map((i) => <i key={i} class={i < stage.taps ? "on" : ""} />)}</div>
-        <p class="hint pkcenter">{s.hintHalo}</p>
       </section>
     );
   }
@@ -112,13 +125,15 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
     const lookName = r.kind === "avatar" ? msg.look.av[r.item] ?? r.item : msg.look.deco[r.item] ?? r.item;
     return (
       <section class="stack pkstage pkreveal">
-        <div class={`pkplace halo h-${r.rarity} shown`}>
+        <div class={`pkplace pk3dplace halo h-${r.rarity} shown`}>
           <i class="pkhalo" aria-hidden="true" />
-          <div class="rvcard">
-            {card ? <Figurine card={card} name={cardName(card.n, locale)} numText={t.album.number(card.n)} big />
-              : <div class="rvlook"><Look avatar={r.kind === "avatar" ? r.item : "conductor"} decoration={r.kind === "decoration" ? r.item : null} size={168} label={lookName} /></div>}
-            <span class={`rvtag ${r.duplicate ? "dup" : "new"}`}>{r.duplicate ? s.duplicate : s.isNew}</span>
-          </div>
+          <Burst n={36} big />
+          {card ? <Card3D rarity={r.rarity} front={<Figurine card={card} name={cardName(card.n, locale)} numText={t.album.number(card.n)} big />} /> : null}
+          {card ? <span class={`rvtag inl ${r.duplicate ? "dup" : "new"}`}>{r.duplicate ? s.duplicate : s.isNew}</span>
+            : <div class="rvcard">
+              <div class="rvlook"><Look avatar={r.kind === "avatar" ? r.item : "conductor"} decoration={r.kind === "decoration" ? r.item : null} size={168} label={lookName} /></div>
+              <span class={`rvtag ${r.duplicate ? "dup" : "new"}`}>{r.duplicate ? s.duplicate : s.isNew}</span>
+            </div>}
         </div>
         <h3 class="pktitle">{card ? cardName(card.n, locale) : lookName}</h3>
         <p class="rvmeta"><span class={`rchip r-${r.rarity}`}>{t.album.rar[r.rarity]}</span><span>{card ? t.album.number(card.n) : r.kind === "avatar" ? t.album.avatar : t.album.decoration}</span></p>

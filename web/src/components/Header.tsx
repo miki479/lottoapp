@@ -1,4 +1,4 @@
-import { Languages, Volume2, VolumeX } from "lucide-preact";
+import { Languages, ShoppingBag, Volume2, VolumeX } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { LOCALES, type Locale } from "../i18n/index.ts";
 import { reducedMotion, useCountUp } from "../lib/anim.ts";
@@ -54,7 +54,7 @@ function Balance({ credits, who, locale, coin, label, claimable, onClick }: { cr
   );
 }
 
-export function Header({ satire, claimable, onWallet, voice, locale, onLocale, credits, who, coin, languageLabel, creditsLabel, onHome }: { satire?: string; locale: Locale; onLocale: (l: Locale) => void; credits: number | null; who: string | null; coin: string; claimable: number; onWallet: () => void; voice: { on: boolean; label: string; toggle: () => void } | null; languageLabel: string; creditsLabel: string; onHome: () => void }) {
+export function Header({ satire, claimable, onWallet, onShop, shopNew, shopLabel, voice, locale, onLocale, credits, who, coin, languageLabel, creditsLabel, onHome }: { satire?: string; locale: Locale; onLocale: (l: Locale) => void; credits: number | null; who: string | null; coin: string; claimable: number; onWallet: () => void; onShop: () => void; shopNew: boolean; shopLabel: string; voice: { on: boolean; label: string; toggle: () => void } | null; languageLabel: string; creditsLabel: string; onHome: () => void }) {
   const [scrolled, setScrolled] = useState(false), [compact, setCompact] = useState(false);
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -77,6 +77,7 @@ export function Header({ satire, claimable, onWallet, voice, locale, onLocale, c
         <button class="brand" onClick={onHome} aria-label="LateBet"><i><BrandMark /></i><span class="tx"><span class="wm">Late<b>BET</b></span>{satire && <em class="stag">{satire}</em>}</span></button>
         <div class="grow" />
         <div class="hdr-tools">
+        <button class={`iconbtn shopbtn ${shopNew ? "new" : ""}`} onClick={onShop} aria-label={shopLabel} title={shopLabel}><ShoppingBag size={22} />{shopNew && <i class="shopdot" aria-hidden="true" />}</button>
         {voice && <button class={`iconbtn ${voice.on ? "voiceon" : ""}`} onClick={voice.toggle} aria-pressed={voice.on} aria-label={voice.label}>{voice.on ? <Volume2 size={22} /> : <VolumeX size={22} />}</button>}
         <div class="relative" ref={box}>
           <button class="iconbtn" aria-haspopup="menu" aria-expanded={open} aria-label={languageLabel} onClick={() => setOpen(!open)}><Languages size={22} /></button>

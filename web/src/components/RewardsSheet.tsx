@@ -23,9 +23,9 @@ export function RewardsSheet(p: {
   msg: Messages; locale: Locale; now: number; profile: Profile | null; quests: QuestRow[]; referral: { code: string; invited: number; paid: number } | null; registered: boolean; flash: FlashData | null; onClaimFlash: () => Promise<void>; missions: DailyMissionsData | null; onClaimMission: (id: string) => Promise<void>; onClaimChest: () => Promise<void>;
   onClaim: (id: string) => Promise<void> | void; onGo: (id: string) => void; onShare: () => void; onClose: () => void;
   /** Credits changed inside the sheet (daily bonus, pack): the app reloads the profile. */
-  onChanged?: () => void;
+  onChanged?: () => void; onAlbum?: () => void; initialTab?: "today" | "shop";
 }) {
-  const [tab, setTab] = useState<"today" | "shop" | "album">("today");
+  const [tab, setTab] = useState<"today" | "shop">(p.initialTab ?? "today");
   const ht = hubText(p.locale);
   const m = p.msg.rewards;
   const once = p.quests.filter((q) => q.kind === "once");
@@ -53,8 +53,8 @@ export function RewardsSheet(p: {
       <div class="shead"><h2>{m.title}</h2><button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>
       <div class="rbal"><span class="coin" aria-hidden="true">{currencySymbol(p.locale)}</span><b class="num">{money(p.profile?.credits ?? 0, p.locale)}</b>
         <span class="rstock"><Snowflake size={15} />{p.profile?.freezes ?? 0}</span><span class="rstock"><Rocket size={15} />{p.profile?.boosts ?? 0}</span></div>
-      <div class="seg rhtabs" role="tablist">{(["today", "shop", "album"] as const).map((k) => <button key={k} role="tab" aria-selected={tab === k} class={tab === k ? "on" : ""} onClick={() => setTab(k)}>{ht.tabs[k]}</button>)}</div>
-      {tab !== "today" && <ShopArea tab={tab} locale={p.locale} msg={p.msg} credits={p.profile?.credits ?? 0} registered={p.registered} onTab={setTab} onChanged={() => p.onChanged?.()} onAuth={() => p.onGo("o_nick")} />}
+      <div class="seg rhtabs" role="tablist">{(["today", "shop"] as const).map((k) => <button key={k} role="tab" aria-selected={tab === k} class={tab === k ? "on" : ""} onClick={() => setTab(k)}>{ht.tabs[k]}</button>)}</div>
+      {tab === "shop" && <ShopArea tab="shop" locale={p.locale} msg={p.msg} credits={p.profile?.credits ?? 0} registered={p.registered} onTab={() => { p.onClose(); p.onAlbum?.(); }} onChanged={() => p.onChanged?.()} onAuth={() => p.onGo("o_nick")} />}
       {tab === "today" && <>
       <p class="hint">{m.subtitle}</p>
       <DailyBonus locale={p.locale} now={p.now} tz={p.profile?.timezone ?? "UTC"} onPlay={p.onClose} onChanged={() => p.onChanged?.()} />

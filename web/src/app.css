@@ -1696,3 +1696,18 @@ textarea.field { resize: vertical; min-height: 84px; }
 
 .tipbanner{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--action) 14%,transparent);font-size:var(--fs-sm);font-weight:600}
 .tippick{margin:0 0 12px}
+
+/* identity chips: small, in one row */
+.idchips .citychip { margin: 0; min-height: 30px; padding: 2px 10px; }
+.idchips .citychip svg { width: 14px; height: 14px; }
+.idchips .lgchip { min-height: 30px; padding: 2px 10px 2px 4px; }
+.idchips .lgchip svg { width: 20px; height: 20px; }
+.tippick { display: flex; flex-direction: column; gap: 10px; flex: none; }
+.tippick > * { flex: none; }
+
+/* shop button in the top bar: it glows when there is something new */
+.shopbtn { position: relative; }
+.shopbtn.new { color: var(--action-ink); animation: shopglow 1.8s ease-in-out infinite; }
+.shopdot { position: absolute; top: 6px; right: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--loss); box-shadow: 0 0 0 2px var(--surface); }
+@keyframes shopglow { 0%, 100% { filter: drop-shadow(0 0 0 transparent); transform: none; } 50% { filter: drop-shadow(0 0 7px var(--action)); transform: scale(1.12) rotate(-6deg); } }
+@media (prefers-reduced-motion: reduce) { .shopbtn.new { animation: none; } }

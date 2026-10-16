@@ -15,6 +15,7 @@ import { readConsent, writeConsent } from "../lib/useIntent.ts";
 import { Trophy3D } from "../components/looks/Trophy3D.tsx";
 import { XpInfo } from "../components/XpInfo.tsx";
 import { Meter } from "../components/Meter.tsx";
+import { ProfileAlbum } from "../components/ProfileAlbum.tsx";
 import { LeagueBadge } from "../components/League.tsx";
 import { levelProgress } from "../../../shared/looks";
 import type { MyProgress } from "../lib/looks.ts";
@@ -78,22 +79,7 @@ export function ProfileView(p: {
           <StreakCard streak={p.profile?.streak ?? 0} freezes={p.profile?.freezes ?? 0} msg={p.msg} locale={p.locale} />
           {p.missionsNode}
           {p.registered && <BankCard locale={p.locale} credits={p.profile?.credits} />}
-          {p.push && (
-            <section class="card stack">
-              <label class="switchrow"><span class="swlabel"><Bell size={18} style="color:var(--action-ink);flex:none" /><span>{p.msg.push.active}</span></span><input type="checkbox" role="switch" checked={p.push.on} disabled={p.push.denied} onChange={p.push.toggle} /></label>
-              {p.push.denied && <p class="hint">{p.msg.push.denied}</p>}
-              {p.push.on && (
-                <>
-                  <label class="switchrow"><span class="swlabel"><Zap size={18} style="color:var(--action-ink);flex:none" /><span>{p.msg.push.events}</span></span><input type="checkbox" role="switch" checked={p.push.flash && p.push.streak && p.push.friends} onChange={(e) => { const v = (e.target as HTMLInputElement).checked; p.push!.setPrefs(v, v, v); }} /></label>
-                  <p class="hint">{p.msg.push.prefsHint}</p>
-                </>
-              )}
-            </section>
-          )}
-          <section class="card stack">
-            <label class="switchrow"><span class="swlabel"><MapPin size={18} style="color:var(--action-ink);flex:none" /><span>{p.msg.fy.setTitle}</span></span><input type="checkbox" role="switch" checked={intentOn} onChange={(e) => { const on = (e.target as HTMLInputElement).checked; writeConsent(on ? "on" : "off"); setIntentOn(on); }} /></label>
-            <p class="hint">{intentOn ? p.msg.fy.setOn : p.msg.fy.setOff}</p>
-          </section>
+          <ProfileAlbum locale={p.locale} msg={p.msg} />
           <section class="card stack referral">
             <div style="display:flex;gap:12px;align-items:center"><span class="refico"><Gift size={22} /></span><div><b>{p.msg.referral.title}</b><p class="hint">{p.msg.referral.body(money(1500, p.locale))} {p.msg.frd.referralNote}</p></div></div>
             {p.referral
@@ -137,6 +123,24 @@ export function ProfileView(p: {
           <button class="btn secondary wide" onClick={p.onShareProfile}><Share2 size={18} />{m.shareCard}</button>
 
           <h2 style="margin-top:8px">{m.settings}</h2>
+          <div class="stack">
+          {p.push && (
+              <section class="card stack">
+                <label class="switchrow"><span class="swlabel"><Bell size={18} style="color:var(--action-ink);flex:none" /><span>{p.msg.push.active}</span></span><input type="checkbox" role="switch" checked={p.push.on} disabled={p.push.denied} onChange={p.push.toggle} /></label>
+                {p.push.denied && <p class="hint">{p.msg.push.denied}</p>}
+                {p.push.on && (
+                  <>
+                    <label class="switchrow"><span class="swlabel"><Zap size={18} style="color:var(--action-ink);flex:none" /><span>{p.msg.push.events}</span></span><input type="checkbox" role="switch" checked={p.push.flash && p.push.streak && p.push.friends} onChange={(e) => { const v = (e.target as HTMLInputElement).checked; p.push!.setPrefs(v, v, v); }} /></label>
+                    <p class="hint">{p.msg.push.prefsHint}</p>
+                  </>
+                )}
+              </section>
+            )}
+            <section class="card stack">
+              <label class="switchrow"><span class="swlabel"><MapPin size={18} style="color:var(--action-ink);flex:none" /><span>{p.msg.fy.setTitle}</span></span><input type="checkbox" role="switch" checked={intentOn} onChange={(e) => { const on = (e.target as HTMLInputElement).checked; writeConsent(on ? "on" : "off"); setIntentOn(on); }} /></label>
+              <p class="hint">{intentOn ? p.msg.fy.setOn : p.msg.fy.setOff}</p>
+            </section>
+          </div>
           <div class="list">
             <div class="row" style="flex-wrap:wrap"><span class="grow">{p.msg.common.language}</span>
               <div class="seg" style="width:100%">{LOCALES.map((l) => <button key={l.id} class={l.id === p.locale ? "on" : ""} aria-pressed={l.id === p.locale} onClick={() => p.onLocale(l.id)}>{l.short}</button>)}</div>
