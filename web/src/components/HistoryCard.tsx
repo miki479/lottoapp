@@ -5,6 +5,7 @@ import { INTL_TAG } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 import { money } from "../lib/format.ts";
 import { moneySigned } from "../lib/num.ts";
+import { dtf } from "../lib/intl.ts";
 
 interface Day { day: string; net: number; bets: number }
 interface Cat { category: string; bets: number; won: number; lost: number; net: number }
@@ -24,7 +25,7 @@ export function HistoryCard({ msg, locale }: { msg: Messages; locale: Locale }) 
   const up = total >= 0, best = cats[0], worst = cats.length > 1 ? cats[cats.length - 1] : undefined;
   const maxAbs = Math.max(1, ...cats.map((c) => Math.abs(c.net)));
   const fmt = (n: number) => moneySigned(n, locale);
-  const dayFmt = new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "short" });
+  const dayFmt = dtf(INTL_TAG[locale], { day: "numeric", month: "short" });
   return (
     <section class="card hist stack" style="gap:10px">
       <div class="histhead"><b>{h.title}</b><span class={`histtotal num ${up ? "pos" : "neg"}`}>{up ? <TrendingUp size={16} /> : <TrendingDown size={16} />}{fmt(total)}</span></div>

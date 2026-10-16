@@ -10,10 +10,11 @@ import { ShopArea } from "./ShopArea.tsx";
 import "./RewardsHub.css";
 import { Sheet } from "./Sheet.tsx";
 import { moneySigned, currencySymbol } from "../lib/num.ts";
+import { dtf } from "../lib/intl.ts";
 
 /** Time left until local midnight in the player's time zone ("5h 12m"), when the daily missions renew. */
 export function untilReset(tz: string, nowMs: number): string {
-  const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(nowMs)).map((x) => [x.type, x.value]));
+  const p = Object.fromEntries(dtf("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(nowMs)).map((x) => [x.type, x.value]));
   const left = 24 * 60 - (Number(p.hour) * 60 + Number(p.minute));
   return left >= 60 ? `${Math.floor(left / 60)}h ${left % 60}m` : `${left}m`;
 }

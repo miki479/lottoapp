@@ -6,6 +6,7 @@ import type { MarketRow } from "../lib/format.ts";
 import { fmtPct } from "../lib/num.ts";
 import { impliedYes, trend } from "../lib/trend.ts";
 import type { LiveDelay } from "../lib/types.ts";
+import { dtf } from "../lib/intl.ts";
 
 /** A thin line chart: the values left to right, an optional dashed line for the threshold, a dot on the latest value. One point alone is drawn as a flat line. */
 function Spark({ pts, thr, tone }: { pts: number[]; thr?: number; tone: "up" | "down" | "flat" | "warn" }) {
@@ -97,7 +98,7 @@ export function MiniLive({ m, live, now, locale, msg }: { m: MarketRow; live?: L
   } else {
     tone = chanceTone;
     const before = m.kind === "match_bet" && kickoff > now && !score;
-    cap = score ? `${score}` : before ? `${new Intl.DateTimeFormat(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit" }).format(new Date(kickoff))} · ${chanceCap}` : chanceCap;
+    cap = score ? `${score}` : before ? `${dtf(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit" }).format(new Date(kickoff))} · ${chanceCap}` : chanceCap;
   }
   if (pts.length === 0) return null;
   return (

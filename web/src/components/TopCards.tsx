@@ -20,22 +20,31 @@ export function TopCards({ items }: { items: TopItem[] }) {
     if (!el || (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
     const io = typeof IntersectionObserver === "function" ? new IntersectionObserver(([e]) => { seen.current = !!e?.isIntersecting; }) : null;
     io?.observe(el);
-    let raf = 0, pos = el.scrollLeft;
+    let raf = 0, pos = el.scrollLeft, isRow = true, loop = 0, dirty = true;
+    // layout is read only when the size or the content changed, never on every frame
+    const measure = () => {
+      dirty = false;
+      isRow = getComputedStyle(el).flexDirection === "row";
+      const dup = el.querySelector<HTMLElement>(".top-dup"), first = el.firstElementChild as HTMLElement | null;
+      loop = dup && first ? dup.offsetLeft + (parseFloat(getComputedStyle(el).columnGap) || 0) - first.offsetLeft : 0;
+    };
+    const ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => { dirty = true; }) : null;
+    ro?.observe(el);
     const step = () => {
       raf = requestAnimationFrame(step);
-      if (!seen.current || document.hidden || performance.now() < hold.current || getComputedStyle(el).flexDirection !== "row") { pos = el.scrollLeft; return; }
+      if (!seen.current || document.hidden || performance.now() < hold.current) { pos = el.scrollLeft; return; }
+      if (dirty || !ro) measure();
+      if (!isRow) { pos = el.scrollLeft; return; }
       // the copy only exists while the row really scrolls: when everything fits there is nothing to loop and nothing is duplicated
-      if (!el.classList.contains("looping")) { if (el.scrollWidth > el.clientWidth + 2) el.classList.add("looping"); return; }
-      const dup = el.querySelector<HTMLElement>(".top-dup"), first = el.firstElementChild as HTMLElement | null;
-      if (!dup || !first) return;
-      const loop = dup.offsetLeft + (parseFloat(getComputedStyle(el).columnGap) || 0) - first.offsetLeft;
+      if (!el.classList.contains("looping")) { if (el.scrollWidth > el.clientWidth + 2) { el.classList.add("looping"); dirty = true; } return; }
+      if (!loop) return;
       if (loop <= el.clientWidth) { el.classList.remove("looping"); return; }
       pos += DRIFT;
       if (pos >= loop) pos -= loop;
       el.scrollLeft = pos;
     };
     raf = requestAnimationFrame(step);
-    return () => { cancelAnimationFrame(raf); io?.disconnect(); el.classList.remove("looping"); };
+    return () => { cancelAnimationFrame(raf); io?.disconnect(); ro?.disconnect(); el.classList.remove("looping"); };
   }, [items.length]);
   const pause = (ms = IDLE_MS) => { hold.current = performance.now() + ms; };
   const cards = (copy: boolean) => (

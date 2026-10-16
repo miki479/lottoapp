@@ -19,6 +19,7 @@ import type { MarketRow } from "../lib/format.ts";
 import { moneySigned } from "../lib/num.ts";
 import { subjectOf } from "../lib/names.ts";
 import { WhyBlock } from "../components/WhyBlock.tsx";
+import { dtf } from "../lib/intl.ts";
 
 /** The days the figures at the top are counted over. */
 const SUMMARY_DAYS = 30;
@@ -45,7 +46,7 @@ export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge
   const [series, setSeries] = useState<DayNet[] | null>(null);
   useEffect(() => { let live = true; sb.rpc("my_balance_series", { p_days: SUMMARY_DAYS }).then(({ data, error }) => { if (live) setSeries(error ? [] : ((data ?? []) as DayNet[]).map((d) => ({ day: String(d.day), net: Number(d.net), bets: Number(d.bets) }))); }); return () => { live = false; }; }, [nDone]);
   const sum = series ? summarize(series) : null, sm = msg.bets.summary;
-  const dayFmt = new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "short", timeZone: "UTC" });
+  const dayFmt = dtf(INTL_TAG[locale], { day: "numeric", month: "short", timeZone: "UTC" });
   return (
     <div class="screen stack">
       <h1>{msg.bets.title}</h1>

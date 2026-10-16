@@ -5,6 +5,7 @@ import type { MarketRow } from "../lib/format.ts";
 import type { LineRecord } from "../lib/history.ts";
 import { useLineRecord } from "../lib/lineRecord.ts";
 import { fmtMin, fmtPct } from "../lib/num.ts";
+import { dtf } from "../lib/intl.ts";
 
 /** Seven bars, one per day, tall in proportion to the delay of the day; the days over the line are drawn apart and the line itself is dashed. */
 function Bars({ rec, h, label }: { rec: LineRecord; h: number; label: string }) {
@@ -28,7 +29,7 @@ export function WhyBlock({ m, msg, locale }: { m: Pick<MarketRow, "kind" | "city
   const rec = useLineRecord(m), [open, setOpen] = useState(false);
   if (!rec) return null;
   const t = msg.why;
-  const day = (k: string) => new Intl.DateTimeFormat(INTL_TAG[locale], { weekday: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${k}T12:00:00Z`));
+  const day = (k: string) => dtf(INTL_TAG[locale], { weekday: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${k}T12:00:00Z`));
   const prior = Number(m.params.pPrior), sum = 1 / Number(m.odds_yes) + 1 / Number(m.odds_no);
   return (
     <div class={`why ${open ? "open" : ""}`}>

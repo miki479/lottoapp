@@ -13,6 +13,7 @@ import { Crest, MatchVs, twoSides } from "./MatchVs.tsx";
 import { Users, X } from "lucide-preact";
 import { fmtNum } from "../lib/num.ts";
 import { leagueName, teamName } from "../lib/names.ts";
+import { dtf } from "../lib/intl.ts";
 
 interface LinePlayer { id: number; name: string; pos: string; side: "home" | "away"; pg: { yes: number; no: number } | null; pa: { yes: number; no: number } | null; ps: { yes: number; no: number } | null }
 /** Lineups already seen (an hour before a match they do not change): asked once, not at every tap. */
@@ -79,7 +80,7 @@ export function MatchList(p: { matches: Match[]; msg: Messages; locale: Locale; 
   const line = (l: string) => fmtNum(Number(l.replace("_", ".")), p.locale, 1);
   const leagues = useMemo(() => [...new Set(p.matches.map((m) => m.league))], [p.matches]);
   const [league, setLeague] = useState(""), [q, setQ] = useState("");
-  const when = (e: number) => new Intl.DateTimeFormat(INTL_TAG[p.locale], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(e * 1000));
+  const when = (e: number) => dtf(INTL_TAG[p.locale], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(e * 1000));
   const go = (mt: Match, bet: string, pick: Pick) => run(async () => {
     setErr(null);
     const have = mt.markets.get(bet);

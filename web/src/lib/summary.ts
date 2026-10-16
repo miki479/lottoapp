@@ -3,6 +3,7 @@
  */
 
 /** One day of results: what was won or lost that day in credits, and how many bets were settled. */
+import { dtf } from "./intl.ts";
 export interface DayNet { day: string; net: number; bets: number }
 
 export interface BetSummary {
@@ -26,7 +27,7 @@ export function summarize(series: readonly DayNet[]): BetSummary {
 
 interface Timed { status: string; markets: { target_at?: string } }
 interface TimedParlay { status: string; parlay_legs: { markets: { target_at?: string } }[] }
-const dayOf = (ms: number, tz?: string) => new Intl.DateTimeFormat("en-CA", tz ? { timeZone: tz } : undefined).format(new Date(ms));
+const dayOf = (ms: number, tz?: string) => dtf("en-CA", tz ? { timeZone: tz } : undefined).format(new Date(ms));
 
 /** The open bets (and multiples) that are settled today, or are already past their time and only wait for the result: the number on the tab. */
 export function resolvingToday(bets: readonly Timed[], parlays: readonly TimedParlay[], nowMs: number, tz?: string): number {

@@ -59,6 +59,7 @@ import { Home, type Trend } from "./views/Home.tsx";
 import { Suspense, lazy } from "preact/compat";
 import { alertLabelOf, matchName, operatorOf } from "./lib/names.ts";
 import { AppFooter } from "./components/AppFooter.tsx";
+import { dtf } from "./lib/intl.ts";
 
 /** A component loaded only when it is first shown (these sheets are not needed to paint the home screen), each with its own empty fallback. */
 // deno-lint-ignore no-explicit-any
@@ -594,7 +595,7 @@ export function App() {
     if (fl) { const head = msg.ticker.flash(Number(fl.flash_multiplier)); system.splice(Math.min(system.length, 2), 0, { id: `f${fl.id}`, text: `${head} · ${q(fl)}`, node: <><b>{head}</b> · {q(fl)}</> }); }
     for (const p of popular.slice(0, 2)) { const m = open.find((x) => x.id === p.market_id); if (m) { const head = msg.ticker.crowd(p.bets); system.push({ id: `p${m.id}`, text: `${head} · ${q(m)}`, node: <><b>{head}</b> · {q(m)}</> }); } }
     open.filter((m) => !m.params.ladderOf && Date.parse(m.closes_at) - now < 8 * 60_000 && Date.parse(m.closes_at) > now).slice(0, 2).forEach((m) => system.push({ id: `c${m.id}`, text: `${msg.ticker.closing} · ${q(m)}`, node: <><b>{msg.ticker.closing}</b> · {q(m)}</> }));
-    if (isItalian) { const s = open.filter((m) => m.category === "strike").sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at))[0]; if (s) { const line = msg.ticker.strike(new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(new Date(s.target_at))); system.push({ id: `s${s.id}`, text: line, node: <>{line}</> }); } }
+    if (isItalian) { const s = open.filter((m) => m.category === "strike").sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at))[0]; if (s) { const line = msg.ticker.strike(dtf(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(new Date(s.target_at))); system.push({ id: `s${s.id}`, text: line, node: <>{line}</> }); } }
     msg.home.idle.slice(1).forEach((line, i) => system.splice(Math.min(system.length, 1 + i * 2), 0, { id: `t${i}`, text: line, node: <>{line}</> }));
     const pins: FeedItem[] = limitBuys.map((b) => ({ id: `lb${b.at}${b.who}`, who: b.who, pin: true, text: `${b.who} ${msg.ticker.limitBuy}`, node: <span class="tkgold"><Crown size={13} aria-hidden="true" /> <b>{b.who}</b> {msg.ticker.limitBuy}</span> }));
     return [...pins, ...pickFeed(users, system)];
