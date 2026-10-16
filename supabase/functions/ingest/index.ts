@@ -97,7 +97,7 @@ Deno.serve(safe(async (req) => {
       const tf = Date.now();
       while (rtCache.size > 2) rtCache.delete(rtCache.keys().next().value as string); // keep only the latest decoded feeds: the big ones add up inside one run
       try {
-        const n = await ingestFeed(sb, city, feed, now, tracked.get(feed.id) ?? new Map(), rtCache);
+        const n = feed.occupancyOnly ? 0 : await ingestFeed(sb, city, feed, now, tracked.get(feed.id) ?? new Map(), rtCache); // occupancyOnly: no delay question exists, only the vehicles are read
         okRows.push({ feed_id: feed.id, last_ok_at: new Date().toISOString(), last_error: null });
         report[feed.id] = `ok ${n} ${Date.now() - tf}ms`;
         if (feed.vehiclesUrl) report[`${feed.id}-vehicles`] = await ingestVehicles(sb, feed, now, trackedVeh.get(feed.id) ?? new Set()).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
@@ -128,7 +128,9 @@ async function ingestVehicles(sb: ReturnType<typeof db>, feed: FeedConfig, now: 
   if (trips.size === 0) return "idle";
   const headers = { ...(feed.headers ?? {}) };
   if (headers["X-BusOne-Client"] && Deno.env.get("CONTACT_EMAIL")) headers["X-BusOne-Client"] += `; contact: ${Deno.env.get("CONTACT_EMAIL")}`;
-  const bytes = await fetchBytes(feed.vehiclesUrl!, headers);
+  let vurl = feed.vehiclesUrl!;
+  if (feed.requiresKey && feed.keyIn !== "header") { const k = Deno.env.get(feed.requiresKey); if (!k) throw new Error(`missing env ${feed.requiresKey}`); vurl += `${vurl.includes("?") ? "&" : "?"}acl:consumerKey=${encodeURIComponent(k)}`; }
+  const bytes = await fetchBytes(vurl, headers);
   const msg = GtfsRt.transit_realtime.FeedMessage.toObject(GtfsRt.transit_realtime.FeedMessage.decode(bytes), { longs: Number }) as RtFeed;
   const pos = parseVehiclePositions(msg, now).filter((o) => trips.has(o.tripId) && o.at > now - 900 && o.at <= now + 120);
   if (pos.length) {

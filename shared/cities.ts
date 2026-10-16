@@ -40,6 +40,8 @@ export interface FeedConfig {
   vehiclesUrl?: string;
   /** The vehicles report occupancy_status: "will it be full?" questions, the live indicator and the bonus on delay bets. */
   occupancy?: boolean;
+  /** Only "how full" questions are made on this feed, never delay ones (operators who asked, or licences that forbid judging punctuality). */
+  occupancyOnly?: boolean;
   /** Positions are estimated by the provider, not measured (shown as such on the map). */
   positionsEstimated?: boolean;
   /** Create questions only on routes that have a tracked trip in the real-time feed right now (otherwise many would end void). */

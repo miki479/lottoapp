@@ -20,7 +20,7 @@
   },
   "categories": {
     "bus": {
-      "enabled": false
+      "enabled": true
     },
     "train": {
       "enabled": false
@@ -48,6 +48,32 @@
         "url": "https://open-meteo.com/"
       },
       "licenseVerified": true
+    },
+    {
+      "id": "yokohama-bus-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://api.odpt.org/api/v4/gtfs/realtime/YokohamaMunicipalBus_trip_update",
+      "requiresKey": "ODPT_KEY",
+      "vehiclesUrl": "https://api.odpt.org/api/v4/gtfs/realtime/YokohamaMunicipalBus_vehicle",
+      "occupancy": true,
+      "occupancyOnly": true,
+      "pollSeconds": 120,
+      "staleAfterSeconds": 600,
+      "attribution": {
+        "name": "横浜市交通局 (Yokohama Municipal Transportation Bureau): Yokohama Municipal Bus",
+        "via": "公共交通オープンデータ協議会 (ODPT)",
+        "license": "ODPT Basic License",
+        "licenseUrl": "https://www.odpt.org/",
+        "url": "https://www.odpt.org/"
+      },
+      "licenseVerified": true,
+      "staticGtfsUrl": "https://api.odpt.org/api/v4/files/YokohamaMunicipal/data/YokohamaMunicipal-Bus-GTFS.zip",
+      "routeTypes": [
+        3
+      ],
+      "note": "Only 'how full is the bus' questions, never delays: the ODPT Basic License (art. 4.2.1 / 11.2) asks not to use the data in a way that may harm the operator's reputation."
     }
   ],
   "futureFeeds": [
@@ -132,11 +158,6 @@
           3
         ]
       }
-    },
-    {
-      "id": "yokohama-bus-trip-update",
-      "note": "PAUSED on purpose: no questions about delays of Yokohama Municipal Bus (ODPT Basic License art. 4.2.1 / 11.2: do not use the data in a way that may harm the operator's reputation; the operator is Japanese and cares). Only a non-delay question (e.g. how full the bus is) may use it again. Feed config kept: {\"url\": \"https://api.odpt.org/api/v4/gtfs/realtime/YokohamaMunicipalBus_trip_update\", \"staticGtfsUrl\": \"https://api.odpt.org/api/v4/files/YokohamaMunicipal/data/YokohamaMunicipal-Bus-GTFS.zip\", \"requiresKey\": \"ODPT_KEY\", \"kind\": \"trip_updates\"}",
-      "requiresKey": "ODPT_KEY"
     },
     {
       "id": "tomtom-flow",
