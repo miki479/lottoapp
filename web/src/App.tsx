@@ -45,7 +45,7 @@ import { unseenResults } from "./lib/results.ts";
 import { countdown, setDayUnit, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, trainLabel, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
-import { FAMOUS_PLACES, FEATURED_CITY_IDS, FEATURED_PLACES, ITALY_CAPITALS, ensurePlace, km, placeById, placeIdOf, recentPlaces, registerPlace, rememberPlace, type Place } from "./lib/places.ts";
+import { FAMOUS_PLACES, FEATURED_CITY_IDS, FEATURED_PLACES, ITALY_CAPITALS, ensurePlace, km, learnPlaces, placeById, placeIdOf, recentPlaces, registerPlace, rememberPlace, type Place } from "./lib/places.ts";
 import { distanceM } from "../../shared/geo.ts";
 import { isRegionFilter, locOf, regionOfCity, regionOfPoint } from "./lib/regions.ts";
 import { PushAsk, type PushVariant } from "./components/PushAsk.tsx";
@@ -158,6 +158,8 @@ export function App() {
   const [invites, setInvites] = useState<(Challenge & { invited_by: string })[]>([]);
   const placeIds = useRef<string[]>(myPlaces.map((p) => p.id));
   const [near, setNear] = useState<NearState | null>(() => { try { return JSON.parse(store.get("near") ?? "null"); } catch { return null; } });
+  // where the phone really is when no known town is close (kept only in memory, rounded to about a kilometre)
+  const [geo, setGeo] = useState<{ lat: number; lon: number } | null>(null);
   const [nearRows, setNearRows] = useState<{ market_id: string; bets: number }[]>([]);
   const [locating, setLocating] = useState(false);
   const [trending, setTrending] = useState<Trend[]>([]);
@@ -291,6 +293,7 @@ export function App() {
       if (ids.length) {
         const { data: rows } = await sb.from("markets").select("id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,flash_multiplier,flash_until,flash_kind").in("id", ids.map((x) => x.market_id));
         const by = new Map(((rows ?? []) as unknown as MarketRow[]).map((r) => [r.id, r]));
+        await learnPlaces([...by.values()].map((x) => x.city_id));
         setTrendRows(ids.flatMap((x) => { const mk = by.get(x.market_id); return mk ? [{ m: mk, bettors: +x.bettors, near: !!here && (mk.city_id === here || nearIds.includes(mk.city_id)) }] : []; }));
       } else setTrendRows([]);
     } catch { /* trending is optional */ }
@@ -307,6 +310,7 @@ export function App() {
       if (seq !== mkSeq.current) return;
       const seenS = new Set<string>(), allS: MarketRow[] = [];
       for (const x of [...snap.markets, ...((mineS.data ?? []) as MarketRow[]), ...((hereS.data ?? []) as MarketRow[])]) if (!seenS.has(x.id)) { seenS.add(x.id); allS.push(x); }
+      await learnPlaces(allS.map((x) => x.city_id));
       setMarkets(allS); try { localStorage.setItem("mk1", JSON.stringify({ t: Date.now(), rows: allS.slice(0, 250) })); } catch { /* storage full or unavailable */ }
       if (navigator.onLine) setOffline(false);
       const nowS = Date.now();
@@ -333,7 +337,7 @@ export function App() {
     const seen = new Set([...(data ?? []), ...mine].map((x) => (x as { id: string }).id));
     const extra = [...far, ...house, ...here, ...own, ...cap].filter((x) => { const id = (x as unknown as { id: string }).id; if (seen.has(id)) return false; seen.add(id); return true; });
     if (seq !== mkSeq.current) return;
-    if (!error) { const all = [...(data ?? []), ...mine, ...extra] as MarketRow[]; setMarkets(all); try { localStorage.setItem("mk1", JSON.stringify({ t: Date.now(), rows: all.slice(0, 250) })); } catch { /* storage full or unavailable */ } if (navigator.onLine) setOffline(false); }
+    if (!error) { const all = [...(data ?? []), ...mine, ...extra] as MarketRow[]; await learnPlaces(all.map((x) => x.city_id)); setMarkets(all); try { localStorage.setItem("mk1", JSON.stringify({ t: Date.now(), rows: all.slice(0, 250) })); } catch { /* storage full or unavailable */ } if (navigator.onLine) setOffline(false); }
     else if (/fetch|network|load failed/i.test(error.message)) setOffline(true);
     const { data: h } = await sb.from("feed_health").select("feed_id,last_ok_at");
     const nowMs = Date.now();
@@ -678,6 +682,11 @@ export function App() {
         ...[...FEATURED_PLACES, ...FAMOUS_PLACES, ...ITALY_CAPITALS.map((c) => ({ ...c, id: placeIdOf(c.lat, c.lon) }))].map((pl) => ({ id: pl.id, name: pl.name, country: pl.country, lat: pl.lat, lon: pl.lon, place: pl as Place | undefined })),
       ];
       const best = known.reduce((a, b) => (km(la, lo, a.lat, a.lon) <= km(la, lo, b.lat, b.lon) ? a : b));
+      // the nearest known town can be hundreds of km away ("near you: Bari"): beyond 60 km the questions around the real position are shown, not those of that town
+      if (km(la, lo, best.lat, best.lon) > 60) {
+        setGeo({ lat: Math.round(la * 100) / 100, lon: Math.round(lo * 100) / 100 }); setNear(null); store.set("near", "null"); await loadMarkets(); setLocating(false); return;
+      }
+      setGeo(null);
       try {
         if (best.place) { const sid = await ensurePlace(best.place); best.id = sid; placeIds.current = [sid, ...placeIds.current.filter((x) => x !== sid)].slice(0, 7); }
         const n = { id: best.id, name: best.name, country: best.country }; setNear(n); store.set("near", JSON.stringify(n)); await loadMarkets();
@@ -693,9 +702,10 @@ export function App() {
   }, [near?.id]);
   const origin = useMemo(() => {
     if (home) return { lat: home.lat, lon: home.lon, name: home.name };
+    if (geo) return { lat: geo.lat, lon: geo.lon, name: "" };
     if (near) { const c = cityOf(near.id); if (c.location && (c.location.lat || c.location.lon)) return { lat: c.location.lat, lon: c.location.lon, name: near.name }; }
     return null;
-  }, [home?.id, home?.lat, near?.id]);
+  }, [home?.id, home?.lat, near?.id, geo?.lat, geo?.lon]);
   const nearItems = useMemo(() => {
     if (!near) return { items: [] as { m: MarketRow; bets: number }[], fallback: false };
     const items = nearRows.map((r) => ({ m: open.find((x) => x.id === r.market_id)!, bets: r.bets })).filter((x) => x.m);

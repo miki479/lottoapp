@@ -50,6 +50,8 @@ export async function searchPlaces(q: string, lang: string, signal?: AbortSignal
 export async function ensurePlace(p: Omit<Place, "id">): Promise<string> {
   const { data, error } = await sb.rpc("ensure_place", { p_name: p.name, p_admin: p.admin, p_country: p.country, p_lat: p.lat, p_lon: p.lon, p_tz: p.timezone });
   if (error) throw new Error(error.message);
+  // known from now on: a market made on this place must be named after it (an id nobody knows used to fall back to the first city of the list)
+  registerPlace({ ...p, id: data as string });
   return data as string;
 }
 
@@ -77,3 +79,11 @@ export function km(aLat: number, aLon: number, bLat: number, bLon: number): numb
   return 12742 * Math.asin(Math.sqrt(h));
 }
 [...FEATURED_PLACES, ...FAMOUS_PLACES].forEach(registerPlace);
+
+/** Teaches the registry the places behind a list of market city ids (the ones made on a place somebody else opened): without them a market would be named after the wrong town. */
+export async function learnPlaces(cityIds: Iterable<string>): Promise<void> {
+  const missing = [...new Set([...cityIds].filter((id) => id.startsWith("p-") && !registry.has(id)))].slice(0, 60);
+  if (!missing.length) return;
+  const { data } = await sb.from("places").select("id,name,admin,country,lat,lon,timezone").in("id", missing);
+  for (const r of (data ?? []) as { id: string; name: string; admin: string | null; country: string; lat: number; lon: number; timezone: string }[]) registerPlace({ id: r.id, name: r.name, admin: r.admin, country: r.country, lat: Number(r.lat), lon: Number(r.lon), timezone: r.timezone });
+}
