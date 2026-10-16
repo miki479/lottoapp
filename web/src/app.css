@@ -1753,3 +1753,13 @@ textarea.field { resize: vertical; min-height: 84px; }
 .betinfo-pop { position: absolute; top: 38px; right: 6px; z-index: 3; margin: 0; min-width: 190px; max-width: calc(100% - 12px); display: grid; gap: 6px; padding: 12px; border-radius: var(--radius-control); background: var(--surface); border: 1px solid var(--border-strong); box-shadow: 0 8px 24px rgb(0 0 0 / .25); font-size: var(--fs-sm); }
 .betinfo-pop div { display: flex; justify-content: space-between; gap: 12px; } .betinfo-pop dt { color: var(--text-2); } .betinfo-pop dd { margin: 0; font-weight: 700; text-align: right; }
 .betwrap .row1, .parlaycard .row1 { padding-right: 36px; }
+/* the last step of a first bet: the same glow as the rest of the app */
+.joinform { position: relative; overflow: hidden; border: 1px solid var(--border-strong); background: linear-gradient(160deg, var(--action-soft), var(--surface) 70%); border-top: 3px solid var(--c-pop); box-shadow: 0 10px 30px rgb(0 0 0 / .22); }
+.joinform::before { content: ""; position: absolute; inset: -40% -20% auto auto; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(closest-side, var(--action-soft), transparent); pointer-events: none; opacity: .8; }
+.joinstep { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 99px; background: var(--surface-2); color: var(--action-ink); font-size: var(--fs-xs); font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.joinform h3 { font-size: var(--fs-xl); line-height: 1.15; }
+.fieldicon { position: relative; display: block; } .fieldicon > svg { position: absolute; left: 14px; top: 50%; translate: 0 -50%; color: var(--text-2); pointer-events: none; } .fieldicon .field { padding-left: 44px; }
+.age18 { display: inline-grid; place-items: center; min-width: 32px; height: 20px; padding: 0 6px; margin-right: 4px; border-radius: 6px; border: 1.5px solid var(--text-2); color: var(--text-2); font-size: var(--fs-xs); font-weight: 800; letter-spacing: .02em; vertical-align: middle; }
+.contact { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; } .contactopen { display: inline-flex; align-items: center; gap: 6px; min-height: var(--touch); }
+.contactform { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 480px; } .contactform textarea { resize: vertical; min-height: 96px; }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }

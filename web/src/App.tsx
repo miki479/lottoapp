@@ -1,4 +1,5 @@
 import { memo } from "./lib/cache.ts";
+import { deviceId } from "./lib/device.ts";
 import { Activity, Bitcoin, Clapperboard, Clock, CloudLightning, Crown, Gamepad2, MapPin, Trophy, TrendingUp, Train, Users, Zap } from "lucide-preact";
 import { RING_BONUS, STREAK_MILESTONES } from "../../shared/rewards.ts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
@@ -259,7 +260,7 @@ export function App() {
     const { data: reg } = await sb.rpc("is_registered");
     if (reg) {
       const code = store.get("ref");
-      if (code) { const { data: okRef } = await sb.rpc("redeem_referral", { p_code: code }); store.set("ref", ""); if (okRef) flash(msg.referral.accepted); }
+      if (code) { const { data: okRef } = await sb.rpc("redeem_referral", { p_code: code, p_device: deviceId() }); store.set("ref", ""); if (okRef) flash(msg.referral.accepted); }
       loadReferral();
       const { data: gift } = await sb.rpc("claim_welcome_gift"); if (gift) { flash(msg.boost.gift); loadProfile(); haptic.success(); store.set("giftdot", "1"); store.set("giftcard", "1"); setGiftDot(true); setGiftCard(true); }
     }
@@ -848,7 +849,7 @@ export function App() {
           {screen === "ranking" && <Ranking onProfile={setPubUser} home={home} onHome={changeHome} locale={locale} msg={msg} profile={profile} registered={registered} onToast={flash} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onRank={(r, s) => setRank({ rank: r, scope: s })} />}
           {screen === "admin" && <AdminPage msg={msg} onBack={() => go("profile")} />}
           {screen === "profile" && <ProfileView voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} look={look} onLook={() => setLookOpen(true)} homeNode={<CityChip msg={msg} locale={locale} value={home} onChange={changeHome} />} onAdmin={() => go("admin")} giftCard={giftCard} onGiftSeen={() => { store.set("giftcard", "0"); setGiftCard(false); }} push={pushAvailable() ? { on: pushOn, denied: pushDenied(), toggle: () => turnPush(!pushOn), flash: !!profile?.push_flash, streak: !!profile?.push_streak, friends: !!profile?.push_friends, setPrefs: async (f: boolean, s: boolean, fr: boolean) => { await sb.rpc("set_push_prefs", { p_flash: f, p_streak: s, p_friends: fr }); loadProfile(); } } : null} referral={referral} onShareReferral={shareReferral} progress={progress} msg={msg} locale={locale} onLocale={changeLocale} profile={profile} email={email} registered={registered} trophies={trophies} fresh={fresh} onAuth={() => setAuth(true)} onNickname={() => setNick(true)} onShareProfile={shareProfile} onSignOut={signOut} onDelete={deleteAccount} />}
-          {screen !== "admin" && <AppFooter msg={msg} sources={sources} />}
+          {screen !== "admin" && <AppFooter msg={msg} sources={sources} locale={locale} />}
         </main>
       </div>
       <TabBar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} rankBadge={reqCount} social={social} />

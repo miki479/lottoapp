@@ -13,4 +13,6 @@ export default defineConfig({
     "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(anon),
   },
   build: { target: "es2020", sourcemap: false },
+  // no console output or debugger statements in what the browser receives
+  esbuild: { drop: ["console", "debugger"], legalComments: "none" },
 });

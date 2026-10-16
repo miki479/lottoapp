@@ -56,7 +56,7 @@ export interface Messages {
   ticker: { limitBuy: string; label: string; anon: string; won: string; lost: string; placed: string; on: string; late: (route: string, to: string, min: number) => string; closing: string; crowd: (n: number) => string; flash: (x: number) => string; strike: (day: string) => string };
   slip: { bar: (n: number) => string; title: string; add: string; added: string; remove: string; odds: string; confirm: string; maxWin: string; need2: string; placed: (win: string) => string; legs: (n: number) => string; clear: string };
   stake: { label: string; min: string; max: (m: string) => string };
-  join: { step: string; title: string; body: (credits: string) => string; nickname: string; password: string; hint: string; cta: (stake: string) => string; haveProfile: string; newProfile: string; emailInstead: string; checkMail: string };
+  join: { step: string; title: string; nickname: string; password: string; hint: string; cta: (stake: string) => string; haveProfile: string; newProfile: string; emailInstead: string; checkMail: string };
   tip: { btn: string; title: string; hint: string; send: (n: number) => string; sent: (n: number) => string; none: string; noFriends: string; banner: (who: string) => string; error: string };
   loss: { title: string; body: (balance: string, bonus: string) => string; share: string; signup: string; later: string };
   referral: { title: string; body: (bonus: string) => string; code: string; copy: string; copied: string; share: string; shareText: (code: string) => string; counts: (invited: number, paid: number) => string; guest: string; accepted: string };
@@ -114,7 +114,7 @@ export interface Messages {
   crowd: { title: string; note: (year: string, avg: number) => string; all: (n: number) => string; less: string; scaleTitle: string; scale: Record<100 | 150 | 180 | 200 | 250, string>; source: string };
   report: { link: string; title: string; kinds: { wrong_data: string; wrong_result: string; other: string }; notePh: string; send: string; sent: string };
   admin: { open: string; title: string; feeds: string; ok: string; late: string; down: string; never: string; markets: string; opened: string; resolved24: string; void24: string; users: string; registered: string; guests: string; bets24: string; places: string; reports: string; noReports: string; resolve: string; refresh: string; forbidden: string; moderation: string; noModeration: string };
-  disclaimerShort: string; disclaimerFull: string; attributionTitle: string; odptNotice: { text: string; fresh: string; email: string };
+  disclaimerShort: string; disclaimerFull: string; attributionTitle: string; odptNotice: { text: string; fresh: string };
   errors: Record<string, string>;
   feedWarning: string;
   cm: Record<string, string>;
