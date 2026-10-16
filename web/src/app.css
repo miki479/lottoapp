@@ -1763,3 +1763,5 @@ textarea.field { resize: vertical; min-height: 84px; }
 .contact { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; } .contactopen { display: inline-flex; align-items: center; gap: 6px; min-height: var(--touch); }
 .contactform { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 480px; } .contactform textarea { resize: vertical; min-height: 96px; }
 .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.tr3dimg { object-fit: cover; border-radius: 14px; }
+.tr3dimg.lock { filter: grayscale(1) brightness(.45) contrast(.9); opacity: .8; }

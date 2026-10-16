@@ -2,8 +2,12 @@ import type { TrophyId } from "../../i18n/index.ts";
 import { TROPHY_RARITY } from "../../i18n/index.ts";
 import { trophySvg } from "./trophyArt";
 
+/** Trophies that have a rendered picture (web/public/trophies/<id>.webp); the others keep their drawn badge until theirs arrives. */
+const PICTURED = new Set<string>(["limit_breaker", "first_win", "all_rings", "long_shot", "rain_man", "streak_7"]);
+
 /** A trophy as a 3D badge. The metal and shape are its own; the higher the rarity, the more it shines. */
 export function Trophy3D({ id, have, size = 56 }: { id: TrophyId; have: boolean; size?: number }) {
+  if (PICTURED.has(id)) return <img class={`tr3d tr3dimg ${have ? "" : "lock"}`} src={`/trophies/${id}.webp`} width={size} height={size} alt="" loading="lazy" decoding="async" />;
   const shines = TROPHY_RARITY[id] !== "common" && TROPHY_RARITY[id] !== "rare";
   return <svg class={`tr3d ${have ? "" : "lock"}`} width={size} height={size} viewBox="0 0 120 120" role="img" aria-label={id} dangerouslySetInnerHTML={{ __html: trophySvg(id, have, shines) }} />;
 }
