@@ -1,0 +1,86 @@
+{
+  "id": "trondheim",
+  "country": "NO",
+  "name": {
+    "it": "Trondheim",
+    "en-US": "Trondheim",
+    "en-GB": "Trondheim",
+    "ja": "トロンハイム"
+  },
+  "timezone": "Europe/Oslo",
+  "defaultLocale": "en-GB",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 63.4305,
+    "lon": 10.3951
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": false
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "entur-atb-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://api.entur.io/realtime/v1/gtfs-rt/trip-updates?datasource=ATB",
+      "headers": {
+        "ET-Client-Name": "latelotto-playmoney-game"
+      },
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        3,
+        700,
+        701,
+        702,
+        704,
+        705,
+        900,
+        0
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Entur AS (AtB)",
+        "license": "NLOD 2.0 — Inneholder data under Norsk lisens for offentlige data (NLOD) tilgjengeliggjort av Entur AS",
+        "licenseUrl": "https://data.norge.no/nlod/en/2.0",
+        "url": "https://developer.entur.no/"
+      },
+      "staticGtfsUrl": "https://storage.googleapis.com/marduk-production/outbound/gtfs/rb_atb-aggregated-gtfs.zip",
+      "note": "Same Entur terms as the Oslo feed (NLOD 2.0, attribution, ET-Client-Name header). Median delay is higher here, so the generator prices from history."
+    },
+    {
+      "id": "open-meteo-trondheim",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

@@ -5,17 +5,21 @@ export interface RtFeed {
   header?: { timestamp?: number | string | null };
   entity?: RtEntity[];
 }
+/** Trip descriptor. Some feeds (Helsinki) have no tripId: the trip is told by route, direction, service day and start time. */
+export interface RtTrip { scheduleRelationship?: number | string | null; tripId?: string | null; routeId?: string | null; directionId?: number | null; startDate?: string | null; startTime?: string | null }
 export interface RtEntity {
   id?: string;
   vehicle?: {
-    trip?: { tripId?: string | null; routeId?: string | null } | null;
+    trip?: RtTrip | null;
     stopId?: string | null;
     currentStopSequence?: number | null;
     timestamp?: number | string | null;
+    occupancyStatus?: number | string | null;
   } | null;
   tripUpdate?: {
-    trip?: { tripId?: string | null; routeId?: string | null } | null;
+    trip?: RtTrip | null;
     stopTimeUpdate?: Array<{
+      scheduleRelationship?: number | string | null;
       stopSequence?: number | null;
       stopId?: string | null;
       arrival?: { delay?: number | null; time?: number | string | null } | null;
@@ -26,6 +30,8 @@ export interface RtEntity {
 
 /** Scheduled time lookup built from the static GTFS (stop_times) by the nightly job. */
 export type ScheduleLookup = (tripId: string, stopSequence: number) => { stopId: string; time: string } | null;
+/** Same timetable, found by stop id when the feed gives no stop sequence. */
+export type ScheduleByStop = (tripId: string, stopId: string) => { seq: number; stopId: string; time: string } | null;
 
 export interface DelayAdapterContext {
   feedId: string;
@@ -33,7 +39,23 @@ export interface DelayAdapterContext {
   /** Epoch seconds when the feed was fetched. */
   fetchedAt: number;
   schedule?: ScheduleLookup;
+  scheduleByStop?: ScheduleByStop;
+  /** How to name a trip that has no tripId: "route_dir_start" = routeId|directionId|startDate|startTime. */
+  tripKey?: "route_dir_start";
 }
 
 export type DelayAdapter = (feed: RtFeed, ctx: DelayAdapterContext) => DelayObservation[];
 export type WeatherAdapter = (json: unknown, feedId: string) => WeatherObservation[];
+
+export interface TrainJsonAdapterContext {
+  feedId: string;
+  /** Epoch seconds when the response was fetched. */
+  fetchedAt: number;
+  /** The trip id that was requested (see trainTripId). */
+  tripId: string;
+}
+/** For per-train JSON APIs (ViaggiaTreno): one response describes one train. */
+export type TrainJsonAdapter = (json: unknown, ctx: TrainJsonAdapterContext) => DelayObservation[];
+
+/** A trip (stopId = null) or one stop of it that the feed says will not be served. */
+export interface Cancellation { tripId: string; stopId: string | null }

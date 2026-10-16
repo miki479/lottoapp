@@ -23,9 +23,9 @@ export async function* readTable(path) {
     const line = header === null ? raw.replace(/^﻿/, "") : raw;
     if (!line) continue;
     const cells = splitCsv(line);
-    if (header === null) { header = cells; continue; }
+    if (header === null) { header = cells.map((c) => c.trim()); continue; }
     const row = {};
-    for (let i = 0; i < header.length; i++) row[header[i]] = cells[i] ?? "";
+    for (let i = 0; i < header.length; i++) row[header[i]] = (cells[i] ?? "").trim();
     yield row;
   }
 }

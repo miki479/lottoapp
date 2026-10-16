@@ -1,0 +1,67 @@
+import { Rocket, Trash2, X } from "lucide-preact";
+import { useRef, useState } from "preact/hooks";
+import { cityName, cityOf } from "../lib/cities.ts";
+import { BetFoot } from "./BetFoot.tsx";
+import { BoostRow } from "./BoostRow.tsx";
+import { fmtOdds, isYesNo, money, question } from "../lib/format.ts";
+import { haptic } from "../lib/haptics.ts";
+import type { Locale, Messages } from "../i18n/index.ts";
+import type { SlipLeg } from "../lib/types.ts";
+import { JoinStep } from "./JoinStep.tsx";
+import { PARLAY_MIN_LEGS, parlayStakeCap } from "../../../shared/wallet.ts";
+import { Sheet } from "./Sheet.tsx";
+import { StakeControl } from "./StakeControl.tsx";
+import { fmtMult } from "../lib/num.ts";
+
+export const slipOdds = (legs: SlipLeg[]) => Math.min(100, legs.reduce((a, l) => a * Number(l.pick === "yes" ? l.m.odds_yes : l.m.odds_no), 1));
+
+export function ParlaySheet(p: {
+  legs: SlipLeg[]; msg: Messages; locale: Locale; credits: number; boosts: number; needJoin: boolean; googleOn: boolean;
+  onClose: () => void; onRemove: (id: string) => void; onClear: () => void; onJoined: () => Promise<void>; onPlace: (legs: SlipLeg[], stake: number, boost: boolean) => Promise<string | null>;
+}) {
+  const [stake, setStake] = useState(50);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [joining, setJoining] = useState(false);
+  const [boost, setBoost] = useState(false);
+  const odds = slipOdds(p.legs);
+  const slipCap = parlayStakeCap(p.legs.map((l) => Number(l.pick === "yes" ? l.m.odds_yes : l.m.odds_no)));
+  const cap = Math.max(10, p.credits >= 10 ? Math.min(slipCap, Math.floor(p.credits)) : Math.min(slipCap, 500));
+  const amount = Math.min(stake, cap);
+  const m = p.msg;
+  const going = useRef(false);
+  const place = async () => {
+    if (going.current) return;
+    going.current = true; setBusy(true); setErr(null); haptic.tap();
+    let out: string | null;
+    try { out = await p.onPlace(p.legs, amount, boost && p.boosts > 0); } catch { out = m.errors.generic!; }
+    going.current = false;
+    if (out) { setErr(out); setBusy(false); haptic.error(); } else haptic.success();
+  };
+  if (joining) return <JoinStep msg={m} locale={p.locale} googleOn={p.googleOn} stakeLabel={money(amount, p.locale)} onBack={() => setJoining(false)} onClose={p.onClose} onJoined={place} />;
+  return (
+    <Sheet foot onClose={p.onClose} label={m.slip.title}>
+      <div class="shead"><h2>{m.slip.title} <small class="hint">{m.slip.legs(p.legs.length)}</small></h2><button class="iconbtn" onClick={p.onClose} aria-label={m.common.close}><X size={22} /></button></div>
+      <ul class="legs">
+        {p.legs.map((l) => {
+          const c = cityOf(l.m.city_id), o = Number(l.pick === "yes" ? l.m.odds_yes : l.m.odds_no), rain = isYesNo(l.m.kind);
+          const pickLabel = l.pick === "yes" ? (rain ? m.card.yes : m.card.late) : (rain ? m.card.no : m.card.onTime);
+          return (
+            <li key={l.m.id} class="leg">
+              <div class="lq"><span>{question(l.m, m, p.locale, cityName(c, p.locale), c.timezone)}</span><span class="detail">{pickLabel}</span></div>
+              <b class="num">{fmtOdds(o, p.locale)}</b>
+              <button class="iconbtn" onClick={() => p.onRemove(l.m.id)} aria-label={m.slip.remove}><Trash2 size={18} /></button>
+            </li>
+          );
+        })}
+      </ul>
+      <div class="summary"><span>{m.slip.odds}</span><b class="num pop" key={odds.toFixed(2)} style="color:var(--c-pop)">{fmtMult(odds, p.locale)}</b></div>
+      {p.legs.length < PARLAY_MIN_LEGS && <p class="note">{m.slip.need2}</p>}
+      <StakeControl value={amount} onChange={setStake} cap={cap} balance={p.credits} odds={odds} boost={boost && p.boosts > 0} locale={p.locale} msg={m} />
+      {p.boosts > 0 && <BoostRow on={boost} onToggle={setBoost} boosts={p.boosts} stake={amount} odds={odds} locale={p.locale} msg={m} />}
+      <p class="hint">{m.slip.maxWin}</p>
+      <button class="btn secondary wide" onClick={p.onClear}>{m.slip.clear}</button>
+      <BetFoot amount={amount} balance={p.credits} label={`${m.slip.confirm} · ${money(amount, p.locale)}`} busy={busy} disabled={p.legs.length < PARLAY_MIN_LEGS} err={err} msg={m} locale={p.locale} onGo={p.needJoin ? () => setJoining(true) : place} reset={`${boost}|${p.legs.length}`} />
+    </Sheet>
+  );
+}

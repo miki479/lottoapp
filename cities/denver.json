@@ -1,0 +1,99 @@
+{
+  "id": "denver",
+  "country": "US",
+  "name": {
+    "it": "Denver",
+    "en-US": "Denver",
+    "en-GB": "Denver",
+    "ja": "デンバー"
+  },
+  "timezone": "America/Denver",
+  "defaultLocale": "en-US",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 39.7392,
+    "lon": -104.9903
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": true
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "rtd-bus-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_times",
+      "url": "https://www.rtd-denver.com/files/gtfs-rt/TripUpdate.pb",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        3
+      ],
+      "licenseVerified": false,
+      "attribution": {
+        "name": "Regional Transportation District (RTD) Denver",
+        "license": "RTD GTFS Realtime License Agreement and Terms of Use (non-exclusive right to use, reproduce and redistribute the Data; RTD trademarks may not be used)",
+        "licenseUrl": "https://www.rtd-denver.com/business-center/open-spatial-data/gtfs-realtime-license-agreement",
+        "url": "https://www.rtd-denver.com/business-center/open-spatial-data"
+      },
+      "staticGtfsUrl": "https://www.rtd-denver.com/files/gtfs/google_transit.zip",
+      "note": "RTD buses (685 of 737 trips). Predicted times only, delay computed against the static timetable; 100% id match. The static file has its own licence page (…/gtfs-license-agreement): DOUBLE-CHECK both agreements, and that the 307/308 redirect on the static zip is followed."
+    },
+    {
+      "id": "rtd-train-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_times",
+      "url": "https://www.rtd-denver.com/files/gtfs-rt/TripUpdate.pb",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        0,
+        2
+      ],
+      "licenseVerified": false,
+      "attribution": {
+        "name": "Regional Transportation District (RTD) Denver",
+        "license": "RTD GTFS Realtime License Agreement and Terms of Use (non-exclusive right to use, reproduce and redistribute the Data; RTD trademarks may not be used)",
+        "licenseUrl": "https://www.rtd-denver.com/business-center/open-spatial-data/gtfs-realtime-license-agreement",
+        "url": "https://www.rtd-denver.com/business-center/open-spatial-data"
+      },
+      "staticGtfsUrl": "https://www.rtd-denver.com/files/gtfs/google_transit.zip",
+      "note": "Denver light rail (0) and commuter rail (2), same real-time file as the buses."
+    },
+    {
+      "id": "open-meteo-denver",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

@@ -1,0 +1,171 @@
+{
+  "id": "kumamoto",
+  "country": "JP",
+  "name": {
+    "it": "Kumamoto",
+    "en-US": "Kumamoto",
+    "en-GB": "Kumamoto",
+    "ja": "熊本"
+  },
+  "timezone": "Asia/Tokyo",
+  "defaultLocale": "ja",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 32.8031,
+    "lon": 130.7079
+  },
+  "categories": {
+    "bus": {
+      "enabled": false
+    },
+    "train": {
+      "enabled": false
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "open-meteo-kumamoto",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      },
+      "licenseVerified": true
+    }
+  ],
+  "futureFeeds": [
+    {
+      "id": "dentetsu-trip-update",
+      "note": "PAUSED on purpose (14 Oct): no questions about delays of Japanese operators, out of respect for their reputation. Config kept for a question that is not about delays.",
+      "url": "https://km.bus-vision.jp/realtime/dentetsu_trip_update.bin",
+      "requiresKey": null,
+      "pausedFeed": {
+        "id": "dentetsu-trip-update",
+        "category": "bus",
+        "type": "gtfs-rt",
+        "kind": "trip_updates",
+        "url": "https://km.bus-vision.jp/realtime/dentetsu_trip_update.bin",
+        "requiresKey": null,
+        "pollSeconds": 60,
+        "staleAfterSeconds": 240,
+        "attribution": {
+          "name": "熊本電鉄バス (Kumamoto Dentetsu Bus)",
+          "via": "GTFSデータリポジトリ (GTFS Data Repository)",
+          "license": "CC BY 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+          "url": "https://www.gtfs-data.jp/"
+        },
+        "licenseVerified": true,
+        "routeTypes": [
+          3
+        ],
+        "note": "Explicit per-stop delay and predicted time in the real-time feed; each operator declares CC BY 4.0 in the GTFS Data Repository. Past stops stay in the feed with their last delay.",
+        "staticGtfsUrl": "https://api.gtfs-data.jp/v2/organizations/kumamotodentetsu/feeds/kumamotodentetsu-bus/files/feed.zip?rid=current"
+      }
+    },
+    {
+      "id": "toshibus-trip-update",
+      "note": "PAUSED on purpose (14 Oct): no questions about delays of Japanese operators, out of respect for their reputation. Config kept for a question that is not about delays.",
+      "url": "https://km.bus-vision.jp/realtime/toshibus_trip_update.bin",
+      "requiresKey": null,
+      "pausedFeed": {
+        "id": "toshibus-trip-update",
+        "category": "bus",
+        "type": "gtfs-rt",
+        "kind": "trip_updates",
+        "url": "https://km.bus-vision.jp/realtime/toshibus_trip_update.bin",
+        "requiresKey": null,
+        "pollSeconds": 60,
+        "staleAfterSeconds": 240,
+        "attribution": {
+          "name": "熊本都市バス (Kumamoto Toshi Bus)",
+          "via": "GTFSデータリポジトリ (GTFS Data Repository)",
+          "license": "CC BY 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+          "url": "https://www.gtfs-data.jp/"
+        },
+        "licenseVerified": true,
+        "routeTypes": [
+          3
+        ],
+        "note": "Explicit per-stop delay and predicted time in the real-time feed; each operator declares CC BY 4.0 in the GTFS Data Repository. Past stops stay in the feed with their last delay.",
+        "staticGtfsUrl": "https://api.gtfs-data.jp/v2/organizations/kumamoto-toshibus/feeds/kumamoto-toshibus/files/feed.zip?rid=current"
+      }
+    },
+    {
+      "id": "kumabus-trip-update",
+      "note": "PAUSED on purpose (14 Oct): no questions about delays of Japanese operators, out of respect for their reputation. Config kept for a question that is not about delays.",
+      "url": "https://km.bus-vision.jp/realtime/kumabus_trip_update.bin",
+      "requiresKey": null,
+      "pausedFeed": {
+        "id": "kumabus-trip-update",
+        "category": "bus",
+        "type": "gtfs-rt",
+        "kind": "trip_updates",
+        "url": "https://km.bus-vision.jp/realtime/kumabus_trip_update.bin",
+        "requiresKey": null,
+        "pollSeconds": 60,
+        "staleAfterSeconds": 240,
+        "attribution": {
+          "name": "熊本バス (Kumamoto Bus)",
+          "via": "GTFSデータリポジトリ (GTFS Data Repository)",
+          "license": "CC BY 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+          "url": "https://www.gtfs-data.jp/"
+        },
+        "licenseVerified": true,
+        "routeTypes": [
+          3
+        ],
+        "note": "Explicit per-stop delay and predicted time in the real-time feed; each operator declares CC BY 4.0 in the GTFS Data Repository. Past stops stay in the feed with their last delay.",
+        "staticGtfsUrl": "https://api.gtfs-data.jp/v2/organizations/kuma-bus/feeds/kuma-bus/files/feed.zip?rid=current"
+      }
+    },
+    {
+      "id": "sanko-trip-update",
+      "note": "PAUSED on purpose (14 Oct): no questions about delays of Japanese operators, out of respect for their reputation. Config kept for a question that is not about delays.",
+      "url": "https://km.bus-vision.jp/realtime/sankobus_trip_update.bin",
+      "requiresKey": null,
+      "pausedFeed": {
+        "id": "sanko-trip-update",
+        "category": "bus",
+        "type": "gtfs-rt",
+        "kind": "trip_updates",
+        "url": "https://km.bus-vision.jp/realtime/sankobus_trip_update.bin",
+        "requiresKey": null,
+        "pollSeconds": 60,
+        "staleAfterSeconds": 240,
+        "attribution": {
+          "name": "産交バス (Sanko Bus)",
+          "via": "GTFSデータリポジトリ (GTFS Data Repository)",
+          "license": "CC BY 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+          "url": "https://www.gtfs-data.jp/"
+        },
+        "licenseVerified": true,
+        "routeTypes": [
+          3
+        ],
+        "note": "Explicit per-stop delay and predicted time in the real-time feed; each operator declares CC BY 4.0 in the GTFS Data Repository. Past stops stay in the feed with their last delay.",
+        "staticGtfsUrl": "https://api.gtfs-data.jp/v2/organizations/sankobus/feeds/sankobus/files/feed.zip?rid=current"
+      }
+    }
+  ]
+}

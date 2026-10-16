@@ -4,6 +4,7 @@ name: Generate markets
 on:
   schedule:
     - cron: "17 */6 * * *"     # Tokyo buses + weather for every city
+    - cron: "47 */2 * * *"     # BusOne bus and train questions (Italy): every 2 hours
     - cron: "41 2 * * *"       # Dutch trains: once a day (the timetable is 259 MB, be gentle with OVapi)
   workflow_dispatch:
 jobs:
@@ -14,6 +15,7 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=6144
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ODPT_KEY: ${{ secrets.ODPT_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,12 +23,109 @@ jobs:
       - run: npm ci
       - run: node scripts/sync-cities.mjs
       - name: Weather (all cities)
-        if: github.event.schedule != '41 2 * * *'
+        if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
         run: |
-          for c in tokyo rome amsterdam; do node scripts/generate-markets.mjs --city $c --weather --apply; done
-      - name: Tokyo buses
-        if: github.event.schedule != '41 2 * * *'
-        run: node scripts/generate-markets.mjs --city tokyo --feed toei-bus-vehicle --max 30 --apply
+          for c in tokyo rome amsterdam sanfrancisco oslo torino zurich paris madrid berlin helsinki boston modena reggio-emilia piacenza venezia bari mantova vicenza cuneo parma napoli kumamoto toyama; do node scripts/generate-markets.mjs --city $c --weather --apply; done
+      - name: Spanish commuter trains (trips seen live)
+        if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
+        run: node scripts/generate-markets.mjs --city madrid --feed renfe-trip-update --max 30 --apply
+      - name: Oslo buses
+        if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
+        run: node scripts/generate-markets.mjs --city oslo --feed entur-ruter-trip-update --max 30 --apply
+      - name: Turin buses
+        if: (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
+        run: node scripts/generate-markets.mjs --city torino --feed gtt-trip-update --max 30 --apply
       - name: Dutch trains
         if: github.event.schedule == '41 2 * * *' || github.event_name == 'workflow_dispatch'
-        run: node scripts/generate-markets.mjs --city amsterdam --feed nl-train-update --max 30 --apply
+        run: |
+          node scripts/generate-markets.mjs --city amsterdam --feed nl-train-update --max 30 --apply
+          node scripts/generate-markets.mjs --city zurich --feed ch-gtfsrt --max 30 --apply
+          node scripts/generate-markets.mjs --city paris --feed sncf-trip-update --max 30 --apply
+          node scripts/generate-markets.mjs --city berlin --feed vbb-bus-trip-update --max 30 --apply
+          node scripts/generate-markets.mjs --city berlin --feed vbb-train-trip-update --max 30 --apply
+          node scripts/generate-markets.mjs --city helsinki --feed hsl-trip-update --max 30 --apply
+          node scripts/generate-markets.mjs --city helsinki --feed hsl-train-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city boston --feed mbta-bus-trip-update --max 30 --apply
+          node scripts/generate-markets.mjs --city boston --feed mbta-train-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city bordeaux --feed tbm-bus-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city bordeaux --feed tbm-tram-trip-update --max 10 --apply
+          node scripts/generate-markets.mjs --city nantes --feed naolib-bus-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city nantes --feed naolib-tram-trip-update --max 10 --apply
+          node scripts/generate-markets.mjs --city prague --feed pid-bus-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city prague --feed pid-train-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city brisbane --feed translink-seq-bus-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city brisbane --feed translink-seq-train-trip-update --max 10 --apply
+          node scripts/generate-markets.mjs --city germany --feed gtfsde-rv-trip-update --max 30 --apply
+          node scripts/generate-markets.mjs --city germany --feed gtfsde-fv-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city szczecin --feed zditm-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city trondheim --feed entur-atb-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city stavanger --feed entur-kol-trip-update --max 20 --apply
+          node scripts/generate-markets.mjs --city adelaide --feed adelaide-metro-trip-update --max 20 --apply
+      - name: Italian trains (unlicensed feed, needs ALLOW_UNVERIFIED_FEEDS and a reachable IP)
+        if: vars.ENABLE_VIAGGIATRENO == '1' && (github.event.schedule == '17 */6 * * *' || github.event_name == 'workflow_dispatch')
+        continue-on-error: true
+        env:
+          VIAGGIATRENO_BASE_URL: ${{ secrets.VIAGGIATRENO_BASE_URL }}
+          RELAY_SECRET: ${{ secrets.RELAY_SECRET }}
+        run: node scripts/generate-markets.mjs --city italia --feed it-train-viaggiatreno --max 30 --apply
+
+  # "What is about to pass near me": stops and routes of the real-time feeds (and the stops' timetable for the feeds marked "nearbyTimetable"), once a day.
+  # A feed that fails to download is reported and skipped; what is already in the tables stays.
+  stops:
+    if: github.event.schedule == '41 2 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
+      ODPT_KEY: ${{ secrets.ODPT_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: node scripts/load-stops.mjs --apply
+
+  # Bus and train questions from the BusOne GTFS / GTFS-Realtime feeds (non-commercial licence, see cities/*.json).
+  # Run every 2 hours: only routes with a tracked vehicle at that moment get questions.
+  busone:
+    if: github.event.schedule == '47 */2 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { city: romagna, feed: start-trip-updates, max: 30 }
+          - { city: modena, feed: seta-mo-trip-updates, max: 20 }
+          - { city: reggio-emilia, feed: seta-re-trip-updates, max: 20 }
+          - { city: piacenza, feed: seta-pc-trip-updates, max: 20 }
+          - { city: friuli-venezia-giulia, feed: tplfvg-trip-updates, max: 30 }
+          - { city: friuli-venezia-giulia, feed: arriva-trip-updates, max: 10 }
+          - { city: venezia, feed: actv-aut-trip-updates, max: 30 }
+          - { city: venezia, feed: actv-nav-trip-updates, max: 15 }
+          - { city: bari, feed: amtab-trip-updates, max: 20 }
+          - { city: napoli, feed: anm-trip-updates, max: 20 }
+          - { city: mantova, feed: apam-trip-updates, max: 20 }
+          - { city: vicenza, feed: biv-trip-updates, max: 20 }
+          - { city: lazio, feed: cotral-trip-updates, max: 30 }
+          - { city: cuneo, feed: grandabus-trip-updates, max: 15 }
+          - { city: alto-adige, feed: sta-trip-updates, max: 30 }
+          - { city: parma, feed: tep-trip-updates, max: 15 }
+          - { city: toscana, feed: toscana-trip-updates, max: 30 }
+          - { city: trentino, feed: trentino-trip-updates, max: 20 }
+          - { city: italia, feed: trenitalia-trip-updates, max: 30 }
+          - { city: italia, feed: italo-trip-updates, max: 10 }
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: node scripts/generate-markets.mjs --city ${{ matrix.city }} --feed ${{ matrix.feed }} --max ${{ matrix.max }} --apply

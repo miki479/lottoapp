@@ -1,0 +1,76 @@
+{
+  "id": "paris",
+  "country": "FR",
+  "name": {
+    "it": "Parigi",
+    "en-US": "Paris",
+    "en-GB": "Paris",
+    "ja": "パリ"
+  },
+  "timezone": "Europe/Paris",
+  "defaultLocale": "en-GB",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 48.8566,
+    "lon": 2.3522
+  },
+  "categories": {
+    "bus": {
+      "enabled": false
+    },
+    "train": {
+      "enabled": true
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "sncf-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://proxy.transport.data.gouv.fr/resource/sncf-gtfs-rt-trip-updates",
+      "requiresKey": null,
+      "pollSeconds": 120,
+      "staleAfterSeconds": 480,
+      "routeTypes": [
+        2
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "SNCF Voyageurs (via transport.data.gouv.fr)",
+        "license": "ODbL 1.0 (licence shown on the dataset page 'Réseau SNCF TGV, Intercités et TER', read 2026-10-11); attribution required",
+        "licenseUrl": "https://transport.data.gouv.fr/datasets/horaires-sncf",
+        "url": "https://transport.data.gouv.fr/datasets/horaires-sncf"
+      },
+      "staticGtfsUrl": "https://eu.ftp.opendatasoft.com/sncf/plandata/Export_OpenData_SNCF_GTFS_NewTripId.zip",
+      "note": "National SNCF trains (TGV, Intercites, TER), shown under Paris. Explicit delays in the real-time feed. ODbL: credit the source; no SNCF branding."
+    },
+    {
+      "id": "open-meteo-paris",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

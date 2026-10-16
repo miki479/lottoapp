@@ -1,5 +1,5 @@
 import { computeOdds, DEFAULT_YES_PROBABILITY, yesProbability, type History } from "./odds.ts";
-import { localDayStart, parseGtfsTime, tzOffsetSec } from "./time.ts";
+import { gtfsDayStart, localDateString, parseGtfsTime, tzOffsetSec, zonedEpoch } from "./time.ts";
 
 export interface CalendarRow {
   service_id: string;
@@ -56,7 +56,7 @@ export function pickTargetStop(stops: StopTimeRow[], rand: () => number): StopTi
 export interface MarketInsert {
   city_id: string;
   category: "bus" | "train" | "weather";
-  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at";
+  kind: "bus_delay_gt" | "train_delay_gt" | "rain_at" | "bus_full";
   feed_id: string;
   params: Record<string, unknown>;
   closes_at: string;
@@ -84,13 +84,15 @@ export interface DelayMarketArgs {
   serviceDayEpoch: number;
   thresholdSec: number;
   history: History | null;
+  /** Starting chance of "late" learned from the outcomes so far in the same country and category; the fixed guess when absent. */
+  priorYes?: number;
   flashMultiplier?: number;
 }
 
 export function buildDelayMarket(a: DelayMarketArgs): MarketInsert {
   const kind = a.category === "bus" ? "bus_delay_gt" : "train_delay_gt";
-  const targetAt = localDayStart(a.serviceDayEpoch, a.tz) + parseGtfsTime(a.stop.time);
-  const odds = computeOdds(yesProbability(a.history, DEFAULT_YES_PROBABILITY[kind]), a.flashMultiplier ?? 1);
+  const targetAt = gtfsDayStart(a.serviceDayEpoch, a.tz) + parseGtfsTime(a.stop.time);
+  const odds = computeOdds(yesProbability(a.history, a.priorYes ?? DEFAULT_YES_PROBABILITY[kind]), a.flashMultiplier ?? 1);
   return {
     city_id: a.cityId,
     category: a.category,
@@ -113,10 +115,10 @@ export function buildDelayMarket(a: DelayMarketArgs): MarketInsert {
 export function buildWeatherMarkets(opts: {
   cityId: string; tz: string; feedId: string; nowEpoch: number; localHours: number[]; history?: (hour: number) => History | null; minMm?: number;
 }): MarketInsert[] {
-  const dayStart = localDayStart(opts.nowEpoch, opts.tz);
+  const day = localDateString(opts.nowEpoch, opts.tz);
   const out: MarketInsert[] = [];
   for (const h of opts.localHours) {
-    const targetAt = dayStart + h * 3600 + 1800; // mid-hour, the answer comes from the whole hour
+    const targetAt = zonedEpoch(day, h * 3600 + 1800, opts.tz); // mid-hour, the answer comes from the whole hour
     if (targetAt - CLOSE_BEFORE_SEC <= opts.nowEpoch) continue;
     const odds = computeOdds(yesProbability(opts.history?.(h) ?? null, DEFAULT_YES_PROBABILITY.rain_at));
     out.push({

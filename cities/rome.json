@@ -72,11 +72,5 @@
         "url": "https://open-meteo.com/"
       }
     }
-  ],
-  "futureFeeds": [
-    {
-      "id": "viaggiatreno",
-      "note": "Italian trains (Trenitalia/RFI). Only an UNOFFICIAL API exists (ViaggiaTreno): no licence, no documented terms, and it answered 'Access Denied' to datacenter requests in Phase 0 tests. Do not enable without written permission or an official feed."
-    }
   ]
 }

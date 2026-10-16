@@ -1,0 +1,76 @@
+{
+  "id": "seattle",
+  "country": "US",
+  "name": {
+    "it": "Seattle",
+    "en-US": "Seattle",
+    "en-GB": "Seattle",
+    "ja": "シアトル"
+  },
+  "timezone": "America/Los_Angeles",
+  "defaultLocale": "en-US",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 47.6062,
+    "lon": -122.3321
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": false
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "kcm-bus-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://s3.amazonaws.com/kcm-alerts-realtime-prod/tripupdates.pb",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        3
+      ],
+      "licenseVerified": false,
+      "attribution": {
+        "name": "King County Metro (GTFS-realtime feeds)",
+        "license": "King County Metro Terms of Use for developer data: 'limited, revocable licence to use, reproduce, and redistribute the Data'; KC service marks/logo may not be used",
+        "licenseUrl": "https://kingcounty.gov/depts/transportation/metro/travel-options/bus/app-center/developer-resources/terms-of-use.aspx",
+        "url": "https://kingcounty.gov/en/dept/metro/travel-options/bus/app-center"
+      },
+      "staticGtfsUrl": "https://gtfs.sound.obaweb.org/prod/1_gtfs.zip",
+      "note": "King County Metro buses (1,289 trips, 100% id match). Explicit delay + time; header only 16 s old. The static file is the One Bus Away mirror of Metro's feed (agencies: Metro Transit, City of Seattle, Sound Transit), 13 MB. DOUBLE-CHECK: the mirror is not Metro's own host; prefer https://metro.kingcounty.gov/GTFS/google_transit.zip if it serves the same trip ids (not tested)."
+    },
+    {
+      "id": "open-meteo-seattle",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

@@ -1,0 +1,101 @@
+{
+  "id": "germany",
+  "region": true,
+  "country": "DE",
+  "name": {
+    "it": "Germania",
+    "en-US": "Germany",
+    "en-GB": "Germany",
+    "ja": "ドイツ"
+  },
+  "timezone": "Europe/Berlin",
+  "defaultLocale": "en-GB",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 50.1109,
+    "lon": 8.6821
+  },
+  "categories": {
+    "bus": {
+      "enabled": false
+    },
+    "train": {
+      "enabled": true
+    },
+    "weather": {
+      "enabled": false
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "gtfsde-rv-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://realtime.gtfs.de/realtime-free.pb",
+      "requiresKey": null,
+      "pollSeconds": 120,
+      "staleAfterSeconds": 420,
+      "routeTypes": [
+        2
+      ],
+      "heavy": true,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "gtfs.de (DELFI-based aggregated GTFS-Realtime for Germany)",
+        "license": "Realtime page states 'Creative Commons 4.0 (CC BY-SA 4.0)'; the static feeds page only says 'Creative Commons 4.0 license' (variant not named)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "url": "https://gtfs.de/en/realtime/"
+      },
+      "staticGtfsUrl": "https://download.gtfs.de/germany/rv_free/latest.zip",
+      "note": "Regional trains of all Germany (RV, 11 MB static). The real-time file (2 MB, ~9,000 trips, header 17 s old) covers ALL German transport; only the share whose trip_id is in this static file is used (22% at the test, at night). DOUBLE-CHECK the licence: CC BY-SA 4.0 is share-alike (derived data must be shared alike), which may not suit the app; the static page names only 'Creative Commons 4.0'. Trips carry no routeId, the route comes from the static file."
+    },
+    {
+      "id": "gtfsde-fv-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://realtime.gtfs.de/realtime-free.pb",
+      "requiresKey": null,
+      "pollSeconds": 120,
+      "staleAfterSeconds": 420,
+      "routeTypes": [
+        2
+      ],
+      "heavy": true,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "gtfs.de (DELFI-based aggregated GTFS-Realtime for Germany)",
+        "license": "Realtime page states 'Creative Commons 4.0 (CC BY-SA 4.0)'; the static feeds page only says 'Creative Commons 4.0 license' (variant not named)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "url": "https://gtfs.de/en/realtime/"
+      },
+      "staticGtfsUrl": "https://download.gtfs.de/germany/fv_free/latest.zip",
+      "note": "Long-distance trains (ICE/IC, 0.4 MB static). Same real-time file; only 58 of its trips matched at night, expect more in the daytime."
+    },
+    {
+      "id": "open-meteo-germany",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

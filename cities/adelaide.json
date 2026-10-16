@@ -1,0 +1,76 @@
+{
+  "id": "adelaide",
+  "country": "AU",
+  "name": {
+    "it": "Adelaide",
+    "en-US": "Adelaide",
+    "en-GB": "Adelaide",
+    "ja": "アデレード"
+  },
+  "timezone": "Australia/Adelaide",
+  "defaultLocale": "en-GB",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": -34.9285,
+    "lon": 138.6007
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": false
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "adelaide-metro-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_times",
+      "url": "https://gtfs.adelaidemetro.com.au/v1/realtime/trip_updates",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        3
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Government of South Australia / Adelaide Metro",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://data.sa.gov.au/data/dataset/adelaide-metro-general-transit-feed"
+      },
+      "staticGtfsUrl": "https://gtfs.adelaidemetro.com.au/v1/static/latest/google_transit.zip",
+      "note": "The feed carries times only (no delay): the delay is the predicted time minus the timetable. 18 MB static file."
+    },
+    {
+      "id": "open-meteo-adelaide",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

@@ -1,0 +1,232 @@
+{
+  "id": "helsinki",
+  "country": "FI",
+  "name": {
+    "it": "Helsinki",
+    "en-US": "Helsinki",
+    "en-GB": "Helsinki",
+    "ja": "ヘルシンキ"
+  },
+  "timezone": "Europe/Helsinki",
+  "defaultLocale": "en-GB",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 60.1699,
+    "lon": 24.9384
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": true
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": true
+    }
+  },
+  "feeds": [
+    {
+      "id": "hsl-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_times",
+      "url": "https://realtime.hsl.fi/realtime/trip-updates/v2/hsl",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        0,
+        701,
+        702,
+        704,
+        900
+      ],
+      "tripKey": "route_dir_start",
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Helsingin seudun liikenne HSL (Helsinki Region Transport)",
+        "license": "Creative Commons Attribution 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://hri.fi/data/en_GB/dataset/hsl-reittiopas-api"
+      },
+      "staticGtfsUrl": "https://dev.hsl.fi/gtfs/hsl.zip",
+      "note": "Buses and trams of the Helsinki region. The real-time feed has neither tripId nor stop sequence: trips are matched by route, direction, service day and start time (tripKey), stops by stop id. Predicted times only."
+    },
+    {
+      "id": "hsl-train-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_times",
+      "url": "https://realtime.hsl.fi/realtime/trip-updates/v2/hsl",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        1,
+        109
+      ],
+      "tripKey": "route_dir_start",
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Helsingin seudun liikenne HSL (Helsinki Region Transport)",
+        "license": "Creative Commons Attribution 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://hri.fi/data/en_GB/dataset/hsl-reittiopas-api"
+      },
+      "staticGtfsUrl": "https://dev.hsl.fi/gtfs/hsl.zip",
+      "note": "Commuter trains and metro of the Helsinki region, same real-time file as the bus feed (decoded once per run)."
+    },
+    {
+      "id": "digitraffic-tms",
+      "category": "traffic",
+      "type": "digitraffic-tms",
+      "url": "https://tie.digitraffic.fi/api/tms/v1/stations",
+      "requiresKey": null,
+      "pollSeconds": 300,
+      "staleAfterSeconds": 900,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Fintraffic / digitraffic.fi",
+        "license": "CC 4.0 BY",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://www.digitraffic.fi/en/terms-of-service/"
+      },
+      "note": "Road traffic measuring stations around Helsinki: fixed 60-minute average speed per direction. Read every 5 minutes; the value read in the last minutes of an hour is that hour's average. Licence CC 4.0 BY (digitraffic.fi terms of service, read 2026-10-12); attribution: 'Source: Fintraffic / digitraffic.fi, license CC 4.0 BY'. Free-flow speeds were measured at night on 2026-10-12.",
+      "trafficStations": [
+        {
+          "id": 23117,
+          "name": "Vt 1 · Munkkiniemi",
+          "toward": [
+            "Turku",
+            "Helsinki"
+          ],
+          "freeKmh": [
+            44,
+            45
+          ]
+        },
+        {
+          "id": 23153,
+          "name": "Kt 45 · Oulunkylä",
+          "toward": [
+            "Tuusula",
+            "Helsinki"
+          ],
+          "freeKmh": [
+            84,
+            81
+          ]
+        },
+        {
+          "id": 23154,
+          "name": "Vt 4 · Viikinmäki",
+          "toward": [
+            "Lahti",
+            "Helsinki"
+          ],
+          "freeKmh": [
+            90,
+            87
+          ]
+        },
+        {
+          "id": 23103,
+          "name": "Vt 1 · Espoo Huopalahti",
+          "toward": [
+            "Turku",
+            "Helsinki"
+          ],
+          "freeKmh": [
+            93,
+            91
+          ]
+        },
+        {
+          "id": 23118,
+          "name": "St 101 · Espoo Keilaniemi",
+          "toward": [
+            "Itäkeskus",
+            "Länsiväylä"
+          ],
+          "freeKmh": [
+            63,
+            71
+          ]
+        },
+        {
+          "id": 23164,
+          "name": "Vt 3 · Kivihaka",
+          "toward": [
+            "Hämeenlinna",
+            "Helsinki"
+          ],
+          "freeKmh": [
+            61,
+            64
+          ]
+        },
+        {
+          "id": 23101,
+          "name": "Kt 51 · Hanasaari",
+          "toward": [
+            "Espoo",
+            "Helsinki"
+          ],
+          "freeKmh": [
+            78,
+            79
+          ]
+        },
+        {
+          "id": 23116,
+          "name": "St 101 · Leppävaara",
+          "toward": [
+            "Itäkeskus",
+            "Tapiola"
+          ],
+          "freeKmh": [
+            73,
+            72
+          ]
+        },
+        {
+          "id": 23001,
+          "name": "Vt 7 · Rita",
+          "toward": [
+            "Kotka",
+            "Helsinki"
+          ],
+          "freeKmh": [
+            106,
+            102
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open-meteo-helsinki",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

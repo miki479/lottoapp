@@ -11,13 +11,15 @@ Real data, fake credits. Starts in Tokyo; every city is just a config file.
 
 Done: game logic with tests, three cities, feed adapters, Supabase schema, market generator, `ingest`/`resolve`
 Edge Functions running every minute, guest-first PWA in it / en-US / en-GB hosted on Firebase Hosting (see `docs/deploy.md`).
-Next: retention features (rings, streaks, seasons, trophies, leaderboards, share card, push) and calibrating Toei delays.
+Retention: three daily rings (bus, trains, weather) with a +100 bonus, streak with freezes, 9 trophies, monthly
+season ranking (world, country, city, friend groups), shareable profile card, world lobby across all cities,
+live delay board. Next: flash events, push notifications, more cities, calibrating Toei delays.
 
 ## Coverage
 
 | City | Bus/tram | Trains | Weather |
 |---|---|---|---|
-| Tokyo | Toei (positions + timetable), Keisei (explicit delays) | off (ODPT public train feed is nearly empty) | Open-Meteo |
+| Tokyo | Toei (positions + timetable), Keisei (explicit delays), Yokohama Municipal Bus (explicit delays, ODPT key) | off (ODPT public train feed is nearly empty) | Open-Meteo |
 | Rome | off: the feed's terms limit use to travel support | no open feed | Open-Meteo |
 | Amsterdam | off | Dutch railways (GTFS-RT TripUpdates) | Open-Meteo |
 
@@ -35,7 +37,7 @@ unless `ALLOW_UNVERIFIED_FEEDS=1`. Rome's bus feed stays off: its open data page
 | `cities/*.json` | One file per city: timezone, tone, feeds, attribution. Adding a city needs no code change. |
 | `shared/` | Pure TypeScript (no Node/Deno APIs): odds, resolution, wallet, delay maths, feed adapters. Used by tests, Edge Functions and the PWA. |
 | `shared/adapters/` | One adapter per data format (`gtfs-rt`, `open-meteo`). New formats register in `adapters/index.ts`. |
-| `scripts/` | `generate-markets.mjs` (builds the day's markets from static GTFS), `build-functions.mjs` (copies `shared/` + `cities/` for deploy), `smoke-feed.mjs` (live feed through the real adapters). |
+| `scripts/` | `generate-markets.mjs` (builds the day's markets from static GTFS), `build-functions.mjs` (copies `shared/` + `cities/` for deploy), `smoke-feed.mjs` (live feed through the real adapters), `backfill-form.mjs` (one-off: the season's played football matches, for team strengths). |
 | `web/` | The PWA (Vite + Preact). `web/src/i18n` holds one file per language. |
 | `supabase/functions/` | `ingest` and `resolve`, both called every minute by pg_cron with `x-cron-secret`. |
 | `supabase/migrations/` | Postgres schema, RLS, and the transactional `place_bet` / `settle_market` functions. |
@@ -58,6 +60,7 @@ npm test
 npm run typecheck
 npm run web:dev                    # needs SUPABASE_URL + SUPABASE_ANON_KEY
 node scripts/e2e-guest.mjs         # guest flow + security checks against your project
+node scripts/e2e-retention.mjs     # rings, bonus, streak, trophies, ranking, groups
 node scripts/build-functions.mjs   # before `supabase functions deploy`
 ```
 
@@ -71,6 +74,7 @@ Copy `.env.example` to `.env`; never commit real keys.
 Attribution is stored per feed in the city file and must be shown in the app.
 
 - Toei Bus: © 東京都交通局, via 公共交通オープンデータ協議会 (ODPT), CC BY 4.0.
+- Yokohama Municipal Bus: © 横浜市交通局, via ODPT, ODPT Basic License (access token in the secret `ODPT_KEY`; the timetable is downloaded with it, so the market workflow needs `ODPT_KEY` as a repository secret too).
 - Keisei Transit Bus (Keisei Bus Chiba West): © 京成トランジットバス, via ODPT, CC BY 4.0.
 - Dutch trains: OVapi / NDOV open data (free to use, no SLA; do not impersonate the operators).
 - Weather: Weather data by [Open-Meteo.com](https://open-meteo.com/), CC BY 4.0 (free tier is non-commercial use only).

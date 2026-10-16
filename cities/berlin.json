@@ -1,0 +1,106 @@
+{
+  "id": "berlin",
+  "country": "DE",
+  "name": {
+    "it": "Berlino",
+    "en-US": "Berlin",
+    "en-GB": "Berlin",
+    "ja": "ベルリン"
+  },
+  "timezone": "Europe/Berlin",
+  "defaultLocale": "en-GB",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 52.52,
+    "lon": 13.405
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": true
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "vbb-bus-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_times",
+      "url": "https://production.gtfsrt.vbb.de/data",
+      "requiresKey": null,
+      "pollSeconds": 120,
+      "staleAfterSeconds": 420,
+      "routeTypes": [
+        3,
+        700,
+        900
+      ],
+      "heavy": true,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Verkehrsverbund Berlin-Brandenburg (VBB) GTFS-Realtime",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://production.gtfsrt.vbb.de"
+      },
+      "staticGtfsUrl": "https://www.vbb.de/gtfs",
+      "note": "Buses and trams of Berlin-Brandenburg. Predicted times only: delay = predicted - scheduled (static timetable). The real-time feed states CC BY 4.0; the static timetable comes from VBB's datasets page. ~6 MB, so it is polled in its own call (heavy) every 2 minutes; the publisher allows 60 requests a minute."
+    },
+    {
+      "id": "vbb-train-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_times",
+      "url": "https://production.gtfsrt.vbb.de/data",
+      "requiresKey": null,
+      "pollSeconds": 120,
+      "staleAfterSeconds": 420,
+      "routeTypes": [
+        100,
+        109,
+        106,
+        400,
+        2
+      ],
+      "heavy": true,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Verkehrsverbund Berlin-Brandenburg (VBB) GTFS-Realtime",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://production.gtfsrt.vbb.de"
+      },
+      "staticGtfsUrl": "https://www.vbb.de/gtfs",
+      "note": "S-Bahn, regional trains and U-Bahn of Berlin-Brandenburg, same real-time file as the bus feed (decoded once per run)."
+    },
+    {
+      "id": "open-meteo-berlin",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

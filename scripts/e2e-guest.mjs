@@ -20,6 +20,12 @@ try {
   const p2 = await j("/rest/v1/rpc/ensure_profile", { method: "POST", body: JSON.stringify({ p_city: "tokyo", p_locale: "en-US", p_country: "JP" }) }, ANON, token);
   step("ensure_profile is idempotent", p2.body.city_id === "rome");
 
+  // Betting needs a registered account (rule in app_settings): the guest is upgraded in place with e-mail + password.
+  const blocked = await j("/rest/v1/rpc/place_bet", { method: "POST", body: JSON.stringify({ p_market: "00000000-0000-0000-0000-000000000000", p_pick: "yes", p_stake: 50 }) }, ANON, token);
+  step("a guest cannot bet while registration is required", JSON.stringify(blocked.body).includes("registration_required") || blocked.status >= 400);
+  const up = await j("/auth/v1/user", { method: "PUT", body: JSON.stringify({ email: `e2e-guest-${Date.now()}@example.com`, password: "e2e-password-1" }) }, ANON, token);
+  step("guest upgraded in place to an e-mail account", up.status < 300 && up.body.is_anonymous === false, `(status ${up.status})`);
+
   const hack = await j(`/rest/v1/profiles?id=eq.${uid}`, { method: "PATCH", body: JSON.stringify({ credits: 999999 }), headers: { Prefer: "return=representation" } }, ANON, token);
   step("client cannot edit its own credits", hack.status >= 400, `(status ${hack.status})`);
   const hack2 = await j(`/rest/v1/profiles?id=eq.${uid}`, { method: "PATCH", body: JSON.stringify({ timezone: "Pacific/Kiritimati" }), headers: { Prefer: "return=representation" } }, ANON, token);
@@ -34,7 +40,8 @@ try {
   await denied("guest cannot insert bets directly", () => j("/rest/v1/bets", { method: "POST", body: JSON.stringify({ user_id: uid, market_id: "00000000-0000-0000-0000-000000000000", pick: "yes", stake: 10, odds: 99 }) }, ANON, token));
   await denied("anonymous visitor cannot read profiles", () => j("/rest/v1/profiles?select=*", {}, ANON));
 
-  const now = new Date().toISOString();
+  // a market with a few minutes left, so that it does not close between the listing and the bet
+  const now = new Date(Date.now() + 10 * 60_000).toISOString();
   const ms = await j(`/rest/v1/markets?status=eq.open&closes_at=gt.${now}&order=target_at.asc&limit=3&select=id,kind,odds_yes,odds_no,closes_at`, {}, ANON, token);
   step("markets are readable by a guest", Array.isArray(ms.body) && ms.body.length > 0, `(${ms.body.length ?? 0} open)`);
   const m = ms.body[0];

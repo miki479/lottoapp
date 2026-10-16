@@ -1,0 +1,77 @@
+{
+  "id": "szczecin",
+  "country": "PL",
+  "name": {
+    "it": "Stettino",
+    "en-US": "Szczecin",
+    "en-GB": "Szczecin",
+    "ja": "シュチェチン"
+  },
+  "timezone": "Europe/Warsaw",
+  "defaultLocale": "en-GB",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 53.4285,
+    "lon": 14.5528
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": false
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "zditm-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates",
+      "url": "https://www.zditm.szczecin.pl/storage/gtfs/gtfs-rt-trips.pb",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        0,
+        3
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "ZDiTM Szczecin",
+        "license": "CC0 1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "url": "https://www.zditm.szczecin.pl/pl/zditm/dla-programistow"
+      },
+      "staticGtfsUrl": "https://www.zditm.szczecin.pl/storage/gtfs/gtfs.zip",
+      "note": "CC0; only about 2% of trips are over 3 minutes late, so the generator prices from history. Early trips report large negative delays: only delays above the threshold count."
+    },
+    {
+      "id": "open-meteo-szczecin",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

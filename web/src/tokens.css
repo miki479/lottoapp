@@ -1,0 +1,108 @@
+/* ==========================================================================
+   Design tokens: the ONLY place where colours, radii, spacing, type and motion are defined.
+   Dark is the default; the light theme follows the system setting automatically.
+   Every text colour below passes WCAG AA (4.5:1) on every surface it sits on, in both themes (tests/tokens.test.ts checks it).
+   ========================================================================== */
+@font-face { font-family: "Manrope"; font-style: normal; font-weight: 400 800; font-display: swap; src: url(/fonts/Manrope.woff2) format("woff2"); }
+
+:root {
+  color-scheme: dark light;
+
+  /* --- action: the ONE colour of what you can press or have chosen (buttons, selected marks, focus ring, links) --- */
+  --action: #6b5bff;                       /* fills and borders; white text on it passes */
+  --action-strong: #5b49f2;                /* the same fill when hovered */
+  --action-soft: rgba(107, 91, 255, .16);  /* the tint behind a chosen thing */
+  --action-ink: #a79dff;                   /* the same colour as text or icon on a surface */
+  --on-action: #ffffff;                    /* text on an action fill */
+  --ring: var(--action-ink);               /* keyboard focus */
+
+  /* --- live: the ONE colour of what is happening right now (the pulse, the last minutes, something new) --- */
+  --live: #ff78b0;
+  --live-soft: rgba(255, 120, 176, .16);
+  --on-live: #2a0714;                      /* text on a live fill */
+
+  /* --- meaning: gain, loss and delay. Always with a sign, an icon or a word: colour alone never carries it --- */
+  --gain: #7ee8bc;  --gain-soft: rgba(52, 211, 153, .14);
+  --loss: #fca5a5;  --loss-soft: rgba(248, 113, 113, .14);
+  --delay: #f2b655; --delay-soft: rgba(242, 182, 85, .14);
+
+  /* --- category accents: a playful colour per world, never used for gain / loss / delay --- */
+  --c-bus: #ffa31a;     --c-bus-soft: rgba(255, 163, 26, .16);
+  --c-train: #2fc4ff;   --c-train-soft: rgba(47, 196, 255, .16);
+  --c-weather: #7aa3ff; --c-weather-soft: rgba(91, 140, 255, .18);
+  --c-pop: #ff6aa8;     --c-pop-soft: rgba(255, 95, 162, .16);
+  --star: #ffd23f;                         /* gold: coins, stars and flashes (a fill) */
+  --star-ink: #ffd23f;                     /* gold as text */
+  --on-bright: #24110a;                   /* text and icons on the bright fills (gold, orange, hot pink) */
+  --grad-hero: linear-gradient(135deg, #5b49f2 0%, #8e3df0 55%, #d6246f 100%);  /* white text passes along the whole of it */
+
+  /* --- surfaces (no pure black) --- */
+  --bg: #0f1115;
+  --surface: #181b21;
+  --surface-2: #1f232b;
+  --border: #272c35;                       /* hairlines between things */
+  --border-strong: #343b47;
+  --line-ui: #6f788a;                      /* the edge of a field or a switch: 3:1 on every surface */
+  --scrim: rgba(7, 8, 11, .4);
+
+  /* --- text --- */
+  --text: #f3f5f8;
+  --text-2: #b6bdca;
+  --muted: #a1aab9;
+
+  /* --- shape & spacing --- */
+  --radius-card: 16px;
+  --radius-control: 12px;
+  --radius-pill: 999px;
+  --gutter: 20px;       /* side margin */
+  --gap: 12px;          /* between cards */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px;
+  --touch: 48px;        /* a primary control */
+  --hit: 44px;          /* the least a finger gets to press */
+  --max-w: 1120px;
+
+  /* --- type: one family, one scale. Body text is 16px, nothing a person reads is under 12px --- */
+  --font: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fs-xxl: 32px;       /* page titles, the big figure of a tile */
+  --fs-xl: 24px;        /* section titles, the balance, the odds */
+  --fs-lg: 18px;        /* card titles, amounts */
+  --fs-md: 16px;        /* body */
+  --fs-sm: 14px;        /* secondary lines, chips, small buttons */
+  --fs-xs: 12px;        /* details, labels, badges */
+  --fs-hero: 64px;      /* the one huge number of a screen (the result, the stake) */
+  --ls-title: -0.02em;
+  --ls-detail: .06em;
+
+  /* --- motion: short and calm --- */
+  --dur-fast: 150ms;
+  --dur: 220ms;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+
+  --tabbar-h: 64px;
+
+  /* --- the glowing numbers (the stake, a payout): how light they are and the streak that sweeps over them --- */
+  --hot-l: 68%;
+  --sheen: #ffffff;
+  --sheen-gold: #ffffff;
+
+  /* --- how late: severity runs violet -> magenta -> amber (never red or green, those mean lost and won); lightness for the number and for the gauge cells --- */
+  --sev-l: 66%;
+  --sev-fill-l: 66%;
+  --boost: hsl(24 100% 62%);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --action: #5b49f2; --action-strong: #4a38dc; --action-soft: rgba(91, 73, 242, .10); --action-ink: #4a38dc;
+    --live: #b80f52; --live-soft: rgba(184, 15, 82, .08); --on-live: #ffffff;
+    --gain: #0b6e3f;  --gain-soft: #e5f6ee;
+    --loss: #b42318;  --loss-soft: #fdeaea;
+    --delay: #8a4f00; --delay-soft: #fdf1dc;
+    --c-bus: #a84a00; --c-train: #0369a1; --c-weather: #2f56d6; --c-pop: #b80f52;
+    --star-ink: #8a5a00;
+    --hot-l: 38%; --sheen: #2a1670; --sheen-gold: #5c3b00;
+    --sev-l: 34%; --sev-fill-l: 41%; --boost: hsl(24 95% 40%);
+    --bg: #f5f6f8; --surface: #ffffff; --surface-2: #f0f2f5; --border: #e3e6eb; --border-strong: #cfd4dc; --line-ui: #7d8696; --scrim: rgba(16, 24, 40, .4);
+    --text: #101828; --text-2: #475467; --muted: #596275;
+  }
+}

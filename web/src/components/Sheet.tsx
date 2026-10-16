@@ -1,0 +1,90 @@
+import type { ComponentChildren } from "preact";
+import { createPortal } from "preact/compat";
+import { useEffect, useRef } from "preact/hooks";
+
+/** The sheets that are open, the last one on top: Escape closes and Tab stays inside only that one. */
+const OPEN: HTMLElement[] = [];
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Shared page lock (see below). */
+const lock = { n: 0, y: 0, at: -1e9, prev: { overflow: "", position: "", top: "", width: "" } };
+
+/** Bottom sheet on phones, centred dialog on larger screens (`foot`: the last child of the sheet is a sticky foot that sits flush with its bottom edge). Closes on Escape, on outside tap and by dragging down; the keyboard focus stays inside while it is open and goes back where it was when it closes. */
+export function Sheet({ onClose, label, children, foot }: { onClose: () => void; label: string; children: ComponentChildren; foot?: boolean }) {
+  const sheet = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sheet.current;
+    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (el) { OPEN.push(el); el.focus({ preventScroll: true }); }
+    const key = (e: KeyboardEvent) => {
+      if (!el || OPEN[OPEN.length - 1] !== el) return;
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab") return;
+      const items = [...el.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((x) => x.offsetParent !== null), at = document.activeElement;
+      if (!items.length) { e.preventDefault(); return; }
+      const first = items[0]!, last = items[items.length - 1]!;
+      if (!el.contains(at) || (e.shiftKey && (at === first || at === el))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && at === last) { e.preventDefault(); first.focus(); }
+    };
+    addEventListener("keydown", key);
+    // lock the page under the sheet (iOS ignores overflow:hidden on body): freeze it in place and give the scroll position back on close.
+    // The lock is shared: a sheet that opens as another closes (the result after a bet) must not take the frozen page (scrollY 0) as the place to go back to.
+    const b = document.body.style;
+    if (lock.n === 0) {
+      lock.y = performance.now() - lock.at < 800 ? lock.y : scrollY;
+      lock.prev = { overflow: b.overflow, position: b.position, top: b.top, width: b.width };
+      b.overflow = "hidden"; b.position = "fixed"; b.top = `-${lock.y}px`; b.width = "100%";
+    }
+    lock.n++;
+    return () => {
+      removeEventListener("keydown", key);
+      lock.n--;
+      if (lock.n === 0) {
+        const { prev, y } = lock; b.overflow = prev.overflow; b.position = prev.position; b.top = prev.top; b.width = prev.width; lock.at = performance.now();
+        scrollTo(0, y); requestAnimationFrame(() => { if (lock.n === 0) scrollTo(0, y); });
+      }
+      const i = el ? OPEN.indexOf(el) : -1; if (i >= 0) OPEN.splice(i, 1);
+      if (before?.isConnected) before.focus({ preventScroll: true });
+    };
+  }, []);
+  // Pulling the content down while it is scrolled to the top closes the sheet like the handle does, instead of dragging the page below.
+  useEffect(() => {
+    const el = sheet.current; if (!el) return;
+    let y0 = 0, dy = 0, t0 = 0, pulling = false;
+    const start = (e: TouchEvent) => { y0 = e.touches[0]!.clientY; dy = 0; t0 = performance.now(); pulling = false; };
+    const move = (e: TouchEvent) => {
+      const d = e.touches[0]!.clientY - y0;
+      if (!pulling && d > 6 && el.scrollTop <= 0 && !(e.target as HTMLElement).closest("input[type=range], textarea, .leaflet-container")) { pulling = true; y0 = e.touches[0]!.clientY; el.style.transition = "none"; return; }
+      if (!pulling) return;
+      dy = Math.max(0, e.touches[0]!.clientY - y0); el.style.transform = `translateY(${dy}px)`; e.preventDefault();
+    };
+    const end = () => {
+      if (!pulling) return; pulling = false;
+      const fast = dy > 30 && dy / Math.max(1, performance.now() - t0) > 0.6;
+      el.style.transition = "transform 220ms var(--ease)";
+      if (dy > 90 || fast) { el.style.transform = "translateY(110%)"; setTimeout(onClose, 200); } else el.style.transform = "";
+    };
+    el.addEventListener("touchstart", start, { passive: true }); el.addEventListener("touchmove", move, { passive: false }); el.addEventListener("touchend", end); el.addEventListener("touchcancel", end);
+    return () => { el.removeEventListener("touchstart", start); el.removeEventListener("touchmove", move); el.removeEventListener("touchend", end); el.removeEventListener("touchcancel", end); };
+  }, []);
+  // Drag the handle down to close: the sheet follows the finger, and a pull of 90 px (or a quick flick) dismisses it.
+  const drag = useRef<{ y0: number; t0: number; dy: number } | null>(null);
+  const down = (e: PointerEvent) => { drag.current = { y0: e.clientY, t0: performance.now(), dy: 0 }; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); if (sheet.current) sheet.current.style.transition = "none"; };
+  const move = (e: PointerEvent) => { const d = drag.current; if (!d) return; d.dy = Math.max(0, e.clientY - d.y0); if (sheet.current) sheet.current.style.transform = `translateY(${d.dy}px)`; };
+  const up = () => {
+    const d = drag.current; drag.current = null; const el = sheet.current; if (!d || !el) return;
+    const fast = d.dy > 30 && d.dy / Math.max(1, performance.now() - d.t0) > 0.6;
+    el.style.transition = "transform 220ms var(--ease)";
+    if (d.dy > 90 || fast) { el.style.transform = "translateY(110%)"; setTimeout(onClose, 200); } else el.style.transform = "";
+  };
+  // Rendered into <body>: a sheet opened from inside an animated screen would otherwise be positioned relative to that screen, not the window.
+  return createPortal(
+    <div class="scrim" onClick={onClose}>
+      <div class={`sheet ${foot ? "withfoot" : ""}`} ref={sheet} role="dialog" aria-modal="true" aria-label={label} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
+        <div class="grab" aria-hidden="true" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} />
+        {children}
+      </div>
+    </div>,
+    document.body,
+  );
+}

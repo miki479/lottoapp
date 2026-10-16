@@ -1,0 +1,69 @@
+/* "Show stops": the stops of a trip drawn as the departures board of TrainBoard (same black panel, amber lights, from app.css .ledbezel). */
+.stopsbox { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.stopsbox.inbet { margin: -2px 0 6px; padding: 0 6px; }
+.stopsbox .insbtn { align-self: flex-start; }
+
+/* lights: amber is the board's own colour; the delay figures use green / orange / red-orange so they read at a glance in both themes */
+.stopsled { --amber: #ffb000; --amber-dim: #d29a14; --ok: #5be08a; --late: #ff9a1f; --over: #ff7a5a; padding: 10px 10px 8px; }
+.stopsled .num { font-variant-numeric: tabular-nums; }
+
+.stopstop { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 4px 12px; padding-bottom: 8px; margin-bottom: 4px; border-bottom: 1px solid #2a2208; min-height: 34px; }
+.stopsnow { display: flex; flex-direction: column; gap: 1px; color: var(--ok); }
+.stopsnow small { font-size: var(--fs-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--amber-dim); }
+.stopsnow b { font-size: var(--fs-xl); line-height: 1; font-weight: 800; letter-spacing: .02em; white-space: nowrap; }
+.stopsnow b em { font-style: normal; font-size: var(--fs-sm); font-weight: 700; letter-spacing: .04em; }
+.stopsnow.late { color: var(--late); } .stopsnow.over { color: var(--over); }
+.stopstrend { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding-bottom: 2px; color: var(--amber); }
+.stopstrend.better { color: var(--ok); } .stopstrend.worse { color: var(--over); }
+.stopsupd { margin-left: auto; font-size: var(--fs-xs); letter-spacing: .06em; text-transform: uppercase; color: var(--amber-dim); padding-bottom: 3px; }
+.stopsnone { font-size: var(--fs-xs); letter-spacing: .04em; color: var(--amber-dim); line-height: 1.35; }
+
+.stopscols, .stop { display: grid; grid-template-columns: 14px minmax(0, 1fr) 44px 82px; column-gap: 6px; align-items: center; }
+.stopscols { font-size: var(--fs-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--amber-dim); padding: 0 2px 3px; border-bottom: 1px solid #2a2208; }
+.stopscols span:nth-child(3), .stopscols span:nth-child(4) { text-align: right; white-space: nowrap; }
+.stopscols span:nth-child(4) { overflow: hidden; text-overflow: ellipsis; }
+
+.stopslist { list-style: none; margin: 0; padding: 0; max-height: 308px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #4a3a10 transparent; position: relative; }
+.stopslist:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
+.stop { position: relative; padding: 5px 2px 5px; font-size: var(--fs-xs); min-height: 30px; border-bottom: 1px dashed #231c06; }
+.stop:last-child { border-bottom: 0; }
+
+/* the line of the route through the dots */
+.stop::before { content: ""; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #3a2d0a; }
+.stop:first-child::before { top: 50%; } .stop:last-child::before { bottom: 50%; }
+.stop.done::before { background: var(--amber-dim); }
+.stopdot { position: relative; justify-self: center; width: 8px; height: 8px; border-radius: 50%; background: #070707; border: 2px solid #6b4a00; box-sizing: border-box; z-index: 1; }
+.stop.done .stopdot { background: var(--amber-dim); border-color: var(--amber-dim); }
+.stop.current .stopdot { width: 12px; height: 12px; background: var(--amber); border-color: #ffe29a; box-shadow: 0 0 8px var(--amber), 0 0 2px #fff; animation: stopglow 1.4s ease-in-out infinite; }
+.stop.market .stopdot { border-color: var(--amber); }
+@keyframes stopglow { 50% { box-shadow: 0 0 14px var(--amber), 0 0 3px #fff; } }
+
+.stopname { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 5px; min-width: 0; text-transform: uppercase; letter-spacing: .03em; line-height: 1.2; }
+.stopnm { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.stopmark { display: inline-flex; align-self: center; color: var(--amber); } .stopmark svg { display: block; }
+.stophere { flex-basis: 100%; font-size: var(--fs-xs); letter-spacing: .08em; color: #ffe29a; }
+.stopsched { text-align: right; font-size: var(--fs-xs); color: var(--amber-dim); white-space: nowrap; }
+.stopreal { display: inline-flex; align-items: baseline; justify-content: flex-end; gap: 4px; white-space: nowrap; font-size: var(--fs-sm); text-align: right; color: var(--amber); }
+.stopreal b { font-weight: 800; letter-spacing: .02em; } .stopreal small { font-size: var(--fs-xs); font-weight: 700; }
+.stopreal.ok { color: var(--ok); } .stopreal.late { color: var(--late); } .stopreal.over { color: var(--over); }
+/* a prediction is lighter than a fact */
+.stopreal.predicted b, .stopreal.forecast b { font-weight: 600; font-style: italic; }
+.stopreal.predicted { opacity: .9; }
+.stopreal.none { color: #4a3a10; justify-content: flex-end; }
+.stopreal.cancel { font-size: var(--fs-xs); letter-spacing: .08em; text-transform: uppercase; color: var(--over); font-weight: 700; }
+
+.stop.done { opacity: .9; }
+.stop.past:not(.done) .stopreal { opacity: .9; }
+.stop.current { background: linear-gradient(90deg, rgba(255, 176, 0, .2), rgba(255, 176, 0, .05)); box-shadow: inset 2px 0 0 var(--amber); }
+.stop.current .stopname { font-weight: 800; color: #ffe29a; }
+.stop.current .stopsched { color: var(--amber); }
+.stop.market:not(.current) { background: rgba(255, 176, 0, .07); }
+.stop.cancelled .stopnm { text-decoration: line-through; opacity: .8; }
+
+.stopsnote { margin: 6px 0 0; padding-top: 6px; border-top: 1px solid #2a2208; font-size: var(--fs-xs); letter-spacing: .04em; line-height: 1.4; color: var(--amber-dim); text-transform: none; }
+
+@media (max-width: 380px) {
+  .stopscols, .stop { grid-template-columns: 12px minmax(0, 1fr) 40px 74px; column-gap: 5px; }
+  .stop { font-size: var(--fs-xs); } .stopreal { font-size: var(--fs-xs); } .stopsnow b { font-size: var(--fs-xl); }
+}
+@media (prefers-reduced-motion: reduce) { .stop.current .stopdot { animation: none; } }

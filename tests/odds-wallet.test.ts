@@ -36,7 +36,7 @@ describe("wallet", () => {
   it("validates stakes", () => {
     expect(validateStake(50, 1000)).toBe("ok");
     expect(validateStake(MIN_STAKE - 1, 1000)).toBe("too_low");
-    expect(validateStake(MAX_STAKE + 1, 5000)).toBe("too_high");
+    expect(validateStake(MAX_STAKE + 1, 500000)).toBe("too_high");
     expect(validateStake(50, 40)).toBe("insufficient");
     expect(validateStake(10.5, 1000)).toBe("not_integer");
   });
@@ -69,5 +69,31 @@ describe("settlement", () => {
   it("refunds the stake on void, whatever the pick", () => {
     expect(settleBet(bet, "void")).toEqual({ status: "void", payout: 100 });
     expect(settleBet({ ...bet, pick: "no" }, "void")).toEqual({ status: "void", payout: 100 });
+  });
+});
+
+import { boostedPayout } from "../shared/wallet.ts";
+describe("boost", () => {
+  it("doubles the net win", () => { expect(boostedPayout(100, 2)).toBe(300); expect(boostedPayout(100, 3.07)).toBe(100 * 3.07 > 0 ? 307 + 207 : 0); });
+  it("caps the extra at 1000", () => { expect(boostedPayout(500, 15)).toBe(7500 + 1000); });
+});
+
+import { learnedPrior } from "../shared/odds.ts";
+describe("learned starting chance", () => {
+  it("moves the guess toward what happened, more as the sample grows", () => {
+    expect(learnedPrior(0, 0, 0.05)).toBeCloseTo(0.05);
+    expect(learnedPrior(44, 135, 0.05)).toBeGreaterThan(0.28);
+    expect(learnedPrior(1, 28, 0.3)).toBeLessThan(0.12);
+    expect(learnedPrior(0, 500, 0.3)).toBe(0.03);
+  });
+});
+
+import { balanceStakeCap } from "../shared/wallet.ts";
+describe("stake limit that follows the balance", () => {
+  it("all-in is possible for small balances, a quarter of the balance for big ones", () => {
+    expect(balanceStakeCap(800)).toBe(5000);
+    expect(balanceStakeCap(5000)).toBe(5000);
+    expect(balanceStakeCap(41_000)).toBe(10_250);
+    expect(balanceStakeCap(1_000_000)).toBe(250_000);
   });
 });

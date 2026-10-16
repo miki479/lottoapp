@@ -10,20 +10,51 @@ export interface FeedAttribution {
 
 export interface FeedConfig {
   id: string;
-  category: Category;
+  category: Exclude<Category, "nature" | "strike" | "finance" | "culture" | "sport">;
   /** Selects the adapter, e.g. "gtfs-rt", "open-meteo". */
   type: string;
-  /** For gtfs-rt: "vehicle_positions" | "trip_updates". */
+  /** For gtfs-rt: "vehicle_positions" | "trip_updates" (explicit delays) | "trip_updates_times" (predicted times only; delay computed against the static timetable) | "trip_updates_seq" (explicit delay per stop_sequence, stop taken from the static timetable). */
   kind?: string;
   url: string;
   staticGtfsUrl?: string;
+  /** Extra request headers (e.g. a client name required by the provider). Never secrets: those go through requiresKey. */
+  headers?: Record<string, string>;
   /** Name of the environment variable holding the key, or null for open feeds. */
   requiresKey: string | null;
+  /** Where the key goes: "query" (ODPT style, default) or "header" (name in keyHeader, optional keyPrefix such as "Bearer "). */
+  keyIn?: "query" | "header";
+  keyHeader?: string;
+  keyPrefix?: string;
   pollSeconds: number;
   staleAfterSeconds: number;
   delaySemantics?: "last_passed_stop";
+  /** For per-train APIs without a static timetable (ViaggiaTreno): station codes whose departures seed the markets. */
+  stations?: string[];
+  /** Road measuring stations of a traffic feed (type "digitraffic-tms"). */
+  trafficStations?: import("./traffic.ts").TrafficStation[];
   /** Only route types to build markets from (GTFS route_type, e.g. 2 = rail, 3 = bus). */
   routeTypes?: number[];
+  /** The static calendar does not describe today (Renfe): take the trips that appear in the real-time feed as today's service. */
+  useRealtimeTrips?: boolean;
+  /** VehiclePositions feed of the same operator: where each vehicle is (map in "My bets") and, if `occupancy`, how full it is. */
+  vehiclesUrl?: string;
+  /** The vehicles report occupancy_status: "will it be full?" questions, the live indicator and the bonus on delay bets. */
+  occupancy?: boolean;
+  /** Positions are estimated by the provider, not measured (shown as such on the map). */
+  positionsEstimated?: boolean;
+  /** Create questions only on routes that have a tracked trip in the real-time feed right now (otherwise many would end void). */
+  realtimeRoutesOnly?: boolean;
+  /** Local hours [from, to) in which questions are created (a feed that goes quiet at night would void them). */
+  questionsHours?: [number, number];
+  /** The real-time feed has no tripId: trips are matched by route, direction, service day and start time. */
+  tripKey?: "route_dir_start";
+  /** A big feed (Berlin, ~6 MB): polled in its own scheduled call so it cannot slow the others down. */
+  heavy?: boolean;
+  /**
+   * "What is about to pass near me" for a feed whose TripUpdates only number the stops (trip_updates_seq / trip_updates_times): the loader keeps
+   * the stops' timetable for the next days in gtfs_departures. Opt-in because it is a lot of rows; feeds of kind trip_updates need nothing.
+   */
+  nearbyTimetable?: boolean;
   /**
    * True only after someone has read the CURRENT licence/terms of the provider.
    * Unverified feeds are skipped in production unless ALLOW_UNVERIFIED_FEEDS=1.
@@ -36,13 +67,15 @@ export interface FeedConfig {
 
 export interface CityConfig {
   id: string;
+  /** A whole region or country rather than a town: its questions are listed, but it gets no chip of its own in the place picker. */
+  region?: boolean;
   country: string;
   name: Record<string, string>;
   timezone: string;
   defaultLocale: string;
   tone: Record<string, string>;
   location: { lat: number; lon: number };
-  categories: Record<Category, { enabled: boolean }>;
+  categories: Record<Exclude<Category, "nature" | "strike" | "finance" | "culture" | "sport">, { enabled: boolean }>;
   feeds: FeedConfig[];
 }
 

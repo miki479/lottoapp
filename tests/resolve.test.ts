@@ -126,3 +126,120 @@ describe("position feeds that skip a stop between samples", () => {
     expect(resolveEvent(base({ event: ev, delays: [obs({ delaySec: 200 })] }))).toMatchObject({ outcome: "yes" });
   });
 });
+
+import { buildMetricMarkets, metricOdds, thresholdFor, normalCdf } from "../shared/metrics.ts";
+
+describe("metric and quake events", () => {
+  const base = { id: "m", cityId: "tokyo", feedId: "om-tokyo", closesAt: 0, deadlineAt: 10 * 3600 };
+  const feed = { feedId: "om-tokyo", lastOkAt: 100_000 };
+  const ev = { ...base, kind: "metric_gt" as const, category: "weather" as const, metric: "temp" as const, threshold: 20, targetAt: 1800 };
+  it("settles on a reading fetched after its hour ended", () => {
+    const r = resolveEvent({ event: ev, now: 5000, feed, staleAfterSec: 99999, delays: [], weather: [], metrics: [{ feedId: "om-tokyo", metric: "temp", hourStart: 0, value: 21, fetchedAt: 4000 }] });
+    expect(r).toMatchObject({ status: "resolved", outcome: "yes" });
+  });
+  it("does not settle on a value fetched while the hour was still running", () => {
+    const r = resolveEvent({ event: ev, now: 5000, feed, staleAfterSec: 99999, delays: [], weather: [], metrics: [{ feedId: "om-tokyo", metric: "temp", hourStart: 0, value: 25, fetchedAt: 1000 }] });
+    expect(r.status).toBe("pending");
+  });
+  it("voids implausible values after the deadline path", () => {
+    const r = resolveEvent({ event: ev, now: 5000, feed, staleAfterSec: 99999, delays: [], weather: [], metrics: [{ feedId: "om-tokyo", metric: "temp", hourStart: 0, value: 999, fetchedAt: 4000 }] });
+    expect(r).toMatchObject({ status: "void", reason: "implausible_data" });
+  });
+  const q = { ...base, feedId: "usgs", kind: "quake_m" as const, category: "nature" as const, minMag: 5, targetAt: 21600 };
+  it("quake: waits for USGS to settle, then counts events", () => {
+    expect(resolveEvent({ event: q, now: 21700, feed, staleAfterSec: 1, delays: [], weather: [], quake: { count: 2, maxMag: 5.4 } }).status).toBe("pending");
+    expect(resolveEvent({ event: q, now: 21600 + 1900, feed, staleAfterSec: 1, delays: [], weather: [], quake: { count: 0, maxMag: null } })).toMatchObject({ status: "resolved", outcome: "no" });
+    expect(resolveEvent({ event: q, now: 21600 + 1900, feed, staleAfterSec: 1, delays: [], weather: [], quake: { count: 1, maxMag: 5.2 } })).toMatchObject({ status: "resolved", outcome: "yes" });
+  });
+  it("quake: unreadable USGS is pending, then void after the deadline", () => {
+    expect(resolveEvent({ event: q, now: 21600 + 1900, feed, staleAfterSec: 1, delays: [], weather: [], quake: null }).status).toBe("pending");
+    expect(resolveEvent({ event: q, now: 10 * 3600 + 1, feed, staleAfterSec: 1, delays: [], weather: [], quake: null }).status).toBe("void");
+  });
+  it("pricing: a threshold at the forecast is a near coin flip; higher thresholds pay more", () => {
+    expect(normalCdf(0)).toBeCloseTo(0.5, 2);
+    expect(thresholdFor("temp", 17.4)).toBe(17);
+    const fair = metricOdds("temp", 17, 17), high = metricOdds("temp", 17, 21);
+    expect(fair.pYes).toBeCloseTo(0.5, 1);
+    expect(high.yes).toBeGreaterThan(fair.yes);
+  });
+  it("builds at most one market per metric per day and skips useless ones", () => {
+    const now = Date.UTC(2026, 5, 1, 0, 0) / 1000;
+    const series = (v: number) => new Map(Array.from({ length: 96 }, (_, i) => [Math.floor(now / 3600) * 3600 + i * 3600, v]));
+    const out = buildMetricMarkets({ id: "x", tz: "UTC", nowEpoch: now, series: { temp: series(18), uv: series(0.5), snow: series(0), wind: series(30) } });
+    expect(out.filter((m) => m.params.metric === "temp")).toHaveLength(2);
+    expect(out.some((m) => m.params.metric === "uv" || m.params.metric === "snow")).toBe(false);
+    expect(out.filter((m) => m.params.metric === "wind")).toHaveLength(2);
+  });
+});
+
+import { buildStrikeMarkets, parseStrikeRss } from "../shared/strikes.ts";
+describe("strikes", () => {
+  const xml = `<rss><channel><item><title>Data inizio: 04/12/2026 - Settore: Generale - Rilevanza: Nazionale - Regione:  Italia - Provincia: Tutte</title><description><![CDATA[modalità: 24 ORE<br/>Data fine: 04/12/2026<br/>Settore: Generale<br/>Rilevanza: Nazionale<br/>Regione:  Italia<br/>Sindacati: CUB<br/>Categoria interessata: TUTTI I SETTORI]]></description><guid>http://scioperi.mit.gov.it/8600</guid></item><item><title>Data inizio: 12/10/2026 - Settore: Trasporto pubblico locale - Rilevanza: Locale - Regione: Puglia</title><description><![CDATA[Settore: Trasporto pubblico locale<br/>Rilevanza: Locale]]></description><guid>http://scioperi.mit.gov.it/8568</guid></item></channel></rss>`;
+  it("parses the ministry feed and offers only national train strikes", () => {
+    const s = parseStrikeRss(xml);
+    expect(s).toHaveLength(2);
+    expect(s[0]).toMatchObject({ date: "2026-12-04", sector: "Generale", scope: "Nazionale", unions: "CUB" });
+    const now = Date.UTC(2026, 9, 12) / 1000;
+    const m = buildStrikeMarkets(s, now);
+    expect(m).toHaveLength(1);
+    expect(m[0]).toMatchObject({ kind: "strike_on", dedupe_key: "mit|http://scioperi.mit.gov.it/8600|2026-12-04" });
+    expect(Date.parse(m[0]!.closes_at)).toBeLessThan(Date.parse(m[0]!.target_at));
+  });
+  it("garbage feed yields nothing; strikes too soon or too far are skipped", () => {
+    expect(parseStrikeRss("<html>blocked</html>")).toEqual([]);
+    expect(buildStrikeMarkets(parseStrikeRss(xml), Date.UTC(2026, 11, 3) / 1000)).toEqual([]);
+  });
+  const ev = { id: "s", cityId: "rome", feedId: "mit-scioperi", closesAt: 0, targetAt: 100, deadlineAt: 50000, kind: "strike_on" as const, category: "strike" as const, guid: "g", date: "2026-12-04" };
+  const feed = { feedId: "mit-scioperi", lastOkAt: 100 };
+  it("resolves yes if still listed, no if gone, pending if the list is unreadable", () => {
+    expect(resolveEvent({ event: ev, now: 200, feed, staleAfterSec: 9999, delays: [], weather: [], strike: { present: true } })).toMatchObject({ status: "resolved", outcome: "yes" });
+    expect(resolveEvent({ event: ev, now: 200, feed, staleAfterSec: 9999, delays: [], weather: [], strike: { present: false } })).toMatchObject({ status: "resolved", outcome: "no" });
+    expect(resolveEvent({ event: ev, now: 200, feed, staleAfterSec: 9999, delays: [], weather: [], strike: null }).status).toBe("pending");
+  });
+});
+
+import { buildTrafficMarkets, parseDigitrafficTms, thresholdKmh } from "../shared/traffic.ts";
+describe("road traffic", () => {
+  const sensors = (spd: number, win: string, measured: string) => ({ sensorValues: [
+    { name: "KESKINOPEUS_60MIN_KIINTEA_SUUNTA1", value: spd, timeWindowStart: win, measuredTime: measured },
+    { name: "OHITUKSET_60MIN_KIINTEA_SUUNTA1", value: 420, timeWindowStart: win, measuredTime: measured },
+    { name: "KESKINOPEUS_60MIN_KIINTEA_SUUNTA2", value: null, timeWindowStart: win, measuredTime: measured },
+  ] });
+  it("reads the hourly average per direction and skips empty ones", () => {
+    const r = parseDigitrafficTms(sensors(52, "2026-10-12T14:00:00Z", "2026-10-12T14:58:01Z"));
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ direction: 1, avgKmh: 52, vehicles: 420 });
+    expect(r[0]!.measuredAt - r[0]!.windowStart).toBe(58 * 60 + 1);
+    expect(parseDigitrafficTms({})).toEqual([]);
+  });
+  it("threshold is 75% of free flow, in 5 km/h steps", () => {
+    expect(thresholdKmh(90)).toBe(70);
+    expect(thresholdKmh(44)).toBe(35);
+    expect(thresholdKmh(106)).toBe(80);
+  });
+  const hour = Date.UTC(2026, 9, 12, 14) / 1000;
+  const ev = { id: "t", cityId: "helsinki", feedId: "digitraffic-tms", closesAt: hour, targetAt: hour + 1800, deadlineAt: hour + 3600 + 4 * 3600, kind: "traffic_speed_lt" as const, category: "traffic" as const, siteId: "23117", direction: 1 as const, thresholdKmh: 60 };
+  const base = { event: ev, feed: { feedId: "digitraffic-tms", lastOkAt: hour + 3500 }, staleAfterSec: 900, delays: [], weather: [] };
+  const obs = (avg: number, measuredOffset: number, vehicles = 400) => [{ feedId: "digitraffic-tms", siteId: "23117", direction: 1, hourStart: hour, avgKmh: avg, vehicles, measuredAt: hour + measuredOffset }];
+  it("resolves yes when the hour's average fell under the threshold, no otherwise", () => {
+    expect(resolveEvent({ ...base, now: hour + 3700, traffic: obs(48, 3500) })).toMatchObject({ status: "resolved", outcome: "yes" });
+    expect(resolveEvent({ ...base, now: hour + 3700, traffic: obs(75, 3500) })).toMatchObject({ status: "resolved", outcome: "no" });
+  });
+  it("does not settle on a reading taken early in the hour, or on too few vehicles", () => {
+    expect(resolveEvent({ ...base, now: hour + 3700, traffic: obs(48, 1800) }).status).toBe("pending");
+    expect(resolveEvent({ ...base, now: hour + 3700, traffic: obs(48, 3500, 2) }).status).toBe("pending");
+    expect(resolveEvent({ ...base, now: hour + 3700, traffic: [] }).status).toBe("pending");
+    expect(resolveEvent({ ...base, now: hour + 6 * 3600, traffic: [] })).toMatchObject({ status: "void" });
+  });
+  it("offers rush-hour questions per station direction, only for hours still ahead", () => {
+    const st = [{ id: 23117, name: "Vt 1 · Munkkiniemi", toward: ["Turku", "Helsinki"] as [string, string], freeKmh: [44, 45] as [number, number] }];
+    const now = Date.UTC(2026, 9, 12, 3, 0) / 1000; // 06:00 in Helsinki: today's 8:00 and 17:00 are ahead
+    const m = buildTrafficMarkets({ cityId: "helsinki", feedId: "digitraffic-tms", tz: "Europe/Helsinki", nowEpoch: now, stations: st });
+    expect(m).toHaveLength(8); // 2 directions x 2 rush hours x (today, tomorrow)
+    expect(m[0]).toMatchObject({ kind: "traffic_speed_lt", category: "traffic" });
+    expect(m.every((x) => Date.parse(x.closes_at) < Date.parse(x.target_at))).toBe(true);
+    expect(new Set(m.map((x) => x.dedupe_key)).size).toBe(8);
+    const late = buildTrafficMarkets({ cityId: "helsinki", feedId: "digitraffic-tms", tz: "Europe/Helsinki", nowEpoch: Date.UTC(2026, 9, 12, 20, 0) / 1000, stations: st });
+    expect(late).toHaveLength(4); // only tomorrow
+  });
+});

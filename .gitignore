@@ -8,3 +8,6 @@ supabase/.temp/
 *.log
 .DS_Store
 supabase/functions/_shared/
+firebase-debug.log
+*-debug.log
+.firebase/

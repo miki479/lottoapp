@@ -417,3 +417,5 @@ enabled = true
 verify_jwt = false
 [functions.resolve]
 verify_jwt = false
+[functions.snapshot]
+verify_jwt = false

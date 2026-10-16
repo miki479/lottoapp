@@ -1,0 +1,120 @@
+{
+  "id": "venezia",
+  "country": "IT",
+  "name": {
+    "it": "Venezia",
+    "en-US": "Venice",
+    "en-GB": "Venice",
+    "ja": "ヴェネツィア"
+  },
+  "timezone": "Europe/Rome",
+  "defaultLocale": "it",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 45.4408,
+    "lon": 12.3155
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": false
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "actv-aut-trip-updates",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_seq",
+      "url": "https://proxy.busone.app/actv-aut/gtfs-rt/trip-updates.pb",
+      "headers": {
+        "X-BusOne-Client": "LateLotto (play-money game; https://latelotto.web.app)",
+        "X-BusOne-Use": "personal"
+      },
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 300,
+      "routeTypes": [
+        3,
+        0
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "BusOne (https://busone.app) and ACTV",
+        "license": "BusOne free non-commercial licence (individuals and nonprofits; attribution \"BusOne (https://busone.app) and the original data source\"), read 2026-10-12; ACTV open data reprocessed by BusOne (the operator's open-data licence applies)",
+        "licenseUrl": "https://proxy.busone.app/#data-terms",
+        "url": "https://proxy.busone.app/actv-aut/readme"
+      },
+      "staticGtfsUrl": "https://proxy.busone.app/actv-aut/gtfs.zip",
+      "note": "NON-COMMERCIAL ONLY: the BusOne terms allow individuals and nonprofits; any other organisation, or any commercial use, needs prior written permission (info@busone.app). Ask BusOne and ACTV before a public or commercial launch. Trip updates carry a delay per stop_sequence; the stop and its scheduled time come from the static timetable.",
+      "realtimeRoutesOnly": true,
+      "questionsHours": [
+        5,
+        23
+      ],
+      "heavy": true,
+      "vehiclesUrl": "https://proxy.busone.app/actv-aut/gtfs-rt/vehicle-positions.pb"
+    },
+    {
+      "id": "actv-nav-trip-updates",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_seq",
+      "url": "https://proxy.busone.app/actv-nav/gtfs-rt/trip-updates.pb",
+      "headers": {
+        "X-BusOne-Client": "LateLotto (play-money game; https://latelotto.web.app)",
+        "X-BusOne-Use": "personal"
+      },
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 300,
+      "routeTypes": [
+        4
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "BusOne (https://busone.app) and ACTV (waterbus)",
+        "license": "BusOne free non-commercial licence (individuals and nonprofits; attribution \"BusOne (https://busone.app) and the original data source\"), read 2026-10-12; ACTV open data reprocessed by BusOne (the operator's open-data licence applies)",
+        "licenseUrl": "https://proxy.busone.app/#data-terms",
+        "url": "https://proxy.busone.app/actv-nav/readme"
+      },
+      "staticGtfsUrl": "https://proxy.busone.app/actv-nav/gtfs.zip",
+      "note": "NON-COMMERCIAL ONLY: the BusOne terms allow individuals and nonprofits; any other organisation, or any commercial use, needs prior written permission (info@busone.app). Ask BusOne and ACTV (waterbus) before a public or commercial launch. Trip updates carry a delay per stop_sequence; the stop and its scheduled time come from the static timetable. Waterbuses (vaporetti) count as buses here.",
+      "realtimeRoutesOnly": true,
+      "questionsHours": [
+        5,
+        23
+      ],
+      "vehiclesUrl": "https://proxy.busone.app/actv-nav/gtfs-rt/vehicle-positions.pb"
+    },
+    {
+      "id": "open-meteo-venezia",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

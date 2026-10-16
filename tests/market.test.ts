@@ -24,3 +24,12 @@ describe("market rows", () => {
     expect(historyKey(marketToEvent(row), "Asia/Tokyo").hourOfDay).toBe(16);
   });
 });
+
+describe("regional earthquake markets", () => {
+  it("reads the bounding box and keeps worldwide questions box-free", () => {
+    const base = { id: "q", city_id: "world", category: "nature" as const, kind: "quake_m", feed_id: "usgs", closes_at: "2026-10-12T09:00:00Z", target_at: "2026-10-12T12:00:00Z", deadline_at: "2026-10-12T22:00:00Z" };
+    const jp = marketToEvent({ ...base, params: { minMag: 5, region: "jp", bbox: [24, 46, 122, 146] } });
+    expect(jp).toMatchObject({ kind: "quake_m", minMag: 5, bbox: [24, 46, 122, 146] });
+    expect((marketToEvent({ ...base, params: { minMag: 5 } }) as { bbox?: unknown }).bbox).toBeUndefined();
+  });
+});

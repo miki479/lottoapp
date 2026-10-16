@@ -1,11 +1,12 @@
+import { ALL_BETS, isPlayerBet, isTwoBet } from "./sport.ts";
 import { tzOffsetSec } from "./time.ts";
-import type { DelayEvent, MarketEvent, RainEvent } from "./types.ts";
+import type { DelayEvent, MarketEvent, MetricEvent, OccupancyEvent, QuakeEvent, RainEvent, MatchEvent, StrikeEvent, TickEvent, TrafficEvent } from "./types.ts";
 
 /** A row of public.markets as returned by Supabase (timestamps are ISO strings). */
 export interface MarketRow {
   id: string;
   city_id: string;
-  category: "bus" | "train" | "weather" | "traffic";
+  category: "bus" | "train" | "weather" | "traffic" | "nature" | "strike" | "finance" | "culture" | "sport";
   kind: string;
   feed_id: string;
   params: Record<string, unknown>;
@@ -43,6 +44,37 @@ export function marketToEvent(row: MarketRow): MarketEvent {
     const ev: RainEvent = { ...base, kind: "rain_at", category: "weather", minMm: Number(p.minMm ?? 0.1) };
     return ev;
   }
+  if (row.kind === "metric_gt") {
+    const ev: MetricEvent = { ...base, kind: "metric_gt", category: "weather", metric: p.metric as MetricEvent["metric"], threshold: Number(p.threshold) };
+    return ev;
+  }
+  if (row.kind === "quake_m") {
+    const ev: QuakeEvent = { ...base, kind: "quake_m", category: "nature", minMag: Number(p.minMag), circle: Array.isArray(p.circle) && p.circle.length === 3 ? (p.circle.map(Number) as [number, number, number]) : undefined, bbox: Array.isArray(p.bbox) && p.bbox.length === 4 ? (p.bbox.map(Number) as [number, number, number, number]) : undefined };
+    return ev;
+  }
+  if (row.kind === "strike_on") {
+    const ev: StrikeEvent = { ...base, kind: "strike_on", category: "strike", guid: String(p.guid), date: String(p.date) };
+    return ev;
+  }
+  if (row.kind === "traffic_speed_lt") {
+    const ev: TrafficEvent = { ...base, kind: "traffic_speed_lt", category: "traffic", siteId: String(p.siteId), direction: Number(p.direction) === 2 ? 2 : 1, thresholdKmh: Number(p.thresholdKmh) };
+    return ev;
+  }
+  if (row.kind === "tick_gt") {
+    const cat = row.category === "finance" || row.category === "culture" ? row.category : "nature";
+    const ev: TickEvent = { ...base, kind: "tick_gt", category: cat, series: String(p.series), threshold: Number(p.threshold) };
+    return ev;
+  }
+  if (row.kind === "match_bet") {
+    // an unknown bet is kept as it is: it can never be evaluated, so the question is refunded instead of being settled as a home win
+    const bet = String(p.bet) as MatchEvent["bet"];
+    const ev: MatchEvent = { ...base, kind: "match_bet", category: "sport", eventId: String(p.eventId), bet, league: String(p.league ?? "") };
+    return ev;
+  }
+  if (row.kind === "bus_full") {
+    const ev: OccupancyEvent = { ...base, kind: "bus_full", category: "bus", tripId: String(p.tripId), stopId: String(p.stopId), cmp: p.cmp === "lte" ? "lte" : "gte", level: Number(p.level) };
+    return ev;
+  }
   throw new Error(`Unknown market kind: ${row.kind}`);
 }
 
@@ -51,5 +83,12 @@ export function historyKey(ev: MarketEvent, tz: string): { kind: string; routeId
   const local = ev.targetAt + tzOffsetSec(ev.targetAt, tz);
   const hourOfDay = Math.floor((((local % 86400) + 86400) % 86400) / 3600);
   if (ev.kind === "rain_at") return { kind: ev.kind, routeId: "", hourOfDay, threshold: 0 };
+  if (ev.kind === "metric_gt") return { kind: ev.kind, routeId: ev.metric, hourOfDay, threshold: Math.round(ev.threshold * 10) };
+  if (ev.kind === "traffic_speed_lt") return { kind: ev.kind, routeId: `${ev.siteId}|${ev.direction}`, hourOfDay, threshold: ev.thresholdKmh };
+  if (ev.kind === "tick_gt") return { kind: ev.kind, routeId: ev.series, hourOfDay, threshold: Math.round(ev.threshold) };
+  if (ev.kind === "match_bet") return { kind: ev.kind, routeId: ev.bet, hourOfDay, threshold: 0 };
+  if (ev.kind === "strike_on") return { kind: ev.kind, routeId: "", hourOfDay, threshold: 0 };
+  if (ev.kind === "bus_full") return { kind: ev.kind, routeId: ev.cmp, hourOfDay, threshold: ev.level };
+  if (ev.kind === "quake_m") return { kind: ev.kind, routeId: "", hourOfDay, threshold: Math.round(ev.minMag * 10) + (ev.bbox || ev.circle ? 1000 : 0) };
   return { kind: ev.kind, routeId: ev.routeId, hourOfDay, threshold: ev.thresholdSec };
 }

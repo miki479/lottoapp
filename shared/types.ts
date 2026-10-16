@@ -1,11 +1,18 @@
-export type Category = "bus" | "train" | "weather" | "traffic";
+export type Category = "bus" | "train" | "weather" | "traffic" | "nature" | "strike" | "finance" | "culture" | "sport";
 export type Outcome = "yes" | "no";
 export type BetStatus = "open" | "won" | "lost" | "void";
 
 /** What the house offers. One row per bettable question. */
 export type MarketEvent =
   | DelayEvent
-  | RainEvent;
+  | RainEvent
+  | MetricEvent
+  | QuakeEvent
+  | StrikeEvent
+  | TrafficEvent
+  | TickEvent
+  | MatchEvent
+  | OccupancyEvent;
 
 interface BaseEvent {
   id: string;
@@ -36,12 +43,96 @@ export interface DelayEvent extends BaseEvent {
 
 export type BusDelayEvent = DelayEvent;
 
+/** "Will this bus be this full (or this empty) when it reaches this stop?" From the vehicle's occupancy_status. */
+export interface OccupancyEvent extends BaseEvent {
+  kind: "bus_full";
+  category: "bus";
+  tripId: string;
+  stopId: string;
+  /** "lte": the level must be at most `level` (empty); "gte": at least `level` (few seats, standing). Levels: see shared/occupancy.ts. */
+  cmp: "lte" | "gte";
+  level: number;
+}
+
+/** What a vehicle reported about how full it was, as stored by the ingest job. */
+export interface OccupancyObservation {
+  feedId: string;
+  tripId: string;
+  /** When the vehicle reported it (epoch seconds). */
+  at: number;
+  level: number;
+}
+
 export interface RainEvent extends BaseEvent {
   kind: "rain_at";
   category: "weather";
   /** Rain means precipitation >= this many mm in the observed hour. */
   minMm: number;
 }
+
+/** "Will <metric> be at least <threshold> in the hour containing the target?" (temperature, gusts, snow, UV, air quality). */
+export interface MetricEvent extends BaseEvent {
+  kind: "metric_gt";
+  category: "weather";
+  metric: "temp" | "wind" | "snow" | "uv" | "aqi" | "hail";
+  threshold: number;
+}
+
+/** "Will an earthquake of magnitude >= minMag strike anywhere between closesAt and targetAt?" */
+export interface QuakeEvent extends BaseEvent {
+  kind: "quake_m";
+  category: "nature";
+  minMag: number;
+  /** Optional box [minLat, maxLat, minLon, maxLon]; without it the question is about the whole world. */
+  bbox?: [number, number, number, number];
+  /** Optional circle [lat, lon, radiusKm] (player-made questions). */
+  circle?: [number, number, number];
+}
+
+export interface MetricObservation {
+  feedId: string;
+  metric: "temp" | "wind" | "snow" | "uv" | "aqi";
+  hourStart: number;
+  value: number;
+  /** When it was fetched (epoch seconds): a reading fetched before its hour ended is still a forecast. */
+  fetchedAt?: number;
+}
+
+/** "Is this announced strike still on at the start of its day (not revoked, not moved)?" */
+export interface StrikeEvent extends BaseEvent {
+  kind: "strike_on";
+  category: "strike";
+  guid: string;
+  /** Announced start day, YYYY-MM-DD. */
+  date: string;
+}
+
+/** "Will the average speed at this road station, in this direction, over the hour be below the threshold?" */
+export interface TrafficEvent extends BaseEvent {
+  kind: "traffic_speed_lt";
+  category: "traffic";
+  siteId: string;
+  direction: 1 | 2;
+  thresholdKmh: number;
+}
+
+/** One hour of one station direction, as stored by the ingest job. */
+export interface TrafficObservation {
+  feedId: string;
+  siteId: string;
+  direction: number;
+  hourStart: number;
+  avgKmh: number;
+  vehicles: number;
+  /** When the provider last updated the value. */
+  measuredAt: number;
+}
+
+/** Whether a strike is still listed, with the same start day, on the ministry's list. */
+export interface StrikeReading { present: boolean }
+
+/** Earthquakes reported by USGS in a window. */
+export interface QuakeReading { count: number; maxMag: number | null }
 
 export interface DelayObservation {
   feedId: string;
@@ -66,6 +157,8 @@ export interface WeatherObservation {
   /** Start of the observed hour (epoch seconds). */
   hourStart: number;
   precipitationMm: number;
+  /** When it was fetched (epoch seconds). A value fetched before its hour ended is a forecast, not a measurement. */
+  fetchedAt?: number;
 }
 
 export interface FeedHealth {
@@ -80,3 +173,27 @@ export type Resolution =
   | { status: "void"; reason: VoidReason };
 
 export type VoidReason = "feed_down" | "no_observation" | "implausible_data";
+
+/** "Will this number be >= threshold at the instant `targetAt`?" (coin price, Kp index, daily page views). */
+export interface TickEvent extends BaseEvent {
+  kind: "tick_gt";
+  category: "finance" | "nature" | "culture";
+  series: string;
+  threshold: number;
+}
+
+export interface TickObservation {
+  series: string;
+  at: number;
+  value: number;
+  fetchedAt: number;
+}
+
+/** "Will this bet on this football match come true?" Settled from the final score. */
+export interface MatchEvent extends BaseEvent {
+  kind: "match_bet";
+  category: "sport";
+  eventId: string;
+  bet: import("./sport.ts").MatchBet | import("./sport.ts").PlayerBet | import("./sport.ts").TwoBet;
+  league?: string;
+}

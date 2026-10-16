@@ -1,0 +1,124 @@
+import type { Locale } from "../i18n/index.ts";
+
+/**
+ * Name and caption of each figurine card, in order (card n is row n of shared/cards.ts).
+ * Row: [name it, name en, name ja, caption it, caption en, caption ja]. English is neutral and serves en-US and en-GB.
+ * Real places are fine, nothing here names a club, a game, a publisher or a brand.
+ */
+const ROWS: readonly (readonly [string, string, string, string, string, string])[] = [
+  // transport 1-24
+  ["Linea Yamanote", "Yamanote Line", "山手線", "Gira in tondo e arriva lo stesso.", "Goes in circles and still gets there.", "ぐるぐる回っても、ちゃんと着く。"],
+  ["Tram 8, Roma", "Tram 8, Rome", "ローマの8番トラム", "Percorso panoramico. Anche l’attesa.", "A scenic route. The wait is scenic too.", "景色のいい路線。待ち時間も景色のうち。"],
+  ["Ciclabile di Amsterdam", "Amsterdam bike lane", "アムステルダムの自転車道", "Più veloce del tram, e non scioperano mai.", "Faster than the tram, and it never goes on strike.", "トラムより速くて、ストライキもない。"],
+  ["Bus notturno", "Night bus", "深夜バス", "Passa ogni 40 minuti, o ogni 80. Chi conta?", "Comes every 40 minutes, or every 80. Who’s counting?", "40分おき、のはず。80分おきのこともある。"],
+  ["Amsterdam–Utrecht", "Amsterdam–Utrecht", "アムステルダム～ユトレヒト", "Mezz’ora, sulla carta.", "Half an hour, on paper.", "時刻表の上では30分。"],
+  ["Roma Termini", "Roma Termini", "ローマ・テルミニ駅", "Tutti ci passano, nessuno ci arriva davvero.", "Everyone passes through, nobody really arrives.", "みんな通り過ぎるだけ。"],
+  ["Stazione di Tokyo", "Tokyo Station", "東京駅", "Trovare il binario vale come allenamento.", "Finding your platform counts as exercise.", "ホームを探すだけで運動になる。"],
+  ["Incrocio di Shibuya", "Shibuya Crossing", "渋谷スクランブル交差点", "Tremila persone, zero scontri. Magia.", "Thousands of people, zero collisions. Magic.", "何千人もが渡って、衝突ゼロ。まるで魔法。"],
+  ["Raccordo Anulare", "Rome ring road", "ローマの環状道路", "Tutti vanno da nessuna parte, insieme.", "Everyone is going nowhere, together.", "みんなで仲良く渋滞中。"],
+  ["Cambio binario", "Platform change", "ホーム変更", "Annunciato due secondi prima della partenza.", "Announced two seconds before departure.", "発車の2秒前にお知らせします。"],
+  ["Cinque minuti di ritardo", "Five minutes late", "5分遅れ", "In ritardo per l’orologio, puntuale per il cuore.", "Late by the clock, on time in spirit.", "時計の上では遅れ、気持ちの上では定刻。"],
+  ["Ora di punta", "Rush hour", "ラッシュアワー", "La città vista da una sardina.", "The city, as seen by a sardine.", "イワシの缶詰気分で通勤。"],
+  ["Bus sostitutivo", "Replacement bus", "代行バス", "Il treno è in pausa. Tu no.", "The train is on a break. You are not.", "電車はお休み。あなたは出勤。"],
+  ["Cambio a Shinjuku", "Changing at Shinjuku", "新宿での乗り換え", "Segui i cartelli. Poi segui altri cartelli.", "Follow the signs. Then follow other signs.", "案内に従って進む。次の案内にも従う。"],
+  ["Tokyo–Osaka", "Tokyo–Osaka", "東京～大阪", "Due ore e mezza. Quaranta secondi di ritardo e un inchino.", "Two and a half hours. Forty seconds late, and a deep bow.", "2時間半。遅れは40秒、そして深いお辞儀。"],
+  ["Milano–Roma", "Milan–Rome", "ミラノ～ローマ", "Veloce, fino all’ultimo tratto.", "Fast, right up to the final stretch.", "最後の区間までは速い。"],
+  ["Amsterdam–Bruxelles", "Amsterdam–Brussels", "アムステルダム～ブリュッセル", "Attraversa un confine e un orario.", "Crosses a border and a timetable.", "国境と時刻表をまたぐ。"],
+  ["Treno notte per la Sicilia", "Night train to Sicily", "シチリア行き夜行列車", "Si addormenta a Roma, si sveglia in ritardo.", "Falls asleep in Rome, wakes up late.", "ローマで眠りにつき、遅れて目を覚ます。"],
+  ["Sciopero generale", "General strike", "ゼネスト", "L’unico servizio sempre puntuale.", "The one service that is always on time.", "いつも時間通りの唯一のサービス。"],
+  ["Soppresso", "Cancelled", "運休", "La parola più sincera del tabellone.", "The most honest word on the board.", "電光掲示板で一番正直な言葉。"],
+  ["Il treno fantasma", "The ghost train", "幻の電車", "Sul tabellone. Non sui binari.", "On the board. Not on the tracks.", "掲示板にはいる。線路にはいない。"],
+  ["Il bus in anticipo", "The early bus", "早く来たバス", "È partito prima che arrivassi. Ovviamente.", "It left before you arrived. Obviously.", "あなたが着く前に出発済み。当然です。"],
+  ["L’ultimo treno", "The last train", "終電", "Corri. O trova un taxi, o un amico.", "Run. Or find a taxi, or a friend.", "走るか、タクシーか、友達を探すか。"],
+  ["Puntuale al secondo", "Exactly on time", "秒単位の定刻", "Visto una volta. Nessuno ti crede.", "Seen once. Nobody believes you.", "一度だけ見た。誰も信じてくれない。"],
+  // weather 25-36
+  ["Pioggerella", "Light drizzle", "小雨", "Troppo poca per l’ombrello, abbastanza per i capelli.", "Too little for an umbrella, enough for your hair.", "傘を開くほどじゃない。髪には十分。"],
+  ["Ombrello dimenticato", "Forgotten umbrella", "忘れた傘", "Quando sei uscito c’era il sole.", "It was sunny when you left.", "家を出たときは晴れていた。"],
+  ["Cielo sereno", "Clear sky", "快晴", "La previsione ci ha azzeccato. Segna la data.", "The forecast got it right. Mark the date.", "予報が当たった日。日付を記録しよう。"],
+  ["Vento forte", "Strong wind", "強風", "Il tuo ombrello ha lasciato la chat.", "Your umbrella has left the chat.", "傘がグループを退会しました。"],
+  ["Cielo coperto", "Overcast", "曇り空", "Né pioggia né sole. Scelta coraggiosa.", "Neither rain nor sun. A bold choice.", "雨でも晴れでもない。思い切った選択。"],
+  ["Giornata afosa", "Muggy day", "蒸し暑い日", "La tua maglietta ha delle opinioni.", "Your shirt has opinions.", "シャツが文句を言っている。"],
+  ["Prima neve", "First snow", "初雪", "I treni si fermano. Le foto cominciano.", "Trains stop. Photos start.", "電車は止まり、写真撮影が始まる。"],
+  ["Temporale", "Thunderstorm", "雷雨", "Spettacolo di luci gratis, senza biglietto.", "A free light show, no ticket needed.", "無料の光のショー。チケット不要。"],
+  ["Arcobaleno", "Rainbow", "虹", "Il cielo chiede scusa per la pioggia.", "The sky says sorry for the rain.", "空からの、雨のお詫び。"],
+  ["Stagione dei tifoni", "Typhoon season", "台風シーズン", "Tutto è in ritardo, anche le scuse.", "Everything is delayed, even the apologies.", "すべてが遅れる。お詫びも含めて。"],
+  ["Nebbia fitta", "Dense fog", "濃霧", "Visibilità: un tram.", "Visibility: one tram.", "視界はトラム1台分。"],
+  ["Neve a Roma", "Snow in Rome", "ローマの雪", "Ogni tanto succede. La città si ferma.", "It happens now and then. The city stops.", "たまに降る。街は完全に止まる。"],
+  // nature 37-46
+  ["Monte Fuji", "Mount Fuji", "富士山", "Sempre lì. A volte dietro una nuvola.", "Always there. Sometimes behind a cloud.", "いつもそこにいる。雲に隠れることもある。"],
+  ["Marea", "Tide", "潮の満ち引き", "Puntuale due volte al giorno. Affidabile.", "On time twice a day. Reliable.", "1日2回、きっちり来る。頼れる存在。"],
+  ["Fioritura dei ciliegi", "Cherry blossom", "桜", "Una settimana di fama, poi si torna al lavoro.", "A week of fame, then back to work.", "主役は1週間だけ。あとは日常に戻る。"],
+  ["Luna piena", "Full moon", "満月", "Accusata di tutto, colpevole di poco.", "Blamed for everything, guilty of little.", "何かと濡れ衣を着せられる。"],
+  ["Piccione in stazione", "Station pigeon", "駅のハト", "Conosce l’orario meglio di te.", "Knows the timetable better than you.", "時刻表をあなたより知っている。"],
+  ["Magnitudo 4", "Magnitude 4", "マグニチュード4", "Una scossa che ti fa controllare il telefono.", "A shake that makes you check your phone.", "思わずスマホを確認する揺れ。"],
+  ["Pioggia di stelle", "Meteor shower", "流星群", "Esprimi un desiderio. Non sul treno.", "Make a wish. Not about the train.", "願い事をどうぞ。電車のことは除く。"],
+  ["Etna", "Mount Etna", "エトナ山", "Fuma in pace. Chiude l’aeroporto.", "Smokes in peace. Closes the airport.", "のんびり煙を吐いて、空港を閉める。"],
+  ["Aurora boreale", "Northern lights", "オーロラ", "Vale il freddo. Non il ritardo.", "Worth the cold. Not worth the delay.", "寒さに見合う価値あり。遅延には見合わない。"],
+  ["Eclissi totale", "Total eclipse", "皆既日食", "Il giorno diventa notte. L’orario non se ne accorge.", "Day turns into night. The timetable doesn’t notice.", "昼が夜になる。時刻表は気づかない。"],
+  // sport 47-58
+  ["Autogol", "Own goal", "オウンゴール", "Il passaggio più generoso della partita.", "The most generous pass of the match.", "試合で一番太っ腹なパス。"],
+  ["Tempo di recupero", "Stoppage time", "アディショナルタイム", "Quattro minuti. Diventano sempre sette.", "Four minutes. It always becomes seven.", "4分のはずが、いつも7分。"],
+  ["Fuorigioco", "Offside", "オフサイド", "Spiegato tre volte. Ancora poco chiaro.", "Explained three times. Still unclear.", "3回説明された。まだ分からない。"],
+  ["Giorno di derby", "Derby day", "ダービーの日", "Amicizie sospese fino alle 18.", "Friendships on hold until 6 p.m.", "友情は午後6時まで一時停止。"],
+  ["Preparazione estiva", "Pre-season", "プレシーズン", "Ad agosto sono tutti campioni.", "Everyone is a champion in August.", "8月はみんなチャンピオン。"],
+  ["Fotofinish", "Photo finish", "写真判定", "Deciso per un naso e una telecamera.", "Decided by a nose and a camera.", "鼻の差と、カメラが決める。"],
+  ["Calci di rigore", "Penalty shootout", "PK戦", "Un dischetto, mille opinioni.", "One spot, a thousand opinions.", "ペナルティスポット1つに、千の意見。"],
+  ["Rimonta", "Comeback", "逆転劇", "Persa all’80’, leggenda al 90’.", "Hopeless at 80 minutes, legendary at 90.", "80分は絶望、90分には伝説。"],
+  ["La sfavorita", "The underdog", "ダークホース", "Le quote dicevano no. Il campo ha detto sì.", "The odds said no. The pitch said yes.", "オッズは無理と言った。ピッチは違った。"],
+  ["Cartellino rosso", "Red card", "レッドカード", "Doccia anticipata, lunga spiegazione.", "Early shower, long explanation.", "早めのシャワー、長い言い訳。"],
+  ["Canestro sulla sirena", "Buzzer beater", "ブザービーター", "Ultimo secondo, prima fila di infarti.", "Last second, front row of heart attacks.", "最後の1秒、観客は心臓バクバク。"],
+  ["La stagione perfetta", "The perfect season", "完全無欠のシーズン", "Tutte vinte. Improbabile, quindi leggendaria.", "Every match won. Unlikely, so legendary.", "全試合勝利。ありえないから伝説。"],
+  // games 59-68
+  ["Stick difettoso", "Controller drift", "コントローラーのドリフト", "Il tuo personaggio va a sinistra. Da solo.", "Your character walks left. All by itself.", "キャラが勝手に左へ歩いていく。"],
+  ["Fallimento critico", "Critical fail", "クリティカルミス", "Un uno naturale. Tirato due volte.", "A natural one. Rolled twice.", "出目は1。しかも2回連続。"],
+  ["Missione secondaria", "Side quest", "サブクエスト", "Quaranta ore dopo, la trama è in pausa.", "Forty hours later, the main plot is on hold.", "40時間後、本編はお預け。"],
+  ["Punto di salvataggio", "Save point", "セーブポイント", "Il posto più tranquillo di ogni mondo.", "The calmest place in any world.", "どの世界でも一番落ち着く場所。"],
+  ["Schermata di caricamento", "Loading screen", "ロード画面", "Suggerimento: abbi pazienza.", "Tip: be patient.", "ヒント：気長に待ちましょう。"],
+  ["Boss finale", "Final boss", "ラスボス", "Battuto al quattordicesimo tentativo.", "Beaten on the fourteenth attempt.", "14回目の挑戦でようやく撃破。"],
+  ["Speedrun", "Speedrun", "スピードラン", "Finito prima che tu finissi il tutorial.", "Finished before you finished the tutorial.", "チュートリアルより早くクリア。"],
+  ["Bottino raro", "Rare loot", "レアドロップ", "Cade una volta su mille. Ovviamente è un cucchiaio.", "Drops one time in a thousand. Of course it’s a spoon.", "千回に一度のドロップ。なぜかスプーン。"],
+  ["Serata co-op", "Co-op night", "協力プレイの夜", "Amicizia messa alla prova. Soprattutto l’amicizia.", "Friendship put to the test. Mostly the friendship.", "試されるのは、主に友情。"],
+  ["Run perfetta", "Flawless run", "ノーミスクリア", "Zero danni, zero morti, zero testimoni.", "No damage, no deaths, no witnesses.", "ノーダメージ、ノーデス、目撃者なし。"],
+  // finance 69-78
+  ["Spiccioli", "Loose change", "小銭", "Sempre in fondo alla borsa.", "Always at the bottom of the bag.", "いつもカバンの底にいる。"],
+  ["Salvadanaio", "Piggy bank", "貯金箱", "Pesante di speranza, leggero di monete.", "Heavy with hope, light on coins.", "希望は重く、中身は軽い。"],
+  ["Prezzo del carburante", "Fuel price", "ガソリン価格", "Sale come un razzo, scende come una lumaca.", "Rises like a rocket, falls like a snail.", "上がるときはロケット、下がるときはカタツムリ。"],
+  ["Lunedì nero", "Bad Monday", "最悪の月曜日", "I grafici concordano con il tuo umore.", "The charts agree with your mood.", "チャートはあなたの気分と同意見。"],
+  ["Scontrino conservato", "Receipt, kept", "取っておいたレシート", "Garanzia scaduta ieri.", "Warranty expired yesterday.", "保証は昨日で切れた。"],
+  ["Tasso di cambio", "Exchange rate", "為替レート", "Diverso ogni volta che guardi.", "Different every time you look.", "見るたびに違う数字。"],
+  ["Barile di petrolio", "Barrel of oil", "原油バレル", "Oro nero, umore nero.", "Black gold, black mood.", "黒い金、どんより気分。"],
+  ["Mercato toro", "Bull market", "強気相場", "Sono tutti geni. Fino a martedì.", "Everyone is a genius. Until Tuesday.", "みんな天才。火曜日までは。"],
+  ["Bitcoin", "Bitcoin", "ビットコイン", "Oro digitale, nervi molto reali.", "Digital gold, very real nerves.", "デジタルの金、神経はリアル。"],
+  ["Lingotto d’oro", "Gold bar", "金の延べ棒", "Brilla su uno scaffale, non fa niente, vince lo stesso.", "Shines on a shelf, does nothing, wins anyway.", "棚で光るだけ。何もしないのに勝ち。"],
+  // culture 79-90
+  ["Tormentone", "Earworm", "耳に残る曲", "Tre note, in testa per una settimana.", "Three notes, stuck for a week.", "たった3音が1週間頭から離れない。"],
+  ["Maratona di serie", "Binge night", "一気見の夜", "Ancora un episodio. Sono le tre.", "Just one more episode. It’s 3 a.m.", "あと1話だけ。気づけば午前3時。"],
+  ["Popcorn al cinema", "Cinema popcorn", "映画館のポップコーン", "Costa più del biglietto.", "Costs more than the ticket.", "チケットより高い。"],
+  ["Serata karaoke", "Karaoke night", "カラオケの夜", "Sicurezza: 100%. Intonazione: discutibile.", "Confidence: 100%. Pitch: debatable.", "自信は100%。音程は要相談。"],
+  ["Libro da leggere", "Unread book", "積ん読", "Comprato con le migliori intenzioni.", "Bought with the best intentions.", "買ったときはやる気満々だった。"],
+  ["Notiziario del traffico", "Traffic report", "交通情報", "Ti racconta quello che già vedi.", "Tells you what you can already see.", "見えている景色をわざわざ教えてくれる。"],
+  ["Colpo di scena", "Plot twist", "どんでん返し", "Nessuno se l’aspettava. Tutti dicono di sì.", "Nobody saw it coming. Everyone says they did.", "誰も予想しなかった。みんな予想してたと言う。"],
+  ["Bis", "Encore", "アンコール", "Escono tutti. Tornano tutti.", "Everyone leaves. Everyone comes back.", "みんな帰ったふりをして、戻ってくる。"],
+  ["Finale di stagione", "Season finale", "シーズン最終回", "Finisce di nuovo sul più bello.", "Ends on a cliffhanger. Again.", "また気になるところで終わった。"],
+  ["Capolavoro", "Masterpiece", "傑作", "Tutti in fila, nessuno la guarda più di dieci secondi.", "Everyone queues, nobody looks for more than ten seconds.", "みんな並ぶ。誰も10秒以上は見ない。"],
+  ["Disco in vinile", "Vinyl record", "レコード盤", "Il suono della pazienza, da girare a metà.", "The sound of patience, flipped halfway.", "忍耐の音。途中でひっくり返す。"],
+  ["Standing ovation", "Standing ovation", "スタンディングオベーション", "Tutti in piedi. Anche i più scettici.", "Everybody on their feet. Even the doubters.", "全員が総立ち。疑っていた人まで。"],
+  // law 91-100
+  ["Silenzio in aula", "Order in court", "静粛に", "Detto a voce alta.", "Said loudly.", "大きな声で言われた。"],
+  ["Timbro", "Rubber stamp", "ハンコ", "Tump. Approvato. Da qualche parte.", "Thud. Approved. Somewhere.", "ポン。どこかで承認された。"],
+  ["Caratteri minuscoli", "Fine print", "小さな文字", "Nessuno la legge. Tutti accettano.", "Nobody reads it. Everyone agrees.", "誰も読まない。全員が同意する。"],
+  ["Multa per sosta", "Parking ticket", "駐車違反の切符", "Un piccolo souvenir sotto il tergicristallo.", "A little souvenir under the wiper.", "ワイパーの下の小さなお土産。"],
+  ["Scadenza", "Deadline", "締め切り", "Si avvicina più in fretta di te.", "Approaches faster than you do.", "あなたより速く近づいてくる。"],
+  ["Parlamento", "Parliament", "国会", "Discute per ore, decide in minuti.", "Debates for hours, decides in minutes.", "何時間も議論して、数分で決める。"],
+  ["Giorno delle elezioni", "Election day", "投票日", "Una persona, una matita.", "One person, one pencil.", "一人一票、一本の鉛筆。"],
+  ["Giusto processo", "Fair trial", "公正な裁判", "Richiede tempo, ed è il bello.", "Takes time, which is the point.", "時間はかかる。それが肝心。"],
+  ["Nuova norma", "New regulation", "新しい規則", "Pagina 412, comma 7, nota 3.", "Page 412, paragraph 7, footnote 3.", "412ページ、第7項、注3。"],
+  ["Sentenza definitiva", "Final verdict", "最終判決", "Definitiva. Davvero definitiva.", "Final. Really final.", "これで決着。本当に決着。"],
+];
+
+const COL: Record<Locale, number> = { it: 0, "en-US": 1, "en-GB": 1, ja: 2 };
+/** Card n (1..100): its name in the player's language. */
+export const cardName = (n: number, locale: Locale): string => ROWS[n - 1]?.[COL[locale]] ?? "";
+/** Card n (1..100): its short ironic caption. */
+export const cardCaption = (n: number, locale: Locale): string => ROWS[n - 1]?.[3 + COL[locale]] ?? "";
+export const CARD_TEXT_ROWS = ROWS.length;

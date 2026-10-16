@@ -1,0 +1,41 @@
+// Player-made questions against the real project; deletes the test user and its markets.   node scripts/e2e-market-offer.mjs
+import { supabaseUrl } from "./lib-env.mjs";
+const U = supabaseUrl(), ANON = process.env.SUPABASE_ANON_KEY, SRV = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const j = async (path, init = {}, token, key = ANON) => { const r = await fetch(`${U}${path}`, { ...init, headers: { apikey: key, "Content-Type": "application/json", Authorization: `Bearer ${token ?? key}`, ...(init.headers ?? {}) } }); const t = await r.text(); let body = null; try { body = t ? JSON.parse(t) : null; } catch { body = t; } return { status: r.status, body }; };
+const ok = (c, m) => { console.log(c ? "ok  " : "FAIL", m); if (!c) process.exitCode = 1; };
+const email = `e2e-mo-${Date.now()}@example.com`, password = "E2e-pass-" + Math.random().toString(36).slice(2);
+const created = await j("/auth/v1/admin/users", { method: "POST", body: JSON.stringify({ email, password, email_confirm: true }) }, SRV, SRV);
+const uid = created.body?.id; ok(!!uid, "test user created");
+const login = await j("/auth/v1/token?grant_type=password", { method: "POST", body: JSON.stringify({ email, password }) });
+const tok = login.body.access_token;
+await j("/rest/v1/rpc/ensure_profile", { method: "POST", body: JSON.stringify({ p_city: "rome", p_locale: "it", p_country: "IT" }) }, tok);
+const offer = (b, t = tok) => j("/functions/v1/market-offer", { method: "POST", body: JSON.stringify(b) }, t);
+const now = Math.floor(Date.now() / 1000), at = now + 3 * 3600;
+const g = await j("/auth/v1/signup", { method: "POST", body: "{}" });
+ok((await offer({ type: "tick", series: "btc", at, threshold: 80000 }, g.body.access_token)).status === 403, "guest cannot create");
+ok((await offer({ type: "tick", series: "doge", at, threshold: 1 })).status === 400, "unknown series refused");
+ok((await offer({ type: "tick", series: "btc", at: now + 60, threshold: 80000 })).status === 400, "too-soon time refused");
+const pv = await offer({ type: "tick", series: "btc", at, threshold: 0, preview: true }); ok(pv.status === 422 || pv.status === 400, `zero threshold refused (${pv.status})`);
+const ref = (await offer({ type: "tick", series: "btc", at, threshold: 1, preview: true })).body?.reference;
+{ const r = await offer({ type: "tick", series: "btc", at, threshold: 1000000 }); ok(r.status === 422, `absurd threshold refused as too certain (${r.status} ${JSON.stringify(r.body).slice(0, 80)})`); }
+const p = await offer({ type: "tick", series: "btc", at, threshold: ref ?? 80000, preview: true }); ok(p.status === 200 && p.body.preview.odds_yes >= 1.1, `fair preview, odds ${p.body?.preview?.odds_yes}/${p.body?.preview?.odds_no}`);
+const c = await offer({ type: "tick", series: "btc", at, threshold: ref }); ok(c.status === 200 && c.body.market?.params?.custom === "true", "market created");
+const c2 = await offer({ type: "tick", series: "btc", at, threshold: ref }); ok(c2.body?.market?.id === c.body?.market?.id && c2.body.existing, "same question is not duplicated");
+const mid = c.body?.market?.id;
+const cityPv = await offer({ type: "metric", placeId: "rome", metric: "temp", dayOffset: 1, hour: 15, threshold: 1, preview: true });
+ok(cityPv.status === 422 && typeof cityPv.body?.forecast === "number", `weather: absurd line refused (forecast ${cityPv.body?.forecast})`);
+const fine = await offer({ type: "metric", placeId: "rome", metric: "temp", dayOffset: 1, hour: 15, threshold: Math.round(cityPv.body.forecast), preview: true });
+ok(fine.status === 200 && fine.body.preview.odds_yes >= 1.1, `weather: fair preview, odds ${fine.body?.preview?.odds_yes}/${fine.body?.preview?.odds_no}`);
+ok((await offer({ type: "metric", placeId: "nowhere", metric: "temp", dayOffset: 1, hour: 15, threshold: 10, preview: true })).status === 400, "weather: unknown place refused");
+ok((await j("/rest/v1/rpc/register_share", { method: "POST", body: JSON.stringify({ p_market: mid }) }, tok)).status < 300, "share registered");
+const tr = await j("/rest/v1/rpc/trending_markets", { method: "POST", body: JSON.stringify({ p_limit: 20 }) });
+ok(tr.status === 200 && tr.body.some((r) => r.market_id === mid), "new player market is eligible for trending");
+const fx = (await j("/rest/v1/markets?kind=eq.match_bet&status=eq.open&select=params&order=closes_at.desc&limit=1")).body?.[0]?.params;
+if (fx) {
+  const pv1 = await offer({ type: "match", eventId: fx.eventId, bet: "over_2_5", preview: true }); ok(pv1.status === 200 && pv1.body.preview.odds_yes >= 1.1, `football: goals line previewed (${pv1.status})`);
+  const pv2 = await offer({ type: "match", eventId: fx.eventId, bet: "ht_home", preview: true });
+  ok(pv2.status === 200 || (pv2.status === 503 && pv2.body?.error === "details_unavailable"), `football: half-time bet is offered only when its source works (${pv2.status})`);
+  ok((await offer({ type: "match", eventId: fx.eventId, bet: "made_up", preview: true })).status === 400, "football: unknown bet refused");
+} else console.log("skip football (no open match)");
+if (mid) await j(`/rest/v1/markets?id=eq.${mid}`, { method: "DELETE" }, SRV, SRV);
+await j(`/auth/v1/admin/users/${uid}`, { method: "DELETE" }, SRV, SRV);

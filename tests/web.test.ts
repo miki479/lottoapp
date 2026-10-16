@@ -1,3 +1,7 @@
+import { nextMilestone } from "../shared/rewards.ts";
+import { currencySymbol, money, resultAmount } from "../web/src/lib/format.ts";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { MESSAGES } from "../web/src/i18n/index.ts";
 import { pickCity, pickLocale, type CityInfo } from "../web/src/lib/detect.ts";
@@ -10,10 +14,11 @@ describe("locale detection", () => {
     expect(pickLocale(["en-AU"])).toBe("en-GB");
     expect(pickLocale(["en-US"])).toBe("en-US");
     expect(pickLocale(["en"])).toBe("en-US");
+    expect(pickLocale(["ja-JP", "en-US"])).toBe("ja");
   });
   it("skips languages we have no copy for and falls back to en-US", () => {
-    expect(pickLocale(["ja-JP", "it"])).toBe("it");
-    expect(pickLocale(["ja-JP"])).toBe("en-US");
+    expect(pickLocale(["fr-FR", "it"])).toBe("it");
+    expect(pickLocale(["fr-FR"])).toBe("en-US");
     expect(pickLocale([])).toBe("en-US");
   });
 });
@@ -58,7 +63,7 @@ describe("i18n", () => {
   });
   it("copy is written per audience, not just translated", () => {
     expect(MESSAGES["en-US"].tabs.bus).not.toBe(MESSAGES["en-GB"].tabs.bus);
-    expect(MESSAGES["en-US"].empty.mine).not.toBe(MESSAGES["en-GB"].empty.mine);
+    expect(MESSAGES["en-US"].bets.empty.body).not.toBe(MESSAGES["en-GB"].bets.empty.body);
   });
 });
 
@@ -83,10 +88,37 @@ describe("market text", () => {
   });
   it("asks about rain with the city and time", () => {
     const rain: MarketRow = { ...m, kind: "rain_at", category: "weather", params: {} };
-    expect(question(rain, MESSAGES.it, "it", "Roma", "Europe/Rome", now)).toBe("Pioverà a Roma alle 15:49?");
+    expect(question(rain, MESSAGES.it, "it", "Roma", "Europe/Rome", now)).toBe("Pioverà a Roma tra le 15:00 e le 16:00?");
   });
   it("counts minutes to closing without going negative", () => {
     expect(minutesUntil("2026-10-11T13:39:00Z", Date.parse("2026-10-11T13:00:00Z"))).toBe(39);
     expect(minutesUntil("2026-10-11T13:39:00Z", Date.parse("2026-10-11T14:00:00Z"))).toBe(0);
   });
 });
+
+describe("play money and rewards", () => {
+  it("shows the currency of the audience", () => {
+    expect(money(1000, "en-US")).toBe("$1,000");
+    expect(money(1000, "en-GB")).toBe("£1,000");
+    expect(money(1000, "it").replace(/\s/g, " ")).toBe("1.000 €");
+    expect(currencySymbol("it")).toBe("€");
+  });
+  it("formats outcomes with sign", () => {
+    expect(resultAmount("won", 50, 200, "en-US")).toBe("+$150");
+    expect(resultAmount("lost", 50, 0, "en-US")).toBe("−$50");
+  });
+  it("finds the next streak reward", () => {
+    expect(nextMilestone(0)).toEqual({ day: 3, bonus: 50 });
+    expect(nextMilestone(3)).toEqual({ day: 7, bonus: 150 });
+    expect(nextMilestone(30)).toBeNull();
+  });
+});
+
+describe("the disclaimer", () => {
+  const files = (dir: string): string[] => readdirSync(dir).flatMap((f) => { const p = join(dir, f); return statSync(p).isDirectory() ? files(p) : /\.(tsx?|html)$/.test(f) ? [p] : []; });
+  it("is written once in the screens: in the footer (the share image is not a screen)", () => {
+    const users = files("web/src").filter((f) => !f.includes("/i18n/") && readFileSync(f, "utf8").includes("disclaimerShort")).map((f) => f.replace(/^web\/src\//, ""));
+    expect(users.sort()).toEqual(["components/AppFooter.tsx", "lib/share.ts"]);
+  });
+});
+

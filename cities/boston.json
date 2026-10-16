@@ -1,0 +1,100 @@
+{
+  "id": "boston",
+  "country": "US",
+  "name": {
+    "it": "Boston",
+    "en-US": "Boston",
+    "en-GB": "Boston",
+    "ja": "ボストン"
+  },
+  "timezone": "America/New_York",
+  "defaultLocale": "en-US",
+  "tone": {
+    "it": "ironico",
+    "en-US": "cheeky",
+    "en-GB": "dry"
+  },
+  "location": {
+    "lat": 42.3601,
+    "lon": -71.0589
+  },
+  "categories": {
+    "bus": {
+      "enabled": true
+    },
+    "train": {
+      "enabled": true
+    },
+    "weather": {
+      "enabled": true
+    },
+    "traffic": {
+      "enabled": false
+    }
+  },
+  "feeds": [
+    {
+      "id": "mbta-bus-trip-update",
+      "category": "bus",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_times",
+      "url": "https://cdn.mbta.com/realtime/TripUpdates.pb",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        3
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "MassDOT / MBTA (Massachusetts Bay Transportation Authority)",
+        "license": "MassDOT Developers License Agreement (free use, acknowledge MassDOT as the provider)",
+        "licenseUrl": "https://cdn.mbta.com/sites/default/files/2023-08/mbta-massdot-develop-license-agreement.pdf",
+        "url": "https://www.mbta.com/developers"
+      },
+      "staticGtfsUrl": "https://cdn.mbta.com/MBTA_GTFS.zip",
+      "note": "MBTA buses. Predicted times (arrival.time) minus the static timetable; licence: MassDOT Developers License Agreement (free, acknowledge MassDOT), read 2026-10-12. Trip ids match the static GTFS (879/882 checked)."
+    },
+    {
+      "id": "mbta-train-trip-update",
+      "category": "train",
+      "type": "gtfs-rt",
+      "kind": "trip_updates_times",
+      "url": "https://cdn.mbta.com/realtime/TripUpdates.pb",
+      "requiresKey": null,
+      "pollSeconds": 60,
+      "staleAfterSeconds": 240,
+      "routeTypes": [
+        0,
+        1,
+        2
+      ],
+      "licenseVerified": true,
+      "attribution": {
+        "name": "MassDOT / MBTA (Massachusetts Bay Transportation Authority)",
+        "license": "MassDOT Developers License Agreement (free use, acknowledge MassDOT as the provider)",
+        "licenseUrl": "https://cdn.mbta.com/sites/default/files/2023-08/mbta-massdot-develop-license-agreement.pdf",
+        "url": "https://www.mbta.com/developers"
+      },
+      "staticGtfsUrl": "https://cdn.mbta.com/MBTA_GTFS.zip",
+      "note": "MBTA subway, light rail and commuter rail, same real-time file as the buses."
+    },
+    {
+      "id": "open-meteo-boston",
+      "category": "weather",
+      "type": "open-meteo",
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "requiresKey": null,
+      "pollSeconds": 3600,
+      "staleAfterSeconds": 10800,
+      "licenseVerified": true,
+      "attribution": {
+        "name": "Open-Meteo.com",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://open-meteo.com/"
+      }
+    }
+  ],
+  "futureFeeds": []
+}

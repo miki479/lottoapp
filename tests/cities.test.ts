@@ -33,14 +33,19 @@ describe("feed licence gate", () => {
   it("skips feeds whose licence is unverified unless opted in", () => {
     const rome = load("rome");
     // Rome's bus category is switched off on purpose (its terms limit use to travel support)...
+    // The ViaggiaTreno train feed is described but off (no licence): even switching the category on needs the explicit opt-in.
     expect(usableFeeds(rome, true).map((f) => f.id)).toEqual(["open-meteo-rome"]);
-    // ...and even if someone switched it on, the unverified feed stays blocked by default.
+    // Whole-Italy trains live in their own "italia" file: the licensed (BusOne) feeds run, the unlicensed ViaggiaTreno one needs the explicit opt-in.
+    const it = load("italia");
+    expect(usableFeeds(it, false).map((f) => f.id)).toEqual(["trenitalia-trip-updates", "italo-trip-updates"]);
+    expect(usableFeeds(it, true).map((f) => f.id)).toEqual(["trenitalia-trip-updates", "italo-trip-updates", "it-train-viaggiatreno"]);
+    // ...and even if someone switched the bus on, the unverified feed stays blocked by default.
     const enabled = { ...rome, categories: { ...rome.categories, bus: { enabled: true } } };
     expect(usableFeeds(enabled, false).map((f) => f.id)).toEqual(["open-meteo-rome"]);
     expect(usableFeeds(enabled, true).map((f) => f.id)).toContain("rome-trip-update");
   });
   it("does not use feeds of disabled categories", () => {
-    expect(usableFeeds(load("tokyo"), true).every((f) => f.category !== "traffic" && f.category !== "train")).toBe(true);
+    expect(usableFeeds(load("kumamoto"), true).every((f) => f.category !== "traffic" && f.category !== "train")).toBe(true);
   });
   it("only uses feeds whose licence has been read", () => {
     for (const n of ["tokyo", "amsterdam"]) expect(usableFeeds(load(n), false).length).toBeGreaterThan(0);
