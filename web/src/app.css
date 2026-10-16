@@ -1713,3 +1713,5 @@ textarea.field { resize: vertical; min-height: 84px; }
 @keyframes shopglow { 0%, 100% { filter: drop-shadow(0 0 0 transparent); transform: none; } 50% { filter: drop-shadow(0 0 7px var(--action)); transform: scale(1.12) rotate(-6deg); } }
 @media (prefers-reduced-motion: reduce) { .shopbtn.new { animation: none; } }
 @media (max-width: 479px) { .hdr-tools .voicebtn { display: none; } }
+.chip.chipx { margin-left: -8px; padding: 0 10px; min-width: var(--hit); justify-content: center; color: var(--muted); }
+.chip.chipx:hover, .chip.chipx:focus-visible { color: var(--loss); }
