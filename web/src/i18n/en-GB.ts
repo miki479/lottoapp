@@ -211,7 +211,7 @@ const enGB: Messages = {
     requestSent: "Request sent",
     nowFriends: "You are friends now",
     noTrophies: "No trophies yet",
-    av: {"conductor": "Conductor", "busbot": "Busbot", "cloud": "Cloudy", "fox": "Fox", "ball": "Ball", "bolt": "Bolt", "alien": "Alien", "astro": "Astronaut", "clock": "Alarm clock", "kandinsky": "Abstract"},
+    av: {"conductor": "Conductor", "busbot": "Busbot", "cloud": "Cloudy", "fox": "Fox", "ball": "Ball", "bolt": "Bolt", "alien": "Alien", "astro": "Astronaut", "clock": "Alarm clock", "kandinsky": "Abstract", "robot": "Robot", "panda": "Panda", "wizard": "Wizard", "samurai": "Samurai", "dragon": "Dragon", "lion": "Lion King"},
     deco: {"copper": "Copper", "bronze": "Bronze", "silver": "Silver", "gold": "Gold", "diamond": "Diamond", "amethyst": "Amethyst", "platinum": "Platinum", "mithril": "Mithril", "orichalcum": "Orichalcum", "adamantium": "Adamantium", "jade": "Jade", "ruby": "Ruby", "sapphire": "Sapphire", "obsidian": "Obsidian", "opal": "Opal"},
     rarity: {"common": "Common", "uncommon": "Uncommon", "rare": "Rare", "epic": "Epic", "legendary": "Legendary", "mythic": "Mythic"},
   },

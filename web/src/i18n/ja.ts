@@ -211,7 +211,7 @@ const ja: Messages = {
     requestSent: "申請しました",
     nowFriends: "友だちになりました",
     noTrophies: "トロフィーはまだありません",
-    av: {"conductor": "車掌", "busbot": "バスボット", "cloud": "くもくん", "fox": "キツネ", "ball": "ボール", "bolt": "いなずま", "alien": "宇宙人", "astro": "宇宙飛行士", "clock": "目覚まし", "kandinsky": "抽象画"},
+    av: {"conductor": "車掌", "busbot": "バスボット", "cloud": "くもくん", "fox": "キツネ", "ball": "ボール", "bolt": "いなずま", "alien": "宇宙人", "astro": "宇宙飛行士", "clock": "目覚まし", "kandinsky": "抽象画", "robot": "ロボット", "panda": "パンダ", "wizard": "魔法使い", "samurai": "侍", "dragon": "ドラゴン", "lion": "百獣の王"},
     deco: {"copper": "銅", "bronze": "ブロンズ", "silver": "銀", "gold": "金", "diamond": "ダイヤ", "amethyst": "アメジスト", "platinum": "プラチナ", "mithril": "ミスリル", "orichalcum": "オリハルコン", "adamantium": "アダマンチウム", "jade": "翡翠", "ruby": "ルビー", "sapphire": "サファイア", "obsidian": "黒曜石", "opal": "オパール"},
     rarity: {"common": "コモン", "uncommon": "アンコモン", "rare": "レア", "epic": "エピック", "legendary": "レジェンド", "mythic": "ミシック"},
   },

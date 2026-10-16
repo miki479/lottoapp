@@ -25,7 +25,7 @@ p { margin: 0; }
 .stack { display: flex; flex-direction: column; gap: var(--gap); }
 
 .header { position: sticky; top: 0; z-index: 30; transition: background var(--dur), border-color var(--dur), backdrop-filter var(--dur); border-bottom: 1px solid transparent; }
-.header.scrolled { background: color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4); border-color: var(--border); }
+.header.scrolled { background: var(--bg); backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4); border-color: var(--border); }
 .header-in { max-width: var(--max-w); margin: 0 auto; padding: calc(6px + env(safe-area-inset-top)) var(--gutter) 6px; display: flex; align-items: center; gap: var(--space-3); min-height: 56px; }
 .brand { display: flex; align-items: center; gap: 10px; min-height: var(--hit); min-width: var(--hit); font-weight: 800; font-size: var(--fs-lg); letter-spacing: var(--ls-title); }
 .brand i { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; }
@@ -58,7 +58,7 @@ p { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .wallet.gain, .wallet.loss { animation: none; } .deltachip { display: none; } }
 /* past the first screen the bar keeps only the logo and the balance */
 @media (max-width: 699px) {
-  .header.compact .header-in { min-height: 52px; padding-top: calc(4px + env(safe-area-inset-top)); padding-bottom: 4px; }
+  .header.compact .header-in { min-height: 44px; padding-top: calc(2px + env(safe-area-inset-top)); padding-bottom: 2px; }
   .header.compact .brand .tx, .header.compact .hdr-tools { display: none; }
   .header.compact .wallet { height: var(--hit); }
 }
@@ -1715,3 +1715,12 @@ textarea.field { resize: vertical; min-height: 84px; }
 @media (max-width: 479px) { .hdr-tools .voicebtn { display: none; } }
 .chip.chipx { margin-left: -8px; padding: 0 10px; min-width: var(--hit); justify-content: center; color: var(--muted); }
 .chip.chipx:hover, .chip.chipx:focus-visible { color: var(--loss); }
+.chip .chipn { font-style: normal; font-size: var(--fs-xs); font-weight: 800; min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--surface); color: var(--text-2); text-align: center; margin-left: 2px; }
+.chip.on .chipn { background: var(--action-soft); color: var(--action-ink); }
+.list .row { position: relative; }
+.row.climbed { animation: climbglow 3.4s ease-out; }
+.row.climbed .rank { background: var(--gain); color: var(--on-action); }
+.climbarrow { color: var(--gain); animation: climbup .9s ease-out infinite; flex: none; }
+@keyframes climbglow { 0%, 60% { background: var(--gain-soft); box-shadow: 0 0 0 2px var(--gain), 0 0 22px var(--gain); } 100% { box-shadow: 0 0 0 0 transparent; } }
+@keyframes climbup { 0% { transform: translateY(6px); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateY(-6px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .row.climbed, .climbarrow { animation: none; } }

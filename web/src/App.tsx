@@ -2,6 +2,8 @@ import { Activity, Bitcoin, Clapperboard, Clock, CloudLightning, Gamepad2, MapPi
 import { RING_BONUS, STREAK_MILESTONES } from "../../shared/rewards.ts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { AuthSheet } from "./components/AuthSheet.tsx";
+import { LevelUpFx } from "./components/LevelUpFx.tsx";
+import "./components/LevelUpFx.css";
 import { BetSheet } from "./components/BetSheet.tsx";
 import { offerOdds } from "../../shared/offers.ts";
 import { OFFER_EVENT, offerErrorText, type OfferUse } from "./components/PersonalOffer.tsx";
@@ -130,6 +132,7 @@ export function App() {
   const [email, setEmail] = useState<string | null>(null);
   const [registered, setRegistered] = useState(false);
   const [reqCount, setReqCount] = useState(0), [reqTick, setReqTick] = useState(0);
+  const [levelFx, setLevelFx] = useState<{ from: number; to: number } | null>(null);
   const [look, setLook] = useState<MyProgress | null>(null), [lookOpen, setLookOpen] = useState(false), [pubUser, setPubUser] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [sheet, setSheet] = useState<{ m: MarketRow; pick: Pick; offer?: OfferUse; tipFrom?: string } | null>(null);
@@ -207,6 +210,7 @@ export function App() {
     const before = Number(store.get("lvl") ?? 0);
     if (before > 0 && p.level > before) {
       const got = DECORATIONS.filter((d) => d.level !== undefined && d.level > before && d.level <= p.level).sort((a, b) => b.level! - a.level!)[0];
+      setLevelFx({ from: before, to: p.level });
       flash(msg.look.levelUp(p.level, got ? msg.look.deco[got.id] ?? got.id : null)); haptic.success();
     }
     if (p.level !== before) store.set("lvl", String(p.level));
@@ -841,6 +845,7 @@ export function App() {
       {sheet && <BetSheet tipFrom={sheet.tipFrom ?? null} canTip={registered} openBets={bets.filter((b) => b.status === "open").length} offer={sheet.offer} now={now} live={live[sheet.m.id]} occ={occ[sheet.m.id]} mm={outlook[sheet.m.id]} boosts={profile?.boosts ?? 0} stakeFactor={profile?.stake_factor} key={String(sheet.m.params.ladderOf ?? sheet.m.id)} m={sheet.m} initial={sheet.pick} msg={msg} locale={locale} credits={profile?.credits ?? 0} ready={ready} needJoin={needJoin} googleOn={googleOn} inSlip={slipIds.has(sheet.m.id)} ladder={ladders[String(sheet.m.params.ladderOf ?? sheet.m.id)] ?? []} onSwitch={(x) => setSheet({ m: x, pick: "yes" })} onClose={() => setSheet(null)} onAddSlip={addSlip} onJoined={async () => {}} onPlace={place} />}
       {parlayOpen && slip.length > 0 && <ParlaySheet boosts={profile?.boosts ?? 0} legs={slip} msg={msg} locale={locale} credits={profile?.credits ?? 0} needJoin={needJoin} googleOn={googleOn} onClose={() => setParlayOpen(false)} onRemove={(id) => setSlip((s) => s.filter((l) => l.m.id !== id))} onClear={() => { setSlip([]); setParlayOpen(false); }} onJoined={async () => {}} onPlace={placeParlay} />}
       {auth && <AuthSheet msg={msg} guest={!registered} googleOn={googleOn} onClose={() => setAuth(false)} onDone={(text) => { setAuth(false); flash(text); }} />}
+      {levelFx && <LevelUpFx from={levelFx.from} to={levelFx.to} msg={msg} onDone={() => setLevelFx(null)} />}
       {lookOpen && look && <LookSheet progress={look} msg={msg} myId={profile?.id ?? ""} onClose={() => setLookOpen(false)} onSaved={(p) => { setLook(p); flash(msg.look.saved); }} />}
       {pubUser && <PublicProfile id={pubUser} msg={msg} locale={locale} onClose={() => { setPubUser(null); loadReqs(); setReqTick((n) => n + 1); }} onToast={flash} />}
       {nick && <NicknameSheet msg={msg} current={profile?.display_name ?? null} onClose={() => setNick(false)} onSaved={(n) => { setNick(false); loadProfile(); loadQuests(); flash(n); }} />}

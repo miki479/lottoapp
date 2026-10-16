@@ -3,7 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 import { every } from "../lib/poll.ts";
-import type { MarketRow } from "../lib/format.ts";
+import { countdown, type MarketRow } from "../lib/format.ts";
 import { fmtMin } from "../lib/num.ts";
 
 interface Pt { observed_at: string; delay_sec: number; is_forecast: boolean }
@@ -58,7 +58,7 @@ function Form({ team, games, msg }: { team: string; games: Game[]; msg: Messages
 }
 
 /** Last results and goals of both teams, and how likely the pick is according to the odds model. */
-function MatchInsight({ m, pick, msg }: { m: M; pick: "yes" | "no"; msg: Messages }) {
+function MatchInsight({ m, pick, msg, now }: { m: M; pick: "yes" | "no"; msg: Messages; now: number }) {
   const t = msg.insight, home = String(m.params.home ?? ""), away = String(m.params.away ?? "");
   const [h, setH] = useState<Game[] | null>(null), [a, setA] = useState<Game[] | null>(null);
   useEffect(() => {
@@ -79,6 +79,7 @@ function MatchInsight({ m, pick, msg }: { m: M; pick: "yes" | "no"; msg: Message
   if (h === null || a === null) return <div class="sk s" />;
   return (
     <div class="insight">
+      {Date.parse(m.target_at) > now && <div class="insrow"><span class="detail">{msg.bets.settles}</span><b class="num">{countdown(Date.parse(m.target_at) - now)}</b></div>}
       {live && <div class="inslive"><b class="num">{live.home_score} – {live.away_score}</b><span class="detail">{live.state === "in" ? `${t.liveNow}${live.clock ? ` · ${live.clock}` : ""}` : t.finalScore}</span></div>}
       <div class="insgrid"><Form team={home} games={h} msg={msg} /><Form team={away} games={a} msg={msg} /></div>
       {chance !== null && <div class="insrow"><span class="detail">{t.chance}</span><b class="num">{chance}%</b></div>}
@@ -95,8 +96,8 @@ export function BetInsight({ m, pick, msg, now }: { m: M; pick: "yes" | "no"; ms
   if (!delay && !match) return null;
   return (
     <div class="betinsight">
-      <button class="insbtn" aria-expanded={open} onClick={() => setOpen(!open)}><Activity size={15} />{delay ? msg.insight.how : started ? msg.insight.howLive : msg.insight.howMatch}<ChevronDown size={16} class={open ? "up" : ""} /></button>
-      {open && (delay ? <DelayInsight m={m} pick={pick} msg={msg} now={now} /> : <MatchInsight m={m} pick={pick} msg={msg} />)}
+      <button class="insbtn" aria-expanded={open} onClick={() => setOpen(!open)}><Activity size={15} />{delay || started ? msg.insight.how : msg.insight.howMatch}<ChevronDown size={16} class={open ? "up" : ""} /></button>
+      {open && (delay ? <DelayInsight m={m} pick={pick} msg={msg} now={now} /> : <MatchInsight m={m} pick={pick} msg={msg} now={now} />)}
     </div>
   );
 }
