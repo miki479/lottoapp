@@ -49,7 +49,7 @@ export interface Trend { id: string; name: string; country: string; place?: Plac
 const REG_MORE: Record<string, string> = { it: "Regioni", "en-US": "Regions", "en-GB": "Regions", ja: "地域" };
 const NEAR_WIDE: Record<string, string> = { it: "Niente entro 50 km: ecco le più vicine nel tuo paese.", "en-US": "Nothing within 50 km: here is the closest in your country.", "en-GB": "Nothing within 50 km: here is the closest in your country.", ja: "50km以内にはありません。お住まいの国で一番近いものを表示します。" };
 export interface HomeProps {
-  onPromo: () => void; pushOff: boolean; onPush: () => void; newsKey: number;
+  onPromo: () => void; newsKey: number;
   msg: Messages; locale: Locale; now: number; markets: MarketRow[] | null; list: MarketRow[]; live: Record<string, LiveDelay>; occ: Record<string, LiveOcc>;
   cat: CatId; counts: Record<CatId, number>; onCat: (c: CatId) => void; filter: string; onFilter: (f: string) => void; mine?: string | null; radiusKm?: string | null; mineWide?: boolean; country?: string | null; homePos?: { lat: number; lon: number } | null;
   onRefreshBoard?: () => void; onQuakeMaker: () => void; onSeries: (s?: FollowedShow) => void; onCreate: () => void; registered: boolean; onAuth: () => void; italian: boolean; nearNode?: preact.ComponentChildren; nearbyNode?: preact.ComponentChildren; trending: Trend[]; places: Place[]; onPlace: (p: Place) => void; onMorePlaces: () => void; ladders: Record<string, MarketRow[]>; outlook: Record<string, number>; top: TopItem[]; onPick: (m: MarketRow, p: Pick) => void;
@@ -129,7 +129,7 @@ export function Home(p: HomeProps) {
         <h1>{msg.home.hero.title}</h1>
         <p>{msg.home.hero.body}</p>
       </section>
-      <PromoBanner msg={msg} onOpen={p.onPromo} pushOff={p.pushOff} onPush={p.onPush} reopen={p.newsKey} />
+      <PromoBanner msg={msg} onOpen={p.onPromo} reopen={p.newsKey} />
       {howOpen && (
         <section class="howto" aria-label={msg.home.how.title}>
           <div class="howhead"><h2>{msg.home.how.title}</h2><button class="howx" onClick={() => { safe.set("how", "1"); setHowOpen(false); }}>{msg.home.how.close}</button></div>

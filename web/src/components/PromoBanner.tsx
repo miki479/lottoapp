@@ -1,4 +1,4 @@
-import { Bell, X } from "lucide-preact";
+import { X } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
 
@@ -8,9 +8,8 @@ const read = (): boolean => { try { return localStorage.getItem(KEY) === "1"; } 
 /**
  * A picture ad for the home page: profile pictures in the back, new trophies in front, the text laid over it. It can be dismissed for good,
  * and a push opens the app right on it (`reopen` changes): then it comes back if it was closed and scrolls into view.
- * While notifications are off it carries a reminder to turn them on.
  */
-export function PromoBanner({ msg, onOpen, pushOff, onPush, reopen }: { msg: Messages; onOpen: () => void; pushOff: boolean; onPush: () => void; reopen: number }) {
+export function PromoBanner({ msg, onOpen, reopen }: { msg: Messages; onOpen: () => void; reopen: number }) {
   const [gone, setGone] = useState(read);
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -29,7 +28,6 @@ export function PromoBanner({ msg, onOpen, pushOff, onPush, reopen }: { msg: Mes
         <div class="promotxt"><b>{msg.home.promo.title}</b><span>{msg.home.promo.sale}</span></div>
         <button class="promox" onClick={close} aria-label={msg.home.promo.close}><X size={16} /></button>
       </div>
-      {pushOff && <div class="promopush"><Bell size={18} /><span>{msg.home.promo.push}</span><button class="btn primary" onClick={onPush}>{msg.home.promo.pushBtn}</button></div>}
     </div>
   );
 }

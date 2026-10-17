@@ -1789,5 +1789,3 @@ textarea.field { resize: vertical; min-height: 84px; }
 .promosmoke i:nth-child(3) { right: 0; background: #b04fd8; animation-delay: -3.4s; animation-duration: 7.2s; }
 @keyframes smoke { 0%, 100% { transform: translate(0, 2px) scale(1); opacity: .55; } 50% { transform: translate(8%, 6px) scale(1.25, 1.4); opacity: .9; } }
 @media (prefers-reduced-motion: reduce) { .promosmoke i { animation: none; } }
-.promopush { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-card); background: var(--action-soft); color: var(--action-ink); font-size: var(--fs-sm); }
-.promopush span { flex: 1; }
