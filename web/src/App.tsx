@@ -49,7 +49,7 @@ import { pickFeed, type FeedItem } from "./lib/feed.ts";
 import { setFacebookOn } from "./lib/providers.ts";
 import { unseenResults } from "./lib/results.ts";
 import { ResultsDigest } from "./components/ResultsDigest.tsx";
-import { countdown, setDayUnit, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, trainLabel, type MarketRow } from "./lib/format.ts";
+import { countdown, setDayUnit, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, trainLabel, lineLabel, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
 import { FAMOUS_PLACES, FEATURED_CITY_IDS, FEATURED_PLACES, ITALY_CAPITALS, ensurePlace, km, learnPlaces, placeById, placeIdOf, recentPlaces, registerPlace, rememberPlace, type Place } from "./lib/places.ts";
@@ -611,14 +611,14 @@ export function App() {
     const seenTrip = new Set<string>();
     for (const m of lateNow) {
       const trip = String(m.params.tripId ?? m.id); if (seenTrip.has(trip)) continue; seenTrip.add(trip);
-      const line = msg.ticker.late(trainLabel(String(m.params.routeName ?? ""), m.kind, locale), m.category === "train" ? shortStation(String(m.params.headsign ?? "").toUpperCase()) : String(m.params.headsign ?? ""), Math.round(live[m.id]!.delay_sec / 60));
+      const line = msg.ticker.late(lineLabel(String(m.params.routeName ?? ""), m.kind, locale), m.category === "train" ? shortStation(String(m.params.headsign ?? "").toUpperCase()) : String(m.params.headsign ?? ""), Math.round(live[m.id]!.delay_sec / 60));
       system.push({ id: `l${m.id}`, text: line, node: <><i class="amt lost">●</i> {line}</> });
       if (system.length >= 5) break;
     }
     for (const r of results) {
-      const c = cityOf(r.city_id), route = trainLabel(String(r.params.routeName ?? ""), r.kind, locale);
+      const c = cityOf(r.city_id), route = lineLabel(String(r.params.routeName ?? ""), r.kind, locale);
       const txt = r.status === "void" ? msg.bets.void : isYesNo(r.kind) ? (r.outcome === "yes" ? msg.card.yes : msg.card.no) : r.outcome === "yes" ? msg.card.late : msg.card.onTime;
-      if (route || r.kind === "bus_delay_gt" || r.kind === "train_delay_gt") { const head = route || cityName(c, locale); system.push({ id: `r${r.id}`, text: `${head} · ${txt}`, node: <>{head} · {txt}</> }); continue; }
+      if (route || r.kind === "bus_delay_gt" || r.kind === "train_delay_gt") { const head = route ? (r.kind === "bus_delay_gt" ? `${route} · ${cityName(c, locale)}` : route) : cityName(c, locale); system.push({ id: `r${r.id}`, text: `${head} · ${txt}`, node: <>{head} · {txt}</> }); continue; }
       // any other question is shown with its own words, never as a bare "World · No"
       if (!r.target_at) continue;
       const mk = { ...r, category: "", closes_at: r.target_at, odds_yes: 1, odds_no: 1, flash_multiplier: 1, flash_until: null, flash_kind: null } as unknown as MarketRow, head = question(mk, msg, locale, cityName(c, locale), c.timezone, new Date(now));

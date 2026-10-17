@@ -46,6 +46,16 @@ export function trainLabel(route: string, kind: string, locale: string): string 
   return label ? `${label} ${m[2]}` : route;
 }
 
+const LINE_WORD: Record<string, [string, string]> = { it: ["Bus", "Treno"], "en-US": ["Bus", "Train"], "en-GB": ["Bus", "Train"], ja: ["バス", "電車"] };
+/** A line named so that it reads on its own in a strip of text: "L" → "Bus L", "C1" → "Treno C1", "REG 4340" → "REGIONALE 4340". */
+export function lineLabel(route: string, kind: string, locale: string): string {
+  const r = route.trim();
+  if (!r) return "";
+  const words = LINE_WORD[locale] ?? LINE_WORD["en-US"]!, named = trainLabel(r, kind, locale);
+  if (named !== r) return named;
+  return `${kind === "train_delay_gt" ? words[1] : words[0]} ${r}`;
+}
+
 export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: string, timeZone: string, now = new Date()): string {
   const time = formatWhen(m.target_at, locale, timeZone, now);
   // a question we wrote ourselves carries its own text in every language
