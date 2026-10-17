@@ -31,6 +31,9 @@ export const DECORATIONS: DecorationDef[] = [
   { id: "sapphire", rarity: "epic" },
   { id: "obsidian", rarity: "legendary" },
   { id: "opal", rarity: "legendary" },
+  { id: "cinder", rarity: "epic" },
+  { id: "rosegold", rarity: "legendary" },
+  { id: "starlight", rarity: "legendary" },
 ];
 export type DecorationId = string;
 export const isDecoration = (s: unknown): boolean => DECORATIONS.some((d) => d.id === s);

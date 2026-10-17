@@ -111,7 +111,10 @@ const cache = new Map<string, string>();
  * The ring: a shadow, ornaments, a bevelled rim lit edge by edge, the body, and an inner rim lit from the opposite side so the band looks solid.
  * `hi` is for big sizes: more slices, smoother curves.
  */
+/** Rings that are a rendered picture (web/public/decorations/<id>.webp) instead of drawn shapes. */
+const PICTURED_RINGS = new Set(["cinder", "rosegold", "starlight"]);
 export function decorationSvg(id: string, shines: boolean, hi: boolean): string {
+  if (PICTURED_RINGS.has(id)) return `<image href="/decorations/${id}.webp" x="-12" y="-12" width="144" height="144"/>`;
   const key = `${id}|${shines ? 1 : 0}|${hi ? 1 : 0}`, hit = cache.get(key);
   if (hit) return hit;
   const p = M[id] ?? M.copper!, P = frameOf(id, hi), R = (a: number) => rayR(P, norm360(a)), c: Ctx = { R, p };
