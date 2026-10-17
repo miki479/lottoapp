@@ -9,8 +9,8 @@ import { sb } from "../lib/api.ts";
 import { fmtPct } from "../lib/num.ts";
 import { ChevronDown } from "lucide-preact";
 
-/** Whether the player left the trend open: it stays that way for the next sheets (open the first time). */
-let leftOpen = true;
+/** Whether the player left the trend open: it stays that way for the next sheets (closed at first). */
+let leftOpen = false;
 
 interface Pt { at: number; v: number }
 

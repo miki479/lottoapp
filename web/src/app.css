@@ -835,7 +835,7 @@ footer.legal .legalfull { font-size: var(--fs-xs); opacity: .8; }
 .cc:disabled { opacity: .62; cursor: default; }
 .tickchart { background: var(--surface-2); border-radius: 14px; padding: 10px 12px 8px; }
 .tickchart .tchead { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--fs-sm); } .tickchart .tchead b { font-weight: 800; } .tickchart .tchead .num { font-weight: 800; }
-.tickchart svg:not(.look) { display: block; width: 100%; height: 96px; margin: 6px 0; }
+.tickchart > svg:not(.look) { display: block; width: 100%; height: 96px; margin: 6px 0; }
 .tickchart .tcline { fill: none; stroke: #f0a30a; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .tickchart .tcarea { fill: rgba(240, 163, 10, .15); } .tickchart .tcthr { stroke: var(--muted); stroke-width: 1.4; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
 .tickchart .tcdot { fill: #f0a30a; } .tickchart .tcbar { fill: color-mix(in srgb, var(--muted) 45%, transparent); } .tickchart .tcbar.hi { fill: #7b6cf0; }
@@ -2044,3 +2044,8 @@ textarea.field { resize: vertical; min-height: 84px; }
 @media (hover: hover) { .cc.flights:not(:disabled):hover .gh-plane { animation: planego 2.2s cubic-bezier(.4, 0, .2, 1) 1 both; } }
 .cc.play.flights .gh-plane { animation: planego 2.2s cubic-bezier(.4, 0, .2, 1) 1 both; }
 @media (prefers-reduced-motion: reduce) { .cc.flights .gh-cloud { animation: none; } }
+
+/* the betting area of an event card is a tray of its own: darker than the card, with the two options standing out of it */
+.card.event .actions2 { padding: 8px; border-radius: calc(var(--radius-control) + 6px); background: var(--bg); border: 1px solid var(--border-strong); gap: 8px; }
+.card.event .actions2 .opt { background: var(--surface-2); border-color: var(--border-strong); box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 8%, transparent); }
+.card.event .actions2 .opt.yes { background: color-mix(in srgb, var(--action) 14%, var(--surface-2)); border-color: color-mix(in srgb, var(--action) 45%, var(--border-strong)); }
