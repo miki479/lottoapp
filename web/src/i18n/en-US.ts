@@ -112,6 +112,7 @@ const enUS: Messages = {
     voidReason: { cancelled: "The service was cancelled: bet refunded.", feed_down: "The data feed was down. We never settle on a guess.", no_observation: "No valid reading for this trip.", implausible_data: "The reading looked wrong." },
   },
   result: {
+    digest: { title: (n) => `You have ${n} new results`, won: "won", lost: "lost", void: "refunded", net: "Net result", one: "Go through them one by one", all: "Mark all as seen", skip: "Skip all" },
     balance: "Balance", won: "Won", lost: "Lost", void: "Refunded",     subWon: "You called it.", subLost: "The data said otherwise this time.", subVoid: "The data wasn't reliable, so your stake came back in full.",
     fullMeasured: (l) => `The bus was: ${l}`,
     measured: (m, s) => (m > 0 ? `Measured delay: ${m} min ${s} s` : `Measured delay: ${s} s`), threshold: (m) => `Line: over ${m} min`, matchScore: (h, a) => `Final score: ${h}–${a}`, tickMeasured: (v) => `Measured value: ${v}`, trafficMeasured: (a, t) => `Average speed measured: ${a} km/h (threshold ${t})`, strikeOn: "Strike still on", strikeOff: "Strike revoked or moved", metricMeasured: (n, v) => `${n} measured: ${v}`, quakeMeasured: (c, m) => (c === 0 ? "No earthquakes in that window" : `${c} earthquake${c === 1 ? "" : "s"}, strongest ${m}`), rainMeasured: (mm) => `Measured rain: ${mm} mm`,

@@ -1,3 +1,4 @@
+import { Flame } from "./Flame.tsx";
 import { isCrypto } from "../../../shared/ticks.ts";
 import type { Messages } from "../i18n/index.ts";
 import type { MarketRow } from "../lib/format.ts";
@@ -127,7 +128,7 @@ export function TickScene({ m, hint, msg, now }: { m: MarketRow; hint: Hint; msg
           {[[30, 12], [80, 40], [120, 18], [210, 10], [260, 34], [296, 16], [180, 52]].map(([x, y], i) => <circle key={i} class="lc-star" style={`--d:${i * 200}ms`} cx={x} cy={y} r="1.500" fill="#fff" />)}
           <rect x="0" y="72" width="320" height="12" fill="#1c2750" />
           <g class="lc-smoke"><circle cx="146" cy="70" r="6" /><circle cx="160" cy="72" r="8" /><circle cx="174" cy="70" r="6" /></g>
-          <g class="lc-rocket"><path d="M160 14c-9 10-9 28-9 38h18c0-10 0-28-9-38z" fill="#e8ecf5" /><circle cx="160" cy="34" r="4" fill="#4a7bff" /><path d="M151 46l-8 10 8-2zM169 46l8 10-8-2z" fill="#ff5a4d" /><g class="lc-flame"><path d="M154 52q6 24 12 0z" fill="#ff7a00" /><path d="M157 52q3 14 6 0z" fill="#ffe066" /></g></g>
+          <g class="lc-rocket"><path d="M160 14c-9 10-9 28-9 38h18c0-10 0-28-9-38z" fill="#e8ecf5" /><circle cx="160" cy="34" r="4" fill="#4a7bff" /><path d="M151 46l-8 10 8-2zM169 46l8 10-8-2z" fill="#ff5a4d" /><g transform="translate(160 52) scale(1.150)"><g class="lc-flame"><Flame /></g></g></g>
         </svg>
         <b>{String(m.params.label ?? "")}</b>
       </div>

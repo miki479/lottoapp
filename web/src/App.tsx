@@ -46,6 +46,7 @@ import { balanceMove } from "./lib/stake.ts";
 import { resolvingToday } from "./lib/summary.ts";
 import { pickFeed, type FeedItem } from "./lib/feed.ts";
 import { unseenResults } from "./lib/results.ts";
+import { ResultsDigest } from "./components/ResultsDigest.tsx";
 import { countdown, setDayUnit, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, trainLabel, type MarketRow } from "./lib/format.ts";
 import { haptic } from "./lib/haptics.ts";
 import type { NearState } from "./components/NearYou.tsx";
@@ -111,7 +112,7 @@ async function capitalIdsFor(filter: string, origin: { lat: number; lon: number 
 }
 const NATIONAL = new Set(CITIES.filter((c) => c.id === "italia" || c.id === "germany").map((c) => c.id));
 const region = () => { try { return new Intl.Locale(navigator.language).maximize().region ?? null; } catch { return null; } };
-const PROFILE_COLS = "id,credits,city_id,locale,timezone,country,streak,best_streak,freezes,boosts,push_flash,push_streak,push_friends,display_name,last_play_date,stake_factor,limit_break_until,limit_break_at";
+const PROFILE_COLS = "id,credits,city_id,locale,timezone,country,streak,best_streak,freezes,boosts,push_flash,push_streak,push_friends,display_name,last_play_date,stake_factor,limit_break_until,limit_break_at,results_seen_at";
 const BET_COLS = "id,placed_at,pick,stake,odds,boosted,vice_pct,status,payout,settled_at,bonus,bonus_hit,markets(id,city_id,category,kind,params,closes_at,target_at,odds_yes,odds_no,status,void_reason,outcome,evidence)";
 
 export function App() {
@@ -675,9 +676,12 @@ export function App() {
   }, [detailsOn]);
 
   // ---------- results (Esito) ----------
-  const unseen = unseenResults(bets, seen, Date.now());
-  useEffect(() => { if (ready && !resultBet && !sheet && !auth && !nick && unseen.length > 0) { const b = unseen[0]!; setResultBet(b); announce(`res-${b.id}`, b.status === "won" ? msg.voice.won(money(b.payout - b.stake, locale)) : b.status === "lost" ? msg.voice.lost : msg.bets.void, locale); } }, [ready, unseen.map((b) => b.id).join(), !!sheet, auth, nick]);
+  const unseen = unseenResults(bets, seen, Date.now(), profile?.results_seen_at);
+  const [digestSkip, setDigestSkip] = useState(false);
+  useEffect(() => { if (ready && !resultBet && !sheet && !auth && !nick && unseen.length > 0 && (unseen.length < 4 || digestSkip)) { const b = unseen[0]!; setResultBet(b); announce(`res-${b.id}`, b.status === "won" ? msg.voice.won(money(b.payout - b.stake, locale)) : b.status === "lost" ? msg.voice.lost : msg.bets.void, locale); } }, [ready, unseen.map((b) => b.id).join(), !!sheet, auth, nick]);
   const markSeen = (id: string) => { const n = new Set(seen); n.add(id); setSeen(n); store.set(seenKey, JSON.stringify([...n].slice(-300))); };
+  // everything seen at once (on the account too, so a new device does not bring it back)
+  const markAllSeen = () => { const n = new Set(seen); unseen.forEach((b) => n.add(b.id)); setSeen(n); store.set(seenKey, JSON.stringify([...n].slice(-300))); setResultBet(null); setDigestSkip(false); void sb.rpc("mark_results_seen").then(() => setProfile((x) => (x ? { ...x, results_seen_at: new Date().toISOString() } : x))); };
   const closeResult = () => { if (resultBet) markSeen(resultBet.id); setResultBet(null); };
 
   // ---------- actions ----------
@@ -907,7 +911,8 @@ export function App() {
       {lookOpen && look && <LookSheet progress={look} msg={msg} myId={profile?.id ?? ""} onClose={() => setLookOpen(false)} onSaved={(p) => { setLook(p); flash(msg.look.saved); }} />}
       {pubUser && <PublicProfile id={pubUser} msg={msg} locale={locale} onClose={() => { setPubUser(null); loadReqs(); setReqTick((n) => n + 1); }} onToast={flash} />}
       {nick && <NicknameSheet msg={msg} current={profile?.display_name ?? null} onClose={() => setNick(false)} onSaved={(n) => { setNick(false); loadProfile(); loadQuests(); flash(n); }} />}
-      {resultBet && <ResultScreen bet={resultBet} msg={msg} locale={locale} balance={profile ? balanceMove(unseen, resultBet, profile.credits) : null} remaining={Math.max(0, unseen.filter((b) => b.id !== resultBet.id).length)} onClose={closeResult} onShare={shareResult} onNext={() => { markSeen(resultBet.id); const next = unseen.find((b) => b.id !== resultBet.id); setResultBet(next ?? null); }} />}
+      {ready && !resultBet && !sheet && !auth && !nick && unseen.length >= 4 && !digestSkip && <ResultsDigest bets={unseen} msg={msg} locale={locale} onOne={() => setDigestSkip(true)} onAll={markAllSeen} />}
+      {resultBet && <ResultScreen onSkipAll={markAllSeen} bet={resultBet} msg={msg} locale={locale} balance={profile ? balanceMove(unseen, resultBet, profile.credits) : null} remaining={Math.max(0, unseen.filter((b) => b.id !== resultBet.id).length)} onClose={closeResult} onShare={shareResult} onNext={() => { markSeen(resultBet.id); const next = unseen.find((b) => b.id !== resultBet.id); setResultBet(next ?? null); }} />}
       {toast && <Toast text={toast.text} kind={toast.kind} lift={slip.length > 0} />}
     </div>
   );

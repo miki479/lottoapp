@@ -1829,7 +1829,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 .mscene.launch.s-no .lc-flame { opacity: 0; transform: scaleY(.1); transition: opacity .25s, transform .3s; }
 .mscene.launch.s-no .lc-rocket { animation: lcfall 1.5s cubic-bezier(.5, 0, .75, .4) forwards; }
 .mscene.launch.s-no .lc-smoke circle { animation: lcsmoke 1.6s 1.1s ease-out forwards; }
-@keyframes lcflame { from { transform: scaleY(1.7) scaleX(.9); } to { transform: scaleY(2.3) scaleX(1.1); } }
+@keyframes lcflame { from { transform: scaleY(.95) scaleX(.95); } to { transform: scaleY(1.1) scaleX(1.05); } }
 @keyframes lcup { 0% { transform: translate(0, -4px); } 10% { transform: translate(-1.5px, -4px); } 20% { transform: translate(1.5px, -5px); } 30% { transform: translate(-1px, -5px); } 40% { transform: translate(0, -6px); } 100% { transform: translate(0, -46px); } }
 @keyframes lcfall { 0% { transform: translateY(-4px); } 22% { transform: translate(1px, -12px) rotate(4deg); } 100% { transform: translate(8px, 16px) rotate(74deg); } }
 @keyframes lcsmoke { 0% { opacity: .75; transform: scale(.4); } 100% { opacity: 0; transform: translate(0, -10px) scale(1.9); } }
@@ -1904,7 +1904,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 .cc.space .gh-planet { transform-box: fill-box; transform-origin: 50% 50%; animation: planetdrift 7s ease-in-out infinite alternate; }
 @keyframes planetdrift { from { transform: rotate(-3deg); } to { transform: rotate(3deg) translateY(-1px); } }
 @keyframes spacego { 0% { transform: translate(0, 0); } 10% { transform: translate(-.6px, 0); } 20% { transform: translate(.6px, 0); } 30% { transform: translate(0, -2px); } 62% { transform: translate(5px, -38px); opacity: 1; } 63% { transform: translate(5px, -38px); opacity: 0; } 80% { transform: translate(0, 4px); opacity: 0; } 100% { transform: translate(0, 0); opacity: 1; } }
-@keyframes spacefire { 0%, 22% { opacity: 0; transform: scaleY(.3); } 30%, 62% { opacity: 1; transform: scaleY(1.6); } 63%, 100% { opacity: 0; } }
+@keyframes spacefire { 0%, 22% { opacity: 0; transform: scaleY(.3); } 30%, 62% { opacity: 1; transform: scaleY(1); } 63%, 100% { opacity: 0; } }
 @media (hover: hover) { .cc.space:not(:disabled):hover .gh-rocket { animation: spacego 2.2s cubic-bezier(.4, 0, .2, 1) 1 both; } .cc.space:not(:disabled):hover .gh-fire { animation: spacefire 2.2s linear 1 both; } }
 .cc.play.space .gh-rocket { animation: spacego 2.2s cubic-bezier(.4, 0, .2, 1) 1 both; } .cc.play.space .gh-fire { animation: spacefire 2.2s linear 1 both; }
 @media (prefers-reduced-motion: reduce) { .cc.space .gh-planet { animation: none; } }
@@ -1944,3 +1944,15 @@ textarea.field { resize: vertical; min-height: 84px; }
 @media (prefers-reduced-motion: reduce) { .look.aura { animation: none; } }
 .aurarow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: var(--radius-control); background: var(--surface-2); }
 .aurarow.lock { opacity: .75; } .aurarow small { color: var(--text-2); }
+.digest { display: flex; gap: 12px; } .digrow { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 8px; border-radius: var(--radius-control); background: var(--surface-2); } .digrow .num { font-size: var(--fs-xl); font-weight: 800; } .digrow small { color: var(--text-2); }
+.digest .gain, .dignet .gain { color: var(--gain); } .digest .loss, .dignet .loss { color: var(--loss); }
+.dignet { display: flex; align-items: baseline; justify-content: space-between; margin: 0; padding: 0 4px; } .dignet b { font-size: var(--fs-xl); }
+
+/* the flame: every tongue flickers on its own beat, around the nozzle */
+.flame .fl-t { transform-box: fill-box; transform-origin: 50% 0; animation: flick .16s ease-in-out infinite alternate; }
+.flame .fl-a { animation-duration: .21s; animation-name: flickl; } .flame .fl-b { animation-duration: .18s; animation-name: flickr; } .flame .fl-c { animation-duration: .13s; }
+.flame .fl-d { animation-duration: .11s; animation-delay: -.05s; } .flame .fl-e { animation-duration: .09s; }
+@keyframes flick { from { transform: scale(1, .86) skewX(-3deg); } to { transform: scale(1.06, 1.14) skewX(3deg); } }
+@keyframes flickl { from { transform: scale(.95, .8) skewX(5deg); } to { transform: scale(1.05, 1.18) skewX(-4deg); } }
+@keyframes flickr { from { transform: scale(.95, 1.15) skewX(-5deg); } to { transform: scale(1.05, .82) skewX(4deg); } }
+@media (prefers-reduced-motion: reduce) { .flame .fl-t { animation: none; } }
