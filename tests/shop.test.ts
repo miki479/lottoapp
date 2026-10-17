@@ -12,7 +12,7 @@ import { hubText } from "../web/src/lib/shopText.ts";
 
 const sql = readFileSync(new URL("../supabase/migrations/0107_shop_daily.sql", import.meta.url), "utf8");
 /** Rows of a `values (...)` list inside the body of one SQL function. */
-const sql127 = readFileSync(new URL("../supabase/migrations/0141_city_avatars_2.sql", import.meta.url), "utf8");
+const sql127 = readFileSync(new URL("../supabase/migrations/0142_city_avatars_3.sql", import.meta.url), "utf8");
 const fnBody = (name: string) => { const i = sql.indexOf(`function public.${name}(`); expect(i, name).toBeGreaterThan(-1); return sql.slice(i, sql.indexOf("$$;", sql.indexOf("$$", i) + 2)); };
 
 const fnBody127 = (name: string) => { const i = sql127.indexOf(`function public.${name}(`); expect(i, name).toBeGreaterThan(-1); return sql127.slice(i, sql127.indexOf("$$;", sql127.indexOf("$$", i) + 2)); };
@@ -86,10 +86,10 @@ describe("catalogue", () => {
     const free = DECORATIONS.filter((d) => d.level === undefined);
     expect(SHOP_ITEMS.filter((i) => i.kind === "decoration").map((i) => i.id).sort()).toEqual(free.map((d) => d.id).sort());
     for (const d of free) expect(SHOP_ITEMS.find((i) => i.id === d.id)?.rarity).toBe(d.rarity);
-    expect(SHOP_ITEMS.filter((i) => i.kind === "avatar").length).toBe(65);
+    expect(SHOP_ITEMS.filter((i) => i.kind === "avatar").length).toBe(77);
     for (const a of DEFAULT_AVATARS) expect(SHOP_ITEMS.some((i) => i.id === a)).toBe(false);
-    expect(SHOP_ITEMS.length).toBe(170);
-    expect(new Set(SHOP_ITEMS.map((i) => itemKey(i.kind, i.id))).size).toBe(170);
+    expect(SHOP_ITEMS.length).toBe(182);
+    expect(new Set(SHOP_ITEMS.map((i) => itemKey(i.kind, i.id))).size).toBe(182);
     expect(SHOP_ITEMS.filter((i) => i.kind !== "card").every((i) => i.rarity !== "common")).toBe(true);
   });
   it("looks are the rarer pulls", () => { for (const p of PACKS) { expect(lookChance(p.tier)).toBeGreaterThan(0); expect(lookChance(p.tier)).toBeLessThan(0.7); } });
