@@ -1975,3 +1975,5 @@ textarea.field { resize: vertical; min-height: 84px; }
 .hwcard.off .hwstate{color:var(--muted)}
 .hwrules summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
 .hwrules ul{margin:0;padding-left:20px;display:grid;gap:4px;font-size:var(--fs-sm)}
+.promodate{margin-top:4px;font-size:var(--fs-sm);font-weight:800;letter-spacing:.01em;color:#ff9a3d}
+.promowrap:has(img[src="/promo-halloween.webp"]) .promo{background:#000}

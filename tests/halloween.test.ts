@@ -20,10 +20,9 @@ describe("Halloween challenges", () => {
     for (const t of own) for (const l of ["it", "en", "ja"] as const) { expect(t.text[l].name).toBeTruthy(); expect(t.text[l].desc).toBeTruthy(); }
     for (const c of HALLOWEEN_CHALLENGES) expect(TROPHY_IDS).toContain(c.id);
   });
-  it("only pictures that exist are declared, and the traffic picture is not faked", () => {
+  it("every challenge has its own picture file", () => {
+    expect([...HALLOWEEN_PICTURES].sort()).toEqual(HALLOWEEN_CHALLENGES.map((c) => c.id).sort());
     for (const id of HALLOWEEN_PICTURES) expect(existsSync(`web/public/trophies/${id}.webp`)).toBe(true);
-    expect(HALLOWEEN_PICTURES).not.toContain("halloween_traffico");
-    expect(existsSync("web/public/trophies/halloween_traffico.webp")).toBe(false);
   });
   it("counting rules live in the database: backend wins only, distinct events, window, settle deadline, idempotent award, draft by default", () => {
     expect(sql).toContain("b.status = 'won' and m.status = 'resolved' and m.outcome = b.pick");

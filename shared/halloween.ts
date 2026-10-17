@@ -8,5 +8,5 @@ export const HALLOWEEN_CHALLENGES = [
   { id: "halloween_sport", category: "sport" },
 ] as const;
 export type HalloweenId = (typeof HALLOWEEN_CHALLENGES)[number]["id"];
-// the badge pictures that exist; the traffic one has not been delivered yet, so its card shows an empty slot instead of another picture
-export const HALLOWEEN_PICTURES: readonly HalloweenId[] = ["halloween_treni", "halloween_meteo", "halloween_mercati", "halloween_sport"];
+// the badge pictures that exist (a card without one shows an empty slot, never another picture)
+export const HALLOWEEN_PICTURES: readonly HalloweenId[] = ["halloween_treni", "halloween_meteo", "halloween_traffico", "halloween_mercati", "halloween_sport"];
