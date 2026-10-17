@@ -1259,9 +1259,9 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
 }
 
 
-// ---- Football (Serie A) from TheSportsDB. The free test key ("3") is for development: markets made with it are private (testOnly) until a paid key is set. ----
+// ---- Football (Serie A) from TheSportsDB. The free key is "123" (the old "3" now answers 403). ----
 async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
-  const key = Deno.env.get("SPORTSDB_KEY") || "3";
+  const key = (Deno.env.get("SPORTSDB_KEY") || "123").replace(/^3$/, "123");
   const base = `https://www.thesportsdb.com/api/v1/json/${key}`;
   const notes: string[] = [];
   /** Every TheSportsDB call goes through the gate: the free key answers 429 above 30 a minute. */

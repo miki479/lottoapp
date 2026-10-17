@@ -193,7 +193,7 @@ Deno.serve(safe(async (req) => {
     let apiId = sp.apiId;
     if (isDetailBet(bet)) {
       if (!DETAIL_LEAGUES.includes(sp.league) || !(await detailsAvailable(sb))) return json({ error: "details_unavailable" }, 503);
-      if (!apiId) { try { apiId = String((await getJson(`https://www.thesportsdb.com/api/v1/json/${Deno.env.get("SPORTSDB_KEY") || "3"}/lookupevent.php?id=${eventId}`))?.events?.[0]?.idAPIfootball ?? "") || undefined; } catch { /* below */ } }
+      if (!apiId) { try { apiId = String((await getJson(`https://www.thesportsdb.com/api/v1/json/${(Deno.env.get("SPORTSDB_KEY") || "123")}/lookupevent.php?id=${eventId}`))?.events?.[0]?.idAPIfootball ?? "") || undefined; } catch { /* below */ } }
       if (!apiId) return json({ error: "details_unavailable" }, 503);
     }
     // older markets were made before these bets existed: price them from the same strengths
