@@ -129,11 +129,11 @@ export interface Messages {
     trophies: string; groups: Record<"wins" | "streaks" | "play" | "social" | "level" | "special", string>; locked: string; rarity: { common: string; rare: string; epic: string; legendary: string; mythic: string };
     trophy: Record<TrophyId, { name: string; desc: string }>;
     shareCard: string; shareText: string; settings: string; signOut: string;
-    delete: { action: string; title: string; body: string; confirm: string; done: string };
+    exportData: { action: string; busy: string; done: string }; delete: { action: string; title: string; body: string; confirm: string; done: string };
     nickname: { title: string; label: string; placeholder: string; rules: string; save: string; needAccount: string };
   };
   auth: {
-    title: string; subtitle: string; tabSignin: string; tabSignup: string; email: string; password: string; passwordHint: string; google: string; facebook: string; or: string;
+    title: string; subtitle: string; tabSignin: string; tabSignup: string; email: string; password: string; passwordHint: string; google: string; facebook: string; or: string; agree1: string; agreeTerms: string; agree2: string; agreePrivacy: string; agreeNeed: string; agreeNote: string;
     magic: string; magicSent: string; confirmSent: string; signinCta: string; signupCta: string; guestKeep: string; guestLose: string; welcome: string;
   };
   crowd: { title: string; note: (year: string, avg: number) => string; all: (n: number) => string; less: string; scaleTitle: string; scale: Record<100 | 150 | 180 | 200 | 250, string>; source: string };

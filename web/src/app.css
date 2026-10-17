@@ -1956,3 +1956,6 @@ textarea.field { resize: vertical; min-height: 84px; }
 @keyframes flickl { from { transform: scale(.95, .8) skewX(5deg); } to { transform: scale(1.05, 1.18) skewX(-4deg); } }
 @keyframes flickr { from { transform: scale(.95, 1.15) skewX(-5deg); } to { transform: scale(1.05, .82) skewX(4deg); } }
 @media (prefers-reduced-motion: reduce) { .flame .fl-t { animation: none; } }
+
+.consent { display: flex; align-items: flex-start; gap: 10px; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.4; } .consent input { margin-top: 3px; flex: none; width: 18px; height: 18px; accent-color: var(--action); } .consent a { color: var(--action-ink); text-decoration: underline; }
+.consent.need { color: var(--loss); } .consentnote { margin: 0; }

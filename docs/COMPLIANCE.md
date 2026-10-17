@@ -1,47 +1,72 @@
-# LateBet — conformità: fonti dati, privacy, età, dominio
+# LateBet: conformità e protezione (stato al 17 ottobre 2026)
 
-Stato al 16/10/2026. Il gioco è gratuito, senza denaro e senza pubblicità: questo lo rende "non commerciale" per quasi tutte le fonti. Se un giorno ci fossero pubblicità, abbonamenti o acquisti, **molte licenze gratuite cambiano** (vedi colonna "Se diventa commerciale").
+> Non sono un avvocato e questo non è un parere legale. È l'elenco onesto di cosa è già fatto nel codice, cosa serve da te e cosa è meglio far vedere a un professionista. **Nessuno può garantire una protezione "perfetta" su tutti i fronti**: si riduce il rischio e si documenta.
 
-## Fonti: cosa dicono i termini e cosa facciamo
+## 1. Già fatto (nel codice o nel database)
+**Dati personali (GDPR)**
+- Informativa privacy completa (IT/EN): titolare, dati raccolti, base giuridica, fornitori, trasferimenti extra UE, cookie/archiviazione, minori, violazioni (72 h), reclamo al Garante.
+- Cancellazione dell'account e di tutti i dati (Profilo → Elimina account).
+- **Copia dei propri dati** in JSON (Profilo → Scarica i miei dati): portabilità, art. 20.
+- Conferma di età (18+) e accettazione di Termini e Privacy **alla registrazione**, salvata sull'account con versione e data (`profiles.terms_version`, `terms_accepted_at`).
+- Nessun cookie di profilazione né pubblicità; posizione e notifiche solo con consenso; le coordinate non vengono salvate.
+- Il filtro nomi e le segnalazioni passano da moduli interni; dati di contatto conservati al massimo 12 mesi.
 
-| Fonte | Uso | Condizione | Stato | Se diventa commerciale |
-|---|---|---|---|---|
-| Open-Meteo (meteo, geocoding, aria) | ingestione ogni 6 h + ricerca città dal browser | gratis solo non commerciale, meno di 10.000 chiamate al giorno, attribuzione CC BY 4.0 | in regola (attribuzione nel footer) | piano a pagamento |
-| ODPT (Giappone) | ritardi bus Yokohama | licenza ODPT, avviso e attribuzione obbligatori | in regola (testo ODPT nel footer, contatto via modulo) | verificare con ODPT |
-| TVmaze | voti episodi | CC BY-SA, attribuzione | in regola | invariato |
-| TheSportsDB | calendari/stemmi | la chiave gratuita è per sviluppo e test; per un servizio pubblico serve la chiave Patreon | **da sistemare**: sottoscrivere il piano a pagamento (circa 3 USD/mese) | invariato |
-| API-Football | dettagli partite | piano gratuito 100 richieste al giorno | in regola, rispettare il tetto | piano a pagamento |
-| Ticketmaster Discovery | eventi/concerti | mostrare attribuzione e link a Ticketmaster, 5.000 chiamate al giorno | attribuzione nel footer; **da fare**: link diretto all'evento dove si mostra un concerto | richiede accordo |
-| Last.fm | ascoltatori artisti | uso non commerciale, link a Last.fm | in regola (voce aggiunta nel footer) | non consentito senza accordo |
-| Steam Web API | giocatori online | termini Valve, nessuna rivendita dei dati | in regola | verificare |
-| CoinGecko | prezzi cripto | piano gratuito: attribuzione "Powered by CoinGecko" | in regola | piano a pagamento |
-| ESPN (punteggi in diretta) | live score ogni minuto | **nessuna API pubblica né licenza**: interfaccia non documentata | **rischio medio**: tenerla spenta se arriva una richiesta, oppure sostituire con API-Football | non consentito |
-| ViaggiaTreno (RFI) | ritardi treni italiani | **nessuna licenza**: interfaccia non ufficiale | **rischio medio/alto**: lettura limitata a un minuto, mai sul percorso dell'utente; valutare un accordo con RFI/Trenitalia o i dati aperti GTFS-RT | non consentito |
-| Allerta Meteo Emilia-Romagna | allerte | CC BY-NC-SA, solo non commerciale | in regola | **non consentito** |
-| MIMIT, EIA, NOAA, NWS, USGS, Wikimedia | dati pubblici | pubblico dominio / IODL / CC0 | in regola | in regola |
-| Feed GTFS-RT (busone, vbb, ovapi, ecc.) | ritardi bus/treni | licenze aperte per ciascun feed, attribuzione nel footer | in regola (solo feed con licenza verificata) | dipende dal feed |
-| GBFS bike (Citi Bike, Divvy, ecc.) | occupazione bici | licenze dei gestori | in regola | verificare |
-| Hugging Face | like dei modelli | pagine pubbliche | tenere la frequenza bassa | verificare |
+**Sicurezza**
+- Sicurezza a livello di riga (RLS) su tutte le tabelle; le funzioni sensibili sono riservate (`revoke` agli anonimi) e le operazioni sui crediti avvengono solo lato server.
+- Intestazioni: CSP restrittiva, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, COOP.
+- `/.well-known/security.txt` per le segnalazioni di vulnerabilità.
+- Limiti anti-abuso: puntate al minuto, creazione sfide, account multipli (codici anonimi), filtro nomi.
+- Segreti solo in Supabase (mai nel codice); le chiavi del client sono pubbliche per progetto (anon).
 
-**Cosa fare per essere tranquillo con i fornitori (in ordine di rischio):**
-1. ViaggiaTreno ed ESPN: sono le due fonti senza licenza. Decidere se tenerle, sostituirle o chiedere il permesso.
-2. TheSportsDB: passare alla chiave a pagamento.
-3. Ticketmaster: aggiungere il link all'evento.
-4. Registrarsi per una chiave propria (non condivisa) dove la usiamo già: Open-Meteo non ne richiede una per l'uso non commerciale.
-5. Non rivendere né mostrare i dati grezzi: l'app li usa per calcolare quote e esiti, come richiesto da quasi tutti i termini.
+**Dalle API (fonti dati)**
+- Tetto giornaliero nostro e freno automatico (24 h) per API-Football; cache e limiti di frequenza per le altre; fonti primarie e di riserva (football-data.org → TheSportsDB).
+- Elenco fonti e licenze in app (Profilo → Fonti) e nei Termini; nota su marchi, stemmi e loghi.
+- Se una fonte non risponde la puntata viene annullata e rimborsata.
 
-## Età e gioco d'azzardo
-- Il servizio dice "18+" nel footer e nei termini. Non è gioco d'azzardo: non c'è denaro, non si vince nulla di reale, nessun marchio di scommesse.
-- Il testo "crediti finti / gioco satirico" resta nel footer e nelle pagine "Come funziona", "Termini" e "Privacy".
+## 2. Cosa NON posso aggiungere
+- **Loghi di "certificazioni"** (GDPR compliant, SSL secure, ISO, "approvato da…"): non esistono per questo tipo di app e metterli sarebbe un'affermazione falsa o ingannevole (pratica commerciale scorretta). Posso mostrare solo marchi veri che hai davvero ottenuto. Il badge Stripe Climate è nel footer perché mi hai dato i tuoi identificativi.
+- Garantire che nessun dato vada mai perso o che nessun utente possa abusare: si limita, non si azzera.
 
-## Privacy (GDPR)
-- Titolare: Michele Forte, persona fisica. Contatto: modulo "Scrivici" nel footer (nessun indirizzo email pubblico).
-- Dati: account, profilo di gioco, messaggi del modulo, tracce anti-abuso (codici anonimi). Conservazione massima di 12 mesi per messaggi e tracce (cancellazione automatica notturna).
-- Fornitori: Supabase, Firebase Hosting, OneSignal, Resend, Google (solo accesso con Google), Open-Meteo.
-- Niente cookie di profilazione né pubblicità: servono solo memoria locale tecnica e notifiche con consenso, quindi non serve il banner cookie.
-- Diritto alla cancellazione: Profilo → Elimina account.
+## 3. Da fare tu (non si possono fare dal codice)
+1. **Backup**: in Supabase attiva i backup giornalieri/PITR (piano Pro) e prova almeno una volta un ripristino. Il database è l'unica copia dei crediti e dei profili.
+2. **Ruotare le chiavi** che sono comparse in chat o in screenshot: Resend, football-data.org (`FOOTBDATA_KEY`), TheSportsDB se personale, API-Football, NASA. Metti le nuove solo nei segreti Supabase.
+3. **Account API-Football**: un solo account gratuito (due account sospendono tutto); se si risospende il problema è l'IP condiviso delle funzioni cloud.
+4. **Accordi sul trattamento dati (DPA)**: accetta il DPA di Supabase, Google/Firebase, OneSignal, Resend e (se usato) Stripe; verifica la **regione** di Supabase (meglio UE) e scrivila nell'informativa.
+5. **Provider di accesso**: Facebook va abilitato in Supabase (Authentication → Providers → Facebook) con ID e segreto dell'app Meta; l'indirizzo di ritorno da inserire in Meta è quello di Supabase (`https://<progetto>.supabase.co/auth/v1/callback`), **non** quello di Firebase. Per Meta serve la policy privacy pubblica e l'eliminazione dati (`https://latebet.it/privacy.html`).
+6. **Account amministratore**: attiva l'autenticazione a due fattori su Supabase, Firebase, GitHub, Google, OneSignal, Resend.
+7. **Registro dei trattamenti (art. 30)** e procedura di violazione: tienili in un documento; per un progetto piccolo bastano una pagina ciascuno.
+8. **Revisione legale** (consigliata prima di una promozione seria): gioco con quote e puntate simulate, fascia d'età, premi/boost, eventuali sponsor o donazioni. Vedi i punti sotto.
 
-## Dominio latebet.it
-- Registrato da Michele Forte, presso Register.it. L'indirizzo del registrante risulta nel Whois solo se dai il consenso (sezione 5 del modulo): consigliato **non** darlo per un privato.
-- Stato: latebet.it è collegato a Firebase Hosting con certificato HTTPS (www reindirizza). Supabase usa latebet.it come indirizzo del sito; latelotto.web.app resta attivo come riserva. Resta da fare: conferma email con Resend (record DNS già inseriti) e Site URL di OneSignal.
-- Attenzione: le notifiche push sono legate all'indirizzo del sito. Passare a latebet.it significa che gli utenti dovranno riattivarle: si può fare con calma, tenendo latelotto.web.app come indirizzo secondario che reindirizza.
+## 4. Punti che richiedono un parere professionale
+- **18+ e "gioco d'azzardo simulato"**: oggi è dichiarato 18+ e si conferma alla registrazione. Aprire ai minori richiede una riprogettazione (linguaggio, consenso dei genitori sotto i 14 anni) e di nuovo un parere. Negli store app il "gioco d'azzardo simulato" alza la fascia d'età.
+- **Donazioni, sponsor, pubblicità o vendita di crediti**: cambierebbero la natura del servizio (fisco, e-commerce, norme sul gioco). Oggi i crediti non si comprano e non valgono nulla, e va mantenuto così.
+- **Premi o concorsi** (anche simbolici): norme sui concorsi a premio.
+- **Marchi e stemmi**: usarli solo per identificare squadre e giochi, senza far pensare a un rapporto ufficiale.
+- **Dati dei minori**: se un minore si iscrive, l'account va eliminato appena lo si scopre.
+
+## 5. Fonti dati: termini da tenere d'occhio
+| Fonte | Chiave | Punti d'attenzione (da verificare ogni tanto sul sito) |
+|---|---|---|
+| football-data.org | sì (piano gratuito) | limite 10 richieste/minuto, dati con ritardo, attribuzione; il piano gratuito può escludere usi commerciali |
+| TheSportsDB | sì (gratuita `123`) | chiave condivisa e limitata; per uso intensivo serve il piano a pagamento |
+| API-Football | sì | account unico gratuito, 100 richieste/giorno, IP condivisi rischiosi |
+| NASA (NeoWs, EONET) | sì (NASA_KEY) / no | dati pubblici; non usare il marchio NASA per far credere a un'approvazione |
+| Chess.com PubAPI | no (User-Agent) | richiesta di cortesia: User-Agent riconoscibile, nessun abuso |
+| Jolpica / OpenF1 | no | uso non commerciale e cortese |
+| Launch Library 2 | no | 15 chiamate/ora gratuite |
+| Hacker News (Algolia) | no | uso ragionevole |
+| Steam Web API | sì | termini Valve: attribuzione, niente rivendita |
+| Open-Meteo | no | gratuito per uso non commerciale (attribuzione CC BY) |
+
+## 6. In caso di incidente (traccia da tenere pronta)
+1. Isola: ruota le chiavi coinvolte (Supabase, Resend, OneSignal), disattiva le funzioni sospette.
+2. Valuta cosa è uscito e di chi (il database tiene i log; `export_my_data` mostra cosa esiste per utente).
+3. Se c'è rischio per le persone: notifica al Garante **entro 72 ore** (garanteprivacy.it) e avvisa gli interessati.
+4. Annota tutto (data, cosa, azioni) nel registro delle violazioni, anche se non notifichi.
+5. Ripristina da backup se serve e pubblica un avviso nell'app.
+
+## 7. Prossimi passi che posso fare io
+- Pagina "Fonti e crediti" dedicata e link dal footer.
+- Controllo automatico mensile delle chiavi e dei limiti (avviso quando l'ultima chiamata riuscita è vecchia).
+- Verifica di dipendenze (`npm audit`) e aggiornamenti di sicurezza.
+- Riduzione dei dati personali dei log (indirizzi IP già hashati) e pulizia periodica.

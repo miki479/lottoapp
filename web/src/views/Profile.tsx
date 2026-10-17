@@ -1,4 +1,4 @@
-import { MapPin, Bell, Gift, Rocket, ChevronRight, Flame, LogOut, Pencil, Percent, Share2, Snowflake, Trash2, Trophy, User, Volume2, Zap, Check } from "lucide-preact";
+import { Download, MapPin, Bell, Gift, Rocket, ChevronRight, Flame, LogOut, Pencil, Percent, Share2, Snowflake, Trash2, Trophy, User, Volume2, Zap, Check } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Sheet } from "../components/Sheet.tsx";
 import { StreakCard } from "../components/StreakCard.tsx";
@@ -27,7 +27,7 @@ export function ProfileView(p: {
   voice?: { on: boolean; label: string; toggle: () => void } | null;
   onAdmin: () => void; homeNode?: preact.ComponentChildren; missionsNode?: preact.ComponentChildren;
   giftCard: boolean; onGiftSeen: () => void; push: { on: boolean; denied: boolean; toggle: () => void; flash: boolean; streak: boolean; friends: boolean; setPrefs: (f: boolean, s: boolean, fr: boolean) => void } | null; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
-  onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => Promise<void> | void; onDelete: () => Promise<void>;
+  onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => Promise<void> | void; onDelete: () => Promise<void>; onExport: () => Promise<void>;
 }) {
   const [intentOn, setIntentOn] = useState(() => readConsent() === "on");
   const m = p.msg.profile;
@@ -154,6 +154,7 @@ export function ProfileView(p: {
             </div>
             {admin && <button class="row" onClick={p.onAdmin}><span class="grow">{p.msg.admin.open}</span><ChevronRight size={18} /></button>}
             {p.registered && <button class="row" disabled={busy} aria-busy={busy} onClick={() => run(async () => { await p.onSignOut(); })}><LogOut size={20} /><span class="grow">{m.signOut}</span><ChevronRight size={18} /></button>}
+            {p.registered && <button class="row" disabled={busy} aria-busy={busy} onClick={() => run(async () => { await p.onExport(); })}><Download size={20} /><span class="grow">{busy ? m.exportData.busy : m.exportData.action}</span><ChevronRight size={18} /></button>}
             <button class="row" onClick={() => setConfirm(true)} style="color:var(--loss)"><Trash2 size={20} style="color:var(--loss)" /><span class="grow">{m.delete.action}</span></button>
           </div>
         </div>

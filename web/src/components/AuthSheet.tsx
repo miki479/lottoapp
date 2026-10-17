@@ -1,4 +1,5 @@
 import { Mail, X } from "lucide-preact";
+import { useConsent } from "./Consent.tsx";
 import { FacebookButton } from "./FacebookButton.tsx";
 import { useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
@@ -33,9 +34,11 @@ export function AuthSheet({ msg, guest, googleOn, onClose, onDone }: { msg: Mess
   const [info, setInfo] = useState<string | null>(null);
   const valid = /.+@.+\..+/.test(email) && password.length >= 8;
 
+  const consent = useConsent(msg, mode === "signup");
   const oops = () => setErr(msg.errors.generic!);
   const submit = () => run(async () => {
     setErr(null); setInfo(null);
+    if (mode === "signup" && !consent.gate()) { setErr(consent.need ?? msg.auth.agreeNeed); return; }
     if (mode === "signup" && guest) {
       // Upgrade the guest in place: same account, same credits, now with an email and password.
       const { data, error } = await sb.auth.updateUser({ email, password });
@@ -54,13 +57,15 @@ export function AuthSheet({ msg, guest, googleOn, onClose, onDone }: { msg: Mess
     if (!/.+@.+\..+/.test(email)) return setErr(msg.errors.email_invalid!);
     return run(async () => {
       setErr(null);
+      if (!consent.gate(true)) { setErr(consent.need ?? msg.auth.agreeNeed); return; }
       const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin, shouldCreateUser: true } });
       if (error) setErr(authError(error, msg)); else setInfo(msg.auth.magicSent);
     }, oops);
   };
-  const facebook = () => run(async () => { setErr(null); const { error } = await facebookSignIn(); if (error) setErr(authError(error, msg)); }, oops);
+  const facebook = () => run(async () => { setErr(null); if (!consent.gate(true)) { setErr(consent.need ?? msg.auth.agreeNeed); return; } const { error } = await facebookSignIn(); if (error) setErr(authError(error, msg)); }, oops);
   const google = () => run(async () => {
     setErr(null);
+    if (!consent.gate(true)) { setErr(consent.need ?? msg.auth.agreeNeed); return; }
     const { error } = guest ? await googleSignIn() : await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin } });
     if (error) setErr(authError(error, msg));
   }, oops);
@@ -77,6 +82,7 @@ export function AuthSheet({ msg, guest, googleOn, onClose, onDone }: { msg: Mess
       {googleOn && <span class="detail" style="text-align:center">{msg.auth.or}</span>}
       <div><label class="detail fieldlabel" for="em">{msg.auth.email}</label><input id="em" class="field" type="email" autocomplete="email" inputMode="email" value={email} onInput={(e) => setEmail((e.target as HTMLInputElement).value)} /></div>
       <div><label class="detail fieldlabel" for="pw">{msg.auth.password}</label><input id="pw" class="field" type="password" autocomplete={mode === "signin" ? "current-password" : "new-password"} value={password} onInput={(e) => setPassword((e.target as HTMLInputElement).value)} /><p class="hint" style="margin-top:6px">{msg.auth.passwordHint}</p></div>
+      {consent.node}
       {err && <p class="formerr" role="alert">{err}</p>}
       {info && <p style="color:var(--text-2)" role="status">{info}</p>}
       <button class="btn primary wide" disabled={busy || !valid} aria-busy={busy} onClick={submit}>{mode === "signup" ? msg.auth.signupCta : msg.auth.signinCta}</button>

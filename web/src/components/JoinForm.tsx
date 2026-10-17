@@ -1,4 +1,5 @@
 import { Lock, Mail, Sparkles, Zap } from "lucide-preact";
+import { useConsent } from "./Consent.tsx";
 import { FacebookButton } from "./FacebookButton.tsx";
 import { useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -18,10 +19,12 @@ export function JoinForm(p: { msg: Messages; locale: Locale; googleOn: boolean; 
   const [err, setErr] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const m = p.msg;
+  const consent = useConsent(m, mode === "new");
   const ok = password.length >= 8 && /.+@.+\..+/.test(email);
 
   const go = () => run(async () => {
     setErr(null); setInfo(null);
+    if (mode === "new" && !consent.gate()) { setErr(consent.need ?? m.auth.agreeNeed); return; }
     if (mode === "have") {
       const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password });
       if (error) { setErr(authError(error, m)); return; }
@@ -32,9 +35,10 @@ export function JoinForm(p: { msg: Messages; locale: Locale; googleOn: boolean; 
     if (!data.user || data.user.is_anonymous || !data.user.email) { pendingConfirm.mark(); setInfo(m.join.checkMail); return; }
     await p.onJoined();
   }, () => setErr(m.errors.generic!));
-  const facebook = () => run(async () => { setErr(null); const { error } = await facebookSignIn(); if (error) setErr(authError(error, m)); }, () => setErr(m.errors.generic!));
+  const facebook = () => run(async () => { setErr(null); if (!consent.gate(true)) { setErr(consent.need ?? m.auth.agreeNeed); return; } const { error } = await facebookSignIn(); if (error) setErr(authError(error, m)); }, () => setErr(m.errors.generic!));
   const google = () => run(async () => {
     setErr(null);
+    if (!consent.gate(true)) { setErr(consent.need ?? m.auth.agreeNeed); return; }
     const { error } = await googleSignIn();
     if (error) setErr(authError(error, m));
   }, () => setErr(m.errors.generic!));
@@ -48,6 +52,7 @@ export function JoinForm(p: { msg: Messages; locale: Locale; googleOn: boolean; 
       <label class="fieldicon"><Mail size={18} aria-hidden="true" /><input class="field" type="email" autocomplete="email" inputMode="email" placeholder={m.auth.email} value={email} onInput={(e) => setEmail((e.target as HTMLInputElement).value)} /></label>
       <label class="fieldicon"><Lock size={18} aria-hidden="true" /><input class="field" type="password" autocomplete={mode === "have" ? "current-password" : "new-password"} placeholder={m.auth.password} value={password} onInput={(e) => setPassword((e.target as HTMLInputElement).value)} /></label>
       <p class="hint">{m.auth.passwordHint}</p>
+      {consent.node}
       {err && <p class="formerr" role="alert">{err}</p>}
       {info && <p class="note">{info}</p>}
       <button class="btn primary wide" disabled={busy || !ok} aria-busy={busy} onClick={go}><Zap size={18} aria-hidden="true" />{mode === "have" ? m.auth.signinCta : m.join.cta(p.stakeLabel)}</button>
