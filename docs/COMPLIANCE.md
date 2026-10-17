@@ -70,3 +70,12 @@
 - Controllo automatico mensile delle chiavi e dei limiti (avviso quando l'ultima chiamata riuscita è vecchia).
 - Verifica di dipendenze (`npm audit`) e aggiornamenti di sicurezza.
 - Riduzione dei dati personali dei log (indirizzi IP già hashati) e pulizia periodica.
+
+## 8. Richieste delle autorità pubbliche sui dati degli utenti (procedura adottata)
+Vale per qualsiasi richiesta di autorità (giudiziarie, di polizia, amministrative) di dati personali dei giocatori, compresi quelli ricevuti da Meta o Google al momento dell'accesso.
+1. **Verifica di legalità:** una richiesta si accetta solo se è scritta, indica l'autorità, la base giuridica e i dati richiesti, e arriva da un canale verificabile. Si controlla con un professionista se i dubbi sono seri.
+2. **Rifiuto se illegittima:** una richiesta illegittima, generica o eccessiva si rifiuta o si contesta per iscritto.
+3. **Minimizzazione:** si comunica solo il minimo indispensabile (di norma l'identificativo dell'account, l'email e le date), mai più di quanto richiesto.
+4. **Registro:** ogni richiesta viene annotata (data, autorità, base giuridica, dati richiesti, risposta data o rifiutata, chi ha deciso) e il registro viene conservato.
+5. **Avviso all'utente:** si informa il giocatore interessato, salvo che la legge lo vieti.
+6. Non si condividono dati con terzi per altri scopi e non si vendono.
