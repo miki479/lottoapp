@@ -1,7 +1,7 @@
 import { Mail, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
-import { googleSignIn, sb } from "../lib/api.ts";
+import { googleSignIn, pendingConfirm, sb } from "../lib/api.ts";
 import { useBusy } from "../lib/busy.ts";
 import { Sheet } from "./Sheet.tsx";
 
@@ -40,10 +40,10 @@ export function AuthSheet({ msg, guest, googleOn, onClose, onDone }: { msg: Mess
       const { data, error } = await sb.auth.updateUser({ email, password });
       if (error) setErr(authError(error, msg));
       else if (data.user && data.user.email && !data.user.is_anonymous) onDone(msg.auth.welcome);
-      else setInfo(msg.auth.confirmSent);
+      else { pendingConfirm.mark(); setInfo(msg.auth.confirmSent); }
     } else if (mode === "signup") {
       const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin } });
-      if (error) setErr(authError(error, msg)); else if (data.session) onDone(msg.auth.welcome); else setInfo(msg.auth.confirmSent);
+      if (error) setErr(authError(error, msg)); else if (data.session) onDone(msg.auth.welcome); else { pendingConfirm.mark(); setInfo(msg.auth.confirmSent); }
     } else {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) setErr(authError(error, msg)); else onDone(msg.auth.welcome);

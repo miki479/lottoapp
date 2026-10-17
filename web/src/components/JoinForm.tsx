@@ -2,7 +2,7 @@ import { Lock, Mail, Sparkles, Zap } from "lucide-preact";
 import { useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { useBusy } from "../lib/busy.ts";
-import { googleSignIn, sb } from "../lib/api.ts";
+import { googleSignIn, pendingConfirm, sb } from "../lib/api.ts";
 import { authError } from "./AuthSheet.tsx";
 
 /**
@@ -28,7 +28,7 @@ export function JoinForm(p: { msg: Messages; locale: Locale; googleOn: boolean; 
     }
     const { data, error } = await sb.auth.updateUser({ email: email.trim(), password });
     if (error) { setErr(authError(error, m)); return; }
-    if (!data.user || data.user.is_anonymous || !data.user.email) { setInfo(m.join.checkMail); return; }
+    if (!data.user || data.user.is_anonymous || !data.user.email) { pendingConfirm.mark(); setInfo(m.join.checkMail); return; }
     await p.onJoined();
   }, () => setErr(m.errors.generic!));
   const google = () => run(async () => {

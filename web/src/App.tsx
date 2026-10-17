@@ -35,7 +35,7 @@ import { DECORATIONS } from "../../shared/looks";
 import { Toast } from "./components/Toast.tsx";
 import type { TopItem } from "./components/TopCards.tsx";
 import { INTL_TAG, loadMessages, t, TROPHY_IDS, type Locale, type TrophyId } from "./i18n/index.ts";
-import { ensureGuest, guestState, sb } from "./lib/api.ts";
+import { ensureGuest, guestState, pendingConfirm, sb, syncRegistration } from "./lib/api.ts";
 import { CITIES, cityInfos, cityName, cityOf } from "./lib/cities.ts";
 import { useNow } from "./lib/clock.ts";
 import { pickCity, pickLocale } from "./lib/detect.ts";
@@ -138,6 +138,7 @@ export function App() {
   const [fresh, setFresh] = useState<Set<string>>(new Set());
   const [email, setEmail] = useState<string | null>(null);
   const [registered, setRegistered] = useState(false);
+  const registeredRef = useRef(false); registeredRef.current = registered;
   const [reqCount, setReqCount] = useState(0), [reqTick, setReqTick] = useState(0);
   const [levelFx, setLevelFx] = useState<{ from: number; to: number } | null>(null);
   const [look, setLook] = useState<MyProgress | null>(null), [lookOpen, setLookOpen] = useState(false), [pubUser, setPubUser] = useState<string | null>(null);
@@ -279,7 +280,12 @@ export function App() {
     });
     bootstrap().catch(() => {});
     fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY } }).then((r) => r.json()).then((s) => { setGoogleOn(!!s?.external?.google); }).catch(() => {});
-    return () => sub.data.subscription.unsubscribe();
+    // the e-mail link may have been opened somewhere else (the mail app's own browser): when the player comes back, or every half minute for a while after asking
+    // for the confirmation, check with the server whether this account is registered now
+    const sync = () => { if (document.visibilityState === "visible" && (!registeredRef.current || pendingConfirm.active())) void syncRegistration().then((ok) => { if (ok) { pendingConfirm.clear(); setTimeout(() => bootRef.current(), 0); } }).catch(() => {}); };
+    document.addEventListener("visibilitychange", sync); window.addEventListener("focus", sync);
+    const poll = window.setInterval(() => { if (pendingConfirm.active() && !registeredRef.current) sync(); }, 30_000);
+    return () => { sub.data.subscription.unsubscribe(); document.removeEventListener("visibilitychange", sync); window.removeEventListener("focus", sync); clearInterval(poll); };
   }, []);
   useEffect(() => { if (profile && !profile.country && region()) sb.rpc("set_country", { p_country: region() }).then(loadProfile); }, [profile?.id]);
 

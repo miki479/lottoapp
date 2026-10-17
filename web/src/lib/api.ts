@@ -79,3 +79,22 @@ function cleanUrl(): void {
 }
 sb.auth.onAuthStateChange((event) => { if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") setTimeout(cleanUrl, 0); });
 setTimeout(cleanUrl, 2500);
+
+/**
+ * The e-mail was confirmed in another browser or mail app: this one still holds the guest session. Ask the server who this account is now and, when it has become
+ * a registered one, take a fresh session so the app sees it at once. Returns true when that happened.
+ */
+export async function syncRegistration(): Promise<boolean> {
+  const { data } = await sb.auth.getUser();
+  const u = data.user;
+  if (!u) return false;
+  const { data: cur } = await sb.auth.getSession();
+  if (!cur.session?.user.is_anonymous || u.is_anonymous || !u.email) return false;
+  const { error } = await sb.auth.refreshSession();
+  return !error;
+}
+export const pendingConfirm = {
+  mark: () => { try { localStorage.setItem("pend-confirm", String(Date.now())); } catch { /* private mode */ } },
+  active: () => { try { return Date.now() - Number(localStorage.getItem("pend-confirm") ?? 0) < 30 * 60_000; } catch { return false; } },
+  clear: () => { try { localStorage.removeItem("pend-confirm"); } catch { /* private mode */ } },
+};
