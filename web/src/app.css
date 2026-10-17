@@ -116,7 +116,7 @@ p { margin: 0; }
 .opt b { font-size: var(--fs-xl); font-weight: 800; letter-spacing: var(--ls-title); line-height: 1.1; }
 .opt .s { font-size: var(--fs-xs); color: var(--muted); }
 
-.top-scroll { display: flex; gap: var(--gap); overflow-x: auto; scrollbar-width: none; margin: 0 calc(var(--gutter) * -1); padding: 2px var(--gutter); scroll-padding-inline: var(--gutter); }
+.top-scroll { display: flex; align-items: flex-start; gap: var(--gap); overflow-x: auto; scrollbar-width: none; margin: 0 calc(var(--gutter) * -1); padding: 2px var(--gutter); scroll-padding-inline: var(--gutter); }
 .top-scroll::-webkit-scrollbar { display: none; }
 .topcard { scroll-snap-align: start; flex: 0 0 min(78%, 280px); display: flex; flex-direction: column; gap: 6px; text-align: left; min-height: 132px; }
 .topcard .head { display: flex; align-items: center; gap: 8px; color: var(--muted); }
@@ -1782,8 +1782,8 @@ textarea.field { resize: vertical; min-height: 84px; }
 .promotxt span { font-size: var(--fs-xs); opacity: .9; line-height: 1.25; }
 .promox { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(0, 0, 0, .42); color: #fff; cursor: pointer; }
 .promo:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
-.promowrap { position: relative; display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; }
-.promosmoke { position: absolute; left: 4%; right: 4%; bottom: 0; height: 34px; pointer-events: none; z-index: 0; }
+.promowrap { position: relative; display: flex; flex-direction: column; gap: 8px; padding-bottom: 8px; }
+.promosmoke { position: absolute; left: 4%; right: 4%; bottom: 0; height: 26px; pointer-events: none; z-index: 0; }
 .promosmoke i { position: absolute; bottom: 0; width: 42%; height: 30px; border-radius: 50%; filter: blur(14px); opacity: .75; animation: smoke 5.5s ease-in-out infinite; }
 .promosmoke i:nth-child(1) { left: 0; background: #7b5cff; }
 .promosmoke i:nth-child(2) { left: 28%; background: #3d7bff; animation-delay: -1.8s; animation-duration: 6.6s; }
