@@ -8,7 +8,7 @@ const PICTURED = new Set<string>(["limit_breaker", "first_win", "all_rings", "lo
 /** A trophy as a 3D badge. The metal and shape are its own; the higher the rarity, the more it shines. */
 export function Trophy3D({ id, have, size = 56 }: { id: TrophyId; have: boolean; size?: number }) {
   if (PICTURED.has(id)) {
-    const src = `/trophies/${id}.webp?v=5`;
+    const src = `/trophies/${id}.webp?v=6`;
     // the sheen is a moving light clipped to the picture's own shape (its alpha) by a CSS mask
     return (
       <span class={`tr3dwrap ${have ? "lit" : ""}`} style={{ width: size, height: size, "--tm": `url(${src})` }}>
