@@ -17,17 +17,39 @@ export function TickScene({ m, hint, msg, now }: { m: MarketRow; hint: Hint; msg
   const cls = `mscene tick ${kind} ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`;
   const cap = kind === "kp" ? "Kp ≥ " + m.params.threshold : alertLabel(series, msg) || (msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? ""));
   if (series.startsWith("neo:")) {
-    const near = hint === "yes" ? 74 : hint === "no" ? 20 : 48;
+    // the rock flies the dashed path to the Earth with a tail of fire behind it (Yes: faster and closer, No: slower); the tail always points away from the planet
+    const dur = hint === "yes" ? 2.6 : hint === "no" ? 5.2 : 3.8, path = "M20 70Q130 10 236 54";
     return (
       <div class={`mscene tick neo ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
         <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <defs><linearGradient id="neo-tail" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="#fff3b0" /><stop offset=".35" stop-color="#ff9d2e" /><stop offset=".75" stop-color="#ff4d2e" stop-opacity=".55" /><stop offset="1" stop-color="#ff4d2e" stop-opacity="0" /></linearGradient></defs>
           <rect width="320" height="84" fill="#080c24" />
           {[[30, 12], [86, 54], [140, 16], [196, 62], [254, 20], [300, 48]].map(([x, y], i) => <circle key={i} class="lc-star" style={`--d:${i * 220}ms`} cx={x} cy={y} r="1.400" fill="#fff" />)}
-          <circle cx="262" cy="64" r="34" fill="#2a6fdb" /><path d="M240 50q14-8 26 2t10 18q-14 10-30 4z" fill="#3fae6a" opacity=".9" />
-          <path d="M20 70Q130 10 230 56" fill="none" stroke="#7a86b8" stroke-width="1" stroke-dasharray="4 5" />
-          <g class="neo-rock" style={`transform:translateX(${near}px)`}><path d="M96 34l8-5 9 3 4 8-5 8-10 2-8-6z" fill="#b6a58c" /><circle cx="101" cy="36" r="2" fill="#8b7b64" /><circle cx="108" cy="40" r="1.500" fill="#8b7b64" /></g>
+          <circle cx="272" cy="66" r="34" fill="#2a6fdb" /><path d="M250 52q14-8 26 2t10 18q-14 10-30 4z" fill="#3fae6a" opacity=".9" />
+          <circle cx="272" cy="66" r="38" fill="none" stroke="#6fb4ff" stroke-opacity=".25" stroke-width="3" />
+          <path d={path} fill="none" stroke="#7a86b8" stroke-width="1" stroke-dasharray="4 5" />
+          <g>
+            <animateMotion dur={`${dur}s`} repeatCount="indefinite" rotate="auto" {...({ path } as object)} />
+            <g class="neo-fire"><path d="M2 0C-10 -3 -26 -9 -44 -6C-30 -2 -26 0 -44 4C-26 3 -10 4 2 3Z" fill="url(#neo-tail)" /><path d="M0 0C-8 -1 -18 -3 -30 -1.500C-20 0 -18 1 -30 2.500C-18 2 -8 2 0 1.500Z" fill="#fff6c8" opacity=".85" /></g>
+            <g transform="scale(.8)"><path d="M-8 -6l8-5 9 3 4 8-5 8-10 2-8-6z" fill="#b6a58c" /><circle cx="-3" cy="-4" r="2" fill="#8b7b64" /><circle cx="4" cy="0" r="1.500" fill="#8b7b64" /></g>
+          </g>
         </svg>
         <b>NASA</b>
+      </div>
+    );
+  }
+  if (series.startsWith("steam:")) {
+    // the line of players: Yes tilts it up and turns it green, No tilts it down and turns it red, both with the same easing
+    return (
+      <div class={`mscene tick game ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="84" fill="#12142b" />
+          <g stroke="#262a52" stroke-width="1"><path d="M0 20H320M0 62H320M60 0V84M140 0V84M220 0V84M300 0V84" /></g>
+          <g class="gpad" transform="translate(16 16)" fill="#2c3170" stroke="#6f78ff" stroke-width="1.500" stroke-linejoin="round"><path d="M6 10h28c6 0 9 6 11 14s0 14-5 14c-4 0-6-4-9-7H9c-3 3-5 7-9 7-5 0-7-6-5-14S0 10 6 10z" /><path d="M12 18v8M8 22h8" stroke="#aab0ff" /><circle cx="30" cy="20" r="2" fill="#aab0ff" stroke="none" /><circle cx="35" cy="25" r="2" fill="#aab0ff" stroke="none" /></g>
+          <path d="M0 42H320" stroke="#8ea0c8" stroke-width="1.500" stroke-dasharray="6 5" opacity=".7" />
+          <g class="gline"><polyline points="0,46 30,44 60,48 90,42 120,45 150,41 180,44 210,40 240,43 270,40 300,42" fill="none" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" /><circle cx="300" cy="42" r="6" /></g>
+        </svg>
+        <b>{cap}</b>
       </div>
     );
   }
@@ -114,7 +136,7 @@ export function TickScene({ m, hint, msg, now }: { m: MarketRow; hint: Hint; msg
         <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
           <rect width="320" height="84" fill="#312e2b" />
           {Array.from({ length: 16 }, (_, i) => Array.from({ length: 4 }, (_, j) => (i + j) % 2 ? <rect key={`${i}-${j}`} x={i * 20} y={j * 21} width="20" height="21" fill="#769656" /> : <rect key={`${i}-${j}`} x={i * 20} y={j * 21} width="20" height="21" fill="#eeeed2" />))}
-          <g class="chess-knight" transform="translate(142 8)"><path d="M10 64h36v-6l-6-4c8-6 12-16 8-26L34 6 24 10l-4-4-6 12 6 6-8 14c-4 6-6 12-2 18z" fill="#1c1b19" stroke="#f5f5f5" stroke-width="2" stroke-linejoin="round" /><circle cx="36" cy="20" r="2" fill="#f5f5f5" /></g>
+          <g class="chess-knight"><g transform="translate(142 8)"><path d="M10 64h36v-6l-6-4c8-6 12-16 8-26L34 6 24 10l-4-4-6 12 6 6-8 14c-4 6-6 12-2 18z" fill="#1c1b19" stroke="#f5f5f5" stroke-width="2" stroke-linejoin="round" /><circle cx="36" cy="20" r="2" fill="#f5f5f5" /></g></g>
         </svg>
         <b>{String(m.params.label ?? "")}</b>
       </div>

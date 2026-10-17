@@ -2010,19 +2010,6 @@ textarea.field { resize: vertical; min-height: 84px; }
 .tickchart .tchead b{flex:1}
 .tickchart .tcchev{transition:transform .2s}.tickchart.open .tcchev{transform:rotate(180deg)}
 
-/* the bet sheet on a phone: everything that matters on one screen, tighter spacing instead of dropped content */
-.sheetacts{display:flex;gap:8px;align-items:center}.sheetacts .btn{flex:1;min-height:44px}.sheetacts .reportlink{flex:none}
-@media (max-width:700px){
-  .sheet.withfoot{max-height:94dvh;gap:8px}
-  .sheet.withfoot .bethead{padding-top:0;padding-bottom:0}
-  .sheet.withfoot .mscene{height:52px}
-  .sheet.withfoot .stakectl{padding:10px 12px;gap:6px}
-  .sheet.withfoot .stakectl .glow{font-size:var(--fs-xl)}
-  .sheet.withfoot .out{padding:8px 6px}
-  .sheet.withfoot .out small{font-size:var(--fs-xs);line-height:1.2}
-  .sheet.withfoot .tickchart{padding:4px 12px}
-}
-
 /* the three kinds of line under "missions of today" (mission, flash, chest) share one size and one rhythm */
 .dmrow, .dmflash, .dmchest { min-height: 68px; }
 .dmtx { gap: 3px; }
@@ -2032,22 +2019,20 @@ textarea.field { resize: vertical; min-height: 84px; }
 .dmflash .dmact { align-items: flex-end; gap: 0; }
 .dmflash .dmact em { font-size: var(--fs-xs); white-space: nowrap; }
 .dmflash .dmact .dmcount { font-size: var(--fs-md); line-height: 1.1; }
-@media (max-width:700px){
-  .sheet.withfoot .stakectl{position:relative}
-  .sheet.withfoot .stakectl .stakehead{position:absolute;left:12px;top:10px;flex-direction:column;align-items:flex-start;gap:0}
-  .sheet.withfoot .stakectl .glow{min-height:44px;display:flex;align-items:center;justify-content:center}
-  .sheet.withfoot .actions2 + .oddsword{margin:4px 0 0}
-  .sheet.withfoot .shead{min-height:40px}
-}
-@media (max-width:700px) and (max-height:800px){ .sheet.withfoot > .mscene, .sheet.withfoot > .sky, .sheet.withfoot > .scene { display:none } }
-@media (max-width:700px){
-  .sheet.withfoot .stakectl .stakemeta{position:absolute;right:12px;top:10px;font-size:var(--fs-xs)}
-  .sheet.withfoot .stakectl .stakemeta span:last-child{display:none}
-  .sheet.withfoot .out.lose small{display:none}
-  .sheet.withfoot .out{padding:6px}
-  .sheet.withfoot .bethead + * , .sheet.withfoot > div > .detail{margin:0}
-  .sheet.withfoot .actions2{margin-top:4px !important}
-}
 /* a long figure in the narrow "best win" tile shrinks to fit instead of running out of the card */
 .cell .v[data-len="long"]{font-size:var(--fs-md);overflow:hidden;text-overflow:clip}
 @media (min-width:700px){.cell .v[data-len="long"]{font-size:var(--fs-xl)}}
+
+/* video games: the player line tilts and recolours with the pick, the same way both ways */
+.mscene.game .gline { transform-origin: 160px 42px; transition: transform .9s cubic-bezier(.2,.8,.2,1); }
+.mscene.game .gline polyline { stroke: #f7b733; transition: stroke .7s ease; } .mscene.game .gline circle { fill: #f7b733; transition: fill .7s ease; }
+.mscene.game.s-yes .gline { transform: rotate(-10deg); } .mscene.game.s-yes .gline polyline { stroke: #34d399; } .mscene.game.s-yes .gline circle { fill: #34d399; }
+.mscene.game.s-no .gline { transform: rotate(10deg); } .mscene.game.s-no .gline polyline { stroke: #ff5d73; } .mscene.game.s-no .gline circle { fill: #ff5d73; }
+.mscene.game .gpad { animation: gpadbob 3s ease-in-out infinite alternate; transform-box: fill-box; } @keyframes gpadbob { to { transform: translate(16px, 13px) rotate(-4deg); } }
+/* asteroid: the fire of its tail flickers while it flies */
+.mscene.neo .neo-fire { transform-box: fill-box; transform-origin: 100% 50%; animation: neofire .28s ease-in-out infinite alternate; } @keyframes neofire { from { transform: scaleX(.85) scaleY(.9); opacity: .85; } to { transform: scaleX(1.12) scaleY(1.15); opacity: 1; } }
+/* chess: the knight hops over the board and the pick moves it forward or back */
+.mscene.chess .chess-knight { transition: transform .9s cubic-bezier(.2,.8,.2,1); animation: chesshop 2.6s cubic-bezier(.45,0,.55,1) infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+.mscene.chess.s-yes .chess-knight { transform: translateX(46px); } .mscene.chess.s-no .chess-knight { transform: translateX(-46px); }
+@keyframes chesshop { 0%, 100% { translate: 0 0; rotate: 0deg; } 30% { translate: 0 -7px; rotate: -6deg; } 55% { translate: 0 0; rotate: 0deg; } 75% { translate: 0 -3px; rotate: 4deg; } }
+@media (prefers-reduced-motion: reduce) { .mscene.game .gpad, .mscene.neo .neo-fire, .mscene.chess .chess-knight { animation: none; } }

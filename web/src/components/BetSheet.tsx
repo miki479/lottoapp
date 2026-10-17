@@ -147,10 +147,8 @@ export function BetSheet(p: {
       {(M.kind === "bus_delay_gt" || M.kind === "train_delay_gt") && <StopsBoard m={M} locale={p.locale} now={p.now} />}
       {(M.params.custom === "true" || M.params.local === "true") && <AreaStats marketId={M.id} msg={p.msg} />}
       {M.kind === "tick_gt" && !(M.params as { house?: boolean }).house && <TickChart m={M} msg={p.msg} locale={p.locale} />}
-      <div class="sheetacts">
-        {!offer && <button class="btn secondary wide" onClick={() => { p.onAddSlip(M, pick); haptic.tap(); }} disabled={p.inSlip}><Layers size={18} />{p.inSlip ? p.msg.slip.added : p.msg.slip.add}</button>}
-        <ReportLink marketId={M.id} msg={p.msg} />
-      </div>
+      {!offer && <button class="btn secondary wide" onClick={() => { p.onAddSlip(M, pick); haptic.tap(); }} disabled={p.inSlip}><Layers size={18} />{p.inSlip ? p.msg.slip.added : p.msg.slip.add}</button>}
+      <ReportLink marketId={M.id} msg={p.msg} />
       <BetFoot amount={amount} balance={p.credits} label={`${p.msg.sheet.confirm} · ${money(amount, p.locale)}`} busy={busy} disabled={!p.ready || decided} err={err} msg={p.msg} locale={p.locale} onGo={p.needJoin ? () => setJoining(true) : place} reset={`${pick}|${boost}|${vice}|${bonus}`}>
         {(p.openBets ?? 0) >= 32 && <p class="hint" role="status">{OPEN_HINT[p.locale] ?? OPEN_HINT["en-US"]}: {p.openBets}/40</p>}
       </BetFoot>
