@@ -67,7 +67,7 @@ export const DAILY_PACK_CAP = 12;
 export const PACK_GAP_SEC = 2;
 
 /** Avatars everybody owns. All the others are collectible. */
-export const DEFAULT_AVATARS: readonly string[] = ["conductor", "busbot", "cloud", "fox"];
+export const DEFAULT_AVATARS: readonly string[] = ["conductor", "busbot", "cloud", "fox", "capboy", "shadesgirl", "greyalien", "greenalien", "greyhoodie", "android", "xeno", "spacesuit", "beats", "basket"];
 /**
  * Rarity of each collectible avatar (decorations keep the rarity they have in looks.ts). The looks are the rarer pulls:
  * there is no common one, so they only come out of the pools that hold fewer cards.
