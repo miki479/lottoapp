@@ -28,6 +28,8 @@ const LONG_FIGURE = 6;
  */
 function Balance({ credits, who, locale, coin, label, claimable, onClick }: { credits: number | null; who: string | null; locale: Locale; coin: string; label: string; claimable: number; onClick: () => void }) {
   const shown = useCountUp(credits ?? 0, 400);
+  const [tap, setTap] = useState(0);
+  const press = () => { if (!reducedMotion()) { setTap(Date.now()); } onClick(); };
   const last = useRef<{ who: string | null; credits: number | null }>({ who: null, credits: null });
   const [change, setChange] = useState<{ n: number; at: number } | null>(null);
   useEffect(() => {
@@ -43,8 +45,9 @@ function Balance({ credits, who, locale, coin, label, claimable, onClick }: { cr
   const figure = credits === null ? "···" : fmtInt(shown, locale);
   return (
     <>
-      <button class={`wallet walletbtn ${kind} ${figure.length > LONG_FIGURE ? "long" : ""}`} title={label} aria-label={credits === null ? label : `${label}: ${fmtInt(credits, locale)}`} onClick={onClick}>
+      <button class={`wallet walletbtn ${kind} ${figure.length > LONG_FIGURE ? "long" : ""} ${tap ? "tapped" : ""}`} key={tap ? `t${tap}` : "w"} title={label} aria-label={credits === null ? label : `${label}: ${fmtInt(credits, locale)}`} onClick={press}>
         <i class="coin" aria-hidden="true">{coin}</i>
+        {tap > 0 && <span class="coinburst" aria-hidden="true"><b /><b /><b /><b /><b /><b /></span>}
         <span class="num bal" aria-hidden="true">{figure}</span>
         {claimable > 0 && <span class="dotbadge" aria-hidden="true">{claimable}</span>}
         {change && <span class={`deltachip ${kind}`} key={change.at} aria-hidden="true">{fmtSigned(change.n, locale)}</span>}

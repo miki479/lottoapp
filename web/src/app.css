@@ -1989,3 +1989,16 @@ textarea.field { resize: vertical; min-height: 84px; }
 .hwentry:focus-visible{outline:2px solid var(--action);outline-offset:2px}
 .seen{display:block;font-size:var(--fs-xs);color:var(--muted)}
 .seen.on{color:var(--gain);font-weight:600}
+
+/* tap on the balance: the button dips, the coin spins and a few coins pop out */
+.walletbtn{position:relative}
+.walletbtn.tapped{animation:walletTap .45s cubic-bezier(.3,1.5,.5,1)}
+.walletbtn.tapped .coin{animation:coinSpin .7s cubic-bezier(.3,1.2,.4,1)}
+.coinburst{position:absolute;left:24px;top:50%;width:0;height:0;pointer-events:none}
+.coinburst b{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;background:var(--star);box-shadow:0 0 6px var(--star);opacity:0;animation:coinPop .7s ease-out forwards}
+.coinburst b:nth-child(1){--dx:-26px;--dy:-24px}.coinburst b:nth-child(2){--dx:0px;--dy:-32px}.coinburst b:nth-child(3){--dx:26px;--dy:-24px}
+.coinburst b:nth-child(4){--dx:-30px;--dy:10px}.coinburst b:nth-child(5){--dx:0px;--dy:30px}.coinburst b:nth-child(6){--dx:30px;--dy:10px}
+@keyframes walletTap{0%{transform:scale(1)}30%{transform:scale(.93)}65%{transform:scale(1.05)}100%{transform:scale(1)}}
+@keyframes coinSpin{0%{transform:rotateY(0) scale(1)}50%{transform:rotateY(540deg) scale(1.3)}100%{transform:rotateY(720deg) scale(1)}}
+@keyframes coinPop{0%{opacity:1;transform:translate(0,0) scale(.4)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1)}}
+@media (prefers-reduced-motion:reduce){.walletbtn.tapped,.walletbtn.tapped .coin{animation:none}.coinburst{display:none}}
