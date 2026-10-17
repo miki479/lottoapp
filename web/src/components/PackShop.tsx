@@ -63,7 +63,10 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
   useEffect(() => { shopStatus().then(setStatus).catch(() => undefined); }, []);
   const deal = dealOf(Date.now()), promo = !!status?.promo_until && Date.parse(status.promo_until) > Date.now(), lucky = !!status?.lucky_until && Date.parse(status.lucky_until) > Date.now();
   const pctOf = (pk: PackDef): number => packPct(pk.tier, promo, deal), priceOf = (pk: PackDef): number => dealPrice(pk.price, pctOf(pk));
-  const clock = (iso: string): string => new Intl.DateTimeFormat(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+  const clock = (iso: string): string => {
+    const d = new Date(iso), sameDay = d.toDateString() === new Date().toDateString();
+    return new Intl.DateTimeFormat(INTL_TAG[locale], sameDay ? { hour: "2-digit", minute: "2-digit" } : { weekday: "short", hour: "2-digit", minute: "2-digit" }).format(d);
+  };
   const packOf = (tier: number): PackDef => PACKS.find((p) => p.tier === tier) ?? PACKS[0]!;
   const full = (album?.opened_today ?? 0) >= (album?.daily_cap ?? 12);
 

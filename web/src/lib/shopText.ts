@@ -35,7 +35,7 @@ const IT: HubText = {
     refill: "Sotto i 100 crediti? Un rabbocco a 250 arriva da solo, una volta al giorno.", got: (a) => `Bonus giornaliero: ${a}`, today: "Oggi", weekDone: "Settimana completa",
   },
   shop: {
-    title: "Negozio di bustine", intro: "Spendi crediti in bustine di figurine: 100 carte numerate da ogni angolo dell’app e, più raramente, un look per il tuo personaggio. I crediti sono finti, le carte servono solo a divertirsi.",
+    title: "Negozio di bustine", intro: "Spendi crediti in bustine di figurine: 100 carte numerate da ogni angolo dell’app e, più raramente, un look per il tuo personaggio. Più bustine apri, più fai felice chi ha fatto il negozio.",
     packs: ["Curiosa", "Audace", "Fuoriclasse", "Mitica"], odds: "Probabilità", oddsLine: (p) => `Comune ${p.common} · Rara ${p.rare} · Epica ${p.epic} · Leggendaria ${p.legendary}`, looksShare: (p) => `Un look ogni tanto: circa ${p} delle bustine`,
     dupRule: (pct, back) => `Una doppia ti restituisce circa il ${pct}% del prezzo (${back}).`, buy: (p) => `Apri · ${p}`, pay: (p) => `Paga ${p} e apri`, notNow: "Non ora", confirm: "Una bustina contiene una sola figurina o un look.",
     opening: "Tocca la bustina per aprirla", tap: (n) => (n === 1 ? "Ancora 1 tocco" : `Ancora ${n} tocchi`), tapAria: (n) => `Tocca la bustina: mancano ${n} tocchi`,
@@ -65,7 +65,7 @@ const EN: HubText = {
     refill: "Under 100 credits? A top-up to 250 arrives by itself, once a day.", got: (a) => `Daily bonus: ${a}`, today: "Today", weekDone: "Week complete",
   },
   shop: {
-    title: "Pack shop", intro: "Spend credits on packs of collectibles: 100 numbered figurine cards from every corner of the app and, more rarely, a look for your character. Credits are pretend and the cards are just for fun.",
+    title: "Pack shop", intro: "Spend credits on packs of collectibles: 100 numbered figurine cards from every corner of the app and, more rarely, a look for your character. The more packs you open, the happier you make whoever built this shop.",
     packs: ["Curious", "Bold", "Ace", "Mythic"], odds: "Odds", oddsLine: (p) => `Common ${p.common} · Rare ${p.rare} · Epic ${p.epic} · Legendary ${p.legendary}`, looksShare: (p) => `Now and then a look: about ${p} of the packs`,
     dupRule: (pct, back) => `A duplicate gives back about ${pct}% of the price (${back}).`, buy: (p) => `Open · ${p}`, pay: (p) => `Pay ${p} and open`, notNow: "Not now", confirm: "A pack holds one single card or one look.",
     opening: "Tap the pack to open it", tap: (n) => (n === 1 ? "1 more tap" : `${n} more taps`), tapAria: (n) => `Tap the pack: ${n} taps left`,
@@ -95,7 +95,7 @@ const JA: HubText = {
     refill: "100クレジット未満なら、1日1回250まで自動で補充されます。", got: (a) => `デイリーボーナス：${a}`, today: "今日", weekDone: "1週間達成",
   },
   shop: {
-    title: "パックショップ", intro: "クレジットでコレクションパックを購入。アプリのあらゆる分野から集めた番号付きカード100枚と、ごくまれにキャラクター用のルックが出ます。クレジットはニセモノ、カードはお楽しみです。",
+    title: "パックショップ", intro: "クレジットでコレクションパックを購入。アプリのあらゆる分野から集めた番号付きカード100枚と、ごくまれにキャラクター用のルックが出ます。開ければ開けるほど、このショップを作った人が喜びます。",
     packs: ["きになる", "だいたん", "エース", "ミティック"], odds: "出現率", oddsLine: (p) => `コモン ${p.common} · レア ${p.rare} · エピック ${p.epic} · レジェンド ${p.legendary}`, looksShare: (p) => `ときどきルックも：パック全体の約${p}`,
     dupRule: (pct, back) => `ダブりは価格の約${pct}%が戻ります（${back}）。`, buy: (p) => `開ける · ${p}`, pay: (p) => `${p}を払って開ける`, notNow: "やめておく", confirm: "1パックにはカード1枚、またはルック1つが入っています。",
     opening: "パックをタップして開けよう", tap: (n) => `あと${n}回タップ`, tapAria: (n) => `パックをタップ：あと${n}回`,
