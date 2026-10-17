@@ -2,7 +2,10 @@
  * How a player looks: one of the app's cartoon characters, inside a decoration ring made of a material.
  * Ring decorations unlock with the level (copper, bronze ... adamantium) or drop at random from the daily chest and the flash mission.
  */
-export const AVATARS = ["conductor", "busbot", "cloud", "fox", "ball", "bolt", "alien", "astro", "clock", "kandinsky", "robot", "panda", "wizard", "samurai", "dragon", "lion"] as const;
+/** The cartoon characters first; the "Forged" collection (rendered, faceted amber and amethyst) after them. */
+export const FORGED_AVATARS = ["pilot", "star", "emerald", "orb", "bear", "ziggurat", "gear", "goldspiral", "falcon", "ninja", "steelspiral", "cobra", "shogun", "cosmonaut", "eagle", "raven", "sculpt", "owl", "lionheart", "wyvern", "tiger", "knight", "drop", "panther", "mech", "vixen", "prism", "twinrings", "ember", "wolf"] as const;
+export const AVATARS = ["conductor", "busbot", "cloud", "fox", "ball", "bolt", "alien", "astro", "clock", "kandinsky", "robot", "panda", "wizard", "samurai", "dragon", "lion", ...FORGED_AVATARS] as const;
+export const CLASSIC_AVATARS = AVATARS.filter((a) => !(FORGED_AVATARS as readonly string[]).includes(a));
 export type AvatarId = (typeof AVATARS)[number];
 export const isAvatar = (s: unknown): s is AvatarId => (AVATARS as readonly string[]).includes(String(s));
 

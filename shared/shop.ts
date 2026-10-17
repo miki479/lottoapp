@@ -72,7 +72,9 @@ export const DEFAULT_AVATARS: readonly string[] = ["conductor", "busbot", "cloud
  * Rarity of each collectible avatar (decorations keep the rarity they have in looks.ts). The looks are the rarer pulls:
  * there is no common one, so they only come out of the pools that hold fewer cards.
  */
-export const AVATAR_RARITY: Readonly<Record<string, PackRarity>> = { ball: "rare", bolt: "rare", clock: "epic", astro: "epic", alien: "legendary", kandinsky: "legendary", robot: "rare", panda: "rare", wizard: "epic", samurai: "epic", dragon: "legendary", lion: "legendary" };
+export const AVATAR_RARITY: Readonly<Record<string, PackRarity>> = { ball: "rare", bolt: "rare", clock: "epic", astro: "epic", alien: "legendary", kandinsky: "legendary", robot: "rare", panda: "rare", wizard: "epic", samurai: "epic", dragon: "legendary", lion: "legendary",
+  // the "Forged" collection
+  gear: "rare", ziggurat: "rare", star: "rare", bear: "rare", owl: "rare", wolf: "rare", tiger: "rare", panther: "rare", raven: "rare", drop: "rare", pilot: "epic", knight: "epic", ninja: "epic", cosmonaut: "epic", mech: "epic", falcon: "epic", cobra: "epic", vixen: "epic", lionheart: "epic", emerald: "epic", prism: "epic", shogun: "legendary", eagle: "legendary", wyvern: "legendary", orb: "legendary", goldspiral: "legendary", steelspiral: "legendary", twinrings: "legendary", ember: "legendary", sculpt: "legendary" };
 
 export type ItemKind = "avatar" | "card" | "decoration";
 export interface ShopItem { kind: ItemKind; id: string; rarity: PackRarity }

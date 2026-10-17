@@ -181,6 +181,7 @@ const it: Messages = {
   look: {
     title: "Decorazioni",
     avatars: "Personaggio",
+    forged: "Forgiati · stile Ambra e Ametista",
     apply: "Applica",
     saved: "Look aggiornato",
     none: "Nessuna",
@@ -212,7 +213,7 @@ const it: Messages = {
     requestSent: "Richiesta inviata",
     nowFriends: "Ora siete amici",
     noTrophies: "Ancora nessun trofeo",
-    av: {"conductor": "Capotreno", "busbot": "Busbot", "cloud": "Nuvoletta", "fox": "Volpe", "ball": "Pallone", "bolt": "Fulmine", "alien": "Alieno", "astro": "Astronauta", "clock": "Sveglia", "kandinsky": "Astratto", "robot": "Robottino", "panda": "Panda", "wizard": "Mago", "samurai": "Samurai", "dragon": "Drago", "lion": "Re Leone"},
+    av: {"conductor": "Capotreno", "busbot": "Busbot", "cloud": "Nuvoletta", "fox": "Volpe", "ball": "Pallone", "bolt": "Fulmine", "alien": "Alieno", "astro": "Astronauta", "clock": "Sveglia", "kandinsky": "Astratto", "robot": "Robottino", "panda": "Panda", "wizard": "Mago", "samurai": "Samurai", "dragon": "Drago", "lion": "Re Leone", "pilot": "Pilota", "star": "Stella", "emerald": "Smeraldo", "orb": "Sfera", "bear": "Orso", "ziggurat": "Ziggurat", "gear": "Ingranaggio", "goldspiral": "Spirale d'oro", "falcon": "Falco", "ninja": "Ninja", "steelspiral": "Spirale d'acciaio", "cobra": "Cobra", "shogun": "Shogun", "cosmonaut": "Cosmonauta", "eagle": "Aquila", "raven": "Corvo", "sculpt": "Busto", "owl": "Gufo", "lionheart": "Cuor di leone", "wyvern": "Viverna", "tiger": "Tigre", "knight": "Cavaliere", "drop": "Goccia d'ambra", "panther": "Pantera", "mech": "Mech", "vixen": "Volpe d'ambra", "prism": "Prisma", "twinrings": "Anelli gemelli", "ember": "Brace", "wolf": "Lupo"},
     deco: {"copper": "Rame", "bronze": "Bronzo", "silver": "Argento", "gold": "Oro", "diamond": "Diamante", "amethyst": "Ametista", "platinum": "Platino", "mithril": "Mithril", "orichalcum": "Oricalco", "adamantium": "Adamantio", "jade": "Giada", "ruby": "Rubino", "sapphire": "Zaffiro", "obsidian": "Ossidiana", "opal": "Opale"},
     rarity: {"common": "Comune", "uncommon": "Non comune", "rare": "Rara", "epic": "Epica", "legendary": "Leggendaria", "mythic": "Mitica"},
   },
