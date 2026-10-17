@@ -1959,3 +1959,19 @@ textarea.field { resize: vertical; min-height: 84px; }
 
 .consent { display: flex; align-items: flex-start; gap: 10px; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.4; } .consent input { margin-top: 3px; flex: none; width: 18px; height: 18px; accent-color: var(--action); } .consent a { color: var(--action-ink); text-decoration: underline; }
 .consent.need { color: var(--loss); } .consentnote { margin: 0; }
+
+/* Halloween challenges: five cards, each keeps its own picture untouched (no frame, no filter) */
+.halloween{display:grid;gap:8px}
+.hwgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.hwcard{display:grid;grid-template-columns:112px 1fr;gap:12px;align-items:center}
+.hwpic{width:112px;height:112px;display:grid;place-items:center}
+.hwpic img{width:112px;height:112px;object-fit:contain;background:none}
+.hwempty{font-size:var(--fs-xs);text-align:center;color:var(--muted);border:1px dashed currentColor;border-radius:12px;padding:8px}
+.hwbody{display:grid;gap:4px;min-width:0}
+.hwprog{display:flex;gap:6px;align-items:center}
+.hwprog i{width:22px;height:8px;border-radius:4px;background:var(--border)}
+.hwprog i.full{background:var(--gain)}
+.hwstate{font-size:var(--fs-xs);font-weight:600}
+.hwcard.off .hwstate{color:var(--muted)}
+.hwrules summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
+.hwrules ul{margin:0;padding-left:20px;display:grid;gap:4px;font-size:var(--fs-sm)}

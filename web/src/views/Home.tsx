@@ -3,6 +3,7 @@ import { startChips } from "../lib/startcities.ts";
 import { InstallHint } from "../components/InstallHint.tsx";
 import { Inbox } from "../components/Inbox.tsx";
 import { PromoBanner } from "../components/PromoBanner.tsx";
+import { HalloweenBanner } from "../components/HalloweenBanner.tsx";
 import { ForYou } from "../components/ForYou.tsx";
 import { PersonalOffer, type OfferUse } from "../components/PersonalOffer.tsx";
 import { CLASS_LABEL, trainClass, trainZone, type TrainClass } from "../lib/zones.ts";
@@ -143,6 +144,7 @@ export function Home(p: HomeProps) {
         <h1>{msg.home.hero.title}</h1>
         <p>{msg.home.hero.body}</p>
       </section>
+      <HalloweenBanner msg={msg} onOpen={p.onPromo} />
       <PromoBanner msg={msg} onOpen={p.onPromo} reopen={p.newsKey} />
       {howOpen && (
         <section class="howto" aria-label={msg.home.how.title}>
