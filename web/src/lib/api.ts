@@ -1,4 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
+import { GoTrueClient } from "@supabase/auth-js";
+import { PostgrestClient } from "@supabase/postgrest-js";
 
 /**
  * Every request gets a 25 s limit (a hung connection must not leave a button spinning for ever), and a read that fails because the network dropped is tried once more.
@@ -17,10 +18,56 @@ const robustFetch: typeof fetch = async (input, init) => {
     } finally { clearTimeout(timer); }
   }
 };
-export const sb = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-  global: { fetch: robustFetch },
+const URL_ = import.meta.env.VITE_SUPABASE_URL as string, KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+/** The same read asked twice while the first is still on its way (several parts of the page need the same thing at start) is one request, answered to both. */
+const sharing = new Map<string, Promise<Response>>();
+const readsOnly = (method: string, url: string, body: unknown): boolean => {
+  if (method === "GET" || method === "HEAD") return true;
+  if (method !== "POST" || typeof body !== "string") return false;
+  const fn = /\/rest\/v1\/rpc\/([a-z0-9_]+)/.exec(url)?.[1];
+  return !!fn && !CHANGES.test(fn);
+};
+const shared: typeof fetch = (input, init) => {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url, method = String(init?.method ?? "GET").toUpperCase();
+  if (init?.signal || !readsOnly(method, url, init?.body)) return robustFetch(input, init);
+  const h = new Headers(init?.headers), key = `${method} ${url} ${h.get("authorization") ?? ""} ${String(init?.body ?? "")}`, hit = sharing.get(key);
+  if (hit) return hit.then((r) => r.clone());
+  const run = robustFetch(input, init);
+  sharing.set(key, run);
+  const done = () => { sharing.delete(key); };
+  run.then(done, done);
+  return run.then((r) => r.clone());
+};
+
+// Only what the app uses: sign-in (auth), table and function calls (postgrest). The full supabase-js client also carries realtime and storage code that is never run.
+const auth = new GoTrueClient({
+  url: `${URL_}/auth/v1`, headers: { Authorization: `Bearer ${KEY}`, apikey: KEY },
+  storageKey: `sb-${new globalThis.URL(URL_).hostname.split(".")[0]}-auth-token`,
+  persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, fetch: robustFetch,
 });
+const token = async (): Promise<string> => (await auth.getSession()).data.session?.access_token ?? KEY;
+const authed: typeof fetch = async (input, init) => {
+  const headers = new Headers(init?.headers);
+  if (!headers.has("apikey")) headers.set("apikey", KEY);
+  if (!headers.has("Authorization")) headers.set("Authorization", `Bearer ${await token()}`);
+  return shared(input, { ...init, headers });
+};
+const rest = new PostgrestClient<any, any>(`${URL_}/rest/v1`, { fetch: authed });
+
+/** Calls an edge function: `{ data, error }`, where a failed answer keeps its response in `error.context` (what the callers read the error code from). */
+async function invoke(name: string, opts: { body?: unknown } = {}): Promise<{ data: any; error: (Error & { context?: Response }) | null }> {
+  try {
+    const res = await robustFetch(`${URL_}/functions/v1/${name}`, { method: "POST", headers: { apikey: KEY, Authorization: `Bearer ${await token()}`, "Content-Type": "application/json" }, body: JSON.stringify(opts.body ?? {}) });
+    if (!res.ok) return { data: null, error: Object.assign(new Error(`Edge Function returned a non-2xx status code (${res.status})`), { context: res }) };
+    const type = res.headers.get("content-type") ?? "";
+    return { data: type.includes("application/json") ? await res.json() : await res.text(), error: null };
+  } catch (e) {
+    return { data: null, error: e instanceof Error ? e : new Error(String(e)) };
+  }
+}
+
+export const sb = { auth, from: rest.from.bind(rest), rpc: rest.rpc.bind(rest), functions: { invoke } };
 
 /**
  * Calls that change something (a bet, a claim, a purchase…) are never sent twice at once: a second identical call made while the first is

@@ -137,12 +137,14 @@ export function Home(p: HomeProps) {
   const homeRegion = p.homePos ? regionOfPoint(p.homePos.lat, p.homePos.lon) : null, curRegion = isRegionFilter(p.filter) ? p.filter.slice(REGION_FILTER.length) : null;
   const regionChips = p.italian ? [...new Set([curRegion, homeRegion, ...TOP_REGIONS].filter((x): x is string => !!x))].slice(0, 5) : [];
   const regionCounts = useMemo(() => { const out: Record<string, number> = {}; if (regOpen) for (const m of p.markets ?? []) if (m.category === p.cat && Date.parse(m.closes_at) > p.now) { const r = regionOfCity(m.city_id); if (r) out[r] = (out[r] ?? 0) + 1; } return out; }, [regOpen, p.markets, p.cat]);
+  // now and then (a third of the visits) the line that asks for a few bets and promises a notification with the verdict
+  const [useAlt] = useState(() => Math.random() < 0.34), slogan = useAlt ? msg.home.hero.alt : msg.home.hero;
   return (
     <div class="home screen">
       <section class="hero" aria-label={msg.home.hero.title}>
         <i class="star s1" /><i class="star s2" />
-        <h1>{msg.home.hero.title}</h1>
-        <p>{msg.home.hero.body}</p>
+        <h1>{slogan.title}</h1>
+        <p>{slogan.body}</p>
       </section>
       <HalloweenBanner msg={msg} />
       <PromoBanner msg={msg} onOpen={p.onPromo} reopen={p.newsKey} />

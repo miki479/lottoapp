@@ -161,10 +161,12 @@ async function learnedPriors(sb: ReturnType<typeof db>, now: number): Promise<(c
     const byCountry = new Map<string, string[]>();
     for (const c of cities) byCountry.set(c.country, [...(byCountry.get(c.country) ?? []), c.id]);
     const map = new Map<string, number>();
-    for (const [cc, ids] of byCountry) for (const kind of ["bus_delay_gt", "train_delay_gt"] as const) {
-      const { data } = await sb.from("markets").select("outcome").eq("kind", kind).eq("status", "resolved").is("params->>ladderOf", null).in("city_id", ids).order("target_at", { ascending: false }).limit(1000);
-      const n = data?.length ?? 0, yes = (data ?? []).filter((r) => r.outcome === "yes").length;
-      map.set(`${cc}|${kind}`, learnedPrior(yes, n, DEFAULT_YES_PROBABILITY[kind]));
+    // one cached call (the database keeps the counts for half an hour) instead of one query per country and kind on every cold start
+    const { data: counts } = await sb.rpc("learned_prior_counts", { p_max_age_s: 1800 });
+    const seen = new Map<string, { yes: number; n: number }>(((counts ?? []) as { country: string; kind: string; yes: number; n: number }[]).map((r) => [`${r.country}|${r.kind}`, { yes: r.yes, n: r.n }]));
+    for (const cc of byCountry.keys()) for (const kind of ["bus_delay_gt", "train_delay_gt"] as const) {
+      const r = seen.get(`${cc}|${kind}`) ?? { yes: 0, n: 0 };
+      map.set(`${cc}|${kind}`, learnedPrior(r.yes, r.n, DEFAULT_YES_PROBABILITY[kind]));
     }
     priorCache = { at: now, map };
     (priorCache as unknown as { country: Map<string, string> }).country = country;

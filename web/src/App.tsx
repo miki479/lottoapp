@@ -343,9 +343,9 @@ export function App() {
         isPlace && !placeIds.current.includes(f0!) ? open().in("city_id", [f0!]).order("closes_at").limit(400) : none,
       ]);
       if (seq !== mkSeq.current) return;
-      // the other categories sit in files of their own: all of them on a good line, only the one being looked at on a slow or metered one
+      // the other categories sit in files of their own: only the one being looked at is fetched, the others when the player opens them (their counts come with the picture)
       const base = import.meta.env.VITE_SUPABASE_URL as string, sh = Object.keys(snap.shards ?? {});
-      const wantS = lightLine() ? sh.filter((c) => c === catR.current || loadedShards.current.has(c)) : sh;
+      const wantS = sh.filter((c) => c === catR.current || loadedShards.current.has(c));
       const shardRows = (await Promise.all(wantS.map((c) => getShard(base, c, snap.t)))).flat();
       for (const c of wantS) loadedShards.current.add(c);
       setShardCounts(snap.shards ?? {});
@@ -530,7 +530,7 @@ export function App() {
   const list = cat === "train" || cat === "bus" ? (filter === "mine" && stopTier[cat] ? [...byCat(cat)].sort((a, b) => (stopDist(a) ?? 1e9) - (stopDist(b) ?? 1e9)) : byDelay(byCat(cat))) : flashFirst(byCat(cat));
   // a category whose file has not been fetched yet (slow line) shows the number the server counted
   const unloaded = (c: CatId, n: number) => (n === 0 && !loadedShards.current.has(c) ? shardCounts[c] ?? 0 : n);
-  useEffect(() => { if (lightLine() && shardCounts[cat] && !loadedShards.current.has(cat)) void loadMarkets(); }, [cat, shardCounts]);
+  useEffect(() => { if (shardCounts[cat] && !loadedShards.current.has(cat)) void loadMarkets(); }, [cat, shardCounts]);
   const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: unloaded("nature", byCat("nature").length), strike: isItalian ? unloaded("strike", byCat("strike").length) : 0, traffic: byCat("traffic").length, finance: unloaded("finance", byCat("finance").length), culture: unloaded("culture", byCat("culture").length), sport: unloaded("sport", new Set(byCat("sport").map((m) => String(m.params.eventId))).size), law: unloaded("law", byCat("law").length), space: unloaded("space", byCat("space").length), games: unloaded("games", byCat("games").length), gov: 0 };
 
   const top: TopItem[] = useMemo(() => {
