@@ -14,7 +14,7 @@ export type MatchBetKey = import("../../../shared/sport.ts").MatchBet;
 export interface MatchQ { bet: MatchBetKey; home: string; away: string; time: string }
 export interface ConcertsQ { place: string; from: string; to: string; value: string; time: string }
 export interface EpisodeQ { show: string; ep: string; value: string; date: string }
-export interface TickQ { kind: "price" | "kp" | "wiki" | "hn" | "chess" | "launch" | "f1win" | "f1podium" | "neo" | "eonet" | "players" | "listeners" | "bikes" | "storm" | "alert" | "fuel" | "oil" | "fx" | "carbon" | "feargreed" | "nws" | "power" | "tide" | "river"; label: string; value: string; time: string; from: string; to: string; day: string }
+export interface TickQ { kind: "price" | "kp" | "wiki" | "hn" | "chess" | "launch" | "f1win" | "f1podium" | "neo" | "eonet" | "players" | "viewers" | "listeners" | "bikes" | "storm" | "alert" | "fuel" | "oil" | "fx" | "carbon" | "feargreed" | "nws" | "power" | "tide" | "river"; label: string; value: string; time: string; from: string; to: string; day: string }
 export interface FullQ { occ: "empty" | "few" | "standing"; route: string; stop: string; time: string }
 export interface TrafficQ { site: string; toward: string; from: string; to: string; kmh: number }
 export interface StrikeQ { date: string; day: string; who: string; hours: string }
@@ -95,7 +95,7 @@ export interface Messages {
   weather: { clear: string; light: string; heavy: string };
   near: { title: string; ask: string; privacy: string; locate: string; denied: string; zone: (name: string) => string; bets: (n: number) => string; first: string; nothing: string; refresh: string };
   places: { more: string; title: string; hint: string; search: string; recent: string; capitals: string; famous: string; withData: string; none: string; searchError: string; limit: string; full: string; credit: string };
-  top: { prob: string; best: string; late: string; popular: string; city: string; closing: string; draw: string; goal: string; upset: string; coin: string; spotlight: string; wild: string; sky: string; avg: (min: number) => string; players: (n: number) => string; ontime: string; open: string };
+  top: { prob: string; best: string; late: string; friends: string; friendsN: (n: number) => string; popular: string; city: string; closing: string; draw: string; goal: string; upset: string; coin: string; spotlight: string; wild: string; sky: string; avg: (min: number) => string; players: (n: number) => string; ontime: string; open: string };
   card: { noLive: string; late: string; onTime: string; stakeTo: (stake: string, win: string) => string; closes: string; forecast: string; live: string; yes: string; no: string; topOdds: string; hot: string };
   alertNames: { yellow: string; orange: string; red: string };
   alertHazards: { idraulica: string; idrogeologica: string; temporali: string };

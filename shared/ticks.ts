@@ -19,7 +19,7 @@ export type CryptoSeries = keyof typeof CRYPTO;
 export const isCrypto = (s: string): s is CryptoSeries => Object.prototype.hasOwnProperty.call(CRYPTO, s);
 
 /** Games whose number of players online (Steam Web API, no key) is asked about. */
-export const STEAM = { "730": "Counter-Strike 2", "570": "Dota 2", "271590": "Grand Theft Auto V", "578080": "PUBG", "1245620": "Elden Ring" } as const;
+export const STEAM = { "730": "Counter-Strike 2", "570": "Dota 2", "271590": "Grand Theft Auto V", "578080": "PUBG", "1245620": "Elden Ring", "1172470": "Apex Legends", "252490": "Rust", "1086940": "Baldur's Gate 3", "553850": "Helldivers 2", "1091500": "Cyberpunk 2077", "440": "Team Fortress 2", "359550": "Rainbow Six Siege", "230410": "Warframe", "1623730": "Palworld", "1938090": "Call of Duty", "381210": "Dead by Daylight", "105600": "Terraria", /* not a Steam game: the viewers of live Dota 2 matches (OpenDota), asked as "viewers" */ "dota_live": "Dota 2 (live matches)" } as const;
 export const isSteam = (s: string) => s.startsWith("steam:") && s.slice(6) in STEAM;
 /** Artists whose total number of Last.fm listeners is asked about. The total only grows, so the line sits where the recent pace of growth puts it. */
 export const LASTFM = { taylorswift: "Taylor Swift", billieeilish: "Billie Eilish", drake: "Drake", theweeknd: "The Weeknd", dualipa: "Dua Lipa", badbunny: "Bad Bunny", maneskin: "Måneskin", sferaebbasta: "Sfera Ebbasta" } as const;

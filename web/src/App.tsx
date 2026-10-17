@@ -541,6 +541,9 @@ export function App() {
     if (facts) items.push({ mid: facts.id, id: "late", icon: TrendingUp, label: msg.top.late, big: null, extra: <DelayMeter sec={live[facts.id]!.delay_sec} prev={live[facts.id]!.prev_delay_sec} limitSec={Number(facts.params.thresholdSec ?? 180)} observedAt={live[facts.id]!.observed_at} now={now} msg={msg} big />, sub: `${trainLabel(String(facts.params.routeName ?? ""), facts.kind, locale)} → ${facts.params.headsign ?? ""}`, onClick: () => setSheet({ m: facts, pick: "yes" }) });
     const pop = popular.map((p) => ({ p, m: inFilter.find((m) => m.id === p.market_id) })).find((x) => x.m);
     if (pop?.m) items.push({ mid: pop.m.id, id: "pop", icon: Users, label: msg.top.popular, big: <>{pop.p.bets}<small>{msg.top.players(pop.p.bets).replace(/^\d+\s*/, "")}</small></>, sub: question(pop.m, msg, locale, cityName(cityOf(pop.m.city_id), locale), cityOf(pop.m.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: pop.m!, pick: "no" }) });
+    // what the player's friends are betting on right now: the open question with the most of them
+    const fr = inFilter.filter((m) => (friendBets[m.id] ?? 0) > 0 && Date.parse(m.closes_at) > now).sort((a, b) => (friendBets[b.id] ?? 0) - (friendBets[a.id] ?? 0))[0];
+    if (fr) items.push({ mid: fr.id, id: "friends", icon: Users, label: msg.top.friends, big: <>{msg.top.friendsN(friendBets[fr.id]!)}</>, sub: question(fr, msg, locale, cityName(cityOf(fr.city_id), locale), cityOf(fr.city_id).timezone, new Date(now)), onClick: () => setSheet({ m: fr, pick: "yes" }) });
     const byCity = new Map<string, number[]>();
     for (const m of open) { const l = live[m.id]; if (l && !l.is_forecast) byCity.set(m.city_id, [...(byCity.get(m.city_id) ?? []), l.delay_sec]); }
     const worst = [...byCity.entries()].filter(([, v]) => v.length >= 2).map(([c, v]) => [c, v.reduce((a, b) => a + b, 0) / v.length] as const).sort((a, b) => b[1] - a[1])[0];
@@ -582,12 +585,12 @@ export function App() {
     const seenM = new Set<string>(); const uniq = items.filter((x) => { if (!x.mid) return true; if (seenM.has(x.mid)) return false; seenM.add(x.mid); return true; }); items.length = 0; items.push(...uniq);
     // a small train board for whoever wants to jump from another category to a train (to bet or to watch its delay live)
     if (isItalian && byCat("train").some((m) => live[m.id] && !live[m.id]!.is_forecast)) items.push({ id: "board", icon: Train, label: "", big: null, sub: "", node: <TrainBoard variant="strip" markets={open} live={live} msg={msg} locale={locale} now={now} onPick={(m, pick) => setSheet({ m, pick })} onRefresh={() => setLiveTick((n) => n + 1)} />, onClick: () => {} });
-    const PIN = ["trend", "flash", "board", "late"], pinned = items.filter((x) => PIN.includes(x.id)).sort((x, y) => PIN.indexOf(x.id) - PIN.indexOf(y.id)).slice(0, 4);
+    const PIN = ["trend", "friends", "flash", "board", "late"], pinned = items.filter((x) => PIN.includes(x.id)).sort((x, y) => PIN.indexOf(x.id) - PIN.indexOf(y.id)).slice(0, 4);
     const seed = Math.floor(now / (3 * 3600_000)), h = (id: string) => { let n = seed; for (let i = 0; i < id.length; i++) n = (n * 31 + id.charCodeAt(i)) >>> 0; return n; };
     const rest = items.filter((x) => !PIN.includes(x.id) || !pinned.includes(x)).sort((x, y) => h(x.id) - h(y.id));
     // each card with a question gets its small live chart under the title
     return [...pinned, ...rest].slice(0, 5).map((it) => { const mk = it.mid && it.id !== "late" ? open.find((x) => x.id === it.mid) : undefined; return mk ? { ...it, mini: <MiniLive m={mk} live={live[mk.id]} now={now} locale={locale} msg={msg} /> } : it; });
-  }, [inFilter, live, popular, trendRows, locale, Math.floor(now / 1000)]);
+  }, [inFilter, live, popular, trendRows, friendBets, locale, Math.floor(now / 1000)]);
 
   const flashId = open.find((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now)?.id;
   useEffect(() => { if (flashId) announce(`flash-${flashId}`, msg.voice.flash, locale); }, [flashId]);

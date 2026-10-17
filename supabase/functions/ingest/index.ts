@@ -625,9 +625,18 @@ async function activeStorms(): Promise<{ id: string; name: string; kt: number; c
 
 async function steamCounts(): Promise<Record<string, number>> {
   const out: Record<string, number> = {};
-  for (const id of Object.keys(STEAM)) {
-    try { const j = await getJson(`https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${id}`); const n = j?.response?.player_count; if (typeof n === "number" && n > 0) out[id] = n; } catch { /* skip this game */ }
-  }
+  await Promise.all(Object.keys(STEAM).map(async (id) => {
+    try {
+      if (id === "dota_live") {
+        // everybody watching the live Dota 2 matches that OpenDota lists right now
+        const j = await getJson("https://api.opendota.com/api/live");
+        const n = Array.isArray(j) ? (j as { spectators?: number }[]).reduce((s, g) => s + (Number(g.spectators) || 0), 0) : 0;
+        if (n > 0) out[id] = n;
+        return;
+      }
+      const j = await getJson(`https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${id}`); const n = j?.response?.player_count; if (typeof n === "number" && n > 0) out[id] = n;
+    } catch { /* skip this game */ }
+  }));
   return out;
 }
 
