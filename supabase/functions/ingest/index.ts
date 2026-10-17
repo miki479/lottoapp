@@ -1266,6 +1266,9 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
   const notes: string[] = [];
   /** Every TheSportsDB call goes through the gate: the free key answers 429 above 30 a minute. */
   const tsdb = async (url: string) => { await tsdbGate(); return await getJson(url); };
+  // The league loop keeps going when TheSportsDB refuses (403, limit): football-data.org can still list the matches; the failure is raised below only if nothing else answered.
+  let tsdbDown: unknown = null;
+  const tsdbSoft = async (url: string) => { try { return await tsdb(url); } catch (e) { tsdbDown = e; return null; } };
   // 1. Matches that should be over: store the final score once it is published.
   const { data: open } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").lte("target_at", new Date(now * 1000).toISOString()).order("target_at").limit(100);
   const ids = [...new Set((open ?? []).map((m) => String((m.params as { eventId: string }).eventId)))];
@@ -1359,11 +1362,12 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
     for (const league of LEAGUES.filter((_, i) => Math.floor(i / 2) === slot)) {
       try {
         // every match of the next 7 days, day by day (the "round" calls of the free tier are capped at 5)
+        tsdbDown = null;
         const fixtures: Fixture[] = [];
         let season = "";
         for (let d = 0; d < 7; d++) {
           const day = new Date((now + d * 86400) * 1000).toISOString().slice(0, 10);
-          const evs = ((await tsdb(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
+          const evs = ((await tsdbSoft(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
           await new Promise((r) => setTimeout(r, 150)); // the free tier is polite-use: about 30 calls a minute
           for (const e of evs) {
             const k = Date.parse(`${e.strTimestamp}Z`) / 1000;
@@ -1391,7 +1395,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
         const played: Record<string, unknown>[] = [];
         for (let d = 1; d <= 3; d++) {
           const day = new Date((now - d * 86400) * 1000).toISOString().slice(0, 10);
-          const evs = ((await tsdb(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
+          const evs = ((await tsdbSoft(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
           await new Promise((r) => setTimeout(r, 150));
           for (const e of evs) {
             const k = Date.parse(`${e.strTimestamp}Z`) / 1000, hg = e.intHomeScore, ag = e.intAwayScore;
@@ -1402,6 +1406,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
         }
         if (played.length) await sb.from("team_form").upsert(played, { onConflict: "event_id" });
         // European football: the day listing shows only 3 matches a day, the rest comes from the ESPN scoreboard
+        if (!fdOk && tsdbDown) throw tsdbDown;
         if (league.deep && !fdOk) {
           const { data: openM } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").eq("params->>league", league.name).limit(600);
           const have = new Map<string, Fixture>();
