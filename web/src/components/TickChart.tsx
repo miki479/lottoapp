@@ -9,8 +9,8 @@ import { sb } from "../lib/api.ts";
 import { fmtPct } from "../lib/num.ts";
 import { ChevronDown } from "lucide-preact";
 
-/** Whether the player left the trend open: it stays that way for the next sheets (closed by default, the sheet is short). */
-let leftOpen = false;
+/** Whether the player left the trend open: it stays that way for the next sheets (open the first time). */
+let leftOpen = true;
 
 interface Pt { at: number; v: number }
 
@@ -29,7 +29,7 @@ export function TickChart({ m, msg, locale }: { m: MarketRow; msg: Messages; loc
   }, [key]);
   if (series.startsWith("alert:")) return null;
   if (pts === null) return <div class="sk s" />;
-  if (pts.length < 3) return null;
+  if (pts.length < 3) return <div class="tickchart"><p class="hint">{msg.chart.soon}</p></div>;
   const thr = Number(m.params.threshold), W = 320, H = 96, pad = 6;
   const all = [...pts.map((p) => p.v), thr];
   const lo = kind === "price" ? Math.min(...all) : Math.min(0, ...all), hi = Math.max(...all), span = hi - lo || 1;

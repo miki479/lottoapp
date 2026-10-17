@@ -39,15 +39,15 @@ export function TickScene({ m, hint, msg, now }: { m: MarketRow; hint: Hint; msg
     );
   }
   if (series.startsWith("steam:")) {
-    // the line of players: Yes tilts it up and turns it green, No tilts it down and turns it red, both with the same easing
+    // the line of players: Yes tilts it up and turns it green, No tilts it down and turns it red, both with the same easing; the pad sits above the pivot, out of the line's way
     return (
       <div class={`mscene tick game ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
         <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
           <rect width="320" height="84" fill="#12142b" />
-          <g stroke="#262a52" stroke-width="1"><path d="M0 20H320M0 62H320M60 0V84M140 0V84M220 0V84M300 0V84" /></g>
-          <g class="gpad" transform="translate(16 16)" fill="#2c3170" stroke="#6f78ff" stroke-width="1.500" stroke-linejoin="round"><path d="M6 10h28c6 0 9 6 11 14s0 14-5 14c-4 0-6-4-9-7H9c-3 3-5 7-9 7-5 0-7-6-5-14S0 10 6 10z" /><path d="M12 18v8M8 22h8" stroke="#aab0ff" /><circle cx="30" cy="20" r="2" fill="#aab0ff" stroke="none" /><circle cx="35" cy="25" r="2" fill="#aab0ff" stroke="none" /></g>
-          <path d="M0 42H320" stroke="#8ea0c8" stroke-width="1.500" stroke-dasharray="6 5" opacity=".7" />
-          <g class="gline"><polyline points="0,46 30,44 60,48 90,42 120,45 150,41 180,44 210,40 240,43 270,40 300,42" fill="none" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" /><circle cx="300" cy="42" r="6" /></g>
+          <g stroke="#262a52" stroke-width="1"><path d="M0 28H320M0 56H320M60 0V84M140 0V84M220 0V84M300 0V84" /></g>
+          <g class="gpad" transform="translate(138 4) scale(.62)" fill="#2c3170" stroke="#6f78ff" stroke-width="2" stroke-linejoin="round"><path d="M6 10h28c6 0 9 6 11 14s0 14-5 14c-4 0-6-4-9-7H9c-3 3-5 7-9 7-5 0-7-6-5-14S0 10 6 10z" /><path d="M12 18v8M8 22h8" stroke="#aab0ff" /><circle cx="30" cy="20" r="2" fill="#aab0ff" stroke="none" /><circle cx="35" cy="25" r="2" fill="#aab0ff" stroke="none" /></g>
+          <path d="M0 52H320" stroke="#8ea0c8" stroke-width="1.500" stroke-dasharray="6 5" opacity=".6" />
+          <g class="gline"><polyline points="10,54 40,52 70,56 100,50 130,53 160,49 190,52 220,48 250,51 280,48 305,50" fill="none" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" /><circle cx="305" cy="50" r="5.500" /></g>
         </svg>
         <b>{cap}</b>
       </div>

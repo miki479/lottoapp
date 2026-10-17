@@ -2021,18 +2021,17 @@ textarea.field { resize: vertical; min-height: 84px; }
 @media (min-width:700px){.cell .v[data-len="long"]{font-size:var(--fs-xl)}}
 
 /* video games: the player line tilts and recolours with the pick, the same way both ways */
-.mscene.game .gline { transform-origin: 160px 42px; transition: transform .9s cubic-bezier(.2,.8,.2,1); }
+.mscene.game .gline { transform-origin: 160px 52px; transition: transform .9s cubic-bezier(.2,.8,.2,1); }
 .mscene.game .gline polyline { stroke: #f7b733; transition: stroke .7s ease; } .mscene.game .gline circle { fill: #f7b733; transition: fill .7s ease; }
-.mscene.game.s-yes .gline { transform: rotate(-10deg); } .mscene.game.s-yes .gline polyline { stroke: #34d399; } .mscene.game.s-yes .gline circle { fill: #34d399; }
-.mscene.game.s-no .gline { transform: rotate(10deg); } .mscene.game.s-no .gline polyline { stroke: #ff5d73; } .mscene.game.s-no .gline circle { fill: #ff5d73; }
-.mscene.game .gpad { animation: gpadbob 3s ease-in-out infinite alternate; transform-box: fill-box; } @keyframes gpadbob { to { transform: translate(16px, 13px) rotate(-4deg); } }
+.mscene.game.s-yes .gline { transform: rotate(-8deg); } .mscene.game.s-yes .gline polyline { stroke: #34d399; } .mscene.game.s-yes .gline circle { fill: #34d399; }
+.mscene.game.s-no .gline { transform: rotate(8deg); } .mscene.game.s-no .gline polyline { stroke: #ff5d73; } .mscene.game.s-no .gline circle { fill: #ff5d73; }
 /* asteroid: the fire of its tail flickers while it flies */
 .mscene.neo .neo-fire { transform-box: fill-box; transform-origin: 100% 50%; animation: neofire .28s ease-in-out infinite alternate; } @keyframes neofire { from { transform: scaleX(.85) scaleY(.9); opacity: .85; } to { transform: scaleX(1.12) scaleY(1.15); opacity: 1; } }
 /* chess: the knight hops over the board and the pick moves it forward or back */
 .mscene.chess .chess-knight { transition: transform .9s cubic-bezier(.2,.8,.2,1); animation: chesshop 2.6s cubic-bezier(.45,0,.55,1) infinite; transform-box: fill-box; transform-origin: 50% 100%; }
 .mscene.chess.s-yes .chess-knight { transform: translateX(46px); } .mscene.chess.s-no .chess-knight { transform: translateX(-46px); }
 @keyframes chesshop { 0%, 100% { translate: 0 0; rotate: 0deg; } 30% { translate: 0 -7px; rotate: -6deg; } 55% { translate: 0 0; rotate: 0deg; } 75% { translate: 0 -3px; rotate: 4deg; } }
-@media (prefers-reduced-motion: reduce) { .mscene.game .gpad, .mscene.neo .neo-fire, .mscene.chess .chess-knight { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .mscene.neo .neo-fire, .mscene.chess .chess-knight { animation: none; } }
 .trtoggle{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .trtoggle h2{margin:0;flex:none}.trtoggle h2 small{font-size:var(--fs-sm);font-weight:700;color:var(--muted)}
 .trpreview{display:flex;gap:2px;flex:1;justify-content:flex-end;overflow:hidden}
