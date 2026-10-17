@@ -30,6 +30,14 @@ export const TROPHY_GROUPS: { id: "wins" | "streaks" | "play" | "social" | "leve
   { id: "level", ids: ["level_25", "level_50"] },
   { id: "special", ids: ["limit_breaker", "high_roller", "ghost_feed", "collector"] },
 ];
+/** The same trophies by the look of their picture (rows on a public profile): stone tiles, plain 3D icons, shiny faceted badges. Every id appears exactly once. */
+const PLAIN: TrophyId[] = ["alliance", "compass", "champion", "five_row", "cup", "pace", "diamond", "ghost_streak", "phoenix", "insight", "wave", "rocket"];
+const STONE: TrophyId[] = ["first_win", "long_shot", "rain_man", "streak_7", "all_rings", "limit_breaker"];
+export const TROPHY_STYLES: { id: "stone" | "plain" | "shiny"; ids: TrophyId[] }[] = [
+  { id: "stone", ids: STONE },
+  { id: "plain", ids: PLAIN },
+  { id: "shiny", ids: TROPHY_IDS.filter((t) => !PLAIN.includes(t) && !STONE.includes(t)) },
+];
 export const TROPHY_RARITY: Record<TrophyId, "common" | "rare" | "epic" | "legendary" | "mythic"> = {
   limit_breaker: "legendary", first_win: "common", all_rings: "common", long_shot: "rare", rain_man: "rare", streak_7: "rare",
   train_whisperer: "epic", high_roller: "epic", streak_30: "epic", ghost_feed: "epic",
