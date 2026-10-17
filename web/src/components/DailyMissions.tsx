@@ -60,7 +60,7 @@ export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages
         return (
           <div class={`dmflash ${st} ${pop === "flash" ? "pop" : ""}`}>
             <span class="dmico big bolt"><Zap size={24} fill="currentColor" /></span>
-            <div class="dmtx"><b><i class="dmleg flashtag">{t.flash.title}</i>{t.flash.titles[f.id] ?? f.id}</b>
+            <div class="dmtx"><i class="dmleg flashtag dmtag">{t.flash.title}</i><b>{t.flash.titles[f.id] ?? f.id}</b>
               <span class="hint">{t.flash.prize(money(f.reward, p.locale), f.boosts)}</span>
               {st === "live" && <span class="dmbar"><i style={`width:${Math.round((f.progress / f.target) * 100)}%`} /></span>}
             </div>
@@ -68,7 +68,7 @@ export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages
               {st === "claimed" ? <span class="dmok"><Check size={16} strokeWidth={3} />{t.done}</span>
                 : st === "ready" ? <button class="btn primary dmbtn" disabled={busy !== null} aria-busy={busy === "flash"} onClick={() => burst("flash", async () => { await p.onFlash?.(); })}><span>{t.flash.claim}</span></button>
                 : st === "live" ? <><em class="num">{f.progress}/{f.target}</em><span class="dmcount num">{String(mm).padStart(2, "0")}:{String(ss).padStart(2, "0")}</span></>
-                : st === "soon" ? <span class="dmcount">{t.flash.soon(at)}</span> : <span class="dmmiss">{t.flash.missed}</span>}
+                : st === "soon" ? <><em>{t.flash.soon("\u0000").replace("\u0000", "").trim()}</em><span class="dmcount num">{at}</span></> : <span class="dmmiss">{t.flash.missed}</span>}
             </span>
           </div>
         );

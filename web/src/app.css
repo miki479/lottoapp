@@ -2005,3 +2005,45 @@ textarea.field { resize: vertical; min-height: 84px; }
 .legal .kofi{margin:var(--space-3) 0 0;display:flex;justify-content:center}
 .legal .kofi a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--border);color:var(--text);font-size:var(--fs-sm);font-weight:600;text-decoration:none}
 .legal .kofi a:hover{background:var(--surface-2)}
+.tickchart .tchead{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;border:0;background:none;color:inherit;font:inherit;cursor:pointer;padding:0;text-align:left}
+.tickchart .tchead b{flex:1}
+.tickchart .tcchev{transition:transform .2s}.tickchart.open .tcchev{transform:rotate(180deg)}
+
+/* the bet sheet on a phone: everything that matters on one screen, tighter spacing instead of dropped content */
+.sheetacts{display:flex;gap:8px;align-items:center}.sheetacts .btn{flex:1;min-height:44px}.sheetacts .reportlink{flex:none}
+@media (max-width:700px){
+  .sheet.withfoot{max-height:94dvh;gap:8px}
+  .sheet.withfoot .bethead{padding-top:0;padding-bottom:0}
+  .sheet.withfoot .mscene{height:52px}
+  .sheet.withfoot .stakectl{padding:10px 12px;gap:6px}
+  .sheet.withfoot .stakectl .glow{font-size:var(--fs-xl)}
+  .sheet.withfoot .out{padding:8px 6px}
+  .sheet.withfoot .out small{font-size:var(--fs-xs);line-height:1.2}
+  .sheet.withfoot .tickchart{padding:4px 12px}
+}
+
+/* the three kinds of line under "missions of today" (mission, flash, chest) share one size and one rhythm */
+.dmrow, .dmflash, .dmchest { min-height: 68px; }
+.dmtx { gap: 3px; }
+.dmtx .dmtag { display: block; width: fit-content; margin: 0; }
+.dmflash .dmtx .hint { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.dmcount { white-space: nowrap; }
+.dmflash .dmact { align-items: flex-end; gap: 0; }
+.dmflash .dmact em { font-size: var(--fs-xs); white-space: nowrap; }
+.dmflash .dmact .dmcount { font-size: var(--fs-md); line-height: 1.1; }
+@media (max-width:700px){
+  .sheet.withfoot .stakectl{position:relative}
+  .sheet.withfoot .stakectl .stakehead{position:absolute;left:12px;top:10px;flex-direction:column;align-items:flex-start;gap:0}
+  .sheet.withfoot .stakectl .glow{min-height:44px;display:flex;align-items:center;justify-content:center}
+  .sheet.withfoot .actions2 + .oddsword{margin:4px 0 0}
+  .sheet.withfoot .shead{min-height:40px}
+}
+@media (max-width:700px) and (max-height:800px){ .sheet.withfoot > .mscene, .sheet.withfoot > .sky, .sheet.withfoot > .scene { display:none } }
+@media (max-width:700px){
+  .sheet.withfoot .stakectl .stakemeta{position:absolute;right:12px;top:10px;font-size:var(--fs-xs)}
+  .sheet.withfoot .stakectl .stakemeta span:last-child{display:none}
+  .sheet.withfoot .out.lose small{display:none}
+  .sheet.withfoot .out{padding:6px}
+  .sheet.withfoot .bethead + * , .sheet.withfoot > div > .detail{margin:0}
+  .sheet.withfoot .actions2{margin-top:4px !important}
+}

@@ -9,14 +9,13 @@ import { PersonalOffer, type OfferUse } from "../components/PersonalOffer.tsx";
 import { CLASS_LABEL, trainClass, trainZone, type TrainClass } from "../lib/zones.ts";
 import { CloudRain } from "lucide-preact";
 import { RainGroup } from "../components/RainGroup.tsx";
-import { Gauge } from "lucide-preact";
+import { Gauge, Disc } from "lucide-preact";
 import { FilterSheet, filterLabel, ICON as KIND_ICON } from "../components/FilterSheet.tsx";
 import { groupMatches, MatchList } from "../components/MatchList.tsx";
 import { CatChips, type CatId } from "../components/CatChips.tsx";
 import { Empty } from "../components/Empty.tsx";
 import { CrowdCard } from "../components/CrowdCard.tsx";
 import { EventCard } from "../components/EventCard.tsx";
-import { FrisbeeSoon } from "../components/FrisbeeSoon.tsx";
 import { FactGroup, GameGroup } from "../components/GameGroup.tsx";
 import { CHESS, type ChessKey } from "../../../shared/ticks.ts";
 import { Flag } from "../components/Flag.tsx";
@@ -51,6 +50,7 @@ const LOCAL_CATS: CatId[] = ["bus", "train", "weather", "traffic"];
 const FRESH = new Set(["videogames", "chess", "launch", "neo", "volcanoes", "storms", "ice"]); const FRESH_UNTIL = Date.parse("2026-11-03T00:00:00Z");
 /** Formula 1 questions open six days before a race: the first of the new season opens on 19 October, and the chip says so until it does. */
 const F1_FROM = Date.parse("2026-10-19T00:00:00Z");
+const FRISBEE_NAME: Record<string, string> = { it: "Frisbee", "en-US": "Ultimate frisbee", "en-GB": "Ultimate frisbee", ja: "アルティメット" }, FRISBEE_SOON: Record<string, string> = { it: "in arrivo", "en-US": "coming soon", "en-GB": "coming soon", ja: "近日公開" };
 const F1_SOON: Record<string, string> = { it: "dal 19 ott", "en-US": "from Oct 19", "en-GB": "from 19 Oct", ja: "10/19から" };
 const safe = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
 export interface Trend { id: string; name: string; country: string; place?: Place }
@@ -223,8 +223,10 @@ export function Home(p: HomeProps) {
           </div>}
           {p.cat === "nature" && <button class="btn secondary quakecta" onClick={p.onQuakeMaker}><MapPin size={18} />{msg.quakeMaker.cta}</button>}
           {p.cat === "sport" && <label class="searchbox"><Search size={18} /><input class="field" type="search" value={teamQ} placeholder={msg.teamSearch} onInput={(e) => setTeamQ((e.target as HTMLInputElement).value)} /></label>}
-          {p.cat === "sport" && p.markets !== null && !sportQ && <FrisbeeSoon locale={p.locale} />}
-          {p.cat === "sport" && f1Soon && <div class="chiprow typerow f1row"><span class="chip soonchip" aria-disabled="true"><Gauge size={16} class="kico k-f1" />{filterLabel(msg, "f1")}<em>{F1_SOON[p.locale] ?? F1_SOON["en-US"]}</em></span></div>}
+          {p.cat === "sport" && (f1Soon || (p.markets !== null && !sportQ)) && <div class="chiprow typerow f1row">
+            {f1Soon && <span class="chip soonchip" aria-disabled="true"><Gauge size={16} class="kico k-f1" />{filterLabel(msg, "f1")}<em>{F1_SOON[p.locale] ?? F1_SOON["en-US"]}</em></span>}
+            {p.markets !== null && !sportQ && <span class="chip soonchip" aria-disabled="true"><Disc size={16} class="kico" />{FRISBEE_NAME[p.locale] ?? FRISBEE_NAME["en-US"]}<em>{FRISBEE_SOON[p.locale] ?? FRISBEE_SOON["en-US"]}</em></span>}
+          </div>}
           {p.cat === "sport" && f1Rows.length > 0 && <><h2 class="steplabel f1head"><Gauge size={16} class="kico k-f1" /> {filterLabel(msg, "f1")}</h2><div class="cardgrid">{f1Rows.map(card)}</div></>}
           {p.cat === "sport" && p.markets !== null && <MatchList matches={groupMatches(shown)} msg={msg} locale={p.locale} onPick={p.onPick} registered={p.registered} onAuth={p.onAuth} details={p.details} friendBets={p.friendBets} />}
           {p.stale && !staleOff && <p class="note warn stalenote"><span>{msg.feedWarning}</span><button class="stalex" aria-label={msg.common.close} onClick={() => setStaleOff(true)}><X size={14} /></button></p>}
