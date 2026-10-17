@@ -1,4 +1,4 @@
-import { Eye, Download, MapPin, Bell, Gift, Rocket, ChevronRight, Flame, LogOut, Pencil, Percent, Share2, Snowflake, Trash2, Trophy, User, Volume2, Zap, Check } from "lucide-preact";
+import { ChevronDown, Eye, Download, MapPin, Bell, Gift, Rocket, ChevronRight, Flame, LogOut, Pencil, Percent, Share2, Snowflake, Trash2, Trophy, User, Volume2, Zap, Check } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Sheet } from "../components/Sheet.tsx";
 import { StreakCard } from "../components/StreakCard.tsx";
@@ -30,7 +30,7 @@ export function ProfileView(p: {
   onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => Promise<void> | void; onDelete: () => Promise<void>; onExport: () => Promise<void>;
 }) {
   const [intentOn, setIntentOn] = useState(() => readConsent() === "on");
-  const [showSeen, setShowSeen] = useState(true);
+  const [showSeen, setShowSeen] = useState(true), [trOpen, setTrOpen] = useState(false);
   useEffect(() => { if (!p.registered) return; let live = true; sb.rpc("show_last_seen").then(({ data }) => { if (live && typeof data === "boolean") setShowSeen(data); }); return () => { live = false; }; }, [p.registered]);
   const m = p.msg.profile;
   const [xpOpen, setXpOpen] = useState(false);
@@ -125,8 +125,12 @@ export function ProfileView(p: {
         </div>
 
         <div class="stack">
-          <h2>{m.trophies}</h2>
-          {TROPHY_GROUPS.map((g) => (
+          <button class="trtoggle" aria-expanded={trOpen || p.fresh.size > 0} onClick={() => setTrOpen((v) => !v)}>
+            <h2>{m.trophies} <small class="num">{owned}/{TROPHY_IDS.length}</small></h2>
+            {!(trOpen || p.fresh.size > 0) && <span class="trpreview" aria-hidden="true">{TROPHY_IDS.filter((id) => p.trophies.has(id)).slice(-6).map((id) => <Trophy3D key={id} id={id} have size={32} />)}</span>}
+            <ChevronDown size={20} class="trchev" aria-hidden="true" />
+          </button>
+          {(trOpen || p.fresh.size > 0) && TROPHY_GROUPS.map((g) => (
             <div class="tgroup" key={g.id}>
               <h3 class="tghead">{m.groups[g.id]} <small class="num">{g.ids.filter((id) => p.trophies.has(id)).length}/{g.ids.length}</small></h3>
               <div class="trophies">

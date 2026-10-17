@@ -2036,3 +2036,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 .mscene.chess.s-yes .chess-knight { transform: translateX(46px); } .mscene.chess.s-no .chess-knight { transform: translateX(-46px); }
 @keyframes chesshop { 0%, 100% { translate: 0 0; rotate: 0deg; } 30% { translate: 0 -7px; rotate: -6deg; } 55% { translate: 0 0; rotate: 0deg; } 75% { translate: 0 -3px; rotate: 4deg; } }
 @media (prefers-reduced-motion: reduce) { .mscene.game .gpad, .mscene.neo .neo-fire, .mscene.chess .chess-knight { animation: none; } }
+.trtoggle{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.trtoggle h2{margin:0;flex:none}.trtoggle h2 small{font-size:var(--fs-sm);font-weight:700;color:var(--muted)}
+.trpreview{display:flex;gap:2px;flex:1;justify-content:flex-end;overflow:hidden}
+.trtoggle .trchev{margin-left:auto;transition:transform .2s;flex:none}.trtoggle[aria-expanded="true"] .trchev{transform:rotate(180deg)}
