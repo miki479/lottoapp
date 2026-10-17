@@ -193,6 +193,7 @@ const enUS: Messages = {
     dropOnly: "Found in chests and flash missions",
     next: (n, name) => `At level ${n}: ${name}`,
     newDrop: (name) => `New decoration: ${name}!`,
+    newDeco: (name) => `New ring unlocked: ${name}!`,
     levelUp: (n, name) => name ? `Level ${n}! Unlocked: ${name}` : `Level ${n}!`,
     change: "Change look",
     locked: "Locked",

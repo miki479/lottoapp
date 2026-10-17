@@ -31,7 +31,7 @@ import { useDailyReady, pending } from "./lib/shop.ts";
 import { hubText } from "./lib/shopText.ts";
 import { dealOf } from "../../shared/shop.ts";
 import { limitBreakState } from "../../shared/wallet.ts";
-import { DECORATIONS } from "../../shared/looks";
+import { DECORATIONS, isDecoration } from "../../shared/looks";
 import { Toast } from "./components/Toast.tsx";
 import type { TopItem } from "./components/TopCards.tsx";
 import { INTL_TAG, loadMessages, t, TROPHY_IDS, type Locale, type TrophyId } from "./i18n/index.ts";
@@ -224,6 +224,13 @@ export function App() {
       flash(msg.look.levelUp(p.level, got ? msg.look.deco[got.id] ?? got.id : null)); haptic.success();
     }
     if (p.level !== before) store.set("lvl", String(p.level));
+    // a ring that dropped (daily chest, flash mission, pack) since the last visit; the first look only records what is already owned
+    const decoKey = `decos.${profile?.id ?? "x"}`, known = store.get(decoKey);
+    if (known !== null && known !== undefined) {
+      const had = new Set(known.split(",")), fresh = p.owned.filter((d) => !had.has(d) && isDecoration(d));
+      if (fresh.length) { flash(msg.look.newDeco(msg.look.deco[fresh[0]!] ?? fresh[0]!)); haptic.success(); }
+    }
+    store.set(decoKey, p.owned.filter((d) => isDecoration(d)).join(","));
   }, [msg]);
   const loadProfile = useCallback(async () => { const { data } = await sb.from("profiles").select(PROFILE_COLS).maybeSingle(); if (data) setProfile(data as Profile); return data as Profile | null; }, []);
   // signed in with Google and no nickname yet: take the name from the Google profile (a nickname already chosen is never touched)

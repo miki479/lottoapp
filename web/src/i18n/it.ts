@@ -193,6 +193,7 @@ const it: Messages = {
     dropOnly: "Si trova nei bauli e nelle missioni lampo",
     next: (n, name) => `Al livello ${n}: ${name}`,
     newDrop: (name) => `Nuova decorazione: ${name}!`,
+    newDeco: (name) => `Nuova decorazione: ${name}!`,
     levelUp: (n, name) => name ? `Livello ${n}! Sbloccata: ${name}` : `Livello ${n}!`,
     change: "Cambia look",
     locked: "Bloccata",

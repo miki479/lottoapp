@@ -193,6 +193,7 @@ const ja: Messages = {
     dropOnly: "宝箱とフラッシュミッションで入手",
     next: (n, name) => `レベル ${n}：${name}`,
     newDrop: (name) => `新しいデコレーション：${name}！`,
+    newDeco: (name) => `新しいフレーム解放：${name}！`,
     levelUp: (n, name) => name ? `レベル ${n}！解放：${name}` : `レベル ${n}！`,
     change: "見た目を変更",
     locked: "ロック中",
