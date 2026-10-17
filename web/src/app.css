@@ -1763,7 +1763,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 .contact { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; } .contactopen { display: inline-flex; align-items: center; gap: 6px; min-height: var(--touch); }
 .contactform { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 480px; } .contactform textarea { resize: vertical; min-height: 96px; }
 .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.tr3dimg { object-fit: cover; border-radius: 14px; }
+.tr3dimg { object-fit: contain; }
 .tr3dwrap { --tm: none; position: relative; display: block; flex: none; }
 .tr3dwrap.lit::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, .6) 50%, transparent 62%) 130% 0 / 260% 100% no-repeat; -webkit-mask: var(--tm) center / contain no-repeat; mask: var(--tm) center / contain no-repeat; animation: trglint 4.5s ease-in-out infinite; }
 @keyframes trglint { 0%, 55% { background-position: 130% 0; } 100% { background-position: -130% 0; } }
