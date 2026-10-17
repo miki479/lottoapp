@@ -112,9 +112,16 @@ const cache = new Map<string, string>();
  * `hi` is for big sizes: more slices, smoother curves.
  */
 /** Rings that are a rendered picture (web/public/decorations/<id>.webp) instead of drawn shapes. */
-const PICTURED_RINGS = new Set(["cinder", "rosegold", "starlight", "aurum", "glacier", "crimson"]);
+const PICTURED_RINGS = new Set(["cinder", "rosegold", "starlight", "aurum", "glacier", "crimson", "azure", "vortex", "onyx"]);
 export function decorationSvg(id: string, shines: boolean, hi: boolean): string {
-  if (PICTURED_RINGS.has(id)) return `<image href="/decorations/${id}.webp" x="-12" y="-12" width="144" height="144"/>`;
+  if (PICTURED_RINGS.has(id)) {
+    // the picture, with the same light as the drawn rings: a sweeping sheen clipped to the metal and four twinkling stars
+    const img = `<image href="/decorations/${id}.webp" x="-12" y="-12" width="144" height="144"/>`;
+    const [x1, y1] = pt(90, -5), [x2, y2] = pt(90, 5), [x3, y3] = pt(90, -11), [x4, y4] = pt(90, 11);
+    const sheen = `<g class="lk-sheen"><path d="M${C} ${C}L${f(x3)} ${f(y3)}L${f(x4)} ${f(y4)}Z" fill="#fff" fill-opacity=".14"/><path d="M${C} ${C}L${f(x1)} ${f(y1)}L${f(x2)} ${f(y2)}Z" fill="#fff" fill-opacity=".4"/></g>`;
+    const sparks = [40, 140, 230, 320].map((a, i) => { const [x, y] = pt(55, a); return `<path class="lk-spk lk-d${i}" d="${star(x, y, 3.6)}" fill="#fff"/>`; }).join("");
+    return `<defs><mask id="lkm-${id}" style="mask-type:alpha">${img}</mask></defs>${img}<g mask="url(#lkm-${id})">${sheen}</g>${sparks}`;
+  }
   const key = `${id}|${shines ? 1 : 0}|${hi ? 1 : 0}`, hit = cache.get(key);
   if (hit) return hit;
   const p = M[id] ?? M.copper!, P = frameOf(id, hi), R = (a: number) => rayR(P, norm360(a)), c: Ctx = { R, p };
