@@ -61,7 +61,8 @@ describe("hacker news, chess, launches and Formula 1 questions", () => {
     expect(tickYes("launch:3b430f81-0ff1-4d85-8a1a-cef0de326198", 1, 0.5)).toBe(true);
     expect(tickDef("hn:max")?.category).toBe("culture");
     expect(tickDef("chess:hikaru")?.label).toBe("Hikaru Nakamura");
-    expect(tickDef("launch:3b430f81-0ff1-4d85-8a1a-cef0de326198")?.category).toBe("nature");
+    expect(tickDef("launch:3b430f81-0ff1-4d85-8a1a-cef0de326198")?.category).toBe("space");
+    expect(tickDef("f1:2026-18:ANT:w")?.category).toBe("sport");
   });
   it("tells every new question in every language, with no raw placeholder left", () => {
     const row = (series: string, params: Record<string, unknown>, at: string) => ({ id: "x", city_id: "world", category: "culture", kind: "tick_gt", feed_id: "t", params: { series, threshold: 3500, unit: "", forecast: 3480, at: 0, ...params }, closes_at: at, target_at: at, deadline_at: at, odds_yes: 2, odds_no: 1.8, status: "open" }) as never;

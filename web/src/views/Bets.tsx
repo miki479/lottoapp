@@ -35,7 +35,7 @@ export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge
   const [tab, setTab] = useState<"open" | "settled">("open");
   const [st, setSt] = useState<"all" | "won" | "lost" | "void">("all"), [cat, setCat] = useState("all");
   // football apart from the other sports (basketball, American football, hockey, baseball…): the leagues played to a winner are the "two-way" ones
-  const keyOf = (b: MyBet) => (b.markets.category === "sport" ? (TWO_WAY_LEAGUES.includes(String(b.markets.params.league ?? "")) ? "othersport" : "football") : b.markets.category);
+  const keyOf = (b: MyBet) => (b.markets.category === "sport" ? (TWO_WAY_LEAGUES.includes(String(b.markets.params.league ?? "")) || String(b.markets.params.series ?? "").startsWith("f1:") ? "othersport" : "football") : b.markets.category);
   const inTab = (status: string) => (tab === "open") === (status === "open");
   const cats = [...new Set(bets.filter((b) => inTab(b.status)).map((b) => keyOf(b)))];
   const catNow = (cats as string[]).includes(cat) ? cat : "all";

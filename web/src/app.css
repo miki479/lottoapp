@@ -1807,7 +1807,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 .typerow .chip.on .kico { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--action) 55%, transparent)); }
 .k-f1 { animation: kf1 2.4s cubic-bezier(.45, 0, .55, 1) infinite; } @keyframes kf1 { 0%, 100% { transform: rotate(-16deg); } 50% { transform: rotate(16deg); } }
 .k-launch { animation: klaunch 2.8s cubic-bezier(.4, 0, .2, 1) infinite; } @keyframes klaunch { 0% { transform: translate(-1px, 2px) scale(.94); opacity: .55; } 60% { transform: translate(1px, -1px) scale(1); opacity: 1; } 100% { transform: translate(2px, -4px) scale(.92); opacity: 0; } }
-.k-neo, .k-space { animation: kneo 5s linear infinite; } @keyframes kneo { to { transform: rotate(360deg); } }
+.k-neo { animation: kneo 5s linear infinite; } @keyframes kneo { to { transform: rotate(360deg); } }
 .k-eonet { animation: keonet 1.6s cubic-bezier(.45, 0, .55, 1) infinite alternate; transform-origin: 50% 100%; } @keyframes keonet { from { transform: scale(1, .95) rotate(-4deg); } to { transform: scale(.94, 1.07) rotate(4deg); } }
 .k-chess { animation: kchess 3s cubic-bezier(.45, 0, .55, 1) infinite; } @keyframes kchess { 0%, 100% { transform: translateY(0) rotate(0); } 35% { transform: translateY(-2px) rotate(-7deg); } 70% { transform: translateY(-1px) rotate(6deg); } }
 .k-hn { animation: khn 3.4s cubic-bezier(.45, 0, .55, 1) infinite; } @keyframes khn { 0%, 70%, 100% { transform: none; } 78% { transform: translateX(-1.5px) rotate(-3deg); } 86% { transform: translateX(1.5px) rotate(3deg); } 94% { transform: translateX(-.5px); } }
@@ -1891,3 +1891,20 @@ textarea.field { resize: vertical; min-height: 84px; }
 .brand .wm { display: inline-flex; align-items: baseline; }
 .brand .wm .tld { margin-left: 1px; font-size: var(--fs-xs); font-weight: 800; font-style: normal; letter-spacing: .01em; line-height: 1; background: linear-gradient(100deg, #ff4fa3 0%, #ffb000 100%); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
 .brand .tx { gap: 4px; }
+
+.k-volcanoes { animation: keonet 1.6s cubic-bezier(.45, 0, .55, 1) infinite alternate; transform-origin: 50% 100%; }
+.k-storms { animation: kstorm 3.2s cubic-bezier(.45, 0, .55, 1) infinite; } @keyframes kstorm { 0%, 60%, 100% { transform: none; filter: none; } 66% { transform: translateX(-1px); filter: drop-shadow(0 0 4px #ffd54a); } 72% { transform: translateX(1px); } 78% { filter: none; } }
+.k-ice { animation: kneo 9s linear infinite; }
+.f1head { display: flex; align-items: center; gap: 8px; }
+@media (prefers-reduced-motion: reduce) { .k-volcanoes, .k-storms, .k-ice { animation: none; } }
+
+/* Space & Earth tile: the rocket lights up, climbs and is back on the pad */
+.cc.space { --cat: #4a6cf0; --cat-soft: color-mix(in srgb, #4a6cf0 12%, var(--surface)); }
+.cc.space .gh-fire { opacity: .0; transform-box: fill-box; transform-origin: 50% 0; } .cc.space .gh-rocket { transform-box: fill-box; }
+.cc.space .gh-planet { transform-box: fill-box; transform-origin: 50% 50%; animation: planetdrift 7s ease-in-out infinite alternate; }
+@keyframes planetdrift { from { transform: rotate(-3deg); } to { transform: rotate(3deg) translateY(-1px); } }
+@keyframes spacego { 0% { transform: translate(0, 0); } 10% { transform: translate(-.6px, 0); } 20% { transform: translate(.6px, 0); } 30% { transform: translate(0, -2px); } 62% { transform: translate(5px, -38px); opacity: 1; } 63% { transform: translate(5px, -38px); opacity: 0; } 80% { transform: translate(0, 4px); opacity: 0; } 100% { transform: translate(0, 0); opacity: 1; } }
+@keyframes spacefire { 0%, 22% { opacity: 0; transform: scaleY(.3); } 30%, 62% { opacity: 1; transform: scaleY(1.6); } 63%, 100% { opacity: 0; } }
+@media (hover: hover) { .cc.space:not(:disabled):hover .gh-rocket { animation: spacego 2.2s cubic-bezier(.4, 0, .2, 1) 1 both; } .cc.space:not(:disabled):hover .gh-fire { animation: spacefire 2.2s linear 1 both; } }
+.cc.play.space .gh-rocket { animation: spacego 2.2s cubic-bezier(.4, 0, .2, 1) 1 both; } .cc.play.space .gh-fire { animation: spacefire 2.2s linear 1 both; }
+@media (prefers-reduced-motion: reduce) { .cc.space .gh-planet { animation: none; } }

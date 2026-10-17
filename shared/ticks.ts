@@ -3,7 +3,7 @@ import { normalCdf } from "./metrics.ts";
 import { addDays, localDateString, zonedEpoch } from "./time.ts";
 
 /** Questions about a single number at a given instant, for the whole world: coin prices, the Kp index, Wikipedia page views. */
-export type TickCategory = "finance" | "nature" | "culture" | "traffic";
+export type TickCategory = "finance" | "nature" | "culture" | "traffic" | "space" | "sport";
 
 export interface TickDef {
   category: TickCategory;
@@ -149,10 +149,10 @@ export function tickDef(series: string): TickDef | null {
   if (isLastfm(series)) return { category: "culture", label: LASTFM[series.slice(7) as LastfmKey], unit: "", min: 1000, max: 2_000_000_000 };
   if (isHn(series)) return { category: "culture", label: "Hacker News", unit: " pt", min: 1, max: 50_000 };
   if (isChess(series)) return { category: "culture", label: CHESS[series.slice(6) as ChessKey], unit: "", min: 400, max: 4500 };
-  if (isEonet(series)) return { category: "nature", label: EONET[series.slice(6) as EonetKey].label, unit: "", min: 0, max: 5000 };
-  if (isNeo(series)) return { category: "nature", label: "Asteroid", unit: "", min: 0, max: 1 };
-  if (isLaunch(series)) return { category: "nature", label: "Launch", unit: "", min: 0, max: 1 };
-  if (isF1(series)) return { category: "culture", label: "F1", unit: "", min: 0, max: 1 };
+  if (isEonet(series)) return { category: "space", label: EONET[series.slice(6) as EonetKey].label, unit: "", min: 0, max: 5000 };
+  if (isNeo(series)) return { category: "space", label: "Asteroid", unit: "", min: 0, max: 1 };
+  if (isLaunch(series)) return { category: "space", label: "Launch", unit: "", min: 0, max: 1 };
+  if (isF1(series)) return { category: "sport", label: "F1", unit: "", min: 0, max: 1 };
   if (isHouse(series)) return { category: "culture", label: "Esclusiva", unit: "", min: 0, max: 1 };
   if (isTv(series)) return { category: "culture", label: "Voto episodio", unit: "", min: 0.5, max: 10 };
   if (isTicket(series)) return { category: "culture", label: `Concerti ${TM_PLACES[series.slice(3) as TmPlace].label}`, unit: "", min: 0, max: 100_000 };

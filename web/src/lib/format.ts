@@ -9,7 +9,7 @@ export { currencySymbol, fmtOdds, money };
 export interface MarketRow {
   id: string;
   city_id: string;
-  category: "bus" | "train" | "weather" | "traffic" | "nature" | "strike" | "finance" | "culture" | "sport" | "law";
+  category: "bus" | "train" | "weather" | "traffic" | "nature" | "strike" | "finance" | "culture" | "sport" | "law" | "space";
   kind: "bus_delay_gt" | "train_delay_gt" | "rain_at" | "metric_gt" | "quake_m" | "strike_on" | "traffic_speed_lt" | "tick_gt" | "match_bet" | "bus_full";
   params: Record<string, unknown>;
   closes_at: string;
