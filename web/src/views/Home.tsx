@@ -144,7 +144,7 @@ export function Home(p: HomeProps) {
         <h1>{msg.home.hero.title}</h1>
         <p>{msg.home.hero.body}</p>
       </section>
-      <HalloweenBanner msg={msg} onOpen={p.onPromo} />
+      <HalloweenBanner msg={msg} />
       <PromoBanner msg={msg} onOpen={p.onPromo} reopen={p.newsKey} />
       {howOpen && (
         <section class="howto" aria-label={msg.home.how.title}>

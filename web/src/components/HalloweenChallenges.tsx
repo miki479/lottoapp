@@ -6,7 +6,7 @@ import { HALLOWEEN_PICTURES, type HalloweenId } from "../../../shared/halloween.
 type Row = { id: HalloweenId; category: "train" | "weather" | "traffic" | "finance" | "sport"; wins: number; target: number; unlocked: boolean };
 type Status = { published: boolean; starts_at?: string | null; ends_at?: string | null; settle_by?: string | null; challenges?: Row[] };
 
-const day = (iso?: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
+const day = (iso?: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" }) : "—");
 
 /** The five Halloween cards. Hidden while the event is a draft; the counting happens in the database (halloween_status). */
 export function HalloweenChallenges({ msg }: { msg: Messages }) {
@@ -17,7 +17,7 @@ export function HalloweenChallenges({ msg }: { msg: Messages }) {
   const dated = s.starts_at && s.ends_at;
   return (
     <section class="halloween" aria-label={h.title}>
-      <h2>{h.title}</h2>
+      <p class="hint">{h.howTo}</p>
       <p class="hint">{dated ? h.period.replace("{from}", day(s.starts_at)).replace("{to}", day(s.ends_at)) : h.notSet}{dated && s.settle_by ? ` · ${h.settle.replace("{settle}", day(s.settle_by))}` : ""}</p>
       <div class="hwgrid">
         {s.challenges.map((c) => {

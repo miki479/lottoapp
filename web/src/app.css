@@ -1981,3 +1981,9 @@ textarea.field { resize: vertical; min-height: 84px; }
 .promowrap:has(img[src="/promo-halloween.webp"]) .promodate{white-space:nowrap}
 .promowrap:has(img[src="/promo-halloween.webp"]) .promotxt{width:46%}
 .promowrap:has(img[src="/promo-halloween.webp"]) .promotxt b{font-size:var(--fs-sm)}
+.hwhead{display:flex;align-items:center;gap:12px}.hwhead h2{margin:0}
+.promologo{display:flex;align-items:center;gap:6px}
+.hwentry{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 12px;border:1px solid #ff8a2a;border-radius:var(--radius-card);background:#0b0612;color:#fff;text-align:left;cursor:pointer}
+.hwentrytx{flex:1;display:grid;gap:2px;min-width:0}.hwentrytx small{color:#ffb347;font-size:var(--fs-xs)}
+.hwentry.locked{opacity:.5;border-color:var(--border);cursor:default;filter:grayscale(.7)}
+.hwentry:focus-visible{outline:2px solid var(--action);outline-offset:2px}

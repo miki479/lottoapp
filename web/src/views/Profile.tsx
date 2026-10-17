@@ -20,7 +20,6 @@ import { LeagueBadge } from "../components/League.tsx";
 import { levelProgress } from "../../../shared/looks";
 import type { MyProgress } from "../lib/looks.ts";
 import { moneySigned } from "../lib/num.ts";
-import { HalloweenChallenges } from "../components/HalloweenChallenges.tsx";
 
 
 export function ProfileView(p: {
@@ -109,7 +108,6 @@ export function ProfileView(p: {
         </div>
 
         <div class="stack">
-          <HalloweenChallenges msg={p.msg} />
           <h2>{m.trophies}</h2>
           {TROPHY_GROUPS.map((g) => (
             <div class="tgroup" key={g.id}>
