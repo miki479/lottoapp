@@ -1,10 +1,10 @@
-import { MapPin, Bell, Gift, Rocket, ChevronRight, Flame, LogOut, Pencil, Percent, Share2, Snowflake, Trash2, Trophy, User, Volume2, Zap } from "lucide-preact";
+import { MapPin, Bell, Gift, Rocket, ChevronRight, Flame, LogOut, Pencil, Percent, Share2, Snowflake, Trash2, Trophy, User, Volume2, Zap, Check } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Sheet } from "../components/Sheet.tsx";
 import { StreakCard } from "../components/StreakCard.tsx";
 import { BankCard } from "../components/BankCard.tsx";
 import { money } from "../lib/format.ts";
-import { LOCALES, TROPHY_IDS, TROPHY_RARITY, type Locale, type Messages } from "../i18n/index.ts";
+import { LOCALES, TROPHY_GROUPS, TROPHY_IDS, TROPHY_RARITY, type Locale, type Messages } from "../i18n/index.ts";
 import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
 import { HistoryCard } from "../components/HistoryCard.tsx";
@@ -51,7 +51,7 @@ export function ProfileView(p: {
         <section class="card giftcard">
           <span class="refico"><Gift size={22} /></span>
           <div style="flex:1"><b>{p.msg.boost.gift}</b><p class="hint">{p.msg.boost.explain}</p></div>
-          <button class="btn primary" onClick={p.onGiftSeen}>{p.msg.common.ok}</button>
+          <button class="btn primary" onClick={p.onGiftSeen} aria-label={p.msg.common.ok} title={p.msg.common.ok}><Check size={18} /></button>
         </section>
       )}
       <div class="profile-grid">
@@ -61,7 +61,7 @@ export function ProfileView(p: {
               {p.look ? <button class="lkme" onClick={p.onLook} aria-label={p.msg.look.change}><Look avatar={p.look.avatar} decoration={p.look.decoration} size={72} /><span class="lvl num">{p.look.level}</span></button> : <span class="rank top" style="width:56px;height:56px;border-radius:18px;font-size:var(--fs-xl)"><User size={26} /></span>}
               <div class="idtxt">
                 <b class="idname">{name}</b>
-                {!p.registered && <span class="idmail">{m.guest}</span>}
+                {!p.registered && name !== m.guest && <span class="idmail">{m.guest}</span>}
                 <div class="idchips">{p.homeNode}{p.registered && <LeagueBadge locale={p.locale} registered={p.registered} />}</div>
               </div>
               {p.registered && <button class="iconbtn" onClick={p.onNickname} aria-label={m.nickname.title}><Pencil size={20} /></button>}
@@ -109,18 +109,23 @@ export function ProfileView(p: {
 
         <div class="stack">
           <h2>{m.trophies}</h2>
-          <div class="trophies">
-            {TROPHY_IDS.map((id) => {
-              const have = p.trophies.has(id), t = m.trophy[id];
-              return (
-                <div class={`card trophy ${have ? "" : "lock"} ${p.fresh.has(id) ? "fresh" : ""}`} key={id}>
-                  <span class="ti b3"><Trophy3D id={id} have={have} size={56} /></span>
-                  <b>{have ? t.name : "???"}</b><small>{have ? t.desc : m.locked}</small>
-                  <span class="detail">{m.rarity[TROPHY_RARITY[id]]}</span>
-                </div>
-              );
-            })}
-          </div>
+          {TROPHY_GROUPS.map((g) => (
+            <div class="tgroup" key={g.id}>
+              <h3 class="tghead">{m.groups[g.id]} <small class="num">{g.ids.filter((id) => p.trophies.has(id)).length}/{g.ids.length}</small></h3>
+              <div class="trophies">
+                {g.ids.map((id) => {
+                  const have = p.trophies.has(id), t = m.trophy[id];
+                  return (
+                    <div class={`card trophy ${have ? "" : "lock"} ${p.fresh.has(id) ? "fresh" : ""}`} key={id}>
+                      <span class="ti b3"><Trophy3D id={id} have={have} size={56} /></span>
+                      <b>{have ? t.name : "???"}</b><small>{have ? t.desc : m.locked}</small>
+                      <span class="detail">{m.rarity[TROPHY_RARITY[id]]}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
           <button class="btn secondary wide" onClick={p.onShareProfile}><Share2 size={18} />{m.shareCard}</button>
 
           <h2 style="margin-top:8px">{m.settings}</h2>

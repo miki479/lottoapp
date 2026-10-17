@@ -15,6 +15,138 @@ export function TickScene({ m, hint, msg, now }: { m: MarketRow; hint: Hint; msg
   const kind = series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("storm:") ? "storm" : series.startsWith("alert:") ? "alert" : series.startsWith("metal:") ? "metal" : series.startsWith("fuel:") ? "fuel" : series.startsWith("oil:") ? "oil" : series.startsWith("tm:") ? "concert" : /^tv:\d+$/.test(series) ? "tv" : "price";
   const cls = `mscene tick ${kind} ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`;
   const cap = kind === "kp" ? "Kp ≥ " + m.params.threshold : alertLabel(series, msg) || (msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? ""));
+  if (series.startsWith("neo:")) {
+    const near = hint === "yes" ? 74 : hint === "no" ? 20 : 48;
+    return (
+      <div class={`mscene tick neo ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="84" fill="#080c24" />
+          {[[30, 12], [86, 54], [140, 16], [196, 62], [254, 20], [300, 48]].map(([x, y], i) => <circle key={i} class="lc-star" style={`--d:${i * 220}ms`} cx={x} cy={y} r="1.400" fill="#fff" />)}
+          <circle cx="262" cy="64" r="34" fill="#2a6fdb" /><path d="M240 50q14-8 26 2t10 18q-14 10-30 4z" fill="#3fae6a" opacity=".9" />
+          <path d="M20 70Q130 10 230 56" fill="none" stroke="#7a86b8" stroke-width="1" stroke-dasharray="4 5" />
+          <g class="neo-rock" style={`transform:translateX(${near}px)`}><path d="M96 34l8-5 9 3 4 8-5 8-10 2-8-6z" fill="#b6a58c" /><circle cx="101" cy="36" r="2" fill="#8b7b64" /><circle cx="108" cy="40" r="1.500" fill="#8b7b64" /></g>
+        </svg>
+        <b>NASA</b>
+      </div>
+    );
+  }
+  if (series.startsWith("eonet:")) {
+    const key = series.slice(6), cls = hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : "";
+    return (
+      <div class={`mscene tick eonet eo-${key} ${cls}`} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          {key === "volcanoes" && <g>
+            <defs>
+              <linearGradient id="eoSkyV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#150f2a" /><stop offset=".6" stop-color="#3a1c38" /><stop offset="1" stop-color="#7a2f2a" /></linearGradient>
+              <radialGradient id="eoGlowV" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffb347" stop-opacity=".95" /><stop offset=".5" stop-color="#ff5a1f" stop-opacity=".45" /><stop offset="1" stop-color="#ff3d00" stop-opacity="0" /></radialGradient>
+            </defs>
+            <rect width="320" height="84" fill="url(#eoSkyV)" />
+            {[[24, 10], [70, 22], [118, 8], [236, 12], [280, 26], [300, 8]].map(([x, y], i) => <circle key={i} class="lc-star" style={`--d:${i * 260}ms`} cx={x} cy={y} r="1.200" fill="#fff" />)}
+            <path d="M0 84V62l34-14 30 12 28-18 26 20V84z" fill="#2b1a2c" />
+            <path d="M210 84V58l26-16 24 14 22-12 38 20V84z" fill="#2b1a2c" />
+            <ellipse class="eo-glow" cx="160" cy="26" rx="46" ry="26" fill="url(#eoGlowV)" />
+            <g class="eo-plume">{[[160, 22, 5], [153, 15, 6], [168, 12, 7], [158, 4, 8], [172, 0, 9]].map(([x, y, r], i) => <circle key={i} class="eo-ash" style={`--d:${i * 380}ms`} cx={x} cy={y} r={r} />)}</g>
+            <g class="eo-sparks">{[[-22, -26], [-12, -34], [-4, -40], [6, -38], [14, -32], [24, -24], [-30, -14], [30, -16]].map(([dx, dy], i) => <circle key={i} class="eo-spark" style={`--dx:${dx}px;--dy:${dy}px;--d:${i * 170}ms`} cx="160" cy="28" r="1.600" />)}</g>
+            <path d="M92 84l54-52 6-4h16l6 4 54 52z" fill="#3b2730" />
+            <path d="M92 84l54-52 6-4-14 56z" fill="#30202a" />
+            <path d="M146 32l6-4h16l6 4-8 3-6-3-6 3z" fill="#ff7a2a" class="eo-crater" />
+            <path class="eo-flow" d="M158 31q-3 14-8 22t-10 20" fill="none" stroke="#ff7a1a" stroke-width="2.200" stroke-linecap="round" />
+            <path class="eo-flow eo-flow2" d="M164 31q3 12 9 21t12 22" fill="none" stroke="#ff9a2a" stroke-width="1.800" stroke-linecap="round" />
+            <path class="eo-flow eo-flow3" d="M161 32q0 16-2 30" fill="none" stroke="#ffc15a" stroke-width="1.400" stroke-linecap="round" />
+            <path d="M0 84V72q40-6 80 0t90 2 80-2 70 2v10z" fill="#1b1220" />
+          </g>}
+          {key === "storms" && <g>
+            <defs>
+              <linearGradient id="eoSkyS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f2740" /><stop offset="1" stop-color="#4a5878" /></linearGradient>
+              <linearGradient id="eoSeaS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d4766" /><stop offset="1" stop-color="#17263d" /></linearGradient>
+            </defs>
+            <rect width="320" height="84" fill="url(#eoSkyS)" />
+            <g class="eo-sun"><circle cx="262" cy="22" r="11" fill="#ffd36b" /><circle cx="262" cy="22" r="18" fill="#ffd36b" opacity=".25" /></g>
+            <g class="eo-cloudA"><path d="M-20 34q0-16 24-16 8-12 28-8 18 2 20 16 22 0 24 14H-8q-12 0-12-6z" fill="#6b7592" /><path d="M150 30q0-14 22-14 8-10 24-6 16 2 18 14 20 0 22 12H160q-10 0-10-6z" fill="#6b7592" /></g>
+            <g class="eo-cloudB"><path d="M30 44q0-18 26-18 10-14 30-9 20 3 22 18 24 0 26 16H42q-12 0-12-7z" fill="#39435d" /><path d="M190 46q0-16 22-16 8-12 26-8 18 2 20 16 20 0 22 14H200q-10 0-10-6z" fill="#39435d" /></g>
+            <rect class="eo-flash" width="320" height="84" fill="#fff" />
+            <path class="eo-bolt" d="M142 40l-10 18h9l-7 20 18-24h-10l8-14z" fill="#ffe066" />
+            <path class="eo-bolt eo-bolt2" d="M226 44l-7 13h7l-5 14 13-17h-7l6-10z" fill="#fff3b0" />
+            <g class="eo-rain">{Array.from({ length: 22 }, (_, i) => <line key={i} x1={8 + i * 14.500} y1="30" x2={4 + i * 14.500} y2="42" style={`--d:${(i * 97) % 600}ms`} />)}</g>
+            <g class="eo-waves"><path d="M0 70q20-8 40 0t40 0 40 0 40 0 40 0 40 0 40 0 40 0v14H0z" fill="url(#eoSeaS)" /><path d="M0 76q20-6 40 0t40 0 40 0 40 0 40 0 40 0 40 0 40 0v8H0z" fill="#10192b" opacity=".7" /></g>
+          </g>}
+          {key === "ice" && <g>
+            <defs>
+              <linearGradient id="eoSkyI" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f2547" /><stop offset=".55" stop-color="#6aa6d6" /><stop offset="1" stop-color="#dff1fb" /></linearGradient>
+              <linearGradient id="eoAur" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3dffb0" stop-opacity="0" /><stop offset=".35" stop-color="#3dffb0" stop-opacity=".75" /><stop offset=".7" stop-color="#9b6bff" stop-opacity=".6" /><stop offset="1" stop-color="#9b6bff" stop-opacity="0" /></linearGradient>
+            </defs>
+            <rect width="320" height="84" fill="url(#eoSkyI)" />
+            {[[30, 8], [92, 18], [176, 6], [250, 14], [296, 24]].map(([x, y], i) => <circle key={i} class="lc-star" style={`--d:${i * 300}ms`} cx={x} cy={y} r="1.200" fill="#fff" />)}
+            <path class="eo-aurora" d="M0 26q50-26 110-8t110-6 110-4v16q-60 10-110 4T110 38 0 46z" fill="url(#eoAur)" />
+            <path d="M60 62l22-26 12 10 20-30 18 24 14-10 22 32z" fill="#ffffff" opacity=".92" /><path d="M60 62l22-26 12 10 20-30-14 46z" fill="#cfe7f6" />
+            <rect y="58" width="320" height="26" fill="#3f86b3" />
+            <g class="eo-floes">
+              <path class="eo-floe f1" d="M20 66l30-4 22 3 8 6-24 5-28-2z" fill="#f4fbff" />
+              <path class="eo-floe f2" d="M110 70l34-5 26 4 6 5-30 5-30-3z" fill="#e6f4fc" />
+              <path class="eo-floe f3" d="M210 66l28-3 30 3 6 6-26 5-34-3z" fill="#f4fbff" />
+              <path class="eo-floe f4" d="M270 74l20-3 24 3 4 4-22 3-24-2z" fill="#e6f4fc" />
+            </g>
+            <path class="eo-crack" d="M142 64l6 4-4 4 6 5M236 65l-5 5 5 4-4 5" fill="none" stroke="#2e6a94" stroke-width="1.200" stroke-linecap="round" />
+            <g class="eo-glint">{([[44, 64], [124, 68], [226, 65], [286, 73]] as [number, number][]).map(([x, y], i) => <path key={i} style={`--d:${i * 400}ms`} d={`M${x} ${y - 4}v8M${x - 4} ${y}h8`} stroke="#fff" stroke-width="1" stroke-linecap="round" />)}</g>
+          </g>}
+        </svg>
+        <b>NASA EONET</b>
+      </div>
+    );
+  }
+  if (series === "hn:max") {
+    const up = hint === "yes" ? -10 : hint === "no" ? 8 : 0;
+    return (
+      <div class={`mscene tick hn ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="84" fill="#f6efe6" />
+          <rect x="22" y="14" width="56" height="56" rx="6" fill="#ff6600" /><path d="M38 28l12 18 12-18M50 46v14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+          {[0, 1, 2, 3, 4].map((i) => <rect key={i} class="hn-bar" style={`--d:${i * 90}ms`} x={108 + i * 38} y={60 - (14 + i * 7) + up * (i / 4)} width="24" height={14 + i * 7 - up * (i / 4)} rx="3" fill="#ff9a4d" />)}
+        </svg>
+        <b>{m.params.label ? String(m.params.label) : "Hacker News"}</b>
+      </div>
+    );
+  }
+  if (series.startsWith("chess:")) {
+    return (
+      <div class={`mscene tick chess ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="84" fill="#312e2b" />
+          {Array.from({ length: 16 }, (_, i) => Array.from({ length: 4 }, (_, j) => (i + j) % 2 ? <rect key={`${i}-${j}`} x={i * 20} y={j * 21} width="20" height="21" fill="#769656" /> : <rect key={`${i}-${j}`} x={i * 20} y={j * 21} width="20" height="21" fill="#eeeed2" />))}
+          <g class="chess-knight" transform="translate(142 8)"><path d="M10 64h36v-6l-6-4c8-6 12-16 8-26L34 6 24 10l-4-4-6 12 6 6-8 14c-4 6-6 12-2 18z" fill="#1c1b19" stroke="#f5f5f5" stroke-width="2" stroke-linejoin="round" /><circle cx="36" cy="20" r="2" fill="#f5f5f5" /></g>
+        </svg>
+        <b>{String(m.params.label ?? "")}</b>
+      </div>
+    );
+  }
+  if (series.startsWith("launch:")) {
+    return (
+      <div class={`mscene tick launch ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="84" fill="#0c1230" />
+          {[[30, 12], [80, 40], [120, 18], [210, 10], [260, 34], [296, 16], [180, 52]].map(([x, y], i) => <circle key={i} class="lc-star" style={`--d:${i * 200}ms`} cx={x} cy={y} r="1.500" fill="#fff" />)}
+          <rect x="0" y="72" width="320" height="12" fill="#1c2750" />
+          <g class="lc-smoke"><circle cx="146" cy="70" r="6" /><circle cx="160" cy="72" r="8" /><circle cx="174" cy="70" r="6" /></g>
+          <g class="lc-rocket"><path d="M160 14c-9 10-9 28-9 38h18c0-10 0-28-9-38z" fill="#e8ecf5" /><circle cx="160" cy="34" r="4" fill="#4a7bff" /><path d="M151 46l-8 10 8-2zM169 46l8 10-8-2z" fill="#ff5a4d" /><g class="lc-flame"><path d="M154 52q6 24 12 0z" fill="#ff7a00" /><path d="M157 52q3 14 6 0z" fill="#ffe066" /></g></g>
+        </svg>
+        <b>{String(m.params.label ?? "")}</b>
+      </div>
+    );
+  }
+  if (series.startsWith("f1:")) {
+    const shift = hint === "yes" ? 40 : hint === "no" ? -20 : 0;
+    return (
+      <div class={`mscene tick f1 ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="84" fill="#2a2d34" />
+          <path d="M0 62H320" stroke="#fff" stroke-width="2" stroke-dasharray="14 10" opacity=".6" />
+          {Array.from({ length: 6 }, (_, i) => Array.from({ length: 2 }, (_, j) => <rect key={`${i}-${j}`} x={282 + j * 10} y={6 + i * 10} width="10" height="10" fill={(i + j) % 2 ? "#fff" : "#111"} />))}
+          <g class="f1-car" style={`transform:translateX(${shift}px)`}><path d="M96 54h96l10-8h14v8h6v8H92z" fill="#e10600" /><rect x="116" y="46" width="30" height="8" rx="3" fill="#111" /><circle cx="118" cy="62" r="8" fill="#111" /><circle cx="184" cy="62" r="8" fill="#111" /></g>
+        </svg>
+        <b>{String(m.params.label ?? "")}</b>
+      </div>
+    );
+  }
   if (kind === "tv") {
     const stars = hint === "yes" ? 5 : hint === "no" ? 2 : 3;
     return (

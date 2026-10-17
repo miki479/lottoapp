@@ -2,7 +2,7 @@
 //   node scripts/busone-coverage.mjs [minutes=10] >> coverage.jsonl
 import GtfsRt from "gtfs-realtime-bindings";
 const FEEDS = { trenitalia: "https://proxy.busone.app/trenitalia/gtfs-rt/trip-updates.pb", italo: "https://proxy.busone.app/italo/gtfs-rt/trip-updates.pb" };
-const H = { "X-BusOne-Client": "LateLotto (play-money game; https://latelotto.web.app)", "X-BusOne-Use": "personal" };
+const H = { "X-BusOne-Client": "LateLotto (play-money game; https://latebet.it)", "X-BusOne-Use": "personal" };
 const every = Math.max(1, Number(process.argv[2] ?? 10)) * 60_000;
 async function once() {
   const row = { at: new Date().toISOString() };

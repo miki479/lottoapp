@@ -1,10 +1,10 @@
 // Browser walk-through of the whole player journey against a deployed (or local) site:
 // guest -> bet -> sign-up at the last step -> bet placed -> parlay -> profile -> delete account.
-//   BASE=https://latelotto.web.app node scripts/e2e-ui.mjs
+//   BASE=https://latebet.it node scripts/e2e-ui.mjs
 import { createRequire } from "node:module";
 // playwright is not a project dependency: install it globally or set NODE_PATH to its folder.
 const { chromium } = createRequire(import.meta.url)("playwright");
-const BASE = process.env.BASE ?? "https://latelotto.web.app";
+const BASE = process.env.BASE ?? "https://latebet.it";
 const proxy = process.env.HTTPS_PROXY;
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM ?? "/opt/pw-browsers/chromium", args: ["--ignore-certificate-errors", ...(proxy ? [`--proxy-server=${proxy}`, "--proxy-bypass-list=127.0.0.1"] : [])] });
 const page = await (await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "it-IT", hasTouch: true })).newPage();

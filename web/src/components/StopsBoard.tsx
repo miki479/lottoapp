@@ -8,6 +8,7 @@ import type { MarketRow } from "../lib/format.ts";
 import type { LiveDelay } from "../lib/types.ts";
 import { useTripStops } from "../lib/tripStops.ts";
 import "./StopsBoard.css";
+import { dtf } from "../lib/intl.ts";
 
 type Key = "it" | "en-US" | "en-GB" | "ja";
 const key = (l: Locale): Key => (l === "it" || l === "ja" || l === "en-GB" ? l : "en-US");
@@ -97,7 +98,7 @@ export function StopsBoard({ m, locale, now, live, variant = "sheet" }: { m: M; 
   const [open, setOpen] = useState(false);
   const rows = useTripStops(m.id, enabled, open);
   const city = cityOf(m.city_id), tz = city.timezone;
-  const fmt = useMemo(() => new Intl.DateTimeFormat(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: tz }), [locale, tz]);
+  const fmt = useMemo(() => dtf(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: tz }), [locale, tz]);
   const limitSec = Number(m.params.thresholdSec ?? (train ? 300 : 180));
   const minute = Math.floor(now / 60_000);
   // the rush hour is looked up per quarter of an hour, not per stop

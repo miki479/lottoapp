@@ -1,3 +1,4 @@
+import { memo, forget } from "../lib/cache.ts";
 import { isCrypto } from "../../../shared/ticks.ts";
 import { useEffect, useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
@@ -17,7 +18,7 @@ export function TickChart({ m, msg, locale }: { m: MarketRow; msg: Messages; loc
   const [pts, setPts] = useState<Pt[] | null>(null);
   useEffect(() => {
     let live = true;
-    sb.rpc("tick_history", { p_series: key, p_limit: kind === "price" ? 48 : kind === "kp" ? 24 : 14 }).then(({ data }: { data: unknown }) => {
+    memo(`th:${key}:${kind}`, 100_000, () => sb.rpc("tick_history", { p_series: key, p_limit: kind === "price" ? 48 : kind === "kp" ? 24 : 14 })).then(({ data }: { data: unknown }) => {
       if (live) setPts(((data ?? []) as { at: string; value: number | string }[]).map((r) => ({ at: Date.parse(r.at), v: Number(r.value) })));
     });
     return () => { live = false; };

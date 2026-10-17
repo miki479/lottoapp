@@ -8,6 +8,7 @@ import type { DailyMissionsData, FlashData } from "../lib/types.ts";
 import { INTL_TAG } from "../i18n/index.ts";
 import { untilReset } from "./RewardsSheet.tsx";
 import { moneySigned } from "../lib/num.ts";
+import { dtf } from "../lib/intl.ts";
 
 const ICON: Record<string, LucideIcon> = {
   m_bets3: Ticket, m_bets5: Ticket, m_bets8: Ticket, m_leg_bets10: Ticket, m_cat_bus: Bus, m_cat_train: TrainFront, m_cat_weather: CloudRain, m_cat_nature: Activity, m_cat_fin: Coins, m_cat_cult: Clapperboard, m_sport: Trophy,
@@ -54,7 +55,7 @@ export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages
         const f = p.flash, s = Date.parse(f.start), e = Date.parse(f.end), done = f.progress >= f.target, live = p.now >= s && p.now < e, over = p.now >= e;
         const st = f.claimed ? "claimed" : done ? "ready" : live ? "live" : over ? "missed" : "soon";
         const left = Math.max(0, e - p.now), mm = Math.floor(left / 60000), ss = Math.floor((left % 60000) / 1000);
-        const at = new Intl.DateTimeFormat(INTL_TAG[p.locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: p.tz }).format(new Date(s));
+        const at = dtf(INTL_TAG[p.locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: p.tz }).format(new Date(s));
         return (
           <div class={`dmflash ${st} ${pop === "flash" ? "pop" : ""}`}>
             <span class="dmico big bolt"><Zap size={24} fill="currentColor" /></span>

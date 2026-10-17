@@ -3,7 +3,7 @@ import { normalCdf } from "./metrics.ts";
 import { addDays, localDateString, zonedEpoch } from "./time.ts";
 
 /** Questions about a single number at a given instant, for the whole world: coin prices, the Kp index, Wikipedia page views. */
-export type TickCategory = "finance" | "nature" | "culture" | "traffic";
+export type TickCategory = "finance" | "nature" | "culture" | "traffic" | "space" | "sport" | "games";
 
 export interface TickDef {
   category: TickCategory;
@@ -101,7 +101,26 @@ export function tmWindow(at: number): { from: string; to: string } {
 export const isTv = (s: string) => /^tv:\d+$/.test(s);
 /** A question we write ourselves ("house:gta6"): settled by an admin once the day has passed, refunded if nobody does. */
 export const isHouse = (s: string) => /^house:[a-z0-9_-]{2,30}$/.test(s);
-export const isSpot = (s: string) => isCrypto(s) || isSteam(s) || isLastfm(s) || isHf(s) || isSolarWind(s) || isBikes(s) || isStorm(s) || isMetal(s) || isCarbon(s) || isNws(s) || isTide(s) || isRiver(s) || isTicket(s);
+/** Hacker News front page: the most points any story on it has right now (Algolia HN search, public). */
+export const isHn = (s: string) => s === "hn:max";
+/** Chess.com players whose blitz rating is asked about (PubAPI, public). */
+export const CHESS = { hikaru: "Hikaru Nakamura", magnuscarlsen: "Magnus Carlsen", nihalsarin: "Nihal Sarin", firouzja2003: "Alireza Firouzja", fabianocaruana: "Fabiano Caruana", gothamchess: "GothamChess" } as const;
+export type ChessKey = keyof typeof CHESS;
+export const isChess = (s: string) => s.startsWith("chess:") && s.slice(6) in CHESS;
+/** A rocket launch (Launch Library 2): "launch:<id>" reads 1 when it lifted off within three hours of the planned time, else 0. */
+export const isLaunch = (s: string) => /^launch:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(s);
+/** A Formula 1 result (Jolpica, the Ergast successor): "f1:<season>-<round>:<CODE>:w" reads 1 when the driver won, ":p" when on the podium. */
+export const isF1 = (s: string) => /^f1:\d{4}-\d{1,2}:[A-Z]{2,3}:[wp]$/.test(s);
+/** NASA Near Earth Object Web Service: "neo:<YYYYMMDD>" is a week starting that day (UTC); it reads 1 when an asteroid passes within NEO_LD lunar distances in it. */
+export const NEO_LD = 10;
+export const isNeo = (s: string) => /^neo:\d{8}$/.test(s);
+/** NASA EONET, the register of natural events: how many are open in a category right now. */
+export const EONET = { volcanoes: { id: "volcanoes", label: "Volcanoes" }, storms: { id: "severeStorms", label: "Severe storms" }, ice: { id: "seaLakeIce", label: "Sea and lake ice" } } as const;
+export type EonetKey = keyof typeof EONET;
+export const isEonet = (s: string) => s.startsWith("eonet:") && s.slice(6) in EONET;
+/** Yes/no facts read once the event is over, not numbers read at an instant. */
+export const isFact = (s: string) => isLaunch(s) || isF1(s) || isNeo(s);
+export const isSpot = (s: string) => isEonet(s) || isHn(s) || isChess(s) || isCrypto(s) || isSteam(s) || isLastfm(s) || isHf(s) || isSolarWind(s) || isBikes(s) || isStorm(s) || isMetal(s) || isCarbon(s) || isNws(s) || isTide(s) || isRiver(s) || isTicket(s);
 
 /** Saffir-Simpson scale by sustained wind in knots (1 min average), as NHC reports it. */
 export const STORM_STEPS: { kt: number; label: string }[] = [{ kt: 34, label: "TS" }, { kt: 64, label: "Cat. 1" }, { kt: 83, label: "Cat. 2" }, { kt: 96, label: "Cat. 3" }, { kt: 113, label: "Cat. 4" }, { kt: 137, label: "Cat. 5" }];
@@ -123,11 +142,17 @@ export function tickDef(series: string): TickDef | null {
   if (isOil(series)) return { category: "finance", label: OIL[series.slice(4) as OilKey].label, unit: "$", min: 5, max: 400 };
   if (isAlert(series)) return { category: "nature", label: "Allerta", unit: "", min: 0, max: 3 };
   if (isStorm(series)) return { category: "nature", label: "Storm", unit: " kt", min: 0, max: 200 };
-  if (isSteam(series)) return { category: "culture", label: STEAM[series.slice(6) as keyof typeof STEAM], unit: "", min: 0, max: 100_000_000 };
+  if (isSteam(series)) return { category: "games", label: STEAM[series.slice(6) as keyof typeof STEAM], unit: "", min: 0, max: 100_000_000 };
   if (isBikes(series)) return { category: "traffic", label: BIKES[series.slice(6) as BikeKey].label, unit: "", min: 0, max: BIKES[series.slice(6) as BikeKey].max };
   if (isHf(series)) return { category: "culture", label: HF[series.slice(3) as HfKey].label, unit: "", min: 50, max: 10_000_000 };
   if (isSolarWind(series)) return { category: "nature", label: "Solar wind", unit: " km/s", min: 150, max: 2500 };
   if (isLastfm(series)) return { category: "culture", label: LASTFM[series.slice(7) as LastfmKey], unit: "", min: 1000, max: 2_000_000_000 };
+  if (isHn(series)) return { category: "culture", label: "Hacker News", unit: " pt", min: 1, max: 50_000 };
+  if (isChess(series)) return { category: "games", label: CHESS[series.slice(6) as ChessKey], unit: "", min: 400, max: 4500 };
+  if (isEonet(series)) return { category: "space", label: EONET[series.slice(6) as EonetKey].label, unit: "", min: 0, max: 5000 };
+  if (isNeo(series)) return { category: "space", label: "Asteroid", unit: "", min: 0, max: 1 };
+  if (isLaunch(series)) return { category: "space", label: "Launch", unit: "", min: 0, max: 1 };
+  if (isF1(series)) return { category: "sport", label: "F1", unit: "", min: 0, max: 1 };
   if (isHouse(series)) return { category: "culture", label: "Esclusiva", unit: "", min: 0, max: 1 };
   if (isTv(series)) return { category: "culture", label: "Voto episodio", unit: "", min: 0.5, max: 10 };
   if (isTicket(series)) return { category: "culture", label: `Concerti ${TM_PLACES[series.slice(3) as TmPlace].label}`, unit: "", min: 0, max: 100_000 };
@@ -162,6 +187,7 @@ export function tickYes(series: string, value: number, threshold: number): boole
 export function tickGrain(series: string): number {
   if (series === "kp") return 1 / 3;
   if (isStorm(series)) return 5;
+  if (isHn(series) || isChess(series) || isLaunch(series) || isF1(series) || isNeo(series) || isEonet(series)) return 1;
   if (isAlert(series) || isNws(series) || isRiver(series) || isCarbon(series) || isFearGreed(series) || isTicket(series) || isBikes(series) || isSteam(series) || isLastfm(series) || isHf(series) || series.startsWith("wiki:")) return 1;
   if (isTv(series)) return 0.1;
   if (isFuel(series) || isTide(series)) return 0.001;
@@ -345,6 +371,9 @@ export function tickSigma(series: string, ref: number, hours: number): number {
   if (isCrypto(series)) return ref * 0.005 * Math.sqrt(Math.max(1, hours));
   if (isMetal(series)) return ref * METALS[series.slice(6) as MetalKey].vol * Math.sqrt(Math.max(1, hours));
   if (isFx(series)) return ref * FX[series.slice(3) as FxKey].vol * Math.sqrt(Math.max(1, hours / 24));
+  if (isEonet(series)) return Math.max(1.5, ref * 0.12 * Math.sqrt(Math.max(1, hours) / 24 + 0.5));
+  if (isHn(series)) return Math.max(60, ref * 0.25 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4));
+  if (isChess(series)) return 18 * Math.sqrt(Math.max(1, hours) / 12 + 1);
   if (isCarbon(series)) return Math.max(12, ref * 0.2 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4));
   if (isNws(series)) return Math.max(8, ref * 0.25 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4));
   if (isFearGreed(series)) return 5 * Math.sqrt(Math.max(1, hours / 24));
@@ -368,6 +397,9 @@ export function tickStep(series: string, ref: number): number {
   if (isCrypto(series)) return CRYPTO[series].step;
   if (isMetal(series)) return METALS[series.slice(6) as MetalKey].step;
   if (isFx(series)) return FX[series.slice(3) as FxKey].step;
+  if (isEonet(series)) return ref >= 30 ? 5 : ref >= 10 ? 2 : 1;
+  if (isHn(series)) return ref >= 800 ? 100 : 50;
+  if (isChess(series)) return 10;
   if (isCarbon(series)) return 5;
   if (isNws(series)) return ref >= 1000 ? 100 : ref >= 200 ? 25 : ref >= 50 ? 10 : 5;
   if (isFearGreed(series)) return 5;
@@ -490,6 +522,106 @@ export function buildCarbonMarkets(intensity: number | null | undefined, now: nu
     if (at - 600 <= now + 300) continue;
     const hours = Math.max(1, (at - now) / H);
     out.push(withDigits(tickMarket(series, def, intensity, Math.round(intensity / 5) * 5, tickSigma(series, intensity, hours), at, at - 600, at + 3 * H), 0));
+  }
+  return out;
+}
+
+/** Hacker News: the best score on the front page now, a question every 6 hours (00, 06, 12, 18 UTC) for the next 30 hours. */
+export function buildHnMarkets(top: number | null | undefined, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  if (!(typeof top === "number" && top >= 20 && top <= 50_000)) return out;
+  const series = "hn:max", def = tickDef(series)!, step = tickStep(series, top);
+  for (let at = Math.floor(now / (6 * H)) * 6 * H + 6 * H; at <= now + 30 * H; at += 6 * H) {
+    if (at - 600 <= now + 300) continue;
+    const hours = Math.max(1, (at - now) / H);
+    out.push(withDigits(tickMarket(series, def, top, Math.max(step, Math.round(top / step) * step), tickSigma(series, top, hours), at, at - 600, at + 3 * H), 0));
+  }
+  return out;
+}
+
+/** Chess.com blitz ratings: a question per player at 08 and 20 UTC for the next 36 hours, on a 10-point step. */
+export function buildChessMarkets(ratings: Partial<Record<ChessKey, number>>, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const k of Object.keys(CHESS) as ChessKey[]) {
+    const r = ratings[k];
+    if (!(typeof r === "number" && r >= 800 && r <= 4000)) continue;
+    const series = `chess:${k}`, def = tickDef(series)!;
+    for (let at = Math.floor(now / (12 * H)) * 12 * H + 8 * H; at <= now + 36 * H; at += 12 * H) {
+      if (at - 600 <= now + 300) continue;
+      const hours = Math.max(1, (at - now) / H);
+      out.push(withDigits(tickMarket(series, def, r, Math.round(r / 10) * 10, tickSigma(series, r, hours), at, at - 600, at + 3 * H), 0));
+    }
+  }
+  return out;
+}
+
+/** A yes/no fact: the odds come straight from the chance, the line is 0.5 (a reading of 1 is Yes). */
+function factMarket(series: string, label: string, note: string, p: number, at: number, closesAt: number, deadlineAt: number): TickMarketInsert {
+  const def = { ...tickDef(series)!, label }, odds = computeOdds(Math.min(0.9, Math.max(0.1, p)));
+  return { ...tickMarket(series, def, p, 0.5, 0.5, at, closesAt, deadlineAt, note), odds_yes: odds.yes, odds_no: odds.no };
+}
+
+/**
+ * Rocket launches that are "Go" within the next five days: will it lift off within three hours of its planned time? A launch that is on "Go" and soon
+ * goes about two times in three; one further away slips more often. Closed 15 minutes before the planned time, read once the three hours are over.
+ */
+export function buildLaunchMarkets(launches: { id: string; name: string; net: number; go: boolean }[], now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const l of launches) {
+    if (!l.go || !(l.net - 15 * 60 > now + 3600 && l.net < now + 5 * 86400) || !/^[0-9a-f-]{36}$/.test(l.id)) continue;
+    const p = l.net - now < 24 * 3600 ? 0.68 : 0.58, at = l.net + 3 * H;
+    out.push(factMarket(`launch:${l.id}`, l.name.slice(0, 80), String(l.net), p, at, l.net - 15 * 60, at + 12 * H));
+  }
+  return out;
+}
+
+/**
+ * The next Grand Prix: for the five drivers leading the championship, "will he win?" and "will he be on the podium?". The chances follow the share of
+ * points (squared, so the leader counts more); the race clock comes from the calendar and the result is read three hours after the start.
+ */
+export function buildF1Markets(race: { season: number; round: number; name: string; start: number } | null, standings: { code: string; name: string; points: number }[], now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  if (!race || !(race.start - 300 > now + 3600 && race.start < now + 6 * 86400) || standings.length < 3) return out;
+  const total = standings.reduce((s, d) => s + d.points ** 2, 0) || 1, at = race.start + 3 * H;
+  for (const d of standings.slice(0, 5)) {
+    if (!/^[A-Z]{2,3}$/.test(d.code) || !(d.points > 0)) continue;
+    const share = d.points ** 2 / total, win = Math.min(0.6, Math.max(0.05, share)), pod = Math.min(0.9, Math.max(0.12, share * 2.8 + 0.1));
+    for (const [what, p] of [["w", win], ["p", pod]] as const) out.push(factMarket(`f1:${race.season}-${race.round}:${d.code}:${what}`, d.name, race.name, p, at, race.start - 300, at + 24 * H));
+  }
+  return out;
+}
+
+/** NASA EONET open events per category: a question per category at 00 and 12 UTC for the next 36 hours. */
+export function buildEonetMarkets(counts: Partial<Record<EonetKey, number>>, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const k of Object.keys(EONET) as EonetKey[]) {
+    const c = counts[k];
+    if (!(typeof c === "number" && c >= 3 && c <= 5000)) continue;
+    const series = `eonet:${k}`, def = tickDef(series)!, step = tickStep(series, c);
+    for (let at = Math.floor(now / (12 * H)) * 12 * H + 12 * H; at <= now + 36 * H; at += 12 * H) {
+      if (at - 600 <= now + 300) continue;
+      const hours = Math.max(1, (at - now) / H);
+      out.push(withDigits(tickMarket(series, def, c, Math.max(step, Math.round(c / step) * step), tickSigma(series, c, hours), at, at - 600, at + 3 * H), 0));
+    }
+  }
+  return out;
+}
+
+/**
+ * Asteroids: for the next two weeks (Monday to Sunday, UTC), "will one pass within ten lunar distances?". The chance is the share of the last weeks in which one
+ * did (NASA's list as it stands now, with the late discoveries in it), smoothed so it never gets extreme. Read a day after the week ends.
+ */
+export function buildNeoMarkets(past: { weeks: number; hits: number } | null, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  if (!past || past.weeks < 4) return out;
+  const p = Math.min(0.85, Math.max(0.15, (past.hits + 1) / (past.weeks + 2)));
+  const day = Math.floor(now / 86400), dow = (day + 3) % 7; // 0 = Monday (1 Jan 1970 was a Thursday)
+  for (let k = 0; k < 2; k++) {
+    const start = (day - dow + 7 * (k + 1)) * 86400;
+    if (!(start - 900 > now + 3600)) continue;
+    const ymd = new Date(start * 1000).toISOString().slice(0, 10), at = start + 8 * 86400;
+    const m = factMarket(`neo:${ymd.replace(/-/g, "")}`, "Asteroid", String(NEO_LD), p, at, start - 900, at + 24 * H);
+    out.push({ ...m, params: { ...m.params, from: ymd, to: new Date((start + 6 * 86400) * 1000).toISOString().slice(0, 10) } });
   }
   return out;
 }

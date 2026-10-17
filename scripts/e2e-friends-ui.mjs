@@ -1,9 +1,9 @@
 // Friends in the browser, on a deployed (or local) site: invite link -> sign-up -> friends in the ranking -> challenge with a friend invite -> inbox -> removal.
-//   BASE=https://latelotto.web.app node scripts/e2e-friends-ui.mjs      (needs SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY)
+//   BASE=https://latebet.it node scripts/e2e-friends-ui.mjs      (needs SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY)
 import { createRequire } from "node:module";
 import { projectRef, supabaseUrl } from "./lib-env.mjs";
 const { chromium } = createRequire(import.meta.url)("playwright");
-const BASE = process.env.BASE ?? "https://latelotto.web.app";
+const BASE = process.env.BASE ?? "https://latebet.it";
 const U = supabaseUrl(), ANON = process.env.SUPABASE_ANON_KEY, SRV = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const proxy = process.env.HTTPS_PROXY;
 const j = async (path, init = {}, token, key = ANON) => { const r = await fetch(`${U}${path}`, { ...init, headers: { apikey: key, "Content-Type": "application/json", Authorization: `Bearer ${token ?? key}`, ...(init.headers ?? {}) } }); const t = await r.text(); let body = null; try { body = t ? JSON.parse(t) : null; } catch { body = t; } return { status: r.status, body }; };

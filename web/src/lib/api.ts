@@ -1,7 +1,25 @@
 import { createClient } from "@supabase/supabase-js";
 
+/**
+ * Every request gets a 25 s limit (a hung connection must not leave a button spinning for ever), and a read that fails because the network dropped is tried once more.
+ * Calls that change something are never repeated: they could be applied twice.
+ */
+const robustFetch: typeof fetch = async (input, init) => {
+  const method = String(init?.method ?? (typeof Request !== "undefined" && input instanceof Request ? input.method : "GET")).toUpperCase();
+  const reads = method === "GET" || method === "HEAD";
+  for (let attempt = 1; ; attempt++) {
+    const ctl = typeof AbortController === "function" ? new AbortController() : null, timer = ctl ? setTimeout(() => ctl.abort(), 25_000) : 0;
+    try {
+      return await fetch(input, ctl && !init?.signal ? { ...init, signal: ctl.signal } : init);
+    } catch (e) {
+      if (!reads || attempt >= 2 || (e as Error)?.name === "AbortError" && init?.signal?.aborted) throw e;
+      await new Promise((r) => setTimeout(r, 400));
+    } finally { clearTimeout(timer); }
+  }
+};
 export const sb = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+  global: { fetch: robustFetch },
 });
 
 /**
@@ -47,3 +65,36 @@ export function googleSignIn() {
   const opts = { provider: "google" as const, options: { redirectTo: location.origin } };
   return guestState.hasProgress ? sb.auth.linkIdentity(opts) : sb.auth.signInWithOAuth(opts);
 }
+
+/** After a sign-in the address bar must not keep the long token the provider sent back: once the session is taken, strip it (the other parameters stay). */
+const SECRET = ["access_token", "refresh_token", "provider_token", "provider_refresh_token", "token_type", "expires_in", "expires_at", "type", "code"];
+function cleanUrl(): void {
+  try {
+    const u = new URL(location.href), h = new URLSearchParams(u.hash.replace(/^#/, ""));
+    let changed = false;
+    if (h.has("access_token") || h.has("refresh_token")) { u.hash = ""; changed = true; }
+    for (const k of SECRET) if (u.searchParams.has(k) && (k !== "type" || u.searchParams.has("code"))) { u.searchParams.delete(k); changed = true; }
+    if (changed) history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
+  } catch { /* nothing to clean */ }
+}
+sb.auth.onAuthStateChange((event) => { if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") setTimeout(cleanUrl, 0); });
+setTimeout(cleanUrl, 2500);
+
+/**
+ * The e-mail was confirmed in another browser or mail app: this one still holds the guest session. Ask the server who this account is now and, when it has become
+ * a registered one, take a fresh session so the app sees it at once. Returns true when that happened.
+ */
+export async function syncRegistration(): Promise<boolean> {
+  const { data } = await sb.auth.getUser();
+  const u = data.user;
+  if (!u) return false;
+  const { data: cur } = await sb.auth.getSession();
+  if (!cur.session?.user.is_anonymous || u.is_anonymous || !u.email) return false;
+  const { error } = await sb.auth.refreshSession();
+  return !error;
+}
+export const pendingConfirm = {
+  mark: () => { try { localStorage.setItem("pend-confirm", String(Date.now())); } catch { /* private mode */ } },
+  active: () => { try { return Date.now() - Number(localStorage.getItem("pend-confirm") ?? 0) < 30 * 60_000; } catch { return false; } },
+  clear: () => { try { localStorage.removeItem("pend-confirm"); } catch { /* private mode */ } },
+};

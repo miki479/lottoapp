@@ -3,7 +3,7 @@ import { currencySymbol, money, resultAmount } from "../web/src/lib/format.ts";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { MESSAGES } from "../web/src/i18n/index.ts";
+import { MESSAGES } from "../web/src/i18n/all.ts";
 import { pickCity, pickLocale, type CityInfo } from "../web/src/lib/detect.ts";
 import { formatWhen, minutesUntil, question, type MarketRow } from "../web/src/lib/format.ts";
 

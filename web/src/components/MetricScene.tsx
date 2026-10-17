@@ -10,7 +10,7 @@ type Hint = "yes" | "no" | null | undefined;
  * hovering or pressing YES pushes it to the extreme (hot, gale, blizzard, strong UV, smog) and NO calms it down.
  */
 export function MetricScene({ m, hint, msg }: { m: MarketRow; hint: Hint; msg: Messages }) {
-  const metric = String(m.params.metric) as "temp" | "wind" | "snow" | "uv" | "aqi" | "hail";
+  const metric = String(m.params.metric) as "temp" | "wind" | "snow" | "uv" | "aqi" | "hail" | "pollen";
   // a warm day in a Japanese city is the cherry-blossom picture
   if (metric === "temp" && cityOf(m.city_id).country === "JP") return <SakuraScene m={m} hint={hint} msg={msg} />;
   const f = m.params.forecast;
@@ -24,6 +24,7 @@ export function MetricScene({ m, hint, msg }: { m: MarketRow; hint: Hint; msg: M
         {metric === "uv" && <Uv />}
         {metric === "aqi" && <Air />}
         {metric === "hail" && <Hail />}
+        {metric === "pollen" && <Pollen />}
       </svg>
       <b>{cap}</b>
     </div>
@@ -93,6 +94,13 @@ const Uv = () => (
   </>
 );
 
+/** Pollen: golden grains drifting over a meadow; YES makes the air thick with them, NO clears it. */
+const Pollen = () => (
+  <g>
+    <path d="M0 84 Q80 60 160 72 T320 64 V84Z" fill="#7bbf5a" opacity=".6" />
+    {Array.from({ length: 16 }, (_, i) => <circle key={i} class={`pl pl${i % 5}`} cx={14 + i * 20} cy={14 + ((i * 37) % 52)} r={2 + (i % 3) * 0.8} fill="#f2c230" />)}
+  </g>
+);
 const Air = () => (
   <>
     <defs><linearGradient id="ma-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#76bdf0" /><stop offset="1" stop-color="#d9efff" /></linearGradient></defs>

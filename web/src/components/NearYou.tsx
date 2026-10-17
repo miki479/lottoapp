@@ -1,4 +1,4 @@
-import { ChevronDown, LocateFixed, Users } from "lucide-preact";
+import { ChevronDown, LocateFixed, Users, RefreshCw } from "lucide-preact";
 import { useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { cityName, cityOf } from "../lib/cities.ts";
@@ -22,7 +22,7 @@ export function NearYou(p: { msg: Messages; locale: Locale; now: number; near: N
       {open && (!p.near
         ? <><p class="hint">{m.ask}</p><button class="btn primary wide" onClick={p.onLocate} disabled={p.busy}><LocateFixed size={18} />{p.busy ? "…" : m.locate}</button><p class="hint">{m.privacy}</p></>
         : <>
-            <span class="detail" style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span><Flag cc={p.near.country} size={12} /> {m.zone(p.near.name)}</span><button class="link" onClick={p.onLocate} disabled={p.busy}>{m.refresh}</button></span>
+            <span class="detail" style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span><Flag cc={p.near.country} size={12} /> {m.zone(p.near.name)}</span><button class="link" onClick={p.onLocate} disabled={p.busy} aria-label={m.refresh} title={m.refresh}><RefreshCw size={18} /></button></span>
             <ul class="nearlist">
               {p.items.map(({ m: mk, bets }) => {
                 const c = cityOf(mk.city_id);

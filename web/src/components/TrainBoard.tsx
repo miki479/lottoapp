@@ -5,8 +5,9 @@ import type { MarketRow } from "../lib/format.ts";
 import type { LiveDelay, Pick } from "../lib/types.ts";
 import { bestOdds, bestSide, boardRows, boardStats, LATE_SEC, sortBoard, type BoardRow, type BoardTab } from "../lib/board.ts";
 import { fmtMin, fmtMult, fmtPct, fmtSigned } from "../lib/num.ts";
+import { dtf } from "../lib/intl.ts";
 
-const CLOCK = new Intl.DateTimeFormat("it-IT", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Europe/Rome" });
+const CLOCK = dtf("it-IT", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Europe/Rome" });
 /** How many trains each version shows: the strip at the top of the home like the rows of a real board, the full one for searching. */
 const STRIP_ROWS = 4, FULL_ROWS = 12, SEARCH_ROWS = 30;
 

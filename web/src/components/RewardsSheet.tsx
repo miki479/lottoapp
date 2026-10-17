@@ -10,10 +10,11 @@ import { ShopArea } from "./ShopArea.tsx";
 import "./RewardsHub.css";
 import { Sheet } from "./Sheet.tsx";
 import { moneySigned, currencySymbol } from "../lib/num.ts";
+import { dtf } from "../lib/intl.ts";
 
 /** Time left until local midnight in the player's time zone ("5h 12m"), when the daily missions renew. */
 export function untilReset(tz: string, nowMs: number): string {
-  const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(nowMs)).map((x) => [x.type, x.value]));
+  const p = Object.fromEntries(dtf("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(nowMs)).map((x) => [x.type, x.value]));
   const left = 24 * 60 - (Number(p.hour) * 60 + Number(p.minute));
   return left >= 60 ? `${Math.floor(left / 60)}h ${left % 60}m` : `${left}m`;
 }
@@ -54,7 +55,7 @@ export function RewardsSheet(p: {
       <div class="rbal"><span class="coin" aria-hidden="true">{currencySymbol(p.locale)}</span><b class="num">{money(p.profile?.credits ?? 0, p.locale)}</b>
         <span class="rstock"><Snowflake size={15} />{p.profile?.freezes ?? 0}</span><span class="rstock"><Rocket size={15} />{p.profile?.boosts ?? 0}</span></div>
       <div class="seg rhtabs" role="tablist">{(["today", "shop"] as const).map((k) => <button key={k} role="tab" aria-selected={tab === k} class={tab === k ? "on" : ""} onClick={() => setTab(k)}>{ht.tabs[k]}</button>)}</div>
-      {tab === "shop" && <ShopArea tab="shop" locale={p.locale} msg={p.msg} credits={p.profile?.credits ?? 0} registered={p.registered} onTab={() => { p.onClose(); p.onAlbum?.(); }} onChanged={() => p.onChanged?.()} onAuth={() => p.onGo("o_nick")} />}
+      {tab === "shop" && <ShopArea tab="shop" locale={p.locale} msg={p.msg} credits={p.profile?.credits ?? 0} registered={p.registered} boosts={p.profile?.boosts ?? 0} freezes={p.profile?.freezes ?? 0} limitUntil={p.profile?.limit_break_until ?? null} limitAt={p.profile?.limit_break_at ?? null} onTab={() => { p.onClose(); p.onAlbum?.(); }} onChanged={() => p.onChanged?.()} onAuth={() => p.onGo("o_nick")} />}
       {tab === "today" && <>
       <p class="hint">{m.subtitle}</p>
       <DailyBonus locale={p.locale} now={p.now} tz={p.profile?.timezone ?? "UTC"} onPlay={p.onClose} onChanged={() => p.onChanged?.()} />

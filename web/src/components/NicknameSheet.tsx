@@ -1,4 +1,4 @@
-import { X } from "lucide-preact";
+import { X, Check } from "lucide-preact";
 import { useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
@@ -20,7 +20,7 @@ export function NicknameSheet({ msg, current, onClose, onSaved }: { msg: Message
       <div class="shead"><h2>{msg.profile.nickname.title}</h2><button class="iconbtn" onClick={onClose} aria-label={msg.common.close}><X size={22} /></button></div>
       <div><label class="detail fieldlabel" for="nn">{msg.profile.nickname.label}</label><input id="nn" class="field" value={name} maxLength={24} placeholder={msg.profile.nickname.placeholder} onInput={(e) => setName((e.target as HTMLInputElement).value)} /><p class="hint" style="margin-top:6px">{msg.profile.nickname.rules}</p></div>
       {err && <p class="formerr" role="alert">{err}</p>}
-      <button class="btn primary wide" disabled={busy || name.trim().length < 2} aria-busy={busy} onClick={save}>{msg.profile.nickname.save}</button>
+      <button class="btn primary wide" disabled={busy || name.trim().length < 2} aria-busy={busy} onClick={save} aria-label={msg.profile.nickname.save} title={msg.profile.nickname.save}><Check size={18} /></button>
     </Sheet>
   );
 }

@@ -1,16 +1,18 @@
-import type { Messages } from "../i18n/index.ts";
+import type { Locale, Messages } from "../i18n/index.ts";
+import { ContactForm } from "./ContactForm.tsx";
 
 export interface Source { name: string; via?: string; license: string; licenseUrl: string; url: string }
 
 /** The one footer of the app, under every screen: the disclaimer (once, small and muted), the full wording, the pages that explain the game and the sources of the data. */
-export function AppFooter({ msg, sources }: { msg: Messages; sources: Source[] }) {
+export function AppFooter({ msg, sources, locale }: { msg: Messages; sources: Source[]; locale: Locale }) {
   return (
     <footer class="legal">
-      <p class="legalshort">{msg.disclaimerShort}</p>
-      <p>{msg.disclaimerFull}</p>
+      <p class="legalshort"><b class="age18" title="18+">18+</b> {msg.disclaimerShort}</p>
+      <p class="legalfull">{msg.disclaimerFull}</p>
       <p class="legallinks"><a href="/how-it-works.html">{msg.profile.howItWorks}</a><a href="/terms.html">{msg.profile.terms}</a><a href="/privacy.html">{msg.profile.privacy}</a></p>
+      <ContactForm locale={locale} />
       <details><summary>{msg.attributionTitle}</summary>
-        {sources.some((a) => a.url.includes("developer.odpt.org")) && <p class="odptnote">{msg.odptNotice.text} <a href={`mailto:${msg.odptNotice.email}`}>{msg.odptNotice.email}</a>. {msg.odptNotice.fresh}</p>}
+        {sources.some((a) => a.url.includes("developer.odpt.org")) && <p class="odptnote">{msg.odptNotice.text} {msg.odptNotice.fresh}</p>}
         <ul>{sources.map((a) => <li key={a.name}><a href={a.url} target="_blank" rel="noopener noreferrer">{a.name}</a>{a.via ? ` · ${a.via}` : ""} · <a href={a.licenseUrl} target="_blank" rel="noopener noreferrer">{a.license}</a></li>)}</ul>
       </details>
     </footer>

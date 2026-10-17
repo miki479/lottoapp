@@ -1,6 +1,6 @@
 import { Flame, UserCheck, UserPlus, UserX } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
-import type { Locale, Messages, TrophyId } from "../i18n/index.ts";
+import { TROPHY_STYLES, type Locale, type Messages, type TrophyId } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 import { useBusy } from "../lib/busy.ts";
 import { money } from "../lib/format.ts";
@@ -44,7 +44,7 @@ export function PublicProfile({ id, msg, locale, onClose, onToast }: { id: strin
             {d.balance !== null && <div class="card"><b class="num">{money(d.balance, locale)}</b><small>{t.balanceLabel}</small></div>}
           </div>
           <div class="card ptro"><small>{t.trophies}{d.trophy_count > 0 ? ` · ${d.trophy_count}` : ""}</small>
-            {d.trophies.length === 0 ? <span class="hint">{t.noTrophies}</span> : <div class="ptrow">{d.trophies.map((x) => <span key={x} title={msg.profile.trophy[x as TrophyId]?.name}><Trophy3D id={x as TrophyId} have size={44} /></span>)}{d.hidden > 0 && <span class="hint num">+{d.hidden} {t.hiddenWord}</span>}</div>}
+            {d.trophies.length === 0 ? <span class="hint">{t.noTrophies}</span> : <div class="ptgroups">{TROPHY_STYLES.map((g) => { const mine = g.ids.filter((x) => d.trophies.includes(x)); return mine.length === 0 ? null : <div class="ptrow" key={g.id} >{mine.map((x) => <span key={x} title={msg.profile.trophy[x]?.name}><Trophy3D id={x} have size={44} /></span>)}</div>; })}{d.hidden > 0 && <span class="hint num">+{d.hidden} {t.hiddenWord}</span>}</div>}
           </div>
           {d.relation !== "friends" && d.relation !== "me" && <p class="hint">{t.friendsOnly}</p>}
           {d.relation === "none" && <button class="btn primary wide" disabled={busy} aria-busy={busy} onClick={add}><UserPlus size={18} />{t.addFriend}</button>}

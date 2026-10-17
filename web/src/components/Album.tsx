@@ -1,4 +1,4 @@
-import { ChevronLeft, Lock } from "lucide-preact";
+import { ChevronLeft, Lock, RefreshCw } from "lucide-preact";
 import { useState } from "preact/hooks";
 import { CARDS, CARD_CATS, cardsOfCat, type CardCat } from "../../../shared/cards.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -19,7 +19,7 @@ export function Album({ locale, msg, data, onRetry }: { locale: Locale; msg: Mes
   const t = hubText(locale), a = t.album;
   const [view, setView] = useState<View>("home"), [zoom, setZoom] = useState<number | null>(null);
   if (data === undefined) return <section class="stack"><div class="sk s" /><div class="sk s" /></section>;
-  if (!data) return <section class="stack"><p class="hint">{a.loadError}</p><button class="btn secondary" onClick={onRetry}>{a.retry}</button></section>;
+  if (!data) return <section class="stack"><p class="hint">{a.loadError}</p><button class="btn secondary" onClick={onRetry} aria-label={a.retry} title={a.retry}><RefreshCw size={18} /></button></section>;
   const own = new Map(data.items.map((i) => [`${i.kind}:${i.id}`, i]));
   const has = (id: string) => own.get(`card:${id}`)?.owned ?? false;
   const copies = (id: string) => own.get(`card:${id}`)?.copies ?? 0;

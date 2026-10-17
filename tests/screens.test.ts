@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { MESSAGES } from "../web/src/i18n/index.ts";
+import { MESSAGES } from "../web/src/i18n/all.ts";
 import { seasonSpan } from "../web/src/lib/format.ts";
 import { resolvingToday, summarize } from "../web/src/lib/summary.ts";
 

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { MESSAGES } from "../web/src/i18n/index.ts";
+import { MESSAGES } from "../web/src/i18n/all.ts";
 import { bestSide, boardRows, boardStats, sortBoard } from "../web/src/lib/board.ts";
 import { friendRows } from "../web/src/lib/feed.ts";
 import type { MarketRow } from "../web/src/lib/format.ts";
@@ -92,7 +92,8 @@ describe("the home", () => {
     expect(src("components/TrainBoard.tsx")).toContain("strip");
   });
   it("opens with the slogan and the short line under it, in every language", () => {
-    expect(MESSAGES.it.home.hero).toEqual({ title: "Scommetti sul ritardo che stai già subendo.", body: "Dati veri, crediti finti." });
+    expect(MESSAGES.it.home.hero).toEqual({ title: "Il ritardo è già tuo. Ora almeno ci scommetti.", body: "Dati veri, zero rimborsi, tanta soddisfazione." });
+    for (const l of ["it", "en-US", "en-GB", "ja"] as const) expect(`${MESSAGES[l].home.hero.title} ${MESSAGES[l].home.hero.body}`).not.toMatch(/crediti finti|fake credits|架空/i);
     for (const l of ["en-US", "en-GB", "ja"] as const) { expect(MESSAGES[l].home.hero.title.length).toBeGreaterThan(10); expect(MESSAGES[l].home.hero.body.length).toBeGreaterThan(5); expect(MESSAGES[l].home.hero.title).not.toBe(MESSAGES.it.home.hero.title); }
   });
   it("draws the board in plain type: no letter-spacing, no dot overlay, a labelled clock", () => {

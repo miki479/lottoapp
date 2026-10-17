@@ -52,10 +52,10 @@ export interface PackDef {
   odds: Record<PackRarity, number>;
 }
 export const PACKS: readonly PackDef[] = [
-  { tier: 1, price: 60, odds: { common: 7700, rare: 1900, epic: 350, legendary: 50 } },
-  { tier: 2, price: 250, odds: { common: 4800, rare: 3500, epic: 1500, legendary: 200 } },
-  { tier: 3, price: 700, odds: { common: 1800, rare: 4200, epic: 3300, legendary: 700 } },
-  { tier: 4, price: 2000, odds: { common: 500, rare: 2000, epic: 4000, legendary: 3500 } },
+  { tier: 1, price: 60, odds: { common: 7740, rare: 1900, epic: 350, legendary: 10 } },
+  { tier: 2, price: 250, odds: { common: 4800, rare: 3500, epic: 1660, legendary: 40 } },
+  { tier: 3, price: 700, odds: { common: 1800, rare: 4200, epic: 3880, legendary: 120 } },
+  { tier: 4, price: 2000, odds: { common: 500, rare: 2000, epic: 7100, legendary: 400 } },
 ];
 export const packOf = (tier: number): PackDef | undefined => PACKS.find((p) => p.tier === tier);
 
@@ -67,12 +67,16 @@ export const DAILY_PACK_CAP = 12;
 export const PACK_GAP_SEC = 2;
 
 /** Avatars everybody owns. All the others are collectible. */
-export const DEFAULT_AVATARS: readonly string[] = ["conductor", "busbot", "cloud", "fox"];
+export const DEFAULT_AVATARS: readonly string[] = ["conductor", "busbot", "cloud", "fox", "capboy", "shadesgirl", "greyalien", "greenalien", "greyhoodie", "android", "xeno", "spacesuit", "beats", "basket"];
 /**
  * Rarity of each collectible avatar (decorations keep the rarity they have in looks.ts). The looks are the rarer pulls:
  * there is no common one, so they only come out of the pools that hold fewer cards.
  */
-export const AVATAR_RARITY: Readonly<Record<string, PackRarity>> = { ball: "rare", bolt: "rare", clock: "epic", astro: "epic", alien: "legendary", kandinsky: "legendary", robot: "rare", panda: "rare", wizard: "epic", samurai: "epic", dragon: "legendary", lion: "legendary" };
+export const AVATAR_RARITY: Readonly<Record<string, PackRarity>> = { ball: "rare", bolt: "rare", clock: "epic", astro: "epic", alien: "legendary", kandinsky: "legendary", robot: "rare", panda: "rare", wizard: "epic", samurai: "epic", dragon: "legendary", lion: "legendary",
+  // the "Routes" collection
+  coach: "rare", rail: "epic", skycloud: "epic", grove: "epic", horn: "rare", citybus: "rare", express: "epic", traffic: "rare", loudspeaker: "rare", oak: "epic", sunny: "rare", clapper: "rare", shades: "epic", wheel: "rare", growth: "rare", spark: "rare", xeno: "epic", curve: "rare", fist: "rare", spacesuit: "epic", beats: "epic", leaf: "rare", junction: "rare", greyalien: "epic", capboy: "rare", bull: "epic", shadesgirl: "epic", busstop: "rare", greenalien: "epic", trainwheel: "rare", basket: "rare", greyhoodie: "epic", peak: "rare", reel: "rare", android: "epic",
+  // the "Forged" collection
+  gear: "rare", ziggurat: "rare", star: "rare", bear: "rare", owl: "rare", wolf: "rare", tiger: "rare", panther: "rare", raven: "rare", drop: "rare", pilot: "epic", knight: "epic", ninja: "epic", cosmonaut: "epic", mech: "epic", falcon: "epic", cobra: "epic", vixen: "epic", lionheart: "epic", emerald: "epic", prism: "epic", shogun: "legendary", eagle: "legendary", wyvern: "legendary", orb: "legendary", goldspiral: "legendary", steelspiral: "legendary", twinrings: "legendary", ember: "legendary", sculpt: "legendary" };
 
 export type ItemKind = "avatar" | "card" | "decoration";
 export interface ShopItem { kind: ItemKind; id: string; rarity: PackRarity }
@@ -87,6 +91,14 @@ export const SHOP_ITEMS: readonly ShopItem[] = [
   ...AVATARS.filter((a) => !DEFAULT_AVATARS.includes(a)).map((id): ShopItem => ({ kind: "avatar", id, rarity: AVATAR_RARITY[id]! })),
   ...DECORATIONS.filter((d) => d.level === undefined).map((d): ShopItem => ({ kind: "decoration", id: d.id, rarity: d.rarity as PackRarity })),
 ].sort(byKey);
+
+/**
+ * How likely an item is inside its rarity (mirrors public.shop_weight): cards and profile pictures weigh more, the older decorations less
+ * and the newest, most beautiful ones the least.
+ */
+export const NEWEST_DECORATIONS: readonly string[] = ["cinder", "rosegold", "starlight", "aurum", "glacier", "crimson", "azure", "vortex", "onyx"];
+export const itemWeight = (i: ShopItem): number => (i.kind === "decoration" ? (NEWEST_DECORATIONS.includes(i.id) ? 25 : 60) : i.kind === "avatar" ? 130 : 160);
+const poolWeight = (pool: readonly ShopItem[]): number => pool.reduce((s, i) => s + itemWeight(i), 0);
 
 export const itemKey = (kind: ItemKind, id: string): string => `${kind}:${id}`;
 export const itemsOfRarity = (r: PackRarity): ShopItem[] => SHOP_ITEMS.filter((i) => i.rarity === r);
@@ -108,7 +120,9 @@ export function rollPack(tier: number, rarityRoll: number, itemRoll: number, own
   if (!pack) return null;
   const rarity = rarityForRoll(pack, rarityRoll);
   const pool = itemsOfRarity(rarity);
-  const item = pool[Math.min(pool.length - 1, Math.floor(itemRoll * pool.length))]!;
+  const target = itemRoll * poolWeight(pool);
+  let run = 0, item = pool[pool.length - 1]!;
+  for (const i of pool) { run += itemWeight(i); if (run > target) { item = i; break; } }
   const duplicate = owned.has(itemKey(item.kind, item.id));
   return { tier, price: pack.price, rarity, item, duplicate, refund: duplicate ? packRefund(pack.price) : 0 };
 }
@@ -121,7 +135,7 @@ export function duplicateChance(tier: number, owned: ReadonlySet<string>): numbe
   for (const r of PACK_RARITIES) {
     const pool = itemsOfRarity(r);
     if (pool.length === 0) continue;
-    p += (pack.odds[r] / 10000) * (pool.filter((i) => owned.has(itemKey(i.kind, i.id))).length / pool.length);
+    p += (pack.odds[r] / 10000) * (poolWeight(pool.filter((i) => owned.has(itemKey(i.kind, i.id)))) / poolWeight(pool));
   }
   return p;
 }
@@ -139,7 +153,7 @@ export function lookChance(tier: number): number {
   let p = 0;
   for (const r of PACK_RARITIES) {
     const pool = itemsOfRarity(r);
-    if (pool.length > 0) p += (pack.odds[r] / 10000) * (pool.filter((i) => i.kind !== "card").length / pool.length);
+    if (pool.length > 0) p += (pack.odds[r] / 10000) * (poolWeight(pool.filter((i) => i.kind !== "card")) / poolWeight(pool));
   }
   return p;
 }
@@ -152,4 +166,23 @@ export function dealOf(ms: number): { tier: number; pct: number } {
   const d = Math.floor(ms / 86_400_000);
   return { tier: 2 + (d % 3), pct: [20, 30, 25][Math.floor(d / 3) % 3]! };
 }
+/** The launch promo: every pack is cheaper while it runs, the bigger the pack the bigger the cut. Never stacked with the deal of the day: the better one wins (public.buy_pack). */
+export const PROMO_PCT: readonly number[] = [10, 15, 20, 25];
+export const packPct = (tier: number, promo: boolean, deal: { tier: number; pct: number }): number => Math.max(promo ? (PROMO_PCT[tier - 1] ?? 0) : 0, tier === deal.tier ? deal.pct : 0);
 export const dealPrice = (price: number, pct: number): number => price - Math.floor((price * pct) / 100);
+
+/**
+ * Supplies sold for credits. A boost doubles the net win of one bet (extra capped at 1000: worth up to ~800 on the best bet), so it is priced above that
+ * and credits cannot be printed by buying them; a freeze saves a streak. Bundles are about 13% cheaper than the singles. Stock caps: 20 boosts, 2 freezes.
+ * Mirrors public.shop_supplies() (tested).
+ */
+export interface Supply { id: "boost1" | "boost5" | "freeze1" | "kit"; price: number; boosts: number; freezes: number }
+export const SUPPLIES: readonly Supply[] = [
+  { id: "boost1", price: 750, boosts: 1, freezes: 0 },
+  { id: "boost5", price: 3250, boosts: 5, freezes: 0 },
+  { id: "freeze1", price: 400, boosts: 0, freezes: 1 },
+  { id: "kit", price: 2650, boosts: 3, freezes: 2 },
+];
+export const MAX_BOOSTS = 20, MAX_FREEZES = 2;
+/** True when buying this supply would go past the stock caps. */
+export const supplyFull = (s: Supply, boosts: number, freezes: number): boolean => boosts + s.boosts > MAX_BOOSTS || freezes + s.freezes > MAX_FREEZES;

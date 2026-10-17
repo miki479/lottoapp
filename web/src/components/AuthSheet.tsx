@@ -1,7 +1,7 @@
 import { Mail, X } from "lucide-preact";
 import { useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
-import { googleSignIn, sb } from "../lib/api.ts";
+import { googleSignIn, pendingConfirm, sb } from "../lib/api.ts";
 import { useBusy } from "../lib/busy.ts";
 import { Sheet } from "./Sheet.tsx";
 
@@ -9,6 +9,9 @@ import { Sheet } from "./Sheet.tsx";
 export function authError(e: { message?: string; code?: string } | null, msg: Messages): string {
   const t = `${e?.code ?? ""} ${e?.message ?? ""}`.toLowerCase();
   const k = t.includes("invalid login") || t.includes("invalid_credentials") ? "invalid_credentials"
+    : t.includes("same_password") || t.includes("different from the old") ? "same_password"
+    : t.includes("email_not_confirmed") || t.includes("not confirmed") ? "email_unconfirmed"
+    : t.includes("error sending") || t.includes("unexpected_failure") ? "email_send"
     : t.includes("already") || t.includes("email_exists") ? "email_taken"
     : t.includes("at least") || t.includes("weak_password") ? "weak_password"
     : t.includes("rate") ? "email_rate"
@@ -16,7 +19,8 @@ export function authError(e: { message?: string; code?: string } | null, msg: Me
     : t.includes("exchange external code") ? "google_retry"
     : t.includes("already linked") || t.includes("identity_already_exists") ? "google_exists"
     : t.includes("not enabled") || t.includes("unsupported provider") ? "provider_off" : "generic";
-  return msg.errors[k]!;
+  // an error that is not known: say so, with its code, so it can be traced instead of a bare "something went wrong"
+  return k === "generic" && e?.code ? `${msg.errors.generic!} (${e.code})` : msg.errors[k]!;
 }
 
 export function AuthSheet({ msg, guest, googleOn, onClose, onDone }: { msg: Messages; guest: boolean; googleOn: boolean; onClose: () => void; onDone: (text: string) => void }) {
@@ -36,10 +40,10 @@ export function AuthSheet({ msg, guest, googleOn, onClose, onDone }: { msg: Mess
       const { data, error } = await sb.auth.updateUser({ email, password });
       if (error) setErr(authError(error, msg));
       else if (data.user && data.user.email && !data.user.is_anonymous) onDone(msg.auth.welcome);
-      else setInfo(msg.auth.confirmSent);
+      else { pendingConfirm.mark(); setInfo(msg.auth.confirmSent); }
     } else if (mode === "signup") {
       const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin } });
-      if (error) setErr(authError(error, msg)); else if (data.session) onDone(msg.auth.welcome); else setInfo(msg.auth.confirmSent);
+      if (error) setErr(authError(error, msg)); else if (data.session) onDone(msg.auth.welcome); else { pendingConfirm.mark(); setInfo(msg.auth.confirmSent); }
     } else {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) setErr(authError(error, msg)); else onDone(msg.auth.welcome);
