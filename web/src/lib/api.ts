@@ -66,6 +66,12 @@ export function googleSignIn() {
   return guestState.hasProgress ? sb.auth.linkIdentity(opts) : sb.auth.signInWithOAuth(opts);
 }
 
+/** Facebook sign-in, same rules as Google (a guest with bets keeps the account by linking). */
+export function facebookSignIn() {
+  const opts = { provider: "facebook" as const, options: { redirectTo: location.origin, scopes: "email" } };
+  return guestState.hasProgress ? sb.auth.linkIdentity(opts) : sb.auth.signInWithOAuth(opts);
+}
+
 /** After a sign-in the address bar must not keep the long token the provider sent back: once the session is taken, strip it (the other parameters stay). */
 const SECRET = ["access_token", "refresh_token", "provider_token", "provider_refresh_token", "token_type", "expires_in", "expires_at", "type", "code"];
 function cleanUrl(): void {

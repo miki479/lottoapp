@@ -45,6 +45,7 @@ import { fmtInt, fmtMult, fmtTimes, moneySigned, setNumLocale } from "./lib/num.
 import { balanceMove } from "./lib/stake.ts";
 import { resolvingToday } from "./lib/summary.ts";
 import { pickFeed, type FeedItem } from "./lib/feed.ts";
+import { setFacebookOn } from "./lib/providers.ts";
 import { unseenResults } from "./lib/results.ts";
 import { ResultsDigest } from "./components/ResultsDigest.tsx";
 import { countdown, setDayUnit, currencySymbol, dayIn, daysUntil, fmtOdds, isYesNo, money, question, superText, trainLabel, type MarketRow } from "./lib/format.ts";
@@ -291,7 +292,7 @@ export function App() {
       if (event === "SIGNED_IN" || event === "USER_UPDATED") setTimeout(() => bootRef.current(), 0);
     });
     bootstrap().catch(() => {});
-    fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY } }).then((r) => r.json()).then((s) => { setGoogleOn(!!s?.external?.google); }).catch(() => {});
+    fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY } }).then((r) => r.json()).then((s) => { setGoogleOn(!!s?.external?.google); setFacebookOn(!!s?.external?.facebook); }).catch(() => {});
     // the e-mail link may have been opened somewhere else (the mail app's own browser): when the player comes back, or every half minute for a while after asking
     // for the confirmation, check with the server whether this account is registered now
     const sync = () => { if (document.visibilityState === "visible" && (!registeredRef.current || pendingConfirm.active())) void syncRegistration().then((ok) => { if (ok) { pendingConfirm.clear(); setTimeout(() => bootRef.current(), 0); } }).catch(() => {}); };

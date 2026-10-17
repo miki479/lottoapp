@@ -126,7 +126,7 @@ export interface Messages {
     nickname: { title: string; label: string; placeholder: string; rules: string; save: string; needAccount: string };
   };
   auth: {
-    title: string; subtitle: string; tabSignin: string; tabSignup: string; email: string; password: string; passwordHint: string; google: string; or: string;
+    title: string; subtitle: string; tabSignin: string; tabSignup: string; email: string; password: string; passwordHint: string; google: string; facebook: string; or: string;
     magic: string; magicSent: string; confirmSent: string; signinCta: string; signupCta: string; guestKeep: string; guestLose: string; welcome: string;
   };
   crowd: { title: string; note: (year: string, avg: number) => string; all: (n: number) => string; less: string; scaleTitle: string; scale: Record<100 | 150 | 180 | 200 | 250, string>; source: string };

@@ -175,7 +175,7 @@ const enUS: Messages = {
   },
   auth: {
     title: "Your profile", subtitle: "Keep your credits, streak and trophies on every device.", tabSignin: "Sign in", tabSignup: "Create profile", email: "Email", password: "Password", passwordHint: "At least 8 characters",
-    google: "Continue with Google", or: "or", magic: "Email me a sign-in link", magicSent: "Check your inbox: we sent you the link.", confirmSent: "We sent a confirmation email. Open the link to finish.",
+    google: "Continue with Google", facebook: "Continue with Facebook", or: "or", magic: "Email me a sign-in link", magicSent: "Check your inbox: we sent you the link.", confirmSent: "We sent a confirmation email. Open the link to finish.",
     signinCta: "Sign in", signupCta: "Create profile", guestKeep: "Your guest credits and progress stay with the new profile.", guestLose: "Signing in to an existing profile doesn't merge this guest's progress.", welcome: "Profile connected",
   },
   crowd: { title: "Tokyo trains: how packed are they?", note: (y, a) => `Weekday morning peak, fiscal year ${y}. Average of the main sections: ${a}%. Official statistics, not live.`, all: (n) => `Show all ${n} sections`, less: "Show less", scaleTitle: "What the percentage means", scale: { 100: "everyone has a seat, strap or pole", 150: "shoulders touch, you can read a newspaper easily", 180: "you have to fold the newspaper to read it", 200: "you are pressed together, a magazine at most", 250: "you can't move, not even your hands" }, source: "Source: Japan's Ministry of Land, Infrastructure, Transport and Tourism (MLIT), processed:" },

@@ -175,7 +175,7 @@ const it: Messages = {
   },
   auth: {
     title: "Il tuo profilo", subtitle: "Salva crediti, serie e trofei e usali su ogni dispositivo.", tabSignin: "Accedi", tabSignup: "Crea profilo", email: "Email", password: "Password", passwordHint: "Almeno 8 caratteri",
-    google: "Continua con Google", or: "oppure", magic: "Inviami un link di accesso", magicSent: "Controlla la posta: ti abbiamo mandato il link.", confirmSent: "Ti abbiamo mandato un'email di conferma. Apri il link per completare.",
+    google: "Continua con Google", facebook: "Continua con Facebook", or: "oppure", magic: "Inviami un link di accesso", magicSent: "Controlla la posta: ti abbiamo mandato il link.", confirmSent: "Ti abbiamo mandato un'email di conferma. Apri il link per completare.",
     signinCta: "Accedi", signupCta: "Crea profilo", guestKeep: "I tuoi crediti e i tuoi progressi di ospite restano con il nuovo profilo.", guestLose: "Se accedi a un profilo esistente, i progressi di questo ospite non vengono uniti.", welcome: "Profilo collegato",
   },
   crowd: { title: "Treni di Tokyo: quanto sono pieni", note: (y, a) => `Ora di punta del mattino nei giorni feriali, anno fiscale ${y}. Media delle principali tratte: ${a}%. Dati statistici ufficiali, non in tempo reale.`, all: (n) => `Mostra tutte le ${n} tratte`, less: "Mostra meno", scaleTitle: "Cosa significa la percentuale", scale: { 100: "tutti hanno un posto, una maniglia o un palo", 150: "ci si sfiora, si legge il giornale senza problemi", 180: "serve piegare il giornale per leggerlo", 200: "ci si schiaccia, si legge al massimo una rivista", 250: "non ci si muove, nemmeno le mani" }, source: "Fonte: ministero giapponese dei trasporti (MLIT), rielaborato:" },
