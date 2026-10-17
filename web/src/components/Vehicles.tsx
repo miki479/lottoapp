@@ -335,13 +335,29 @@ export function GovGhost() {
   );
 }
 
-/** Aerei: a passenger jet over a stripe of cloud. It banks and flies across on hover or tap, then comes back. */
+/** Aerei: a passenger jet seen from the side (windows, cockpit, engine under a swept wing, blue tail) over a runway and a few clouds. It banks and crosses on hover or tap, then comes back. */
 export function PlaneGhost() {
   return (
     <svg viewBox="0 0 80 70" class="gh gh-flights" aria-hidden="true">
-      <path d="M0 62Q22 57 44 61T80 59V70H0Z" fill="#2fa8e6" opacity=".25" />
-      <g class="gh-cloud" fill="#fff" opacity=".9"><ellipse cx="18" cy="52" rx="12" ry="5" /><ellipse cx="28" cy="49" rx="9" ry="5.500" /><ellipse cx="60" cy="14" rx="10" ry="4" /><ellipse cx="68" cy="12" rx="7" ry="4.500" /></g>
-      <g class="gh-plane"><path d="M8 30l30-2 20-14h6l-8 14 14 2c3 .5 4 3 0 4l-14 2 8 14h-6L38 36 8 34z" fill="#f4f7ff" stroke="#3b6ea5" stroke-width="1.600" stroke-linejoin="round" /><path d="M14 31h18" stroke="#3b6ea5" stroke-width="1.400" stroke-linecap="round" opacity=".6" /><circle cx="22" cy="32" r="1.400" fill="#3b6ea5" /><circle cx="28" cy="32" r="1.400" fill="#3b6ea5" /></g>
+      <defs>
+        <linearGradient id="gpf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" /><stop offset="1" stop-color="#cdd9ee" /></linearGradient>
+        <linearGradient id="gpt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d8cf0" /><stop offset="1" stop-color="#2459c4" /></linearGradient>
+      </defs>
+      <rect x="0" y="62" width="80" height="2" fill="#8a96ad" opacity=".75" /><path d="M2 65.500h76" stroke="#8a96ad" stroke-width="1.200" stroke-dasharray="4 3" opacity=".6" />
+      <g class="gh-cloud" fill="#fff" opacity=".92"><ellipse cx="14" cy="52" rx="10" ry="4" /><ellipse cx="23" cy="50" rx="8" ry="4.500" /><ellipse cx="64" cy="12" rx="9" ry="3.600" /><ellipse cx="71" cy="10.500" rx="6" ry="4" /></g>
+      <g class="gh-plane" transform="translate(3 6)">
+        <path d="M-2 30H8M-4 33H6M0 36H9" stroke="#fff" stroke-width="1.400" stroke-linecap="round" opacity=".55" />
+        <path d="M10 28L8 12h7l13 17z" fill="url(#gpt)" stroke="#1c3f8f" stroke-width=".8" stroke-linejoin="round" /><path d="M10 21h4" stroke="#fff" stroke-width="1.600" stroke-linecap="round" opacity=".85" />
+        <path d="M14 33l-9 4h12l9-3z" fill="#aebfdc" stroke="#7d94bd" stroke-width=".8" stroke-linejoin="round" />
+        <path d="M9 29H62Q74 29 75 34Q73 40 62 40H18Q9 40 8 33Q8 30 9 29z" fill="url(#gpf)" stroke="#8aa2c8" stroke-width="1" stroke-linejoin="round" />
+        <path d="M12 38H64Q70 38 73 37.500Q70 40 62 40H18Q10 40 9 37z" fill="#5d7299" opacity=".18" />
+        <path d="M11 34.500H71" stroke="#2f7de1" stroke-width="1.800" stroke-linecap="round" />
+        <g fill="#3b5a8c">{Array.from({ length: 9 }, (_, i) => <rect key={i} x={18 + i * 4.300} y="31" width="2.400" height="2.800" rx=".9" />)}</g>
+        <path d="M64 30.500Q69 30.500 72 33H64z" fill="#243d6b" />
+        <path d="M31 38.500H49L36 57H27z" fill="#e3ebf8" stroke="#8aa2c8" stroke-width="1" stroke-linejoin="round" /><path d="M34 41h12" stroke="#9db2d6" stroke-width="1" opacity=".7" />
+        <rect x="32" y="45.500" width="12" height="5.400" rx="2.700" fill="#bcc9e2" stroke="#7d94bd" stroke-width=".9" /><ellipse cx="43.200" cy="48.200" rx="1.300" ry="2.300" fill="#26365a" />
+        <circle cx="8.500" cy="12.600" r="1.200" fill="#ff4d4d" /><circle cx="74" cy="34.500" r="1" fill="#fff3b0" />
+      </g>
     </svg>
   );
 }
