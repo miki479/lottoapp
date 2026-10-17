@@ -8,6 +8,7 @@ import { PersonalOffer, type OfferUse } from "../components/PersonalOffer.tsx";
 import { CLASS_LABEL, trainClass, trainZone, type TrainClass } from "../lib/zones.ts";
 import { CloudRain } from "lucide-preact";
 import { RainGroup } from "../components/RainGroup.tsx";
+import { Gauge } from "lucide-preact";
 import { FilterSheet, filterLabel, ICON as KIND_ICON } from "../components/FilterSheet.tsx";
 import { groupMatches, MatchList } from "../components/MatchList.tsx";
 import { CatChips, type CatId } from "../components/CatChips.tsx";
@@ -45,7 +46,10 @@ function ChipX({ on, onClear, label }: { on: boolean; onClear: () => void; label
 /** Only these depend on a place: the city chips are shown for them and nowhere else, so a global category is never emptied by a city. */
 const LOCAL_CATS: CatId[] = ["bus", "train", "weather", "traffic"];
 /** The kinds added on 17 October carry a pulsing dot until the first days of November. */
-const FRESH = new Set(["f1", "chess", "hn", "launch", "neo", "eonet"]); const FRESH_UNTIL = Date.parse("2026-11-03T00:00:00Z");
+const FRESH = new Set(["f1", "chess", "hn", "space"]); const FRESH_UNTIL = Date.parse("2026-11-03T00:00:00Z");
+/** Formula 1 questions open six days before a race: the first of the new season opens on 19 October, and the chip says so until it does. */
+const F1_FROM = Date.parse("2026-10-19T00:00:00Z");
+const F1_SOON: Record<string, string> = { it: "dal 19 ott", "en-US": "from Oct 19", "en-GB": "from 19 Oct", ja: "10/19から" };
 const safe = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
 export interface Trend { id: string; name: string; country: string; place?: Place }
 const REG_MORE: Record<string, string> = { it: "Regioni", "en-US": "Regions", "en-GB": "Regions", ja: "地域" };
@@ -68,9 +72,9 @@ export function Home(p: HomeProps) {
   // Weather has sub-pills (rain, temperature, wind…) so the category row stays short; only the kinds that exist today are shown.
   const [wxSel, setWx] = useState<string>("all");
   const finKey = (m: MarketRow) => { const s = String(m.params.series ?? ""); return s.startsWith("metal:") ? "metals" : s.startsWith("oil:") ? "oil" : s.startsWith("fuel:") ? "fuel" : s.startsWith("fx:") ? "fx" : s.startsWith("power:") ? "power" : "crypto"; };
-  const factKey = (m: MarketRow) => { const s = String(m.params.series ?? ""); return s.startsWith("f1:") ? "f1" : s.startsWith("chess:") ? "chess" : s.startsWith("hn:") ? "hn" : s.startsWith("launch:") ? "launch" : s.startsWith("neo:") ? "neo" : s.startsWith("eonet:") ? "eonet" : ""; };
+  const factKey = (m: MarketRow) => { const s = String(m.params.series ?? ""); return s.startsWith("f1:") ? "f1" : s.startsWith("chess:") ? "chess" : s.startsWith("hn:") ? "hn" : s.startsWith("launch:") || s.startsWith("neo:") || s.startsWith("eonet:") ? "space" : ""; };
   const wxKey = (m: MarketRow) => (m.kind === "tick_gt" && m.category === "finance" ? finKey(m) : m.kind === "tick_gt" ? factKey(m) : m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : m.kind === "quake_m" ? String(m.params.region ?? "world") : "");
-  const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi", "pollen", "hail"] : p.cat === "nature" ? ["world", "jp", "it", "ca", "tr", "launch", "neo", "eonet"] : p.cat === "culture" ? ["f1", "chess", "hn"] : p.cat === "finance" ? ["crypto", "metals", "fx", "oil", "fuel", "power"] : [];
+  const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi", "pollen", "hail"] : p.cat === "nature" ? ["world", "jp", "it", "ca", "tr", "space"] : p.cat === "culture" ? ["f1", "chess", "hn"] : p.cat === "finance" ? ["crypto", "metals", "fx", "oil", "fuel", "power"] : [];
   const [filterOpen, setFilterOpen] = useState(false);
   const [staleOff, setStaleOff] = useState(false);
   const [howOpen, setHowOpen] = useState(() => safe.get("how") !== "1");
@@ -85,6 +89,7 @@ export function Home(p: HomeProps) {
   const perCity = useMemo(() => { const g = new Map<string, number>(), r = new Map<string, number>(); const nowMs = Date.now(); for (const m of p.markets ?? []) { if (m.category !== p.cat || m.params.ladderOf || Date.parse(m.closes_at) <= nowMs) continue; g.set(m.city_id, (g.get(m.city_id) ?? 0) + 1); const rg = regionOfCity(m.city_id); if (rg) r.set(rg, (r.get(rg) ?? 0) + 1); } return { g, r }; }, [p.markets, p.cat]);
   const nc = (id: string, region = false) => { const n = (region ? perCity.r : perCity.g).get(id) ?? 0; return n > 0 ? <em class="chipn">{n}</em> : null; };
   const wxKinds = order.filter((k) => p.list.some((m) => wxKey(m) === k));
+  const f1Soon = p.cat === "culture" && !wxKinds.includes("f1") && p.now < F1_FROM;
   const wx = wxKinds.includes(wxSel) ? wxSel : "all";
   const picked = wx !== "all" ? p.list.filter((m) => wxKey(m) === wx) : p.list;
   const [teamQ, setTeamQ] = useState("");
@@ -179,12 +184,13 @@ export function Home(p: HomeProps) {
           <div class="sectionhead evhead"><h2>{msg.home.events}</h2>
             <div class="evacts"><button class="createbtn" onClick={p.onCreate}><Plus size={16} />{msg.maker.open}</button>
           </div></div>
-          {wxKinds.length > 1 && (
+          {(wxKinds.length > 1 || (f1Soon && wxKinds.length > 0)) && (
             <>
               <h2 class="steplabel">{msg.home.typeLabel}</h2>
               <div class="chiprow typerow" role="tablist">
                 <button class={`chip ${wx === "all" ? "on" : ""}`} role="tab" aria-selected={wx === "all"} onClick={() => setWx("all")}>{msg.wx.all}<em>{p.list.length}</em></button>
                 {wxKinds.map((k) => { const Icon = KIND_ICON[k]; return <button key={k} class={`chip ${wx === k ? "on" : ""}${FRESH.has(k) && p.now < FRESH_UNTIL ? " fresh" : ""}`} role="tab" aria-selected={wx === k} onClick={() => setWx(k)}>{Icon && <Icon size={16} class={`kico k-${k}`} />}{filterLabel(msg, k)}<em>{p.list.filter((m) => wxKey(m) === k).length}</em></button>; })}
+              {f1Soon && <span class="chip soonchip" aria-disabled="true"><Gauge size={16} class="kico k-f1" />{filterLabel(msg, "f1")}<em>{F1_SOON[p.locale] ?? F1_SOON["en-US"]}</em></span>}
               </div>
             </>
           )}

@@ -1,11 +1,11 @@
-import { Bitcoin, CloudFog, Crown, Flame, Gauge, Newspaper, Orbit, Rocket, Droplet, Flower2, Fuel, Gem, CloudHail, CloudRain, Globe, Snowflake, Sun, Thermometer, Wind, X } from "lucide-preact";
+import { Bitcoin, CloudFog, Crown, Gauge, Newspaper, Orbit, Droplet, Flower2, Fuel, Gem, CloudHail, CloudRain, Globe, Snowflake, Sun, Thermometer, Wind, X } from "lucide-preact";
 import type { Messages } from "../i18n/index.ts";
 import { Flag } from "./Flag.tsx";
 import { Sheet } from "./Sheet.tsx";
 
 export interface FilterOption { key: string; count: number }
 
-export const ICON: Record<string, typeof Wind> = { rain: CloudRain, temp: Thermometer, wind: Wind, snow: Snowflake, uv: Sun, aqi: CloudFog, pollen: Flower2, hail: CloudHail, world: Globe, crypto: Bitcoin, metals: Gem, oil: Droplet, fuel: Fuel, f1: Gauge, chess: Crown, hn: Newspaper, launch: Rocket, neo: Orbit, eonet: Flame };
+export const ICON: Record<string, typeof Wind> = { rain: CloudRain, temp: Thermometer, wind: Wind, snow: Snowflake, uv: Sun, aqi: CloudFog, pollen: Flower2, hail: CloudHail, world: Globe, crypto: Bitcoin, metals: Gem, oil: Droplet, fuel: Fuel, f1: Gauge, chess: Crown, hn: Newspaper, space: Orbit };
 const FLAG: Record<string, string> = { jp: "JP", it: "IT", ca: "US", tr: "TR" };
 
 export function filterLabel(msg: Messages, key: string): string {

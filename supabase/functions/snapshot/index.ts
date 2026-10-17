@@ -29,8 +29,16 @@ Deno.serve(safe(async (req) => {
     sb.from("markets").select("id,city_id,kind,status,outcome,void_reason,params,evidence,target_at").neq("status", "open").order("target_at", { ascending: false }).limit(12),
   ]);
   if (mk.error || !mk.data) return Response.json({ error: mk.error?.message ?? "no markets" }, { status: 500 });
-  const body = JSON.stringify({ t: Date.now(), markets: mk.data, health: health.data ?? [], popular: popular.data ?? [], activity: activity.data ?? [], places: places.data ?? [], results: results.data ?? [] });
+  // The local categories (buses, trains, weather, traffic) stay in the main file: live delays, the train board and the "for you" strip read them everywhere.
+  // The other categories get a file each, so a phone on a slow or metered line can ask only for the one it is looking at.
+  const SHARDS = ["sport", "culture", "nature", "finance", "law", "strike"];
+  const shard = (c: string) => mk.data!.filter((m) => m.category === c);
+  const shards: Record<string, number> = {};
+  const t = Date.now();
+  const up0 = await Promise.all(SHARDS.map((c) => { const rows = shard(c); shards[c] = rows.length; return sb.storage.from("snap").upload(`m-${c}.json`, new Blob([JSON.stringify({ t, markets: rows })], { type: "application/json" }), { upsert: true, contentType: "application/json", cacheControl: "30" }); }));
+  if (up0.some((u) => u.error)) return Response.json({ error: up0.find((u) => u.error)!.error!.message }, { status: 500 });
+  const body = JSON.stringify({ t, shards, markets: mk.data.filter((m) => !SHARDS.includes(m.category as string)), health: health.data ?? [], popular: popular.data ?? [], activity: activity.data ?? [], places: places.data ?? [], results: results.data ?? [] });
   const up = await sb.storage.from("snap").upload("home.json", new Blob([body], { type: "application/json" }), { upsert: true, contentType: "application/json", cacheControl: "30" });
   if (up.error) return Response.json({ error: up.error.message }, { status: 500 });
-  return Response.json({ ok: true, markets: mk.data.length, bytes: body.length });
+  return Response.json({ ok: true, markets: mk.data.length, bytes: body.length, shards });
 }));

@@ -13,7 +13,7 @@ import { DelayMeter } from "./components/DelayMeter.tsx";
 import { OfflineBar } from "./components/OfflineBar.tsx";
 import { shortStation, TrainBoard } from "./components/TrainBoard.tsx";
 import { MiniLive } from "./components/MiniLive.tsx";
-import { getSnapshot } from "./lib/snapshot.ts";
+import { getShard, getSnapshot, lightLine } from "./lib/snapshot.ts";
 import { Ticker } from "./components/Ticker.tsx";
 import { ParlayBar } from "./components/ParlayBar.tsx";
 import { ParlaySheet, slipOdds } from "./components/ParlaySheet.tsx";
@@ -122,6 +122,9 @@ export function App() {
   const [filter, setFilter] = useState<string>(() => store.get("filter") || "world");
   const [cat, setCat] = useState<CatId>("bus");
   const [catChosen, setCatChosen] = useState(false);
+  const catR = useRef(cat); catR.current = cat;
+  const loadedShards = useRef(new Set<string>());
+  const [shardCounts, setShardCounts] = useState<Record<string, number>>({});
   const [screen, setScreen] = useState<Screen>("home");
   // what was on screen last time is shown at once (only if it is recent) while the fresh list is on its way
   const [markets, setMarkets] = useState<MarketRow[] | null>(() => { try { const c = JSON.parse(localStorage.getItem("mk1") ?? "null") as { t: number; rows: MarketRow[] } | null; return c && Date.now() - c.t < 10 * 60_000 ? c.rows : null; } catch { return null; } });
@@ -337,8 +340,14 @@ export function App() {
         isPlace && !placeIds.current.includes(f0!) ? open().in("city_id", [f0!]).order("closes_at").limit(400) : none,
       ]);
       if (seq !== mkSeq.current) return;
+      // the other categories sit in files of their own: all of them on a good line, only the one being looked at on a slow or metered one
+      const base = import.meta.env.VITE_SUPABASE_URL as string, sh = Object.keys(snap.shards ?? {});
+      const wantS = lightLine() ? sh.filter((c) => c === catR.current || loadedShards.current.has(c)) : sh;
+      const shardRows = (await Promise.all(wantS.map((c) => getShard(base, c, snap.t)))).flat();
+      for (const c of wantS) loadedShards.current.add(c);
+      setShardCounts(snap.shards ?? {});
       const seenS = new Set<string>(), allS: MarketRow[] = [];
-      for (const x of [...snap.markets, ...((mineS.data ?? []) as MarketRow[]), ...((hereS.data ?? []) as MarketRow[])]) if (!seenS.has(x.id)) { seenS.add(x.id); allS.push(x); }
+      for (const x of [...snap.markets, ...shardRows, ...((mineS.data ?? []) as MarketRow[]), ...((hereS.data ?? []) as MarketRow[])]) if (!seenS.has(x.id)) { seenS.add(x.id); allS.push(x); }
       await learnPlaces(allS.map((x) => x.city_id));
       setMarkets(allS); try { localStorage.setItem("mk1", JSON.stringify({ t: Date.now(), rows: allS.slice(0, 250) })); } catch { /* storage full or unavailable */ }
       if (navigator.onLine) setOffline(false);
@@ -515,7 +524,10 @@ export function App() {
   // trains and buses: the most delayed right now first, then the rest
   const byDelay = (x: MarketRow[]) => [...x].sort((m1, m2) => Number(!!live[m2.id] && !live[m2.id]!.is_forecast) - Number(!!live[m1.id] && !live[m1.id]!.is_forecast) || (live[m2.id]?.delay_sec ?? -1e9) - (live[m1.id]?.delay_sec ?? -1e9));
   const list = cat === "train" || cat === "bus" ? (filter === "mine" && stopTier[cat] ? [...byCat(cat)].sort((a, b) => (stopDist(a) ?? 1e9) - (stopDist(b) ?? 1e9)) : byDelay(byCat(cat))) : flashFirst(byCat(cat));
-  const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: byCat("nature").length, strike: isItalian ? byCat("strike").length : 0, traffic: byCat("traffic").length, finance: byCat("finance").length, culture: byCat("culture").length, sport: new Set(byCat("sport").map((m) => String(m.params.eventId))).size, law: byCat("law").length, gov: 0 };
+  // a category whose file has not been fetched yet (slow line) shows the number the server counted
+  const unloaded = (c: CatId, n: number) => (n === 0 && !loadedShards.current.has(c) ? shardCounts[c] ?? 0 : n);
+  useEffect(() => { if (lightLine() && shardCounts[cat] && !loadedShards.current.has(cat)) void loadMarkets(); }, [cat, shardCounts]);
+  const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: unloaded("nature", byCat("nature").length), strike: isItalian ? unloaded("strike", byCat("strike").length) : 0, traffic: byCat("traffic").length, finance: unloaded("finance", byCat("finance").length), culture: unloaded("culture", byCat("culture").length), sport: unloaded("sport", new Set(byCat("sport").map((m) => String(m.params.eventId))).size), law: unloaded("law", byCat("law").length), gov: 0 };
 
   const top: TopItem[] = useMemo(() => {
     const items: TopItem[] = [];
