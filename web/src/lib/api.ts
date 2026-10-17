@@ -65,3 +65,17 @@ export function googleSignIn() {
   const opts = { provider: "google" as const, options: { redirectTo: location.origin } };
   return guestState.hasProgress ? sb.auth.linkIdentity(opts) : sb.auth.signInWithOAuth(opts);
 }
+
+/** After a sign-in the address bar must not keep the long token the provider sent back: once the session is taken, strip it (the other parameters stay). */
+const SECRET = ["access_token", "refresh_token", "provider_token", "provider_refresh_token", "token_type", "expires_in", "expires_at", "type", "code"];
+function cleanUrl(): void {
+  try {
+    const u = new URL(location.href), h = new URLSearchParams(u.hash.replace(/^#/, ""));
+    let changed = false;
+    if (h.has("access_token") || h.has("refresh_token")) { u.hash = ""; changed = true; }
+    for (const k of SECRET) if (u.searchParams.has(k) && (k !== "type" || u.searchParams.has("code"))) { u.searchParams.delete(k); changed = true; }
+    if (changed) history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
+  } catch { /* nothing to clean */ }
+}
+sb.auth.onAuthStateChange((event) => { if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") setTimeout(cleanUrl, 0); });
+setTimeout(cleanUrl, 2500);
