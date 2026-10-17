@@ -1887,7 +1887,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 @keyframes eosplitL { from { transform: translate(0, 0) rotate(0); } to { transform: translate(-9px, 1px) rotate(-4deg); } }
 @keyframes eosplitR { from { transform: translate(0, 0) rotate(0); } to { transform: translate(9px, 1px) rotate(4deg); } }
 @media (prefers-reduced-motion: reduce) { .mscene.eonet * { animation: none !important; } }
-/* the ".it" of the wordmark: a small pill in the same gradient as BET, sitting on the baseline, with room under it for the tag */
+/* the ".it" of the wordmark: small, no box, right against BET and in the warm end of its gradient (the way betting sites write their domain) */
 .brand .wm { display: inline-flex; align-items: baseline; }
-.brand .wm .tld { margin-left: 4px; padding: 1px 5px 2px; border-radius: 7px; font-size: var(--fs-xs); font-weight: 900; font-style: normal; letter-spacing: .02em; line-height: 1.1; color: #fff; -webkit-text-fill-color: #fff; background: linear-gradient(100deg, #6b5bff 0%, #ff4fa3 60%, #ffb000 100%); transform: translateY(-1px); box-shadow: 0 1px 6px color-mix(in srgb, #ff4fa3 35%, transparent); }
+.brand .wm .tld { margin-left: 1px; font-size: var(--fs-xs); font-weight: 800; font-style: normal; letter-spacing: .01em; line-height: 1; background: linear-gradient(100deg, #ff4fa3 0%, #ffb000 100%); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
 .brand .tx { gap: 4px; }
