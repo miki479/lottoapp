@@ -3,7 +3,7 @@ import { normalCdf } from "./metrics.ts";
 import { addDays, localDateString, zonedEpoch } from "./time.ts";
 
 /** Questions about a single number at a given instant, for the whole world: coin prices, the Kp index, Wikipedia page views. */
-export type TickCategory = "finance" | "nature" | "culture" | "traffic" | "space" | "sport";
+export type TickCategory = "finance" | "nature" | "culture" | "traffic" | "space" | "sport" | "games";
 
 export interface TickDef {
   category: TickCategory;
@@ -142,13 +142,13 @@ export function tickDef(series: string): TickDef | null {
   if (isOil(series)) return { category: "finance", label: OIL[series.slice(4) as OilKey].label, unit: "$", min: 5, max: 400 };
   if (isAlert(series)) return { category: "nature", label: "Allerta", unit: "", min: 0, max: 3 };
   if (isStorm(series)) return { category: "nature", label: "Storm", unit: " kt", min: 0, max: 200 };
-  if (isSteam(series)) return { category: "culture", label: STEAM[series.slice(6) as keyof typeof STEAM], unit: "", min: 0, max: 100_000_000 };
+  if (isSteam(series)) return { category: "games", label: STEAM[series.slice(6) as keyof typeof STEAM], unit: "", min: 0, max: 100_000_000 };
   if (isBikes(series)) return { category: "traffic", label: BIKES[series.slice(6) as BikeKey].label, unit: "", min: 0, max: BIKES[series.slice(6) as BikeKey].max };
   if (isHf(series)) return { category: "culture", label: HF[series.slice(3) as HfKey].label, unit: "", min: 50, max: 10_000_000 };
   if (isSolarWind(series)) return { category: "nature", label: "Solar wind", unit: " km/s", min: 150, max: 2500 };
   if (isLastfm(series)) return { category: "culture", label: LASTFM[series.slice(7) as LastfmKey], unit: "", min: 1000, max: 2_000_000_000 };
   if (isHn(series)) return { category: "culture", label: "Hacker News", unit: " pt", min: 1, max: 50_000 };
-  if (isChess(series)) return { category: "culture", label: CHESS[series.slice(6) as ChessKey], unit: "", min: 400, max: 4500 };
+  if (isChess(series)) return { category: "games", label: CHESS[series.slice(6) as ChessKey], unit: "", min: 400, max: 4500 };
   if (isEonet(series)) return { category: "space", label: EONET[series.slice(6) as EonetKey].label, unit: "", min: 0, max: 5000 };
   if (isNeo(series)) return { category: "space", label: "Asteroid", unit: "", min: 0, max: 1 };
   if (isLaunch(series)) return { category: "space", label: "Launch", unit: "", min: 0, max: 1 };

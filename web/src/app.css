@@ -506,8 +506,8 @@ footer.legal .legalfull { font-size: var(--fs-xs); opacity: .8; }
 .gh * { transform-box: fill-box; }
 .gh-bolt { opacity: 0; } .gh-drops path { opacity: 0; }
 .gh-leaves ellipse { opacity: 0; }
-@media (hover: hover) { .cc.bus:not(:disabled):hover .veh, .cc.train:not(:disabled):hover .veh { animation: drive 1.7s linear 1 both; } }
-.cc.play.bus .veh, .cc.play.train .veh { animation: drive 1.7s linear 1 both; }
+@media (hover: hover) { .cc.bus:not(:disabled):hover .veh, .cc.train:not(:disabled):hover .veh { animation: drive 1.9s linear 1 both; } }
+.cc.play.bus .veh, .cc.play.train .veh { animation: drive 1.9s linear 1 both; }
 @media (hover: hover) { .cc.weather:not(:disabled):hover .gh-drops path { animation: fall 0.9s linear 2 both; } }
 .cc.play.weather .gh-drops path { animation: fall 0.9s linear 2 both; }
 .cc.play.weather .gh-bolt { animation: flash .6s ease-out 1 both; }
@@ -517,7 +517,7 @@ footer.legal .legalfull { font-size: var(--fs-xs); opacity: .8; }
 .gh-sway { transform-origin: 30% 100%; } .gh-sway2 { transform-origin: 70% 100%; animation-delay: .2s !important; }
 .gh-leaves .l6 { animation-delay: .75s !important; } .gh-leaves .l7 { animation-delay: .9s !important; } .gh-leaves .l2 { animation-delay: .15s !important; } .gh-leaves .l3 { animation-delay: .3s !important; } .gh-leaves .l4 { animation-delay: .45s !important; } .gh-leaves .l5 { animation-delay: .6s !important; }
 /* the vehicle drives out of the chip on the right and comes back in from the left; the road stays where it is */
-@keyframes drive { 0% { transform: translateX(0); animation-timing-function: cubic-bezier(.5, 0, 1, .6); } 38% { transform: translateX(110px); } 38.1% { transform: translateX(-110px); animation-timing-function: cubic-bezier(0, .5, .4, 1); } 100% { transform: translateX(0); } }
+@keyframes drive { 0% { transform: translateX(0); animation-timing-function: cubic-bezier(.45, 0, .9, .5); } 34% { transform: translateX(78px); } 34.1% { transform: translateX(-78px); animation-timing-function: cubic-bezier(.1, .6, .3, 1); } 100% { transform: translateX(0); } }
 .gh-veh .veh { transform-box: view-box; }
 @keyframes fall { 0% { opacity: 0; transform: translateY(-6px); } 25% { opacity: .95; } 100% { opacity: 0; transform: translateY(12px); } }
 @keyframes flash { 0%, 100% { opacity: 0; } 15% { opacity: .95; } 30% { opacity: .1; } 45% { opacity: .9; } 70% { opacity: 0; } }
@@ -1908,3 +1908,30 @@ textarea.field { resize: vertical; min-height: 84px; }
 @media (hover: hover) { .cc.space:not(:disabled):hover .gh-rocket { animation: spacego 2.2s cubic-bezier(.4, 0, .2, 1) 1 both; } .cc.space:not(:disabled):hover .gh-fire { animation: spacefire 2.2s linear 1 both; } }
 .cc.play.space .gh-rocket { animation: spacego 2.2s cubic-bezier(.4, 0, .2, 1) 1 both; } .cc.play.space .gh-fire { animation: spacefire 2.2s linear 1 both; }
 @media (prefers-reduced-motion: reduce) { .cc.space .gh-planet { animation: none; } }
+
+/* desktop: the news banner takes the full row (it was a third of it), the right column no longer sticks (a tall column was cut off at the bottom of the screen) */
+@media (min-width: 1024px) {
+  .home .promowrap { grid-column: 1 / -1; }
+  .home .promo { aspect-ratio: auto; height: 170px; }
+  .home .aside { position: static; }
+  /* the bet sheet in two columns, so it fits on a desktop screen without scrolling; header and confirm bar span both */
+  .sheet.withfoot { max-width: 900px; display: block; column-count: 2; column-gap: var(--space-5); }
+  .sheet.withfoot > * { break-inside: avoid; margin-bottom: var(--space-4); }
+  .sheet.withfoot > .grab, .sheet.withfoot > .shead, .sheet.withfoot > .betfoot { column-span: all; }
+  .sheet.withfoot > .betfoot { margin-bottom: 0; }
+}
+
+.factgrp .fgicon { display: grid; place-items: center; color: var(--action-ink); background: var(--action-soft); }
+
+/* Culture tile: the pad's buttons blink in turn on hover or tap */
+.cc.games .gh-btn { opacity: .95; }
+@keyframes padblink { 0%, 100% { opacity: .95; transform: scale(1); } 50% { opacity: .35; transform: scale(.75); } }
+@media (hover: hover) { .cc.games:not(:disabled):hover .gh-btn { animation: padblink .5s ease-in-out 3 both; } .cc.games:not(:disabled):hover .gh-btn.b2 { animation-delay: .12s; } .cc.games:not(:disabled):hover .gh-btn.b3 { animation-delay: .24s; } .cc.games:not(:disabled):hover .gh-btn.b4 { animation-delay: .36s; } }
+.cc.play.games .gh-btn { animation: padblink .5s ease-in-out 3 both; } .cc.play.games .gh-btn.b2 { animation-delay: .12s; } .cc.play.games .gh-btn.b3 { animation-delay: .24s; } .cc.play.games .gh-btn.b4 { animation-delay: .36s; }
+
+.cc.games { --cat: #e0527a; --cat-soft: color-mix(in srgb, #e0527a 12%, var(--surface)); }
+.cc.games .gh-pawn { transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes pawnhop { 0%, 100% { transform: translateY(0) scale(1.45); } 35% { transform: translateY(-5px) scale(1.45); } 60% { transform: translateY(0) scale(1.45, 1.35); } }
+@media (hover: hover) { .cc.games:not(:disabled):hover .gh-pawn { animation: pawnhop .7s ease-in-out 2 both; } }
+.cc.play.games .gh-pawn { animation: pawnhop .7s ease-in-out 2 both; }
+.k-videogames { animation: kchess 3s cubic-bezier(.45, 0, .55, 1) infinite; } @media (prefers-reduced-motion: reduce) { .k-videogames { animation: none; } }

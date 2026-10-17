@@ -16,7 +16,8 @@ import { Empty } from "../components/Empty.tsx";
 import { CrowdCard } from "../components/CrowdCard.tsx";
 import { EventCard } from "../components/EventCard.tsx";
 import { FrisbeeSoon } from "../components/FrisbeeSoon.tsx";
-import { GameGroup } from "../components/GameGroup.tsx";
+import { FactGroup, GameGroup } from "../components/GameGroup.tsx";
+import { CHESS, type ChessKey } from "../../../shared/ticks.ts";
 import { Flag } from "../components/Flag.tsx";
 import { TopCards, type TopItem } from "../components/TopCards.tsx";
 import { FriendsBets } from "../components/FriendsBets.tsx";
@@ -46,7 +47,7 @@ function ChipX({ on, onClear, label }: { on: boolean; onClear: () => void; label
 /** Only these depend on a place: the city chips are shown for them and nowhere else, so a global category is never emptied by a city. */
 const LOCAL_CATS: CatId[] = ["bus", "train", "weather", "traffic"];
 /** The kinds added on 17 October carry a pulsing dot until the first days of November. */
-const FRESH = new Set(["chess", "hn", "launch", "neo", "volcanoes", "storms", "ice"]); const FRESH_UNTIL = Date.parse("2026-11-03T00:00:00Z");
+const FRESH = new Set(["videogames", "chess", "launch", "neo", "volcanoes", "storms", "ice"]); const FRESH_UNTIL = Date.parse("2026-11-03T00:00:00Z");
 /** Formula 1 questions open six days before a race: the first of the new season opens on 19 October, and the chip says so until it does. */
 const F1_FROM = Date.parse("2026-10-19T00:00:00Z");
 const F1_SOON: Record<string, string> = { it: "dal 19 ott", "en-US": "from Oct 19", "en-GB": "from 19 Oct", ja: "10/19から" };
@@ -72,9 +73,9 @@ export function Home(p: HomeProps) {
   // Weather has sub-pills (rain, temperature, wind…) so the category row stays short; only the kinds that exist today are shown.
   const [wxSel, setWx] = useState<string>("all");
   const finKey = (m: MarketRow) => { const s = String(m.params.series ?? ""); return s.startsWith("metal:") ? "metals" : s.startsWith("oil:") ? "oil" : s.startsWith("fuel:") ? "fuel" : s.startsWith("fx:") ? "fx" : s.startsWith("power:") ? "power" : "crypto"; };
-  const factKey = (m: MarketRow) => { const s = String(m.params.series ?? ""); return s.startsWith("f1:") ? "f1" : s.startsWith("chess:") ? "chess" : s.startsWith("hn:") ? "hn" : s.startsWith("launch:") ? "launch" : s.startsWith("neo:") ? "neo" : s.startsWith("eonet:") ? (s.slice(6) === "storms" ? "storms" : s.slice(6) === "ice" ? "ice" : "volcanoes") : ""; };
+  const factKey = (m: MarketRow) => { const s = String(m.params.series ?? ""); return s.startsWith("f1:") ? "f1" : s.startsWith("steam:") ? "videogames" : s.startsWith("chess:") ? "chess" : s.startsWith("hn:") ? "hn" : s.startsWith("launch:") ? "launch" : s.startsWith("neo:") ? "neo" : s.startsWith("eonet:") ? (s.slice(6) === "storms" ? "storms" : s.slice(6) === "ice" ? "ice" : "volcanoes") : ""; };
   const wxKey = (m: MarketRow) => (m.kind === "tick_gt" && m.category === "finance" ? finKey(m) : m.kind === "tick_gt" ? factKey(m) : m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : m.kind === "quake_m" ? String(m.params.region ?? "world") : "");
-  const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi", "pollen", "hail"] : p.cat === "nature" ? ["world", "jp", "it", "ca", "tr"] : p.cat === "culture" ? ["chess", "hn"] : p.cat === "space" ? ["launch", "neo", "volcanoes", "storms", "ice"] : p.cat === "finance" ? ["crypto", "metals", "fx", "oil", "fuel", "power"] : [];
+  const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi", "pollen", "hail"] : p.cat === "nature" ? ["world", "jp", "it", "ca", "tr"] : p.cat === "games" ? ["videogames", "chess"] : p.cat === "space" ? ["launch", "neo", "volcanoes", "storms", "ice"] : p.cat === "finance" ? ["crypto", "metals", "fx", "oil", "fuel", "power"] : [];
   const [filterOpen, setFilterOpen] = useState(false);
   const [staleOff, setStaleOff] = useState(false);
   const [howOpen, setHowOpen] = useState(() => safe.get("how") !== "1");
@@ -111,8 +112,12 @@ export function Home(p: HomeProps) {
   const topId = shown.reduce<MarketRow | null>((b, m) => (!b || Number(m.odds_yes) > Number(b.odds_yes) ? m : b), null)?.id;
   const steamOf = (m: MarketRow) => { const sr = String(m.params.series ?? ""); return m.kind === "tick_gt" && sr.startsWith("steam:") ? sr.slice(6) : null; };
   const gameGroups = new Map<string, MarketRow[]>();
-  if (p.cat === "culture") for (const m of shown) { const a = steamOf(m); if (a) gameGroups.set(a, [...(gameGroups.get(a) ?? []), m].sort((x, y) => Date.parse(x.target_at) - Date.parse(y.target_at))); }
-  const plain0 = gameGroups.size ? shown.filter((m) => !steamOf(m)) : shown;
+  if (p.cat === "games") for (const m of shown) { const a = steamOf(m); if (a) gameGroups.set(a, [...(gameGroups.get(a) ?? []), m].sort((x, y) => Date.parse(x.target_at) - Date.parse(y.target_at))); }
+  // chess players and Hacker News each get a folded row of their own, so their questions are not all piled up together
+  const factOf = (m: MarketRow) => { const sr = String(m.params.series ?? ""); return m.kind === "tick_gt" && (sr.startsWith("chess:") || sr === "hn:max") ? sr : null; };
+  const factGroups = new Map<string, MarketRow[]>();
+  if (p.cat === "culture" || p.cat === "games") for (const m of shown) { const f = factOf(m); if (f) factGroups.set(f, [...(factGroups.get(f) ?? []), m].sort((x, y) => Date.parse(x.target_at) - Date.parse(y.target_at))); }
+  const plain0 = gameGroups.size || factGroups.size ? shown.filter((m) => !steamOf(m) && !factOf(m)) : shown;
   // the hours of one city's rain question are one card (only when there are more than five hours), not a card for each
   const rainBy = new Map<string, MarketRow[]>();
   if (p.cat === "weather") for (const m of plain0) if (m.kind === "rain_at") rainBy.set(m.city_id, [...(rainBy.get(m.city_id) ?? []), m]);
@@ -232,6 +237,7 @@ export function Home(p: HomeProps) {
               </div>
             )}
             {rainGroups.map((g) => <RainGroup key={g[0]!.city_id} markets={g} locale={p.locale} msg={msg} now={p.now} onPick={p.onPick} />)}
+            {[...factGroups].sort((a, b) => (a[0] === "hn:max" ? -1 : b[0] === "hn:max" ? 1 : 0)).map(([sr, ms]) => <FactGroup key={sr} kind={sr === "hn:max" ? "hn" : "chess"} title={sr === "hn:max" ? "Hacker News" : CHESS[sr.slice(6) as ChessKey] ?? sr.slice(6)} count={ms.length}>{ms.map((m, i) => card(m, i))}</FactGroup>)}
             {[...gameGroups].map(([appid, ms]) => <GameGroup key={appid} appid={appid} count={ms.length}>{ms.map((m, i) => card(m, i))}</GameGroup>)}
             {p.markets !== null && p.cat === "train" && p.italian && <div class="stack" style="grid-column:1/-1;gap:8px"><h2 class="steplabel">{msg.home.quickPick}</h2><TrainBoard variant="full" markets={p.markets ?? []} live={p.live} msg={msg} locale={p.locale} now={p.now} onPick={p.onPick} onRefresh={p.onRefreshBoard} /></div>}
             {plain.slice(0, 40).map((m, i) => card(m, i))}

@@ -363,7 +363,7 @@ export function App() {
       // Markets of the towns this player picked are loaded separately so a long list of places never crowds out the real cities.
       placeIds.current.length ? open().in("city_id", placeIds.current).order("closes_at").limit(160) : none,
       // Questions that close far ahead (matches, daily page views, price lines) fall off the first page: one page per category, fetched on their own.
-      Promise.all(["sport", "finance", "culture", "nature", "law", "traffic", "space"].map((c) => open().eq("category", c).order("closes_at").limit(c === "law" ? 60 : 200))),
+      Promise.all(["sport", "finance", "culture", "nature", "law", "traffic", "space", "games"].map((c) => open().eq("category", c).order("closes_at").limit(c === "law" ? 60 : 200))),
       // the questions we write ourselves close far ahead: always fetched on their own
       open().eq("kind", "tick_gt").like("params->>series", "house:%").order("closes_at").limit(60),
       f0 && f0 !== "world" && f0 !== "mine" && !isRegionFilter(f0) && !placeIds.current.includes(f0) ? open().in("city_id", [f0, ...[...NATIONAL].filter((id) => CITIES.find((c) => c.id === id)?.country === (CITIES.find((c) => c.id === f0)?.country ?? placeById(f0)?.country))]).order("closes_at").limit(400) : none,
@@ -496,7 +496,7 @@ export function App() {
   /** "Near you" chip: everything from the player's own country (their located town, profile or phone region). */
   const myCountry = near?.country ?? profile?.country ?? region();
   const countryOf = (id: string) => CITIES.find((c) => c.id === id)?.country ?? placeById(id)?.country ?? (near?.id === id ? near.country : undefined);
-  const hasMine = !!myCountry && open.some((m) => m.category !== "nature" && m.category !== "space" && m.category !== "strike" && m.category !== "finance" && m.category !== "culture" && m.category !== "sport" && m.category !== "law" && countryOf(m.city_id) === myCountry);
+  const hasMine = !!myCountry && open.some((m) => m.category !== "nature" && m.category !== "space" && m.category !== "games" && m.category !== "strike" && m.category !== "finance" && m.category !== "culture" && m.category !== "sport" && m.category !== "law" && countryOf(m.city_id) === myCountry);
   /** "Near you": what is within RADIUS_KM of the player's town (the town they set, or the one they were located in); with no town known, the whole country. */
   // "near me" follows where the phone is (when the player located themselves); the profile town is only the fallback and the key of the local ranking
   const originPt = geo ? { lat: geo.lat, lon: geo.lon } : home ? { lat: home.lat, lon: home.lon } : near ? locOf(near.id) : null;
@@ -514,7 +514,7 @@ export function App() {
   // a local category with nothing inside the radius falls back to the player's country, and says so (trains are national anyway)
   const mineWide = useMemo(() => { const s = new Set<string>(); if (filter === "mine" && originPt) for (const c of ["bus", "weather", "traffic"]) if (!stopTier[c] && !open.some((m) => m.category === c && withinRadius(m))) s.add(c); return s; }, [open, filter, home?.id, near?.id, geo?.lat, geo?.lon, stopTier]);
   const mineMatch = (m: MarketRow) => (stopTier[m.category] ? (stopDist(m) ?? Infinity) <= stopTier[m.category]! : originPt ? withinRadius(m) || (countryOf(m.city_id) === myCountry && (mineWide.has(m.category) || (m.category === "train" && NATIONAL.has(m.city_id)))) : countryOf(m.city_id) === myCountry);
-  const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter || m.category === "nature" || m.category === "space" || m.category === "strike" || m.category === "finance" || m.category === "culture" || m.category === "sport" || m.category === "law" || (m.category === "traffic" && m.city_id === "world") || (filter === "mine" && mineMatch(m)) || (isRegionFilter(filter) && (regionOfCity(m.city_id) === filter.slice(4) || (m.category === "train" && NATIONAL.has(m.city_id) && countryOf(m.city_id) === "IT"))) || (NATIONAL.has(m.city_id) && countryOf(filter) === countryOf(m.city_id))), [open, filter, myCountry, near?.id, home?.id, mineWide]);
+  const inFilter = useMemo(() => open.filter((m) => filter === "world" || m.city_id === filter || m.category === "nature" || m.category === "space" || m.category === "games" || m.category === "strike" || m.category === "finance" || m.category === "culture" || m.category === "sport" || m.category === "law" || (m.category === "traffic" && m.city_id === "world") || (filter === "mine" && mineMatch(m)) || (isRegionFilter(filter) && (regionOfCity(m.city_id) === filter.slice(4) || (m.category === "train" && NATIONAL.has(m.city_id) && countryOf(m.city_id) === "IT"))) || (NATIONAL.has(m.city_id) && countryOf(filter) === countryOf(m.city_id))), [open, filter, myCountry, near?.id, home?.id, mineWide]);
   useEffect(() => { if (hasMine && filter === "world" && !store.get("filter")) setFilter("mine"); }, [hasMine]);
   // a question already bet on leaves the lists (it stays in "My bets"), so it cannot be played twice by mistake
   const betOn = useMemo(() => new Set(bets.filter((b) => b.status === "open").map((b) => b.markets.id)), [bets]);
@@ -527,7 +527,7 @@ export function App() {
   // a category whose file has not been fetched yet (slow line) shows the number the server counted
   const unloaded = (c: CatId, n: number) => (n === 0 && !loadedShards.current.has(c) ? shardCounts[c] ?? 0 : n);
   useEffect(() => { if (lightLine() && shardCounts[cat] && !loadedShards.current.has(cat)) void loadMarkets(); }, [cat, shardCounts]);
-  const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: unloaded("nature", byCat("nature").length), strike: isItalian ? unloaded("strike", byCat("strike").length) : 0, traffic: byCat("traffic").length, finance: unloaded("finance", byCat("finance").length), culture: unloaded("culture", byCat("culture").length), sport: unloaded("sport", new Set(byCat("sport").map((m) => String(m.params.eventId))).size), law: unloaded("law", byCat("law").length), space: unloaded("space", byCat("space").length), gov: 0 };
+  const counts: Record<CatId, number> = { bus: byCat("bus").length, train: byCat("train").length, weather: byCat("weather").length, nature: unloaded("nature", byCat("nature").length), strike: isItalian ? unloaded("strike", byCat("strike").length) : 0, traffic: byCat("traffic").length, finance: unloaded("finance", byCat("finance").length), culture: unloaded("culture", byCat("culture").length), sport: unloaded("sport", new Set(byCat("sport").map((m) => String(m.params.eventId))).size), law: unloaded("law", byCat("law").length), space: unloaded("space", byCat("space").length), games: unloaded("games", byCat("games").length), gov: 0 };
 
   const top: TopItem[] = useMemo(() => {
     const items: TopItem[] = [];

@@ -31,7 +31,7 @@ Deno.serve(safe(async (req) => {
   if (mk.error || !mk.data) return Response.json({ error: mk.error?.message ?? "no markets" }, { status: 500 });
   // The local categories (buses, trains, weather, traffic) stay in the main file: live delays, the train board and the "for you" strip read them everywhere.
   // The other categories get a file each, so a phone on a slow or metered line can ask only for the one it is looking at.
-  const SHARDS = ["sport", "culture", "nature", "space", "finance", "law", "strike"];
+  const SHARDS = ["sport", "culture", "nature", "space", "games", "finance", "law", "strike"];
   const shard = (c: string) => mk.data!.filter((m) => m.category === c);
   const shards: Record<string, number> = {};
   const t = Date.now();
