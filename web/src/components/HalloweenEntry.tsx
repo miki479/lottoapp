@@ -11,7 +11,7 @@ export function HalloweenEntry({ msg, now }: { msg: Messages; now: number }) {
   useEffect(() => { let live = true; sb.rpc("halloween_status").then(({ data }) => { if (live && data) setEv(data as { published?: boolean; starts_at?: string | null }); }); return () => { live = false; }; }, []);
   if (!ev?.published) return null;
   const h = msg.halloween, start = ev.starts_at ? Date.parse(ev.starts_at) : NaN, locked = !(start <= now);
-  const date = Number.isFinite(start) ? new Date(start).toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "Europe/Rome" }) : "";
+  const date = Number.isFinite(start) ? new Date(start).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "";
   return (
     <>
       <button class={`hwentry ${locked ? "locked" : ""}`} aria-disabled={locked} onClick={() => { if (!locked) setOpen(true); }}>

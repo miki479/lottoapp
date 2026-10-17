@@ -6,7 +6,7 @@ import { HALLOWEEN_PICTURES, type HalloweenId } from "../../../shared/halloween.
 type Row = { id: HalloweenId; category: "train" | "weather" | "traffic" | "finance" | "sport"; wins: number; target: number; unlocked: boolean };
 type Status = { published: boolean; starts_at?: string | null; ends_at?: string | null; settle_by?: string | null; challenges?: Row[] };
 
-const day = (iso?: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" }) : "—");
+const day = (iso?: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
 
 /** The five Halloween cards. Hidden while the event is a draft; the counting happens in the database (halloween_status). */
 export function HalloweenChallenges({ msg }: { msg: Messages }) {

@@ -6,7 +6,7 @@ import { HalloweenLogo } from "./HalloweenLogo.tsx";
 import { HalloweenSheet } from "./HalloweenSheet.tsx";
 
 const KEY = "promo.halloween";
-const fmt = (d: Date) => d.toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "Europe/Rome" });
+const fmt = (d: Date) => d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
 const read = (): boolean => { try { return localStorage.getItem(KEY) === "1"; } catch { return false; } };
 
 /** Home announcement for the Halloween challenges: avatars with frames in the back, the badges in front. It only shows once the event is published. */
