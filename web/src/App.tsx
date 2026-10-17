@@ -821,11 +821,12 @@ export function App() {
   guestState.hasProgress = !registered && bets.length + parlays.length > 0;
   const slipIds = new Set(slip.map((l) => l.m.id));
   // the balance falls under 1000 after a loss: once a day, a friendly sheet with a way back (invite a friend), never a nudge to bet more
-  const prevCredits = useRef<number | null>(null);
+  const prevCredits = useRef<number | null>(null), shopOpenRef = useRef(false);
+  shopOpenRef.current = rewardsOpen; // credits spent in the shop are not a loss
   useEffect(() => {
     const c = profile?.credits; if (c === undefined) return;
     const was = prevCredits.current; prevCredits.current = c;
-    if (was === null || was < 1000 || c >= 1000) return;
+    if (was === null || was < 1000 || c >= 1000 || shopOpenRef.current) return;
     const day = new Date().toISOString().slice(0, 10);
     if (store.get("lossday") === day) return;
     store.set("lossday", day); setLossOpen(true);
