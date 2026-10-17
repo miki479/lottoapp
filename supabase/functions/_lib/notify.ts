@@ -292,6 +292,16 @@ const BROADCAST = {
     },
     url: "https://latebet.it/?open=news",
   },
+  // the new kinds of questions (F1, chess, Hacker News, space launches, asteroids, natural events): opens the app on Culture
+  categories_v1: {
+    headings: { en: "Six new things to bet on 🚀", it: "Sei nuove cose su cui scommettere 🚀", ja: "新しい予想が6つ登場 🚀" },
+    contents: {
+      en: "Formula 1, chess, Hacker News, rocket launches, asteroids and natural events: all new, all with a prediction waiting. Come and christen them.",
+      it: "Formula 1, scacchi, Hacker News, lanci di razzi, asteroidi ed eventi naturali: tutto nuovo, ognuno con la sua domanda che aspetta. Vieni a battezzarli.",
+      ja: "F1、チェス、Hacker News、ロケット打ち上げ、小惑星、自然現象。すべて新登場で、予想が待っています。最初に挑戦してみて。",
+    },
+    url: "https://latebet.it/?open=culture",
+  },
   // everybody who allowed notifications; the in-app gift (credits and boosts) is written first, see scripts/send-bomb.sql
   bomb_v1: {
     headings: { en: "A 💣 is waiting for you", it: "C'è una 💣 che ti aspetta", ja: "💣があなたを待っています" },

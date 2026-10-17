@@ -44,6 +44,8 @@ function ChipX({ on, onClear, label }: { on: boolean; onClear: () => void; label
 
 /** Only these depend on a place: the city chips are shown for them and nowhere else, so a global category is never emptied by a city. */
 const LOCAL_CATS: CatId[] = ["bus", "train", "weather", "traffic"];
+/** The kinds added on 17 October carry a pulsing dot until the first days of November. */
+const FRESH = new Set(["f1", "chess", "hn", "launch", "neo", "eonet"]); const FRESH_UNTIL = Date.parse("2026-11-03T00:00:00Z");
 const safe = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
 export interface Trend { id: string; name: string; country: string; place?: Place }
 const REG_MORE: Record<string, string> = { it: "Regioni", "en-US": "Regions", "en-GB": "Regions", ja: "地域" };
@@ -66,8 +68,9 @@ export function Home(p: HomeProps) {
   // Weather has sub-pills (rain, temperature, wind…) so the category row stays short; only the kinds that exist today are shown.
   const [wxSel, setWx] = useState<string>("all");
   const finKey = (m: MarketRow) => { const s = String(m.params.series ?? ""); return s.startsWith("metal:") ? "metals" : s.startsWith("oil:") ? "oil" : s.startsWith("fuel:") ? "fuel" : s.startsWith("fx:") ? "fx" : s.startsWith("power:") ? "power" : "crypto"; };
-  const wxKey = (m: MarketRow) => (m.kind === "tick_gt" && m.category === "finance" ? finKey(m) : m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : m.kind === "quake_m" ? String(m.params.region ?? "world") : "");
-  const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi", "pollen", "hail"] : p.cat === "nature" ? ["world", "jp", "it", "ca", "tr"] : p.cat === "finance" ? ["crypto", "metals", "fx", "oil", "fuel", "power"] : [];
+  const factKey = (m: MarketRow) => { const s = String(m.params.series ?? ""); return s.startsWith("f1:") ? "f1" : s.startsWith("chess:") ? "chess" : s.startsWith("hn:") ? "hn" : s.startsWith("launch:") ? "launch" : s.startsWith("neo:") ? "neo" : s.startsWith("eonet:") ? "eonet" : ""; };
+  const wxKey = (m: MarketRow) => (m.kind === "tick_gt" && m.category === "finance" ? finKey(m) : m.kind === "tick_gt" ? factKey(m) : m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : m.kind === "quake_m" ? String(m.params.region ?? "world") : "");
+  const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi", "pollen", "hail"] : p.cat === "nature" ? ["world", "jp", "it", "ca", "tr", "launch", "neo", "eonet"] : p.cat === "culture" ? ["f1", "chess", "hn"] : p.cat === "finance" ? ["crypto", "metals", "fx", "oil", "fuel", "power"] : [];
   const [filterOpen, setFilterOpen] = useState(false);
   const [staleOff, setStaleOff] = useState(false);
   const [howOpen, setHowOpen] = useState(() => safe.get("how") !== "1");
@@ -181,7 +184,7 @@ export function Home(p: HomeProps) {
               <h2 class="steplabel">{msg.home.typeLabel}</h2>
               <div class="chiprow typerow" role="tablist">
                 <button class={`chip ${wx === "all" ? "on" : ""}`} role="tab" aria-selected={wx === "all"} onClick={() => setWx("all")}>{msg.wx.all}<em>{p.list.length}</em></button>
-                {wxKinds.map((k) => { const Icon = KIND_ICON[k]; return <button key={k} class={`chip ${wx === k ? "on" : ""}`} role="tab" aria-selected={wx === k} onClick={() => setWx(k)}>{Icon && <Icon size={16} />}{filterLabel(msg, k)}<em>{p.list.filter((m) => wxKey(m) === k).length}</em></button>; })}
+                {wxKinds.map((k) => { const Icon = KIND_ICON[k]; return <button key={k} class={`chip ${wx === k ? "on" : ""}${FRESH.has(k) && p.now < FRESH_UNTIL ? " fresh" : ""}`} role="tab" aria-selected={wx === k} onClick={() => setWx(k)}>{Icon && <Icon size={16} class={`kico k-${k}`} />}{filterLabel(msg, k)}<em>{p.list.filter((m) => wxKey(m) === k).length}</em></button>; })}
               </div>
             </>
           )}

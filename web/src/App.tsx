@@ -815,6 +815,8 @@ export function App() {
   }, [ready, profile?.id]);
   // a push about the new pictures opens the home page on the banner
   useEffect(() => { if (new URLSearchParams(location.search).get("open") === "news") { setScreen("home"); setNewsKey((n) => n + 1); history.replaceState(null, "", location.pathname); } }, []);
+  // the push about the new kinds opens the app on their category (?open=culture or ?open=nature)
+  useEffect(() => { const o = new URLSearchParams(location.search).get("open"); if (o === "culture" || o === "nature") { setScreen("home"); setCat(o); setCatChosen(true); history.replaceState(null, "", location.pathname); } }, []);
   useEffect(() => { if (new URLSearchParams(location.search).get("open") === "bets") { setScreen("bets"); history.replaceState(null, "", location.pathname); } }, []);
   const toggleVoice = () => { const on = !voiceOn; setVoice(on); setVoiceOn(on); flash(on ? msg.voice.on : msg.voice.off); if (on) announce("voice-on", msg.voice.on, locale, true); };
   const needJoin = needSignup && !registered;

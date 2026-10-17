@@ -8,8 +8,20 @@ Deno.serve(safe(async (req) => {
   const denied = requireCron(req);
   if (denied) return denied;
   const sb = db(), nowIso = new Date().toISOString();
+  // The database hands out at most 1000 rows per request, so the open questions are read page by page: otherwise everything closing after the first thousand
+  // (tomorrow's matches, the later chess, asteroid and launch questions) would be missing from every phone.
+  const readMarkets = async () => {
+    const rows: Record<string, unknown>[] = [];
+    for (let from = 0; from < 8000; from += 1000) {
+      const { data, error } = await sb.from("markets").select(COLS).eq("status", "open").gt("closes_at", nowIso).not("city_id", "like", "p-%").order("closes_at").order("id").range(from, from + 999);
+      if (error || !data) return { data: null, error: error ?? { message: "no markets" } };
+      rows.push(...data);
+      if (data.length < 1000) break;
+    }
+    return { data: rows, error: null };
+  };
   const [mk, health, popular, activity, places, results] = await Promise.all([
-    sb.from("markets").select(COLS).eq("status", "open").gt("closes_at", nowIso).not("city_id", "like", "p-%").order("closes_at").limit(4000),
+    readMarkets(),
     sb.from("feed_health").select("feed_id,last_ok_at"),
     sb.rpc("popular_markets", { p_limit: 5 }),
     sb.rpc("activity_feed", { p_limit: 12 }),
