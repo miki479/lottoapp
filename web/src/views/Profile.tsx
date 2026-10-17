@@ -114,7 +114,7 @@ export function ProfileView(p: {
               <span class="detail"><Percent size={12} style="vertical-align:-1px" /> {m.stats.winRate}</span>
             </div>
             <div class="card cell span2" style="--i:1"><span class="detail">{m.stats.streak}</span><span class="v"><Flame size={22} class="ic" style="vertical-align:-3px;margin-right:6px" />{p.profile?.streak ?? 0}<small>{p.profile?.streak === 1 ? "" : ""}</small></span></div>
-            <div class="card cell span2" style="--i:2"><span class="detail">{m.stats.best}</span><span class="v num">{moneySigned(stats?.best_win ?? 0, p.locale)}</span></div>
+            <div class="card cell span2" style="--i:2"><span class="detail">{m.stats.best}</span>{(() => { const s = moneySigned(stats?.best_win ?? 0, p.locale); return <span class="v num" data-len={s.length >= 8 ? "long" : undefined}>{s}</span>; })()}</div>
             <div class="card cell" style="--i:3"><span class="detail">{m.stats.bets}</span><span class="v num">{stats?.total ?? 0}</span></div>
             <div class={`card cell ${net > 0 ? "won" : net < 0 ? "lost" : ""}`} style="--i:4"><span class="detail">{m.stats.net}</span><span class="v num">{moneySigned(net, p.locale)}</span></div>
             <div class="card cell span2" style="--i:5"><span class="detail">{m.stats.trophies}</span><span class="v num"><Trophy size={22} class="ic" style="vertical-align:-3px;margin-right:6px" />{owned}<small>/ {TROPHY_IDS.length}</small></span></div>

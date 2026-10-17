@@ -1215,8 +1215,9 @@ textarea.field { resize: vertical; min-height: 84px; }
 
 /* 3D trophies */
 .tr3d { display: block; flex: none; overflow: visible; }
-.tr-sheen { animation: trsweep 6s ease-in-out infinite; }
-@keyframes trsweep { 0% { transform: translateX(-60px); } 28%, 100% { transform: translateX(170px); } }
+/* the same soft band on every trophy; --sd (set per trophy) times it so the light travels over the shelf instead of flashing everywhere at once */
+.tr-sheen { animation: trsweep 8s ease-in-out var(--sd, 0s) infinite; }
+@keyframes trsweep { 0% { transform: translateX(-60px); } 14%, 100% { transform: translateX(170px); } }
 @media (prefers-reduced-motion: reduce) { .tr-sheen { animation: none; opacity: 0; } }
 .trophy .ti.b3 { width: 56px; height: 56px; background: none; border-radius: 0; }
 
@@ -1770,8 +1771,8 @@ textarea.field { resize: vertical; min-height: 84px; }
 .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .tr3dimg { object-fit: contain; }
 .tr3dwrap { --tm: none; position: relative; display: block; flex: none; }
-.tr3dwrap.lit::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, .6) 50%, transparent 62%) 130% 0 / 260% 100% no-repeat; -webkit-mask: var(--tm) center / contain no-repeat; mask: var(--tm) center / contain no-repeat; animation: trglint 4.5s ease-in-out infinite; }
-@keyframes trglint { 0%, 55% { background-position: 130% 0; } 100% { background-position: -130% 0; } }
+.tr3dwrap.lit::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .2) 40%, rgba(255, 255, 255, .42) 50%, rgba(255, 255, 255, .2) 60%, transparent 70%) 130% 0 / 260% 100% no-repeat; -webkit-mask: var(--tm) center / contain no-repeat; mask: var(--tm) center / contain no-repeat; animation: trglint 8s ease-in-out var(--sd, 0s) infinite; }
+@keyframes trglint { 0% { background-position: 130% 0; } 14%, 100% { background-position: -130% 0; } }
 @media (prefers-reduced-motion: reduce) { .tr3dwrap.lit::after { animation: none; opacity: 0; } }
 .tr3dimg.lock { filter: grayscale(1) brightness(.45) contrast(.9); opacity: .8; }
 .domainbar { position: relative; margin: calc(env(safe-area-inset-top) + 8px) auto 0; width: calc(100% - 16px); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; max-width: 560px; padding: 10px 10px 10px 14px; border-radius: var(--radius-card); background: var(--surface); border: 1px solid var(--action); box-shadow: 0 10px 30px rgb(0 0 0 / .35); }
@@ -2047,3 +2048,6 @@ textarea.field { resize: vertical; min-height: 84px; }
   .sheet.withfoot .bethead + * , .sheet.withfoot > div > .detail{margin:0}
   .sheet.withfoot .actions2{margin-top:4px !important}
 }
+/* a long figure in the narrow "best win" tile shrinks to fit instead of running out of the card */
+.cell .v[data-len="long"]{font-size:var(--fs-md);overflow:hidden;text-overflow:clip}
+@media (min-width:700px){.cell .v[data-len="long"]{font-size:var(--fs-xl)}}
