@@ -2049,3 +2049,4 @@ textarea.field { resize: vertical; min-height: 84px; }
 .card.event .actions2 { padding: 8px; border-radius: calc(var(--radius-control) + 6px); background: var(--bg); border: 1px solid var(--border-strong); gap: 8px; }
 .card.event .actions2 .opt { background: var(--surface-2); border-color: var(--border-strong); box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 8%, transparent); }
 .card.event .actions2 .opt.yes { background: color-mix(in srgb, var(--action) 14%, var(--surface-2)); border-color: color-mix(in srgb, var(--action) 45%, var(--border-strong)); }
+.legal .busone{margin:var(--space-2) 0 0;font-size:var(--fs-xs);color:var(--muted);text-align:center}.legal .busone a{color:inherit;text-decoration:underline}

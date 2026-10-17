@@ -9,6 +9,8 @@ function ClimateBadge({ locale }: { locale: Locale }) {
   return <p class="climate"><iframe title="Stripe Climate" src={src} width={dark ? 380 : 420} height="38" loading="lazy" referrerpolicy="no-referrer" /></p>;
 }
 
+const BUSONE: Record<string, [string, string]> = { it: ["Dati di trasporto: ", " e la fonte originale dei dati."], "en-US": ["Transport data: ", " and the original data source."], "en-GB": ["Transport data: ", " and the original data source."], ja: ["交通データ：", "および各データの提供元。"] };
+
 export interface Source { name: string; via?: string; license: string; licenseUrl: string; url: string }
 
 /** The one footer of the app, under every screen: the disclaimer (once, small and muted), the full wording, the pages that explain the game and the sources of the data. */
@@ -18,6 +20,7 @@ export function AppFooter({ msg, sources, locale }: { msg: Messages; sources: So
       <p class="legalshort"><b class="age18" title="18+">18+</b> {msg.disclaimerShort}</p>
       <p class="legalfull">{msg.disclaimerFull}</p>
       <p class="legallinks"><a href="/how-it-works.html">{msg.profile.howItWorks}</a><a href="/terms.html">{msg.profile.terms}</a><a href="/privacy.html">{msg.profile.privacy}</a></p>
+      <p class="busone">{(BUSONE[locale] ?? BUSONE["en-US"]!)[0]}<a href="https://busone.app" target="_blank" rel="noopener noreferrer">BusOne (https://busone.app)</a>{(BUSONE[locale] ?? BUSONE["en-US"]!)[1]}</p>
       <ContactForm locale={locale} />
       <ClimateBadge locale={locale} />
       <details><summary>{msg.attributionTitle}</summary>
