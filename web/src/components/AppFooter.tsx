@@ -1,3 +1,4 @@
+import { Coffee } from "lucide-preact";
 import type { Locale, Messages } from "../i18n/index.ts";
 import { ContactForm } from "./ContactForm.tsx";
 
@@ -19,6 +20,7 @@ export function AppFooter({ msg, sources, locale }: { msg: Messages; sources: So
       <p class="legalfull">{msg.disclaimerFull}</p>
       <p class="legallinks"><a href="/how-it-works.html">{msg.profile.howItWorks}</a><a href="/terms.html">{msg.profile.terms}</a><a href="/privacy.html">{msg.profile.privacy}</a></p>
       <ContactForm locale={locale} />
+      <p class="kofi"><a href="https://ko-fi.com/micheleforte" target="_blank" rel="noopener noreferrer"><Coffee size={18} aria-hidden="true" />{{ it: "Offrimi un caffè su Ko-fi", ja: "Ko-fiでコーヒーをおごる" }[locale as string] ?? "Buy me a coffee on Ko-fi"}</a></p>
       <ClimateBadge locale={locale} />
       <details><summary>{msg.attributionTitle}</summary>
         {sources.some((a) => a.url.includes("developer.odpt.org")) && <p class="odptnote">{msg.odptNotice.text} {msg.odptNotice.fresh}</p>}
