@@ -726,6 +726,10 @@ footer.legal .legalfull { font-size: var(--fs-xs); opacity: .8; }
 .mscene.uv .m-uvhaze { opacity: 0; } .mscene.uv.s-yes .m-uvhaze { opacity: .25; } .mscene.uv .m-ucloud { opacity: 0; transform: translateX(40px); } .mscene.uv.s-no .m-ucloud { opacity: .95; transform: none; }
 .mscene.uv .m-glow { opacity: .6; } .mscene.uv.s-yes .m-glow { opacity: 1; transform: scale(1.3); }
 @keyframes spin { to { transform: rotate(360deg); } }
+/* pollen */
+.mscene.pollen { background: #fdf3cf; }
+.mscene.pollen .pl { opacity: .45; animation: drift 4.5s ease-in-out infinite alternate; } .mscene.pollen.s-yes .pl { opacity: .95; animation-duration: 1.8s; } .mscene.pollen.s-no .pl { opacity: .12; }
+.mscene.pollen .pl1 { animation-delay: -1s; } .mscene.pollen .pl2 { animation-delay: -2s; } .mscene.pollen .pl3 { animation-delay: -3s; } .mscene.pollen .pl4 { animation-delay: -1.5s; }
 /* air */
 .mscene.aqi .m-haze { opacity: .25; } .mscene.aqi.s-yes .m-haze { opacity: .78; } .mscene.aqi.s-no .m-haze { opacity: 0; }
 .mscene.aqi .m-parts { opacity: .3; } .mscene.aqi.s-yes .m-parts { opacity: .9; } .mscene.aqi .pt { animation: drift 5s ease-in-out infinite alternate; } .mscene.aqi.s-yes .pt { animation-duration: 2s; }

@@ -67,7 +67,7 @@ export function Home(p: HomeProps) {
   const [wxSel, setWx] = useState<string>("all");
   const finKey = (m: MarketRow) => { const s = String(m.params.series ?? ""); return s.startsWith("metal:") ? "metals" : s.startsWith("oil:") ? "oil" : s.startsWith("fuel:") ? "fuel" : s.startsWith("fx:") ? "fx" : s.startsWith("power:") ? "power" : "crypto"; };
   const wxKey = (m: MarketRow) => (m.kind === "tick_gt" && m.category === "finance" ? finKey(m) : m.kind === "rain_at" ? "rain" : m.kind === "metric_gt" ? String(m.params.metric) : m.kind === "quake_m" ? String(m.params.region ?? "world") : "");
-  const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi", "hail"] : p.cat === "nature" ? ["world", "jp", "it", "ca", "tr"] : p.cat === "finance" ? ["crypto", "metals", "fx", "oil", "fuel", "power"] : [];
+  const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi", "pollen", "hail"] : p.cat === "nature" ? ["world", "jp", "it", "ca", "tr"] : p.cat === "finance" ? ["crypto", "metals", "fx", "oil", "fuel", "power"] : [];
   const [filterOpen, setFilterOpen] = useState(false);
   const [staleOff, setStaleOff] = useState(false);
   const [howOpen, setHowOpen] = useState(() => safe.get("how") !== "1");

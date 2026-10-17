@@ -11,7 +11,7 @@ import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traf
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
 import { tvReference, tvRating, tvUpcoming } from "../_lib/tv.ts";
 import { RIVERS, TIDES, buildPowerMarkets, buildRiverMarkets, buildTideMarkets, isPower, isRiver, isTide, type RiverKey, type TideKey } from "../_shared/shared/ticks.ts";
-import { FX, buildCarbonMarkets, buildFearGreedMarkets, buildFxMarkets, isCarbon, isFearGreed, isFx, type FxKey } from "../_shared/shared/ticks.ts";
+import { CHESS, buildChessMarkets, buildF1Markets, buildHnMarkets, buildLaunchMarkets, isChess, isHn, isLaunch, isF1, type ChessKey, FX, buildCarbonMarkets, buildFearGreedMarkets, buildFxMarkets, isCarbon, isFearGreed, isFx, type FxKey } from "../_shared/shared/ticks.ts";
 import { TM_PLACES, buildTicketMarkets, buildTvMarket, isTicket, isTv, tmWindow, type TmPlace } from "../_shared/shared/ticks.ts";
 import { FUELS, METALS, OIL, buildFuelMarkets, buildMetalMarkets, buildOilMarkets, isFuel, isMetal, isOil, type FuelKey, type MetalKey, type OilKey } from "../_shared/shared/ticks.ts";
 import { LASTFM, buildLastfmMarkets, BIKES, buildBikesMarkets, bikesPlausible, buildNwsMarkets, isNws } from "../_shared/shared/ticks.ts";
@@ -342,7 +342,8 @@ async function ingestMetrics(sb: ReturnType<typeof db>, now: number, last: numbe
         return Array.isArray(json) ? json : [json];
       };
       const forecast = await get("https://api.open-meteo.com/v1/forecast", fapi);
-      const air = await get("https://air-quality-api.open-meteo.com/v1/air-quality", METRICS.aqi.api).catch(() => null);
+      const airVars = [...new Set(METRIC_IDS.filter((m) => METRICS[m].source === "air").flatMap((m) => [METRICS[m].api, ...(METRICS[m].also ?? [])]))].join(",");
+      const air = await get("https://air-quality-api.open-meteo.com/v1/air-quality", airVars).catch(() => null);
       const obsRows: Record<string, unknown>[] = [];
       const fetchedAt = new Date().toISOString();
       const markets: Record<string, unknown>[] = [];
@@ -350,7 +351,10 @@ async function ingestMetrics(sb: ReturnType<typeof db>, now: number, last: numbe
         const series: Partial<Record<MetricId, Map<number, number>>> = {};
         for (const m of METRIC_IDS) {
           const src = METRICS[m].source === "forecast" ? forecast[k] : air?.[k];
-          const times: string[] | undefined = src?.hourly?.time; const vals: Array<number | null> | undefined = src?.hourly?.[METRICS[m].api];
+          const times: string[] | undefined = src?.hourly?.time; let vals: Array<number | null> | undefined = src?.hourly?.[METRICS[m].api];
+          const extra = (METRICS[m].also ?? []).map((a) => src?.hourly?.[a] as Array<number | null> | undefined);
+          // several variables added into one count; an hour with none of them (outside the model's area) has no value
+          if (vals && extra.length) vals = vals.map((x, h) => { const parts = [x, ...extra.map((e) => e?.[h] ?? null)].filter((n): n is number => typeof n === "number"); return parts.length ? parts.reduce((a, b) => a + b, 0) : null; });
           if (!times || !vals) continue;
           const map = new Map<number, number>();
           times.forEach((ts, h) => { const raw = vals[h]; if (typeof raw !== "number") return; const v = METRICS[m].transform ? METRICS[m].transform!(raw) : raw; const e = Date.parse(`${ts}:00Z`) / 1000 - (METRICS[m].preceding ? 3600 : 0); if (!Number.isFinite(e)) return; map.set(e, v); obsRows.push({ feed_id: `om-${t.id}`, metric: m, hour_start: new Date(e * 1000).toISOString(), value: v, fetched_at: fetchedAt }); });
@@ -718,6 +722,47 @@ async function fetchCarbon(now: number): Promise<number | null> {
   return typeof v === "number" && v > 0 && Number.isFinite(to) && now - to <= 3600 ? v : null;
 }
 
+/** Hacker News: the highest score on the current front page (Algolia HN search, keyless). */
+async function fetchHnMax(): Promise<number | null> {
+  const j = await getJson("https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=30");
+  const pts = ((j?.hits ?? []) as Array<{ points?: unknown }>).map((h) => Number(h.points)).filter((n) => Number.isFinite(n) && n >= 0);
+  return pts.length >= 10 ? Math.max(...pts) : null;
+}
+/** Chess.com blitz ratings of the players we ask about (PubAPI, keyless). One that fails is simply left out. */
+async function fetchChess(): Promise<Partial<Record<ChessKey, number>>> {
+  const out: Partial<Record<ChessKey, number>> = {};
+  for (const k of Object.keys(CHESS) as ChessKey[]) {
+    try { const r = Number((await getJson(`https://api.chess.com/pub/player/${k}/stats`))?.chess_blitz?.last?.rating); if (Number.isFinite(r) && r > 0) out[k] = r; } catch { /* leave out */ }
+  }
+  return out;
+}
+/** Launch Library 2 (free tier: 15 calls an hour, so one list per run): upcoming launches, and the last ones with their status. */
+async function fetchLaunchesUpcoming(): Promise<{ id: string; name: string; net: number; go: boolean }[]> {
+  const j = await getJson("https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=25&mode=list");
+  return ((j?.results ?? []) as Array<{ id?: string; name?: string; net?: string; status?: { id?: number } }>).flatMap((r) => { const net = Date.parse(String(r.net ?? "")) / 1000; return r.id && r.name && Number.isFinite(net) ? [{ id: r.id, name: r.name, net, go: r.status?.id === 1 }] : []; });
+}
+async function fetchLaunchesPrevious(): Promise<Map<string, { status: number; net: number }>> {
+  const j = await getJson("https://ll.thespacedevs.com/2.2.0/launch/previous/?limit=40&mode=list");
+  const out = new Map<string, { status: number; net: number }>();
+  for (const r of (j?.results ?? []) as Array<{ id?: string; net?: string; status?: { id?: number } }>) { const net = Date.parse(String(r.net ?? "")) / 1000; if (r.id && Number.isFinite(net)) out.set(r.id, { status: Number(r.status?.id ?? 0), net }); }
+  return out;
+}
+/** Formula 1 from Jolpica (the Ergast successor, keyless): the next race, the championship, and the finishing order of a race. */
+async function fetchF1Next(): Promise<{ season: number; round: number; name: string; start: number } | null> {
+  const r = (await getJson("https://api.jolpi.ca/ergast/f1/current/next.json"))?.MRData?.RaceTable?.Races?.[0];
+  const start = Date.parse(`${r?.date}T${r?.time ?? "12:00:00Z"}`) / 1000;
+  return r && Number.isFinite(start) ? { season: Number(r.season), round: Number(r.round), name: String(r.raceName), start } : null;
+}
+async function fetchF1Standings(): Promise<{ code: string; name: string; points: number }[]> {
+  const list = (await getJson("https://api.jolpi.ca/ergast/f1/current/driverStandings.json"))?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings ?? [];
+  return (list as Array<{ points?: string; Driver?: { code?: string; familyName?: string } }>).flatMap((d) => d.Driver?.code ? [{ code: d.Driver.code, name: String(d.Driver.familyName ?? d.Driver.code), points: Number(d.points) }] : []);
+}
+async function fetchF1Results(season: number, round: number): Promise<Map<string, number> | null> {
+  const res = (await getJson(`https://api.jolpi.ca/ergast/f1/${season}/${round}/results.json`))?.MRData?.RaceTable?.Races?.[0]?.Results;
+  if (!Array.isArray(res) || res.length < 10) return null;
+  return new Map((res as Array<{ position?: string; Driver?: { code?: string } }>).flatMap((r) => r.Driver?.code ? [[r.Driver.code, Number(r.position)] as [string, number]] : []));
+}
+
 /** US weather alerts in force on land zones (NWS, keyless; a User-Agent is required). */
 async function fetchNws(): Promise<number | null> {
   const j = await getJson("https://api.weather.gov/alerts/active/count");
@@ -889,6 +934,30 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       if (carbonDue.length) { const v = await fetchCarbon(now); if (v !== null) for (const { x, at } of carbonDue) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); }
     } catch (e) { notes.push(`carbon: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
+      const hnDue = [...need.keys()].filter(isHn).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (hnDue.length) { const v = await fetchHnMax(); if (v !== null) for (const { x, at } of hnDue) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); }
+    } catch (e) { notes.push(`hn: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const chessDue = [...need.keys()].filter(isChess).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (chessDue.length) { const r = await fetchChess(); for (const { x, at } of chessDue) { const v = r[x.slice(6) as ChessKey]; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
+    } catch (e) { notes.push(`chess: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      // a launch is a fact read once its three hours are over: 1 when it is in the list of past launches (lifted off, or flew and failed) no later than the line
+      const launchDue = [...need.keys()].filter(isLaunch).flatMap((x) => todo(x).map((at) => ({ x, at })));
+      if (launchDue.length) { const prev = await fetchLaunchesPrevious(); for (const { x, at } of launchDue) { const l = prev.get(x.slice(7)); rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: l && [3, 4, 6, 7].includes(l.status) && l.net <= at ? 1 : 0, fetched_at: fetchedAt }); } }
+    } catch (e) { notes.push(`launch: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const f1Due = [...need.keys()].filter(isF1).flatMap((x) => todo(x).map((at) => ({ x, at })));
+      const byRace = new Map<string, typeof f1Due>();
+      for (const d of f1Due) { const k = d.x.split(":")[1]!; byRace.set(k, [...(byRace.get(k) ?? []), d]); }
+      for (const [k, list] of byRace) {
+        const [season, round] = k.split("-").map(Number) as [number, number];
+        const order = await fetchF1Results(season, round);
+        if (!order) continue; // the result is not published yet: look again next run
+        for (const { x, at } of list) { const [, , code, what] = x.split(":"); const pos = order.get(code!) ?? 99; rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: pos <= (what === "w" ? 1 : 3) ? 1 : 0, fetched_at: fetchedAt }); }
+      }
+    } catch (e) { notes.push(`f1: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
       const nwsDue = [...need.keys()].filter(isNws).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
       if (nwsDue.length) { const v = await fetchNws(); if (v !== null) for (const { x, at } of nwsDue) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); }
     } catch (e) { notes.push(`nws: ${String((e as Error).message ?? e).slice(0, 80)}`); }
@@ -1017,6 +1086,10 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     let metalsNow: Partial<Record<MetalKey, number>> = {};
     try { const mp = await fetchMetals(now); metalsNow = mp; markets.push(...buildMetalMarkets(mp, now)); for (const [k, v] of Object.entries(mp)) extraHist.push({ series: `metal:${k}`, at: hourIso, value: v }); ok++; } catch (e) { notes.push(`metals: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try { const c = await fetchCarbon(now); markets.push(...buildCarbonMarkets(c, now)); if (c !== null) extraHist.push({ series: "carbon:gb", at: hourIso, value: c }); ok++; } catch (e) { notes.push(`carbon: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { const v = await fetchHnMax(); markets.push(...buildHnMarkets(v, now)); ok++; } catch (e) { notes.push(`hn: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { markets.push(...buildChessMarkets(await fetchChess(), now)); ok++; } catch (e) { notes.push(`chess: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { markets.push(...buildLaunchMarkets(await fetchLaunchesUpcoming(), now)); ok++; } catch (e) { notes.push(`launch: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { const race = await fetchF1Next(); if (race && race.start < now + 6 * 86400) markets.push(...buildF1Markets(race, await fetchF1Standings(), now)); ok++; } catch (e) { notes.push(`f1: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try { const c = await fetchNws(); markets.push(...buildNwsMarkets(c, now)); if (c !== null) extraHist.push({ series: "nws:us", at: hourIso, value: c }); ok++; } catch (e) { notes.push(`nws: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
       const pw = await fetchPower(isoDay(now - 86400), isoDay(now + 2 * 86400));

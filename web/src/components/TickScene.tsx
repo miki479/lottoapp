@@ -15,6 +15,59 @@ export function TickScene({ m, hint, msg, now }: { m: MarketRow; hint: Hint; msg
   const kind = series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("storm:") ? "storm" : series.startsWith("alert:") ? "alert" : series.startsWith("metal:") ? "metal" : series.startsWith("fuel:") ? "fuel" : series.startsWith("oil:") ? "oil" : series.startsWith("tm:") ? "concert" : /^tv:\d+$/.test(series) ? "tv" : "price";
   const cls = `mscene tick ${kind} ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`;
   const cap = kind === "kp" ? "Kp ≥ " + m.params.threshold : alertLabel(series, msg) || (msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? ""));
+  if (series === "hn:max") {
+    const up = hint === "yes" ? -10 : hint === "no" ? 8 : 0;
+    return (
+      <div class={`mscene tick hn ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="84" fill="#f6efe6" />
+          <rect x="22" y="14" width="56" height="56" rx="6" fill="#ff6600" /><path d="M38 28l12 18 12-18M50 46v14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+          {[0, 1, 2, 3, 4].map((i) => <rect key={i} class="hn-bar" style={`--d:${i * 90}ms`} x={108 + i * 38} y={60 - (14 + i * 7) + up * (i / 4)} width="24" height={14 + i * 7 - up * (i / 4)} rx="3" fill="#ff9a4d" />)}
+        </svg>
+        <b>{m.params.label ? String(m.params.label) : "Hacker News"}</b>
+      </div>
+    );
+  }
+  if (series.startsWith("chess:")) {
+    return (
+      <div class={`mscene tick chess ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="84" fill="#312e2b" />
+          {Array.from({ length: 16 }, (_, i) => Array.from({ length: 4 }, (_, j) => (i + j) % 2 ? <rect key={`${i}-${j}`} x={i * 20} y={j * 21} width="20" height="21" fill="#769656" /> : <rect key={`${i}-${j}`} x={i * 20} y={j * 21} width="20" height="21" fill="#eeeed2" />))}
+          <g class="chess-knight" transform="translate(142 8)"><path d="M10 64h36v-6l-6-4c8-6 12-16 8-26L34 6 24 10l-4-4-6 12 6 6-8 14c-4 6-6 12-2 18z" fill="#1c1b19" stroke="#f5f5f5" stroke-width="2" stroke-linejoin="round" /><circle cx="36" cy="20" r="2" fill="#f5f5f5" /></g>
+        </svg>
+        <b>{String(m.params.label ?? "")}</b>
+      </div>
+    );
+  }
+  if (series.startsWith("launch:")) {
+    const lift = hint === "yes" ? -34 : hint === "no" ? 4 : -8;
+    return (
+      <div class={`mscene tick launch ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="84" fill="#0c1230" />
+          {[[30, 12], [80, 40], [120, 18], [210, 10], [260, 34], [296, 16], [180, 52]].map(([x, y], i) => <circle key={i} class="lc-star" style={`--d:${i * 200}ms`} cx={x} cy={y} r="1.500" fill="#fff" />)}
+          <rect x="0" y="72" width="320" height="12" fill="#1c2750" />
+          <g class="lc-rocket" style={`transform:translateY(${lift}px)`}><path d="M160 14c-9 10-9 28-9 38h18c0-10 0-28-9-38z" fill="#e8ecf5" /><circle cx="160" cy="34" r="4" fill="#4a7bff" /><path d="M151 46l-8 10 8-2zM169 46l8 10-8-2z" fill="#ff5a4d" /><path class="lc-flame" d="M155 52q5 18 10 0z" fill="#ffb300" /></g>
+        </svg>
+        <b>{String(m.params.label ?? "")}</b>
+      </div>
+    );
+  }
+  if (series.startsWith("f1:")) {
+    const shift = hint === "yes" ? 40 : hint === "no" ? -20 : 0;
+    return (
+      <div class={`mscene tick f1 ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="84" fill="#2a2d34" />
+          <path d="M0 62H320" stroke="#fff" stroke-width="2" stroke-dasharray="14 10" opacity=".6" />
+          {Array.from({ length: 6 }, (_, i) => Array.from({ length: 2 }, (_, j) => <rect key={`${i}-${j}`} x={282 + j * 10} y={6 + i * 10} width="10" height="10" fill={(i + j) % 2 ? "#fff" : "#111"} />))}
+          <g class="f1-car" style={`transform:translateX(${shift}px)`}><path d="M96 54h96l10-8h14v8h6v8H92z" fill="#e10600" /><rect x="116" y="46" width="30" height="8" rx="3" fill="#111" /><circle cx="118" cy="62" r="8" fill="#111" /><circle cx="184" cy="62" r="8" fill="#111" /></g>
+        </svg>
+        <b>{String(m.params.label ?? "")}</b>
+      </div>
+    );
+  }
   if (kind === "tv") {
     const stars = hint === "yes" ? 5 : hint === "no" ? 2 : 3;
     return (
