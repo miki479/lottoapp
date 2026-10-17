@@ -112,7 +112,7 @@ const cache = new Map<string, string>();
  * `hi` is for big sizes: more slices, smoother curves.
  */
 /** Rings that are a rendered picture (web/public/decorations/<id>.webp) instead of drawn shapes. */
-const PICTURED_RINGS = new Set(["cinder", "rosegold", "starlight"]);
+const PICTURED_RINGS = new Set(["cinder", "rosegold", "starlight", "aurum", "glacier", "crimson"]);
 export function decorationSvg(id: string, shines: boolean, hi: boolean): string {
   if (PICTURED_RINGS.has(id)) return `<image href="/decorations/${id}.webp" x="-12" y="-12" width="144" height="144"/>`;
   const key = `${id}|${shines ? 1 : 0}|${hi ? 1 : 0}`, hit = cache.get(key);
