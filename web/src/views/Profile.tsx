@@ -1,4 +1,4 @@
-import { Download, MapPin, Bell, Gift, Rocket, ChevronRight, Flame, LogOut, Pencil, Percent, Share2, Snowflake, Trash2, Trophy, User, Volume2, Zap, Check } from "lucide-preact";
+import { Eye, Download, MapPin, Bell, Gift, Rocket, ChevronRight, Flame, LogOut, Pencil, Percent, Share2, Snowflake, Trash2, Trophy, User, Volume2, Zap, Check } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Sheet } from "../components/Sheet.tsx";
 import { StreakCard } from "../components/StreakCard.tsx";
@@ -30,6 +30,8 @@ export function ProfileView(p: {
   onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => Promise<void> | void; onDelete: () => Promise<void>; onExport: () => Promise<void>;
 }) {
   const [intentOn, setIntentOn] = useState(() => readConsent() === "on");
+  const [showSeen, setShowSeen] = useState(true);
+  useEffect(() => { if (!p.registered) return; let live = true; sb.rpc("show_last_seen").then(({ data }) => { if (live && typeof data === "boolean") setShowSeen(data); }); return () => { live = false; }; }, [p.registered]);
   const m = p.msg.profile;
   const [xpOpen, setXpOpen] = useState(false);
   const [stats, setStats] = useState<MyStats | null>(null);
@@ -146,6 +148,10 @@ export function ProfileView(p: {
               <label class="switchrow"><span class="swlabel"><MapPin size={18} style="color:var(--action-ink);flex:none" /><span>{p.msg.fy.setTitle}</span></span><input type="checkbox" role="switch" checked={intentOn} onChange={(e) => { const on = (e.target as HTMLInputElement).checked; writeConsent(on ? "on" : "off"); setIntentOn(on); }} /></label>
               <p class="hint">{intentOn ? p.msg.fy.setOn : p.msg.fy.setOff}</p>
             </section>
+            {p.registered && <section class="card stack">
+              <label class="switchrow"><span class="swlabel"><Eye size={18} style="color:var(--action-ink);flex:none" /><span>{p.msg.presence.setTitle}</span></span><input type="checkbox" role="switch" checked={showSeen} onChange={(e) => { const on = (e.target as HTMLInputElement).checked; setShowSeen(on); void sb.rpc("set_show_last_seen", { p_on: on }); }} /></label>
+              <p class="hint">{showSeen ? p.msg.presence.setOn : p.msg.presence.setOff}</p>
+            </section>}
           </div>
           {p.voice && <section class="card stack"><label class="switchrow"><span class="swlabel"><Volume2 size={18} style="color:var(--action-ink);flex:none" /><span>{p.voice.label}</span></span><input type="checkbox" role="switch" checked={p.voice.on} onChange={p.voice.toggle} /></label></section>}
           <div class="list">

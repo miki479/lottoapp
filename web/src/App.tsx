@@ -34,6 +34,7 @@ import { limitBreakState } from "../../shared/wallet.ts";
 import { DECORATIONS, isDecoration } from "../../shared/looks";
 import { Toast } from "./components/Toast.tsx";
 import type { TopItem } from "./components/TopCards.tsx";
+import { startPresence } from "./lib/presence.ts";
 import { INTL_TAG, loadMessages, t, TROPHY_IDS, type Locale, type TrophyId } from "./i18n/index.ts";
 import { ensureGuest, guestState, pendingConfirm, sb, syncRegistration } from "./lib/api.ts";
 import { CITIES, cityInfos, cityName, cityOf } from "./lib/cities.ts";
@@ -414,6 +415,7 @@ export function App() {
   const loadReqs = useCallback(async () => { if (!registered) { setReqCount(0); return; } const { data } = await sb.rpc("friend_requests_in"); setReqCount(((data ?? []) as unknown[]).length); }, [registered]);
   useEffect(() => { loadReqs(); if (!registered) return; return every(loadReqs, 300_000); }, [registered, loadReqs]);
   useEffect(() => { loadChallenges(); }, [registered]);
+  useEffect(() => { if (!registered) return; return startPresence(); }, [registered]);
   useEffect(() => { if (registered) loadLook(); else setLook(null); }, [registered, profile?.credits]);
   useEffect(() => { if (screen === "bets") loadChallenges(); }, [screen]);
   useEffect(() => { if (ready) loadBets(); }, [betsLimit]);

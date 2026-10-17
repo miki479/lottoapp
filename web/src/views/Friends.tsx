@@ -8,6 +8,7 @@ import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
 import { countdown } from "../lib/format.ts";
 import { loadFriends, type FriendRow } from "../lib/friends.ts";
+import { seenLabel } from "../lib/presence.ts";
 import { PlayerTitle } from "../components/PlayerTitle.tsx";
 import { LevelBadge } from "../components/LevelBadge.tsx";
 import { useLooks } from "../lib/looks.ts";
@@ -76,7 +77,7 @@ export function Friends(p: { locale: Locale; msg: Messages; registered: boolean;
           {friends.map((r) => (
             <div class="row" key={r.user_id}>
               {face(r.user_id)}
-              <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><span class="nick"><b>{r.display_name || f.anon}</b><LevelBadge level={looks[r.user_id]?.level} msg={p.msg} /></span><PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} /></button>
+              <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><span class="nick"><b>{r.display_name || f.anon}</b><LevelBadge level={looks[r.user_id]?.level} msg={p.msg} /></span><PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} />{(() => { const s = seenLabel(r.last_seen, Date.now(), p.locale, p.msg.presence); return s ? <small class={`seen ${s.online ? "on" : ""}`}>{s.text}</small> : null; })()}</button>
               <button class="iconbtn frdx" aria-label={`${f.remove} ${r.display_name ?? ""}`} onClick={() => setAskId(askId === r.user_id ? null : r.user_id)}><UserMinus size={16} /></button>
               {askId === r.user_id && <div class="frask" role="alert"><span>{f.removeAsk(r.display_name || f.anon)}</span><button class="btn secondary" onClick={() => setAskId(null)}>{f.removeNo}</button><button class="btn primary" disabled={busy} aria-busy={busy} onClick={() => removeFriend(r.user_id)}>{f.removeYes}</button></div>}
             </div>

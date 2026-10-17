@@ -1987,3 +1987,5 @@ textarea.field { resize: vertical; min-height: 84px; }
 .hwentrytx{flex:1;display:grid;gap:2px;min-width:0}.hwentrytx small{color:#ffb347;font-size:var(--fs-xs)}
 .hwentry.locked{opacity:.5;border-color:var(--border);cursor:default;filter:grayscale(.7)}
 .hwentry:focus-visible{outline:2px solid var(--action);outline-offset:2px}
+.seen{display:block;font-size:var(--fs-xs);color:var(--muted)}
+.seen.on{color:var(--gain);font-weight:600}
