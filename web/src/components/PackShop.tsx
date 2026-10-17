@@ -1,7 +1,7 @@
 import { Check, Crown, Gem, Lock, Sparkles, Star, X } from "lucide-preact";
 import type { LucideIcon } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { PACK_RARITIES, PACKS, dealOf, dealPrice, lookChance, packRefund, REFUND_PCT, type PackDef, type PackRarity } from "../../../shared/shop.ts";
+import { PACK_RARITIES, PACKS, dealOf, dealPrice, packPct, lookChance, packRefund, REFUND_PCT, type PackDef, type PackRarity } from "../../../shared/shop.ts";
 import { cardById } from "../../../shared/cards.ts";
 import { INTL_TAG, type Locale, type Messages } from "../i18n/index.ts";
 import { reducedMotion } from "../lib/anim.ts";
@@ -10,6 +10,7 @@ import { money } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
 import { buyPack, errorCode, pending, type AlbumData, type PackOpen } from "../lib/shop.ts";
 import { hubText } from "../lib/shopText.ts";
+import { shopStatus, type ShopStatus } from "../lib/shopStatus.ts";
 import { Figurine } from "./Figurine.tsx";
 import { Card3D } from "./Card3D.tsx";
 import "./Pack3D.css";
@@ -58,7 +59,11 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
   const timer = useRef<number | undefined>(undefined), tapsRef = useRef(0);
   useEffect(() => () => clearTimeout(timer.current), []);
   // the deal of the day (UTC): one pack costs less, the server charges the same price
-  const deal = dealOf(Date.now()), priceOf = (pk: PackDef): number => (pk.tier === deal.tier ? dealPrice(pk.price, deal.pct) : pk.price);
+  const [status, setStatus] = useState<ShopStatus | null>(null);
+  useEffect(() => { shopStatus().then(setStatus).catch(() => undefined); }, []);
+  const deal = dealOf(Date.now()), promo = !!status?.promo_until && Date.parse(status.promo_until) > Date.now(), lucky = !!status?.lucky_until && Date.parse(status.lucky_until) > Date.now();
+  const pctOf = (pk: PackDef): number => packPct(pk.tier, promo, deal), priceOf = (pk: PackDef): number => dealPrice(pk.price, pctOf(pk));
+  const clock = (iso: string): string => new Intl.DateTimeFormat(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
   const packOf = (tier: number): PackDef => PACKS.find((p) => p.tier === tier) ?? PACKS[0]!;
   const full = (album?.opened_today ?? 0) >= (album?.daily_cap ?? 12);
 
@@ -151,19 +156,20 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
   return (
     <section class="stack pkshop">
       <p class="hint">{s.intro}</p>
+      {(promo || lucky) && <div class="pkbanners">{promo && <span class="pkchip promo"><Sparkles size={14} />{s.promoTag} · {s.until(clock(status!.promo_until!))}</span>}{lucky && <span class="pkchip lucky"><Star size={14} />{s.luckyTag} · {s.until(clock(status!.lucky_until!))}</span>}</div>}
       {!registered && <div class="card pkguest"><Lock size={18} /><p>{s.needAccount}</p><button class="btn primary" onClick={onAuth}>{s.makeProfile}</button></div>}
       <ul class="pklist">
         {PACKS.map((pack) => {
-          const name = s.packs[pack.tier - 1]!, price = priceOf(pack), onDeal = pack.tier === deal.tier, can = registered && credits >= price && !full;
+          const name = s.packs[pack.tier - 1]!, price = priceOf(pack), off = pctOf(pack), onDeal = off > 0, can = registered && credits >= price && !full;
           return (
             <li key={pack.tier} class={`pkrow pt${pack.tier} ${onDeal ? "deal" : ""} ${full ? "off" : ""}`}>
-              <div class="pkmini"><PackArt pack={pack} name={name} />{onDeal && <span class="dealtag" aria-hidden="true">-{deal.pct}%</span>}</div>
+              <div class="pkmini"><PackArt pack={pack} name={name} />{onDeal && <span class="dealtag" aria-hidden="true">-{off}%</span>}</div>
               <div class="pkinfo">
-                <b>{name}{onDeal && <em class="dealname">{s.deal}</em>}</b>
+                <b>{name}{pack.tier === deal.tier && deal.pct >= off && <em class="dealname">{s.deal}</em>}</b>
                 <span class="pkbar" role="img" aria-label={s.odds}>{PACK_RARITIES.filter((r) => pack.odds[r] > 0).map((r) => <i key={r} class={`r-${r}`} style={`flex:${pack.odds[r]}`} />)}</span>
                 <span class="pkodds">{s.oddsLine(Object.fromEntries(PACK_RARITIES.map((r) => [r, pct(pack.odds[r], locale)])) as Record<PackRarity, string>)}</span>
               </div>
-              <button class="btn primary pkbuy" disabled={!registered || full} onClick={() => { setErr(null); setStage({ phase: "confirm", tier: pack.tier }); }} aria-label={`${name}: ${s.buy(money(price, locale))}${onDeal ? ` (-${deal.pct}%)` : ""}`}>
+              <button class="btn primary pkbuy" disabled={!registered || full} onClick={() => { setErr(null); setStage({ phase: "confirm", tier: pack.tier }); }} aria-label={`${name}: ${s.buy(money(price, locale))}${onDeal ? ` (-${off}%)` : ""}`}>
                 {onDeal && <s class="was">{money(pack.price, locale)}</s>}<span>{money(price, locale)}</span>{!can && registered && !full && <em>{s.notEnough}</em>}
               </button>
             </li>

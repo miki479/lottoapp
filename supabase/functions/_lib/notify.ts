@@ -282,6 +282,16 @@ const BROADCAST = {
     },
     url: "https://latebet.it/?open=profile",
   },
+  // the new profile pictures, rings and trophies, with the launch promo on every pack: opens the app on the home banner
+  pictures_v1: {
+    headings: { en: "New pictures, new challenges ✨", it: "Nuove immagini, nuove sfide ✨", ja: "新しい画像、新しいチャレンジ ✨" },
+    contents: {
+      en: "New profile pictures, rings and trophies just landed. For 72 hours only: up to 25% off every pack. Open the app and take a look.",
+      it: "Sono arrivati nuove immagini profilo, decorazioni e trofei. Solo per 72 ore: fino al -25% su tutte le bustine. Apri l'app e dai un'occhiata.",
+      ja: "新しいプロフィール画像、フレーム、トロフィーが登場。72時間限定で、すべてのパックが最大25%オフ。アプリを開いてチェックしてください。",
+    },
+    url: "https://latebet.it/?open=news",
+  },
   // everybody who allowed notifications; the in-app gift (credits and boosts) is written first, see scripts/send-bomb.sql
   bomb_v1: {
     headings: { en: "A 💣 is waiting for you", it: "C'è una 💣 che ti aspetta", ja: "💣があなたを待っています" },

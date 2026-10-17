@@ -92,6 +92,14 @@ export const SHOP_ITEMS: readonly ShopItem[] = [
   ...DECORATIONS.filter((d) => d.level === undefined).map((d): ShopItem => ({ kind: "decoration", id: d.id, rarity: d.rarity as PackRarity })),
 ].sort(byKey);
 
+/**
+ * How likely an item is inside its rarity (mirrors public.shop_weight): cards and profile pictures weigh more, the older decorations less
+ * and the newest, most beautiful ones the least.
+ */
+export const NEWEST_DECORATIONS: readonly string[] = ["cinder", "rosegold", "starlight", "aurum", "glacier", "crimson", "azure", "vortex", "onyx"];
+export const itemWeight = (i: ShopItem): number => (i.kind === "decoration" ? (NEWEST_DECORATIONS.includes(i.id) ? 25 : 60) : i.kind === "avatar" ? 130 : 160);
+const poolWeight = (pool: readonly ShopItem[]): number => pool.reduce((s, i) => s + itemWeight(i), 0);
+
 export const itemKey = (kind: ItemKind, id: string): string => `${kind}:${id}`;
 export const itemsOfRarity = (r: PackRarity): ShopItem[] => SHOP_ITEMS.filter((i) => i.rarity === r);
 
@@ -112,7 +120,9 @@ export function rollPack(tier: number, rarityRoll: number, itemRoll: number, own
   if (!pack) return null;
   const rarity = rarityForRoll(pack, rarityRoll);
   const pool = itemsOfRarity(rarity);
-  const item = pool[Math.min(pool.length - 1, Math.floor(itemRoll * pool.length))]!;
+  const target = itemRoll * poolWeight(pool);
+  let run = 0, item = pool[pool.length - 1]!;
+  for (const i of pool) { run += itemWeight(i); if (run > target) { item = i; break; } }
   const duplicate = owned.has(itemKey(item.kind, item.id));
   return { tier, price: pack.price, rarity, item, duplicate, refund: duplicate ? packRefund(pack.price) : 0 };
 }
@@ -125,7 +135,7 @@ export function duplicateChance(tier: number, owned: ReadonlySet<string>): numbe
   for (const r of PACK_RARITIES) {
     const pool = itemsOfRarity(r);
     if (pool.length === 0) continue;
-    p += (pack.odds[r] / 10000) * (pool.filter((i) => owned.has(itemKey(i.kind, i.id))).length / pool.length);
+    p += (pack.odds[r] / 10000) * (poolWeight(pool.filter((i) => owned.has(itemKey(i.kind, i.id)))) / poolWeight(pool));
   }
   return p;
 }
@@ -143,7 +153,7 @@ export function lookChance(tier: number): number {
   let p = 0;
   for (const r of PACK_RARITIES) {
     const pool = itemsOfRarity(r);
-    if (pool.length > 0) p += (pack.odds[r] / 10000) * (pool.filter((i) => i.kind !== "card").length / pool.length);
+    if (pool.length > 0) p += (pack.odds[r] / 10000) * (poolWeight(pool.filter((i) => i.kind !== "card")) / poolWeight(pool));
   }
   return p;
 }
@@ -156,6 +166,9 @@ export function dealOf(ms: number): { tier: number; pct: number } {
   const d = Math.floor(ms / 86_400_000);
   return { tier: 2 + (d % 3), pct: [20, 30, 25][Math.floor(d / 3) % 3]! };
 }
+/** The launch promo: every pack is cheaper while it runs, the bigger the pack the bigger the cut. Never stacked with the deal of the day: the better one wins (public.buy_pack). */
+export const PROMO_PCT: readonly number[] = [10, 15, 20, 25];
+export const packPct = (tier: number, promo: boolean, deal: { tier: number; pct: number }): number => Math.max(promo ? (PROMO_PCT[tier - 1] ?? 0) : 0, tier === deal.tier ? deal.pct : 0);
 export const dealPrice = (price: number, pct: number): number => price - Math.floor((price * pct) / 100);
 
 /**
