@@ -647,6 +647,8 @@ export function App() {
       { name: "Allerta Meteo Emilia-Romagna", license: "CC BY-NC-SA 4.0 (non commercial use)", licenseUrl: "https://allertameteo.regione.emilia-romagna.it/note-legali", url: "https://allertameteo.regione.emilia-romagna.it/" },
       { name: "Last.fm (artist listeners and plays)", license: "Last.fm API Terms of Use: non-commercial use, link back required", licenseUrl: "https://www.last.fm/api/tos", url: "https://www.last.fm" },
       { name: "ESPN (public scoreboard feeds, unofficial interface)", license: "No published open licence: live scores read once a minute for a free, non-commercial, satirical game", licenseUrl: "https://disneytermsofuse.com", url: "https://www.espn.com" },
+      { name: "OpenSky Network (aircraft over Italy)", license: "Non-commercial use, attribution required", licenseUrl: "https://opensky-network.org/about/terms-of-use", url: "https://opensky-network.org" },
+      { name: "Manifold Markets (public API, crowd probabilities)", license: "Public API, free; questions and probabilities © Manifold and its users", licenseUrl: "https://docs.manifold.markets/api", url: "https://manifold.markets" },
       { name: "TVmaze", license: "CC BY-SA (episode data and ratings)", licenseUrl: "https://www.tvmaze.com/api#licensing", url: "https://www.tvmaze.com" },
       { name: "Ticketmaster", license: "Discovery API, free key; event data © Ticketmaster (see their terms of use)", licenseUrl: "https://developer.ticketmaster.com/support/terms-of-use/", url: "https://www.ticketmaster.it" },
       { name: "TheSportsDB", license: "Free API key (see their terms); data © its contributors", licenseUrl: "https://www.thesportsdb.com/api.php", url: "https://www.thesportsdb.com" },

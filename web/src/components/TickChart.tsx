@@ -41,7 +41,7 @@ export function TickChart({ m, msg, locale }: { m: MarketRow; msg: Messages; loc
   const change = first.v ? ((last.v - first.v) / first.v) * 100 : 0;
   // currency goes in front outside Italy ("$4,200", "€1.85/l"); other units stay behind the number
   const cur = isCrypto(series) || series.startsWith("metal:") || series.startsWith("oil:") ? "$" : series.startsWith("fuel:") ? "€" : "";
-  const suffix = series.startsWith("fuel:") ? "/l" : series === "carbon:gb" ? " g/kWh" : series === "power:it" ? " €/MWh" : series.startsWith("tide:") ? " m" : series.startsWith("river:") ? " cm" : series.startsWith("storm:") ? " kt" : "";
+  const suffix = series.startsWith("fuel:") ? "/l" : series === "carbon:gb" ? " g/kWh" : series === "power:it" ? " €/MWh" : series.startsWith("tide:") || series.startsWith("wave:") ? " m" : series.startsWith("mf:") ? "%" : series.startsWith("river:") ? " cm" : series.startsWith("storm:") ? " kt" : "";
   const fmt = (v: number) => locale === "it" && cur ? `${nf.format(v)} ${cur}${suffix}` : `${cur}${nf.format(v)}${cur && locale === "it" ? "" : suffix}`;
   const poly = pts.map((p, i) => `${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
   return (

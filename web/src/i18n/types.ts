@@ -14,7 +14,7 @@ export type MatchBetKey = import("../../../shared/sport.ts").MatchBet;
 export interface MatchQ { bet: MatchBetKey; home: string; away: string; time: string }
 export interface ConcertsQ { place: string; from: string; to: string; value: string; time: string }
 export interface EpisodeQ { show: string; ep: string; value: string; date: string }
-export interface TickQ { kind: "price" | "kp" | "wiki" | "hn" | "chess" | "launch" | "f1win" | "f1podium" | "neo" | "eonet" | "players" | "viewers" | "listeners" | "bikes" | "storm" | "alert" | "fuel" | "oil" | "fx" | "carbon" | "feargreed" | "nws" | "power" | "tide" | "river"; label: string; value: string; time: string; from: string; to: string; day: string }
+export interface TickQ { kind: "price" | "kp" | "wiki" | "hn" | "chess" | "launch" | "f1win" | "f1podium" | "neo" | "eonet" | "players" | "viewers" | "wave" | "air" | "flights" | "manifold" | "listeners" | "bikes" | "storm" | "alert" | "fuel" | "oil" | "fx" | "carbon" | "feargreed" | "nws" | "power" | "tide" | "river"; label: string; value: string; time: string; from: string; to: string; day: string }
 export interface FullQ { occ: "empty" | "few" | "standing"; route: string; stop: string; time: string }
 export interface TrafficQ { site: string; toward: string; from: string; to: string; kmh: number }
 export interface StrikeQ { date: string; day: string; who: string; hours: string }

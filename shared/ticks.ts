@@ -76,6 +76,18 @@ export const isPower = (s: string) => s === "power:it";
 export const TIDES = { nyc: { label: "The Battery, New York", station: "8518750" }, bos: { label: "Boston", station: "8443970" }, sea: { label: "Seattle", station: "9447130" } } as const;
 export type TideKey = keyof typeof TIDES;
 export const isTide = (s: string) => s.startsWith("tide:") && s.slice(5) in TIDES;
+/** Sea waves off Italian cities (Open-Meteo Marine, CC BY 4.0): significant wave height in metres, an hourly model value. */
+export const WAVES = { pal: { label: "Palermo", lat: 38.2, lon: 13.3 }, cag: { label: "Cagliari", lat: 39.1, lon: 9.2 }, nap: { label: "Napoli", lat: 40.75, lon: 14.2 }, gen: { label: "Genova", lat: 44.3, lon: 8.95 }, bar: { label: "Bari", lat: 41.2, lon: 16.95 }, cat: { label: "Catania", lat: 37.4, lon: 15.2 }, ven: { label: "Venezia", lat: 45.3, lon: 12.5 } } as const;
+export type WaveKey = keyof typeof WAVES;
+export const isWave = (s: string) => s.startsWith("wave:") && s.slice(5) in WAVES;
+/** Air quality in Italian cities (Open-Meteo Air Quality, CC BY 4.0): the European AQI, an hourly model value. */
+export const AIRQ = { rom: { label: "Roma", lat: 41.9, lon: 12.5 }, mil: { label: "Milano", lat: 45.46, lon: 9.19 }, nap: { label: "Napoli", lat: 40.85, lon: 14.27 }, tor: { label: "Torino", lat: 45.07, lon: 7.69 }, pal: { label: "Palermo", lat: 38.12, lon: 13.36 }, cag: { label: "Cagliari", lat: 39.22, lon: 9.12 }, bar: { label: "Bari", lat: 41.12, lon: 16.87 } } as const;
+export type AirKey = keyof typeof AIRQ;
+export const isAir = (s: string) => s.startsWith("air:") && s.slice(4) in AIRQ;
+/** Aircraft in flight over Italy (OpenSky Network, non-commercial use: attribution required), counted from one anonymous request. */
+export const isFlights = (s: string) => s === "flights:it";
+/** The crowd's probability (percent) of a binary question on Manifold (manifold.markets): `mf:<market id>`, read from the public API. */
+export const isMf = (s: string) => /^mf:[A-Za-z0-9]{6,24}$/.test(s);
 /** German federal river gauges (WSV Pegelonline, DL-DE-Zero-2.0): water level in cm on the gauge, every 15 minutes. */
 export const RIVERS = { koeln: { label: "Rhine at Köln", station: "KÖLN" }, kaub: { label: "Rhine at Kaub", station: "KAUB" }, dresden: { label: "Elbe at Dresden", station: "DRESDEN" } } as const;
 export type RiverKey = keyof typeof RIVERS;
@@ -120,7 +132,7 @@ export type EonetKey = keyof typeof EONET;
 export const isEonet = (s: string) => s.startsWith("eonet:") && s.slice(6) in EONET;
 /** Yes/no facts read once the event is over, not numbers read at an instant. */
 export const isFact = (s: string) => isLaunch(s) || isF1(s) || isNeo(s);
-export const isSpot = (s: string) => isEonet(s) || isHn(s) || isChess(s) || isCrypto(s) || isSteam(s) || isLastfm(s) || isHf(s) || isSolarWind(s) || isBikes(s) || isStorm(s) || isMetal(s) || isCarbon(s) || isNws(s) || isTide(s) || isRiver(s) || isTicket(s);
+export const isSpot = (s: string) => isEonet(s) || isHn(s) || isChess(s) || isCrypto(s) || isSteam(s) || isLastfm(s) || isHf(s) || isSolarWind(s) || isBikes(s) || isStorm(s) || isMetal(s) || isCarbon(s) || isNws(s) || isTide(s) || isRiver(s) || isTicket(s) || isWave(s) || isAir(s) || isFlights(s) || isMf(s);
 
 /** Saffir-Simpson scale by sustained wind in knots (1 min average), as NHC reports it. */
 export const STORM_STEPS: { kt: number; label: string }[] = [{ kt: 34, label: "TS" }, { kt: 64, label: "Cat. 1" }, { kt: 83, label: "Cat. 2" }, { kt: 96, label: "Cat. 3" }, { kt: 113, label: "Cat. 4" }, { kt: 137, label: "Cat. 5" }];
@@ -137,6 +149,10 @@ export function tickDef(series: string): TickDef | null {
   if (isFearGreed(series)) return { category: "finance", label: "Fear & Greed", unit: "", min: 0, max: 100 };
   if (isPower(series)) return { category: "finance", label: "Italy power price", unit: " €/MWh", min: -500, max: 4000 };
   if (isTide(series)) return { category: "nature", label: TIDES[series.slice(5) as TideKey].label, unit: " m", min: -5, max: 15 };
+  if (isWave(series)) return { category: "nature", label: WAVES[series.slice(5) as WaveKey].label, unit: " m", min: 0, max: 15 };
+  if (isAir(series)) return { category: "nature", label: AIRQ[series.slice(4) as AirKey].label, unit: "", min: 0, max: 500 };
+  if (isFlights(series)) return { category: "traffic", label: "Italy air traffic", unit: "", min: 0, max: 5000 };
+  if (isMf(series)) return { category: "culture", label: "Manifold", unit: "%", min: 0, max: 100 };
   if (isRiver(series)) return { category: "nature", label: RIVERS[series.slice(6) as RiverKey].label, unit: " cm", min: -100, max: 2000 };
   if (isFuel(series)) return { category: "finance", label: FUELS[series.slice(5) as FuelKey].label, unit: "€/l", min: 0.5, max: 5 };
   if (isOil(series)) return { category: "finance", label: OIL[series.slice(4) as OilKey].label, unit: "$", min: 5, max: 400 };
@@ -191,6 +207,8 @@ export function tickGrain(series: string): number {
   if (isAlert(series) || isNws(series) || isRiver(series) || isCarbon(series) || isFearGreed(series) || isTicket(series) || isBikes(series) || isSteam(series) || isLastfm(series) || isHf(series) || series.startsWith("wiki:")) return 1;
   if (isTv(series)) return 0.1;
   if (isFuel(series) || isTide(series)) return 0.001;
+  if (isWave(series)) return 0.01;
+  if (isAir(series) || isFlights(series) || isMf(series)) return 1;
   if (isPower(series) || isOil(series)) return 0.01;
   if (isFx(series)) return series === "fx:jpy" ? 0.01 : 0.0001;
   return 0;
@@ -327,7 +345,9 @@ export function buildBikesMarkets(counts: Record<string, number>, now: number): 
  */
 const STEAM_SHAPE = [0.67, 0.66, 0.67, 0.67, 0.68, 0.70, 0.73, 0.82, 0.90, 0.91, 1.0, 1.19, 1.46, 1.72, 1.65, 1.57, 1.41, 1.32, 1.28, 1.23, 1.06, 0.88, 0.77, 0.68]
   .map((x) => 1 + 0.8 * (x - 1));
+const FLIGHT_SHAPE = [0.38, 0.32, 0.3, 0.32, 0.45, 0.62, 0.8, 0.95, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.98, 0.96, 0.92, 0.85, 0.74, 0.62, 0.52, 0.45, 0.4]; // UTC hour of the day, relative to the busy daytime
 function shapeAt(series: string, epoch: number): number {
+  if (isFlights(series)) { const h = (((epoch % 86400) + 86400) % 86400) / 3600, i = Math.floor(h), f = h - i; return FLIGHT_SHAPE[i]! * (1 - f) + FLIGHT_SHAPE[(i + 1) % 24]! * f; }
   if (!isSteam(series)) return 1;
   const h = (((epoch % 86400) + 86400) % 86400) / 3600, i = Math.floor(h), f = h - i;
   return STEAM_SHAPE[i]! * (1 - f) + STEAM_SHAPE[(i + 1) % 24]! * f;
@@ -379,6 +399,10 @@ export function tickSigma(series: string, ref: number, hours: number): number {
   if (isFearGreed(series)) return 5 * Math.sqrt(Math.max(1, hours / 24));
   if (isPower(series)) return Math.max(15, Math.abs(ref) * 0.15) * Math.sqrt(Math.max(1, hours / 24));
   if (isTide(series)) return 0.1 * Math.sqrt(Math.min(Math.max(1, hours), 24) / 6 + 1);
+  if (isWave(series)) return Math.max(0.15, ref * 0.3 * Math.sqrt(Math.min(Math.max(1, hours), 24) / 12 + 0.3));
+  if (isAir(series)) return Math.max(6, ref * 0.3 * Math.sqrt(Math.min(Math.max(1, hours), 24) / 12 + 0.3));
+  if (isFlights(series)) return Math.max(40, ref * 0.12 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 6 + 0.3));
+  if (isMf(series)) return Math.max(2.5, 3 * Math.sqrt(Math.max(1, hours) / 24));
   if (isRiver(series)) return Math.max(3, Math.abs(ref) * 0.03 * Math.sqrt(Math.min(Math.max(1, hours), 48) / 12));
   if (isFuel(series)) return ref * 0.002 * Math.sqrt(Math.max(1, hours / 24));
   if (isOil(series)) return ref * 0.0185 * Math.sqrt(Math.max(1, hours / 24));
@@ -404,7 +428,9 @@ export function tickStep(series: string, ref: number): number {
   if (isNws(series)) return ref >= 1000 ? 100 : ref >= 200 ? 25 : ref >= 50 ? 10 : 5;
   if (isFearGreed(series)) return 5;
   if (isPower(series)) return 5;
-  if (isTide(series)) return 0.1;
+  if (isTide(series) || isWave(series)) return 0.1;
+  if (isAir(series) || isMf(series)) return 5;
+  if (isFlights(series)) return 25;
   if (isRiver(series)) return 5;
   if (isFuel(series)) return 0.005;
   if (isOil(series)) return 0.5;
@@ -819,4 +845,54 @@ export function buildTvMarket(a: TvArgs): TickMarketInsert {
   const closes = Math.min(at - 6 * H, Math.max(a.now + 15 * 60, a.airstamp));
   const m = tickMarket(series, def, a.reference, a.threshold, tickSigma(series, a.reference, 72), at, Math.max(closes, a.now + 10 * 60), at + 6 * H);
   return { ...m, params: { ...m.params, label: a.showName, showId: a.showId, season: a.season, number: a.number, epId: a.episodeId, aired: a.airstamp, digits: 1 } };
+}
+
+/** Hourly model values (by unix second) for the sea waves or the air quality of each city: a question every 3 hours for the next 24, on the model's own value for that hour. */
+export function buildHourlyMarkets(kind: "wave" | "air", fc: Record<string, Record<number, number>>, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const [k, hours] of Object.entries(fc)) {
+    const series = `${kind}:${k}`, def = tickDef(series);
+    if (!def || !hours) continue;
+    for (let at = Math.floor(now / (3 * H)) * 3 * H + 3 * H; at <= now + 24 * H; at += 3 * H) {
+      const v = hours[at];
+      if (!Number.isFinite(v) || at - 600 <= now + 300 || !(v! >= def.min && v! <= def.max)) continue;
+      if (kind === "wave" && v! < 0.2) continue; // a flat sea is not a question
+      const h = Math.max(1, (at - now) / H), line = kind === "wave" ? Math.round(v! * 10) / 10 : Math.round(v! / 5) * 5;
+      out.push(withDigits(tickMarket(series, def, v!, line, tickSigma(series, v!, h), at, at - 600, at + 3 * H), kind === "wave" ? 1 : 0));
+    }
+  }
+  return out;
+}
+
+/** Aircraft over Italy now: a question at 06, 12 and 18 UTC for the next 30 hours, on the daily rhythm of the traffic. */
+export function buildFlightMarkets(n: number | null | undefined, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [], series = "flights:it", def = tickDef(series)!;
+  if (!(typeof n === "number" && n >= 50)) return out;
+  for (let at = Math.floor(now / (6 * H)) * 6 * H + 6 * H; at <= now + 30 * H; at += 6 * H) {
+    const hourUtc = (at % 86400) / H;
+    if (hourUtc !== 6 && hourUtc !== 12 && hourUtc !== 18) continue;
+    if (at - 600 <= now + 300) continue;
+    const hours = Math.max(1, (at - now) / H), forecast = n * diurnalRatio(series, now, at), line = Math.round(forecast / 25) * 25;
+    if (!(line > 0)) continue;
+    out.push(tickMarket(series, def, forecast, line, tickSigma(series, forecast, hours), at, at - 600, at + 3 * H));
+  }
+  return out;
+}
+
+/** Manifold: for each open binary question (id, text, probability 0-1) a question at 12 UTC tomorrow and the day after: will the crowd's probability be above a round figure? */
+export function buildManifoldMarkets(list: { id: string; question: string; prob: number }[], now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const q of list) {
+    const series = `mf:${q.id}`, def = tickDef(series);
+    if (!def || !(q.prob >= 0.1 && q.prob <= 0.9)) continue;
+    const pct = q.prob * 100;
+    for (let at = Math.floor(now / 86400) * 86400 + 12 * H; at <= now + 50 * H; at += 86400) {
+      if (at - 600 <= now + 4 * H) continue;
+      const hours = (at - now) / H, line = Math.round(pct / 5) * 5;
+      if (!(line >= 10 && line <= 90)) continue;
+      const m = tickMarket(series, def, pct, line, tickSigma(series, pct, hours), at, at - 600, at + 3 * H);
+      out.push({ ...m, params: { ...m.params, label: q.question.slice(0, 160) } });
+    }
+  }
+  return out;
 }

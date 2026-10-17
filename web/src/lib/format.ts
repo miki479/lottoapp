@@ -102,6 +102,10 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     if (series.startsWith("launch:")) return msg.question.tick({ kind: "launch", label: String(m.params.label), value: "", time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("f1:")) return msg.question.tick({ kind: series.endsWith(":w") ? "f1win" : "f1podium", label: String(m.params.label), value: "", time: dtf(INTL_TAG[locale], { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3 * 3600_000)), from: "", to: "", day: String(m.params.note ?? "") });
     if (series.startsWith("steam:")) return msg.question.tick({ kind: series === "steam:dota_live" ? "viewers" : "players", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series.startsWith("wave:")) return msg.question.tick({ kind: "wave", label: String(m.params.label), value: `${new Intl.NumberFormat(INTL_TAG[locale], { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(thr)} m`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series.startsWith("air:")) return msg.question.tick({ kind: "air", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series === "flights:it") return msg.question.tick({ kind: "flights", label: "", value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series.startsWith("mf:")) return msg.question.tick({ kind: "manifold", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series === "kp") return msg.question.tick({ kind: "kp", label: "Kp", value: String(thr), time: "", from: formatWhen(new Date(Date.parse(at) - 3 * 3600_000).toISOString(), locale, own, now), to: formatWhen(at, locale, own, now), day: "" });
     if (series.startsWith("wiki:")) return msg.question.tick({ kind: "wiki", label: String(m.params.label), value: nf.format(thr), time: "", from: "", to: "", day: dtf(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3600_000)) });
     const dg = typeof m.params.digits === "number" ? m.params.digits : 0, nd = new Intl.NumberFormat(INTL_TAG[locale], { minimumFractionDigits: dg, maximumFractionDigits: dg, useGrouping: ALWAYS }), lab = msg.cm[String(m.params.label)] ?? String(m.params.label);
@@ -193,12 +197,13 @@ export function tickValueText(series: string, v: number, digits: number, locale:
   const nd = (x: number) => fmtDec(x, digits, locale), cur = (sym: string) => (locale === "it" ? `${nd(v)} ${sym}` : `${sym}${nd(v)}`);
   if (series === "kp") return fmtDec(v, 1, locale);
   if (series.startsWith("storm:")) return `${fmtInt(v, locale)} kt`;
-  if (/^(lastfm|bikes|steam|wiki|tv|tm|alert|chess|launch|f1|neo|eonet):/.test(series) || series === "hn:max") return fmtInt(v, locale);
+  if (/^(lastfm|bikes|steam|wiki|tv|tm|alert|chess|launch|f1|neo|eonet|air|flights):/.test(series) || series === "hn:max") return fmtInt(v, locale);
   if (series.startsWith("fuel:")) return cur("€");
   if (series.startsWith("fx:") || series === "feargreed" || series === "nws:us") return nd(v);
   if (series === "carbon:gb") return `${nd(v)} g/kWh`;
   if (series === "power:it") return `${nd(v)} €/MWh`;
-  if (series.startsWith("tide:")) return `${nd(v)} m`;
+  if (series.startsWith("tide:") || series.startsWith("wave:")) return `${nd(v)} m`;
+  if (series.startsWith("mf:")) return `${fmtDec(v, 0, locale)}%`;
   if (series.startsWith("river:")) return `${nd(v)} cm`;
   return cur("$");
 }

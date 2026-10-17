@@ -10,7 +10,7 @@ import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/a
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
 import { tvReference, tvRating, tvUpcoming } from "../_lib/tv.ts";
-import { RIVERS, TIDES, buildPowerMarkets, buildRiverMarkets, buildTideMarkets, isPower, isRiver, isTide, type RiverKey, type TideKey } from "../_shared/shared/ticks.ts";
+import { RIVERS, TIDES, WAVES, AIRQ, buildPowerMarkets, buildRiverMarkets, buildTideMarkets, buildHourlyMarkets, buildFlightMarkets, buildManifoldMarkets, isPower, isRiver, isTide, isWave, isAir, isFlights, isMf, type RiverKey, type TideKey, type WaveKey, type AirKey } from "../_shared/shared/ticks.ts";
 import { EONET, NEO_LD, buildEonetMarkets, buildNeoMarkets, isEonet, isNeo, type EonetKey, CHESS, buildChessMarkets, buildF1Markets, buildHnMarkets, buildLaunchMarkets, isChess, isHn, isLaunch, isF1, type ChessKey, FX, buildCarbonMarkets, buildFearGreedMarkets, buildFxMarkets, isCarbon, isFearGreed, isFx, type FxKey } from "../_shared/shared/ticks.ts";
 import { TM_PLACES, buildTicketMarkets, buildTvMarket, isTicket, isTv, tmWindow, type TmPlace } from "../_shared/shared/ticks.ts";
 import { FUELS, METALS, OIL, buildFuelMarkets, buildMetalMarkets, buildOilMarkets, isFuel, isMetal, isOil, type FuelKey, type MetalKey, type OilKey } from "../_shared/shared/ticks.ts";
@@ -839,6 +839,36 @@ async function fetchTide(k: TideKey, now: number): Promise<{ at: number; v: numb
   const d = j?.data?.[0], v = Number(d?.v), at = Date.parse(`${String(d?.t ?? "").replace(" ", "T")}:00Z`) / 1000;
   return Number.isFinite(v) && Number.isFinite(at) && now - at <= 1800 ? { at, v } : null;
 }
+/** Open-Meteo hourly model values by unix second for the sea waves (Marine) or the air quality (European AQI) of one city, from yesterday to the day after tomorrow. */
+async function fetchOmHourly(kind: "wave" | "air", k: string): Promise<Record<number, number>> {
+  const loc = kind === "wave" ? WAVES[k as WaveKey] : AIRQ[k as AirKey];
+  if (!loc) return {};
+  const base = kind === "wave" ? "https://marine-api.open-meteo.com/v1/marine" : "https://air-quality-api.open-meteo.com/v1/air-quality", v = kind === "wave" ? "wave_height" : "european_aqi";
+  const j = await getJson(`${base}?latitude=${loc.lat}&longitude=${loc.lon}&hourly=${v}&past_days=1&forecast_days=3&timeformat=unixtime&timezone=GMT${kind === "wave" ? "&cell_selection=sea" : ""}`);
+  const ts = j?.hourly?.time, xs = j?.hourly?.[v], out: Record<number, number> = {};
+  if (Array.isArray(ts) && Array.isArray(xs)) ts.forEach((tm: number, i: number) => { if (typeof xs[i] === "number" && Number.isFinite(xs[i])) out[Number(tm)] = xs[i]; });
+  return out;
+}
+
+/** Aircraft in flight over Italy (OpenSky Network, one anonymous request: the bounding box of the country); null when the service does not answer. */
+async function fetchFlights(): Promise<number | null> {
+  const j = await getJson("https://opensky-network.org/api/states/all?lamin=36.4&lomin=6.6&lamax=47.1&lomax=18.6");
+  return Array.isArray(j?.states) ? (j.states as unknown[][]).filter((s) => s[8] === false).length : null;
+}
+
+/** The most liquid open binary questions on Manifold that stay open for days and are still undecided (probability 10-90%). */
+async function fetchManifold(now: number): Promise<{ id: string; question: string; prob: number }[]> {
+  const j = await getJson("https://api.manifold.markets/v0/search-markets?term=&sort=liquidity&filter=open&contractType=BINARY&limit=40");
+  if (!Array.isArray(j)) return [];
+  return (j as { id: string; question: string; probability: number; closeTime?: number; isResolved?: boolean; uniqueBettorCount?: number }[])
+    .filter((m) => !m.isResolved && typeof m.probability === "number" && m.probability >= 0.12 && m.probability <= 0.88 && (m.closeTime ?? Infinity) > (now + 4 * 86400) * 1000 && (m.uniqueBettorCount ?? 0) >= 40 && m.question.length <= 150)
+    .slice(0, 8).map((m) => ({ id: m.id, question: m.question, prob: m.probability }));
+}
+async function fetchManifoldProb(id: string): Promise<number | null> {
+  const j = await getJson(`https://api.manifold.markets/v0/market/${id}`);
+  return typeof j?.probability === "number" && !j?.isResolved ? Math.round(j.probability * 1000) / 10 : null;
+}
+
 /** NOAA CO-OPS hourly tide predictions (metres above MLLW, GMT) from the start of yesterday to the end of tomorrow, by unix second. */
 async function fetchTidePred(k: TideKey, now: number): Promise<Record<number, number>> {
   const ymd = (t: number) => isoDay(t).replace(/-/g, "");
@@ -1033,6 +1063,23 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       for (const { x, at } of tideDue) { try { const r = await fetchTide(x.slice(5) as TideKey, now); if (r && Math.abs(r.at - at) <= 12 * 60) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: r.v, fetched_at: fetchedAt }); } catch (e) { notes.push(`${x}: ${String((e as Error).message ?? e).slice(0, 60)}`); } } // one gauge failing must not stop the others
     } catch (e) { notes.push(`tide: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
+      // sea waves and air quality: the model's value for the hour that is due; flights and Manifold: the reading now
+      const cache = new Map<string, Record<number, number>>();
+      const modelDue = [...need.keys()].filter((x) => isWave(x) || isAir(x)).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      for (const { x, at } of modelDue) {
+        try {
+          const kind = x.startsWith("wave:") ? "wave" : "air", k = x.slice(kind === "wave" ? 5 : 4), ck = `${kind}:${k}`;
+          if (!cache.has(ck)) cache.set(ck, await fetchOmHourly(kind, k));
+          const v = cache.get(ck)![at];
+          if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt });
+        } catch (e) { notes.push(`${x}: ${String((e as Error).message ?? e).slice(0, 60)}`); }
+      }
+      const flDue = [...need.keys()].filter(isFlights).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (flDue.length) { const n = await fetchFlights().catch(() => null); if (n !== null) for (const { x, at } of flDue) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: n, fetched_at: fetchedAt }); }
+      const mfDue = [...need.keys()].filter(isMf).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      for (const { x, at } of mfDue) { try { const v = await fetchManifoldProb(x.slice(3)); if (v !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } catch (e) { notes.push(`${x}: ${String((e as Error).message ?? e).slice(0, 60)}`); } }
+    } catch (e) { notes.push(`om: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
       const riverDue = [...need.keys()].filter(isRiver).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
       for (const { x, at } of riverDue) { try { const v = await fetchRiver(x.slice(6) as RiverKey, now); if (v !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } catch (e) { notes.push(`${x}: ${String((e as Error).message ?? e).slice(0, 60)}`); } }
     } catch (e) { notes.push(`river: ${String((e as Error).message ?? e).slice(0, 80)}`); }
@@ -1175,6 +1222,23 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       }
       markets.push(...buildTideMarkets(g, now)); ok++;
     } catch (e) { notes.push(`tide: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const wv: Record<string, Record<number, number>> = {}, aq: Record<string, Record<number, number>> = {}, h0 = Math.floor(now / 3600) * 3600;
+      await Promise.all([
+        ...(Object.keys(WAVES) as WaveKey[]).map(async (k) => { const m = await fetchOmHourly("wave", k).catch(() => ({} as Record<number, number>)); if (Object.keys(m).length) { wv[k] = m; if (m[h0] !== undefined) extraHist.push({ series: `wave:${k}`, at: hourIso, value: m[h0]! }); } }),
+        ...(Object.keys(AIRQ) as AirKey[]).map(async (k) => { const m = await fetchOmHourly("air", k).catch(() => ({} as Record<number, number>)); if (Object.keys(m).length) { aq[k] = m; if (m[h0] !== undefined) extraHist.push({ series: `air:${k}`, at: hourIso, value: m[h0]! }); } }),
+      ]);
+      markets.push(...buildHourlyMarkets("wave", wv, now), ...buildHourlyMarkets("air", aq, now)); ok++;
+    } catch (e) { notes.push(`om: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const n = await fetchFlights().catch(() => null);
+      if (n !== null) { extraHist.push({ series: "flights:it", at: hourIso, value: n }); markets.push(...buildFlightMarkets(n, now)); ok++; }
+    } catch (e) { notes.push(`flights: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const list = await fetchManifold(now);
+      for (const q of list) extraHist.push({ series: `mf:${q.id}`, at: hourIso, value: Math.round(q.prob * 1000) / 10 });
+      markets.push(...buildManifoldMarkets(list, now)); ok++;
+    } catch (e) { notes.push(`manifold: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
       const lv: Partial<Record<RiverKey, number>> = {};
       for (const k of Object.keys(RIVERS) as RiverKey[]) { const v = await fetchRiver(k, now).catch(() => null); if (v !== null) { lv[k] = v; extraHist.push({ series: `river:${k}`, at: hourIso, value: v }); } }
