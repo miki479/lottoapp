@@ -159,7 +159,7 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
   return (
     <section class="stack pkshop">
       <p class="hint">{s.intro}</p>
-      {(promo || lucky) && <div class="pkbanners">{promo && <span class="pkchip promo"><Sparkles size={14} />{s.promoTag} · {s.until(clock(status!.promo_until!))}</span>}{lucky && <span class="pkchip lucky"><Star size={14} />{s.luckyTag} · {s.until(clock(status!.lucky_until!))}</span>}</div>}
+      {(promo || lucky) && <div class={`pkoffer ${promo && lucky ? "both" : ""}`} role="status">{promo && <span class="po-promo"><Sparkles size={14} />{s.promoTag} · {s.until(clock(status!.promo_until!))}</span>}{lucky && <span class="po-lucky"><Star size={14} />{s.luckyTag} · {s.until(clock(status!.lucky_until!))}</span>}</div>}
       {!registered && <div class="card pkguest"><Lock size={18} /><p>{s.needAccount}</p><button class="btn primary" onClick={onAuth}>{s.makeProfile}</button></div>}
       <ul class="pklist">
         {PACKS.map((pack) => {

@@ -82,7 +82,13 @@
 .lbactive { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; padding: 8px 12px; border-radius: 12px; font-size: var(--fs-sm); font-weight: 800; color: #3a2400; background: var(--rc-legendary); }
 @media (prefers-reduced-motion: reduce) { .lbcard, .lbshine { animation: none; } }
 .supply .dealname { display: inline; margin: 0 0 0 6px; }
-.pkbanners { display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; align-self: flex-start; gap: 8px; }
-.pkchip { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--radius-pill); font-size: var(--fs-sm); font-weight: 700; }
-.pkchip.promo { background: var(--action-soft); color: var(--action-ink); }
-.pkchip.lucky { background: linear-gradient(100deg, #ffd23f, #ff9f1c); color: #3a2600; }
+/* one small pill: the launch promo (purple) and the lucky hour (gold) fade into each other while both run */
+.pkoffer { display: inline-grid; align-self: flex-start; border-radius: var(--radius-pill); overflow: hidden; font-size: var(--fs-sm); font-weight: 700; }
+.pkoffer > span { grid-area: 1 / 1; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; white-space: nowrap; }
+.po-promo { background: linear-gradient(100deg, #6a4cff, #a14dff); color: #fff; }
+.po-lucky { background: linear-gradient(100deg, #ffd23f, #ff9f1c); color: #3a2600; }
+.pkoffer.both .po-promo { animation: offa 7s ease-in-out infinite; }
+.pkoffer.both .po-lucky { animation: offb 7s ease-in-out infinite; }
+@keyframes offa { 0%, 38% { opacity: 1; } 50%, 88% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes offb { 0%, 38% { opacity: 0; } 50%, 88% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .pkoffer.both .po-promo, .pkoffer.both .po-lucky { animation: none; } .pkoffer.both .po-lucky { display: none; } }
