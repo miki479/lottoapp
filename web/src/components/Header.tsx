@@ -74,7 +74,7 @@ export function Header({ satire, claimable, onWallet, onShop, shopNew, shopLabel
   return (
     <header class={`header ${scrolled ? "scrolled" : ""} ${compact ? "compact" : ""}`}>
       <div class="header-in">
-        <button class="brand" onClick={onHome} aria-label="LateBet"><i><BrandMark /></i><span class="tx"><span class="wm">Late<b>BET</b></span>{satire && <em class="stag">{satire}</em>}</span></button>
+        <button class="brand" onClick={onHome} aria-label="LateBet.it"><i><BrandMark /></i><span class="tx"><span class="wm">Late<b>BET</b><span class="tld">.it</span></span>{satire && <em class="stag">{satire}</em>}</span></button>
         <div class="grow" />
         <div class="hdr-tools">
         <button class={`iconbtn shopbtn ${shopNew ? "new" : ""}`} onClick={onShop} aria-label={shopLabel} title={shopLabel}><ShoppingBag size={22} />{(shopNew || !!shopDeal) && <i class={`shopdot ${shopDeal ? "deal" : ""}`} aria-hidden="true">{shopDeal ? `-${shopDeal}%` : ""}</i>}</button>
