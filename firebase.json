@@ -32,6 +32,15 @@
         ]
       },
       {
+        "source": "/OneSignalSDK*Worker.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
         "source": "/push/**",
         "headers": [
           {
