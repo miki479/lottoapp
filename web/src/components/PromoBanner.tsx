@@ -23,6 +23,7 @@ export function PromoBanner({ msg, onOpen, pushOff, onPush, reopen }: { msg: Mes
   const close = (e: Event) => { e.stopPropagation(); try { localStorage.setItem(KEY, "1"); } catch { /* private mode */ } setGone(true); };
   return (
     <div class="promowrap" ref={root}>
+      <span class="promosmoke" aria-hidden="true"><i /><i /><i /></span>
       <div class="promo" role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onOpen(); }}>
         <img src="/promo-new.webp" alt="" width={1200} height={520} loading="lazy" decoding="async" />
         <div class="promotxt"><b>{msg.home.promo.title}</b><span>{msg.home.promo.sale}</span></div>

@@ -301,9 +301,9 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 /* ==========================================================================
    Colour & play: category accents, hero, stars, top-odds badges
    ========================================================================== */
-.hero { position: relative; overflow: hidden; padding: 12px 16px; border-radius: var(--radius-card); background: var(--grad-hero); color: #fff; display: flex; flex-direction: column; gap: 2px; }
-.hero h1 { margin: 0; padding-right: 30px; font-size: var(--fs-lg); line-height: 1.25; font-weight: 800; max-width: 28ch; text-wrap: balance; }
-.hero p { margin: 0; font-size: var(--fs-sm); line-height: 1.35; opacity: .92; }
+.hero { position: relative; overflow: hidden; padding: 8px 14px; border-radius: var(--radius-card); background: var(--grad-hero); color: #fff; display: flex; flex-direction: column; gap: 2px; }
+.hero h1 { margin: 0; padding-right: 30px; font-size: var(--fs-md); line-height: 1.2; font-weight: 800; max-width: 28ch; text-wrap: balance; }
+.hero p { margin: 0; font-size: var(--fs-xs); line-height: 1.3; opacity: .92; }
 .hero .star { position: absolute; width: 12px; height: 12px; background: var(--star); clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: twinkle 2.6s ease-in-out infinite; }
 .hero .s1 { top: 10px; right: 16px; } .hero .s2 { bottom: 10px; right: 42px; width: 8px; height: 8px; animation-delay: -.8s; }
 @keyframes twinkle { 0%, 100% { transform: scale(.7) rotate(0); opacity: .6; } 50% { transform: scale(1.15) rotate(20deg); opacity: 1; } }
@@ -1774,13 +1774,20 @@ textarea.field { resize: vertical; min-height: 84px; }
 .tgroup { display: flex; flex-direction: column; gap: 8px; }
 .tghead { display: flex; align-items: baseline; gap: 8px; margin: 8px 0 0; }
 .ptgroups { display: flex; flex-direction: column; gap: 10px; }
-.promo { position: relative; display: block; width: 100%; aspect-ratio: 1200 / 520; border-radius: var(--radius-card); overflow: hidden; cursor: pointer; background: #1a1240; isolation: isolate; }
-.promo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.promotxt { position: absolute; left: 5%; top: 50%; transform: translateY(-50%); width: 48%; display: flex; flex-direction: column; gap: 6px; color: #fff; text-shadow: 0 2px 14px rgba(0, 0, 0, .55); }
-.promotxt b { font-size: var(--fs-xl); line-height: 1.12; font-weight: 800; letter-spacing: -.01em; }
+.promo { position: relative; z-index: 1; display: block; width: 100%; aspect-ratio: 1200 / 330; border-radius: var(--radius-card); overflow: hidden; cursor: pointer; background: #1a1240; isolation: isolate; }
+.promo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 70% 50%; }
+.promotxt { position: absolute; left: 5%; top: 50%; transform: translateY(-50%); width: 56%; display: flex; flex-direction: column; gap: 3px; color: #fff; text-shadow: 0 2px 14px rgba(0, 0, 0, .55); }
+.promotxt b { font-size: var(--fs-lg); line-height: 1.12; font-weight: 800; letter-spacing: -.01em; }
 .promotxt span { font-size: var(--fs-sm); opacity: .85; }
 .promox { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(0, 0, 0, .42); color: #fff; cursor: pointer; }
 .promo:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
-.promowrap { display: flex; flex-direction: column; gap: 8px; }
+.promowrap { position: relative; display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; }
+.promosmoke { position: absolute; left: 4%; right: 4%; bottom: 0; height: 34px; pointer-events: none; z-index: 0; }
+.promosmoke i { position: absolute; bottom: 0; width: 42%; height: 30px; border-radius: 50%; filter: blur(14px); opacity: .75; animation: smoke 5.5s ease-in-out infinite; }
+.promosmoke i:nth-child(1) { left: 0; background: #7b5cff; }
+.promosmoke i:nth-child(2) { left: 28%; background: #3d7bff; animation-delay: -1.8s; animation-duration: 6.6s; }
+.promosmoke i:nth-child(3) { right: 0; background: #b04fd8; animation-delay: -3.4s; animation-duration: 7.2s; }
+@keyframes smoke { 0%, 100% { transform: translate(0, 2px) scale(1); opacity: .55; } 50% { transform: translate(8%, 6px) scale(1.25, 1.4); opacity: .9; } }
+@media (prefers-reduced-motion: reduce) { .promosmoke i { animation: none; } }
 .promopush { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-card); background: var(--action-soft); color: var(--action-ink); font-size: var(--fs-sm); }
 .promopush span { flex: 1; }

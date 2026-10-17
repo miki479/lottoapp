@@ -129,6 +129,7 @@ export function Home(p: HomeProps) {
         <h1>{msg.home.hero.title}</h1>
         <p>{msg.home.hero.body}</p>
       </section>
+      <PromoBanner msg={msg} onOpen={p.onPromo} pushOff={p.pushOff} onPush={p.onPush} reopen={p.newsKey} />
       {howOpen && (
         <section class="howto" aria-label={msg.home.how.title}>
           <div class="howhead"><h2>{msg.home.how.title}</h2><button class="howx" onClick={() => { safe.set("how", "1"); setHowOpen(false); }}>{msg.home.how.close}</button></div>
@@ -141,7 +142,6 @@ export function Home(p: HomeProps) {
         {p.onOffer && <PersonalOffer msg={msg} locale={p.locale} now={p.now} registered={p.registered} onUse={p.onOffer} />}
         <InstallHint locale={p.locale} invited={!!safe.get("ref")} />
         <Inbox registered={p.registered} ok={msg.common.close} locale={p.locale} />
-        <PromoBanner msg={msg} onOpen={p.onPromo} pushOff={p.pushOff} onPush={p.onPush} reopen={p.newsKey} />
         {p.top.length > 0 && (
           <section class="stack featured" style="gap:8px">
             <div class="sectionhead"><h2>{msg.home.top}</h2></div>
