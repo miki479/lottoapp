@@ -26,7 +26,7 @@ p { margin: 0; }
 
 .header { position: sticky; top: 0; z-index: 30; transition: background var(--dur), border-color var(--dur), backdrop-filter var(--dur); border-bottom: 1px solid transparent; }
 .header.scrolled { background: var(--bg); backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4); border-color: var(--border); }
-.header-in { max-width: var(--max-w); margin: 0 auto; padding: calc(6px + env(safe-area-inset-top)) var(--gutter) 6px; display: flex; align-items: center; gap: var(--space-3); min-height: 56px; }
+.header-in { max-width: var(--max-w); margin: 0 auto; padding: calc(12px + env(safe-area-inset-top)) var(--gutter) 6px; display: flex; align-items: center; gap: var(--space-3); min-height: 56px; }
 .brand { display: flex; align-items: center; gap: 10px; min-height: var(--hit); min-width: var(--hit); font-weight: 800; font-size: var(--fs-lg); letter-spacing: var(--ls-title); }
 .brand i { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; }
 .brand span b { font-weight: 900; font-style: italic; letter-spacing: .06em; padding-right: 2px; background: linear-gradient(100deg, #6b5bff 0%, #ff4fa3 55%, #ffb000 100%); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; filter: drop-shadow(0 1px 0 rgba(0,0,0,.12)); }
@@ -245,6 +245,7 @@ select.field, textarea.field, option { font: inherit; }
 footer.legal { max-width: var(--max-w); margin: var(--space-6) auto 0; padding-top: var(--space-4); border-top: 1px solid var(--border); font-size: var(--fs-xs); color: var(--muted); line-height: 1.55; }
 footer.legal p { margin: 0 0 8px; } footer.legal .legallinks { display: flex; flex-wrap: wrap; gap: 0 12px; } footer.legal .legallinks a { display: inline-flex; align-items: center; justify-content: center; min-height: var(--hit); min-width: var(--hit); padding: 0 4px; text-decoration: underline; text-underline-offset: 2px; } footer.legal summary { min-height: var(--hit); display: flex; align-items: center; cursor: pointer; }
 footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
+footer.legal .legalfull { font-size: var(--fs-xs); opacity: .8; }
 
 /* ---------- keyframes (all short) ---------- */
 @keyframes slidein { from { opacity: 0; transform: translateX(14px); } }
@@ -493,7 +494,7 @@ footer.legal a { color: inherit; } footer.legal ul { padding-left: 18px; }
 .qbtn { min-height: var(--hit); padding: 0 14px; white-space: nowrap; } .qreward { font-weight: 800; color: var(--star-ink); font-variant-numeric: tabular-nums; }
 .qdone { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-sm); font-weight: 700; color: var(--text-2); }
 .walletbtn { position: relative; cursor: pointer; font: inherit; color: inherit; }
-.walletbtn .dotbadge { position: absolute; top: -4px; right: -2px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--live); color: var(--on-live); font-size: var(--fs-xs); font-weight: 800; display: grid; place-items: center; animation: popnum 220ms var(--ease); }
+.walletbtn .dotbadge { position: absolute; top: -6px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--live); color: var(--on-live); font-size: var(--fs-xs); font-weight: 800; display: grid; place-items: center; animation: popnum 220ms var(--ease); }
 
 /* ---------- chips: big see-through pictures, one short scene on hover or tap, nothing leaves the chip ---------- */
 .cc { position: relative; overflow: hidden; perspective: none; z-index: auto; min-height: 84px; }
@@ -920,14 +921,14 @@ textarea.field { resize: vertical; min-height: 84px; }
 @media (min-width: 1024px) { .home .hero, .home .howto { grid-column: 1 / -1; } .home .main { grid-column: 1; order: 1; } .home .aside { grid-column: 2; order: 2; } }
 
 /* how to play: three equal squared cards */
-.howto { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: var(--radius-card); background: var(--surface); border: 1px solid var(--border); }
+.howto { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border-radius: var(--radius-card); background: var(--surface); border: 1px solid var(--border); }
 .howhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; } .howhead h2 { margin: 0; font-size: var(--fs-md); font-weight: 800; }
 .howx { border: 0; background: var(--action-soft); color: var(--action-ink); font-weight: 700; font-size: var(--fs-xs); padding: 0 16px; min-height: var(--hit); border-radius: 999px; }
 .howgrid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.howgrid li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px 8px; border-radius: 12px; background: var(--surface-2); text-align: center; }
-.howgrid .hn { position: absolute; top: 7px; left: 9px; font-size: var(--fs-xs); font-weight: 800; color: var(--muted); }
-.howgrid .hi { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--action-soft); color: var(--action-ink); flex: none; }
-.howgrid .ht { font-size: var(--fs-sm); font-weight: 700; line-height: 1.25; color: var(--text); text-wrap: balance; }
+.howgrid li { position: relative; display: flex; flex-direction: row; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 12px; background: var(--surface-2); text-align: left; }
+.howgrid .hn { display: none; }
+.howgrid .hi { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; background: var(--action-soft); color: var(--action-ink); flex: none; }
+.howgrid .ht { font-size: var(--fs-xs); font-weight: 700; line-height: 1.2; color: var(--text); text-wrap: balance; }
 
 /* friends: invite card, board rows, picker, inbox */
 .invitecard .invhead { display: flex; gap: 12px; align-items: center; } .invitecard .invhead p { margin: 2px 0 0; }
@@ -1776,9 +1777,9 @@ textarea.field { resize: vertical; min-height: 84px; }
 .ptgroups { display: flex; flex-direction: column; gap: 10px; }
 .promo { position: relative; z-index: 1; display: block; width: 100%; aspect-ratio: 1200 / 330; border-radius: var(--radius-card); overflow: hidden; cursor: pointer; background: #1a1240; isolation: isolate; }
 .promo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 70% 50%; }
-.promotxt { position: absolute; left: 5%; top: 50%; transform: translateY(-50%); width: 56%; display: flex; flex-direction: column; gap: 3px; color: #fff; text-shadow: 0 2px 14px rgba(0, 0, 0, .55); }
-.promotxt b { font-size: var(--fs-lg); line-height: 1.12; font-weight: 800; letter-spacing: -.01em; }
-.promotxt span { font-size: var(--fs-sm); opacity: .85; }
+.promotxt { position: absolute; left: 5%; top: 50%; transform: translateY(-50%); width: 44%; display: flex; flex-direction: column; gap: 3px; color: #fff; text-shadow: 0 2px 14px rgba(0, 0, 0, .55); }
+.promotxt b { font-size: var(--fs-md); line-height: 1.15; line-height: 1.12; font-weight: 800; letter-spacing: -.01em; }
+.promotxt span { font-size: var(--fs-xs); opacity: .9; line-height: 1.25; }
 .promox { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(0, 0, 0, .42); color: #fff; cursor: pointer; }
 .promo:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
 .promowrap { position: relative; display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; }
@@ -1789,3 +1790,5 @@ textarea.field { resize: vertical; min-height: 84px; }
 .promosmoke i:nth-child(3) { right: 0; background: #b04fd8; animation-delay: -3.4s; animation-duration: 7.2s; }
 @keyframes smoke { 0%, 100% { transform: translate(0, 2px) scale(1); opacity: .55; } 50% { transform: translate(8%, 6px) scale(1.25, 1.4); opacity: .9; } }
 @media (prefers-reduced-motion: reduce) { .promosmoke i { animation: none; } }
+
+.contactopen { flex-direction: row; white-space: nowrap; padding: 0 4px; }

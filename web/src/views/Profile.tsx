@@ -61,7 +61,7 @@ export function ProfileView(p: {
               {p.look ? <button class="lkme" onClick={p.onLook} aria-label={p.msg.look.change}><Look avatar={p.look.avatar} decoration={p.look.decoration} size={72} /><span class="lvl num">{p.look.level}</span></button> : <span class="rank top" style="width:56px;height:56px;border-radius:18px;font-size:var(--fs-xl)"><User size={26} /></span>}
               <div class="idtxt">
                 <b class="idname">{name}</b>
-                {!p.registered && <span class="idmail">{m.guest}</span>}
+                {!p.registered && name !== m.guest && <span class="idmail">{m.guest}</span>}
                 <div class="idchips">{p.homeNode}{p.registered && <LeagueBadge locale={p.locale} registered={p.registered} />}</div>
               </div>
               {p.registered && <button class="iconbtn" onClick={p.onNickname} aria-label={m.nickname.title}><Pencil size={20} /></button>}

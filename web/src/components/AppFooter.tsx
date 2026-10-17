@@ -8,7 +8,7 @@ export function AppFooter({ msg, sources, locale }: { msg: Messages; sources: So
   return (
     <footer class="legal">
       <p class="legalshort"><b class="age18" title="18+">18+</b> {msg.disclaimerShort}</p>
-      <p>{msg.disclaimerFull}</p>
+      <p class="legalfull">{msg.disclaimerFull}</p>
       <p class="legallinks"><a href="/how-it-works.html">{msg.profile.howItWorks}</a><a href="/terms.html">{msg.profile.terms}</a><a href="/privacy.html">{msg.profile.privacy}</a></p>
       <ContactForm locale={locale} />
       <details><summary>{msg.attributionTitle}</summary>
