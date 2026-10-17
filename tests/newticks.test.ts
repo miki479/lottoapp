@@ -11,7 +11,7 @@ describe("sea waves, air quality, flights and Manifold", () => {
     expect(isWave("wave:pal")).toBe(true); expect(isWave("wave:xxx")).toBe(false);
     expect(isAir("air:rom")).toBe(true); expect(isFlights("flights:it")).toBe(true); expect(isMf("mf:AbC123xyz")).toBe(true); expect(isMf("mf:../x")).toBe(false);
     for (const s of ["wave:pal", "air:rom", "flights:it", "mf:AbC123xyz"]) expect(isSpot(s)).toBe(true);
-    expect(tickDef("wave:cag")!.category).toBe("nature"); expect(tickDef("flights:it")!.category).toBe("traffic"); expect(tickDef("mf:AbC123xyz")!.category).toBe("culture");
+    expect(tickDef("wave:cag")!.category).toBe("nature"); expect(tickDef("flights:it")!.category).toBe("flights"); expect(tickDef("mf:AbC123xyz")!.category).toBe("culture");
   });
   it("make a question every three hours from the model's value, with fair odds", () => {
     const hours: Record<number, number> = {}; for (let t = now - 24 * H; t <= now + 48 * H; t += H) hours[Math.floor(t / H) * H] = 0.9 + 0.01 * ((t / H) % 7);

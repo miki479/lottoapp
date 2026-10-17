@@ -334,3 +334,14 @@ export function GovGhost() {
     </svg>
   );
 }
+
+/** Aerei: a passenger jet over a stripe of cloud. It banks and flies across on hover or tap, then comes back. */
+export function PlaneGhost() {
+  return (
+    <svg viewBox="0 0 80 70" class="gh gh-flights" aria-hidden="true">
+      <path d="M0 62Q22 57 44 61T80 59V70H0Z" fill="#2fa8e6" opacity=".25" />
+      <g class="gh-cloud" fill="#fff" opacity=".9"><ellipse cx="18" cy="52" rx="12" ry="5" /><ellipse cx="28" cy="49" rx="9" ry="5.500" /><ellipse cx="60" cy="14" rx="10" ry="4" /><ellipse cx="68" cy="12" rx="7" ry="4.500" /></g>
+      <g class="gh-plane"><path d="M8 30l30-2 20-14h6l-8 14 14 2c3 .5 4 3 0 4l-14 2 8 14h-6L38 36 8 34z" fill="#f4f7ff" stroke="#3b6ea5" stroke-width="1.600" stroke-linejoin="round" /><path d="M14 31h18" stroke="#3b6ea5" stroke-width="1.400" stroke-linecap="round" opacity=".6" /><circle cx="22" cy="32" r="1.400" fill="#3b6ea5" /><circle cx="28" cy="32" r="1.400" fill="#3b6ea5" /></g>
+    </svg>
+  );
+}

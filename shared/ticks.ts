@@ -3,7 +3,7 @@ import { normalCdf } from "./metrics.ts";
 import { addDays, localDateString, zonedEpoch } from "./time.ts";
 
 /** Questions about a single number at a given instant, for the whole world: coin prices, the Kp index, Wikipedia page views. */
-export type TickCategory = "finance" | "nature" | "culture" | "traffic" | "space" | "sport" | "games";
+export type TickCategory = "finance" | "nature" | "culture" | "traffic" | "space" | "sport" | "games" | "flights";
 
 export interface TickDef {
   category: TickCategory;
@@ -151,7 +151,7 @@ export function tickDef(series: string): TickDef | null {
   if (isTide(series)) return { category: "nature", label: TIDES[series.slice(5) as TideKey].label, unit: " m", min: -5, max: 15 };
   if (isWave(series)) return { category: "nature", label: WAVES[series.slice(5) as WaveKey].label, unit: " m", min: 0, max: 15 };
   if (isAir(series)) return { category: "nature", label: AIRQ[series.slice(4) as AirKey].label, unit: "", min: 0, max: 500 };
-  if (isFlights(series)) return { category: "traffic", label: "Italy air traffic", unit: "", min: 0, max: 5000 };
+  if (isFlights(series)) return { category: "flights", label: "Italy air traffic", unit: "", min: 0, max: 5000 };
   if (isMf(series)) return { category: "culture", label: "Manifold", unit: "%", min: 0, max: 100 };
   if (isRiver(series)) return { category: "nature", label: RIVERS[series.slice(6) as RiverKey].label, unit: " cm", min: -100, max: 2000 };
   if (isFuel(series)) return { category: "finance", label: FUELS[series.slice(5) as FuelKey].label, unit: "€/l", min: 0.5, max: 5 };

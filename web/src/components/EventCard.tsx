@@ -1,5 +1,5 @@
 import { Q } from "./Q.tsx";
-import { Activity, Car, ChevronRight, Clapperboard, Trophy, TrendingUp, Megaphone, Clock, Star, Zap, Users, Scale, Orbit, Gamepad2 } from "lucide-preact";
+import { Activity, Car, ChevronRight, Clapperboard, Trophy, TrendingUp, Megaphone, Clock, Star, Zap, Users, Scale, Orbit, Gamepad2, Plane } from "lucide-preact";
 import { cityName, cityOf } from "../lib/cities.ts";
 import { Countdown } from "./Countdown.tsx";
 import { countdown, fmtOdds, isYesNo, potentialWin, superText, type MarketRow } from "../lib/format.ts";
@@ -21,7 +21,7 @@ import { SportScene } from "./SportScene.tsx";
 import { fmtTimes } from "../lib/num.ts";
 import { subjectOf } from "../lib/names.ts";
 
-const KIND = { bus: BusSide, train: TrainSide, weather: CloudRainSide, nature: Activity, strike: Megaphone, traffic: Car, finance: TrendingUp, culture: Clapperboard, sport: Trophy, law: Scale, space: Orbit, games: Gamepad2 } as const;
+const KIND = { bus: BusSide, train: TrainSide, weather: CloudRainSide, nature: Activity, strike: Megaphone, traffic: Car, finance: TrendingUp, culture: Clapperboard, sport: Trophy, law: Scale, space: Orbit, flights: Plane, games: Gamepad2 } as const;
 
 /** How full the bus is right now: five bars and a word. */
 export function OccMeter(p: { level: number; msg: Messages }) {
