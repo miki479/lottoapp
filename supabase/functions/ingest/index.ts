@@ -1142,7 +1142,18 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
     const { data: have } = await sb.from("match_results").select("event_id,status").in("event_id", ids);
     const done = new Set((have ?? []).filter((r) => FINISHED.has(String(r.status))).map((r) => r.event_id as string));
     const rows: Record<string, unknown>[] = [];
-    for (const id of ids.filter((x) => !done.has(x)).slice(0, 12)) {
+    // The final score the live feed already holds (state "post", unchanged for 20 minutes) is taken when TheSportsDB has nothing final yet: a finished match must not wait for
+    // a slow free feed until its question is refunded. TheSportsDB still wins whenever it answers first.
+    const kick = new Map((open ?? []).map((m) => { const p = m.params as { eventId: string; kickoff?: number }; return [String(p.eventId), Number(p.kickoff ?? 0)] as const; }));
+    const pending = ids.filter((x) => !done.has(x));
+    const { data: fin } = pending.length ? await sb.from("live_scores").select("event_id,home_score,away_score,updated_at").eq("state", "post").in("event_id", pending) : { data: [] };
+    const fromLive = new Set<string>();
+    for (const r of (fin ?? []) as { event_id: string; home_score: number; away_score: number; updated_at: string }[]) {
+      if (Date.now() - Date.parse(r.updated_at) < 20 * 60_000 || !kick.get(r.event_id)) continue;
+      rows.push({ event_id: r.event_id, kickoff: new Date((kick.get(r.event_id) as number) * 1000).toISOString(), home_goals: r.home_score, away_goals: r.away_score, status: "FT", fetched_at: new Date().toISOString() });
+      fromLive.add(r.event_id);
+    }
+    for (const id of pending.filter((x) => !fromLive.has(x)).slice(0, 12)) {
       try {
         const e = ((await tsdb(`${base}/lookupevent.php?id=${id}`))?.events ?? [])[0];
         if (!e) continue;
