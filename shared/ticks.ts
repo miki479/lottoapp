@@ -111,9 +111,16 @@ export const isChess = (s: string) => s.startsWith("chess:") && s.slice(6) in CH
 export const isLaunch = (s: string) => /^launch:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(s);
 /** A Formula 1 result (Jolpica, the Ergast successor): "f1:<season>-<round>:<CODE>:w" reads 1 when the driver won, ":p" when on the podium. */
 export const isF1 = (s: string) => /^f1:\d{4}-\d{1,2}:[A-Z]{2,3}:[wp]$/.test(s);
+/** NASA Near Earth Object Web Service: "neo:<YYYYMMDD>" is a week starting that day (UTC); it reads 1 when an asteroid passes within NEO_LD lunar distances in it. */
+export const NEO_LD = 10;
+export const isNeo = (s: string) => /^neo:\d{8}$/.test(s);
+/** NASA EONET, the register of natural events: how many are open in a category right now. */
+export const EONET = { volcanoes: { id: "volcanoes", label: "Volcanoes" }, storms: { id: "severeStorms", label: "Severe storms" }, ice: { id: "seaLakeIce", label: "Sea and lake ice" } } as const;
+export type EonetKey = keyof typeof EONET;
+export const isEonet = (s: string) => s.startsWith("eonet:") && s.slice(6) in EONET;
 /** Yes/no facts read once the event is over, not numbers read at an instant. */
-export const isFact = (s: string) => isLaunch(s) || isF1(s);
-export const isSpot = (s: string) => isHn(s) || isChess(s) || isCrypto(s) || isSteam(s) || isLastfm(s) || isHf(s) || isSolarWind(s) || isBikes(s) || isStorm(s) || isMetal(s) || isCarbon(s) || isNws(s) || isTide(s) || isRiver(s) || isTicket(s);
+export const isFact = (s: string) => isLaunch(s) || isF1(s) || isNeo(s);
+export const isSpot = (s: string) => isEonet(s) || isHn(s) || isChess(s) || isCrypto(s) || isSteam(s) || isLastfm(s) || isHf(s) || isSolarWind(s) || isBikes(s) || isStorm(s) || isMetal(s) || isCarbon(s) || isNws(s) || isTide(s) || isRiver(s) || isTicket(s);
 
 /** Saffir-Simpson scale by sustained wind in knots (1 min average), as NHC reports it. */
 export const STORM_STEPS: { kt: number; label: string }[] = [{ kt: 34, label: "TS" }, { kt: 64, label: "Cat. 1" }, { kt: 83, label: "Cat. 2" }, { kt: 96, label: "Cat. 3" }, { kt: 113, label: "Cat. 4" }, { kt: 137, label: "Cat. 5" }];
@@ -142,6 +149,8 @@ export function tickDef(series: string): TickDef | null {
   if (isLastfm(series)) return { category: "culture", label: LASTFM[series.slice(7) as LastfmKey], unit: "", min: 1000, max: 2_000_000_000 };
   if (isHn(series)) return { category: "culture", label: "Hacker News", unit: " pt", min: 1, max: 50_000 };
   if (isChess(series)) return { category: "culture", label: CHESS[series.slice(6) as ChessKey], unit: "", min: 400, max: 4500 };
+  if (isEonet(series)) return { category: "nature", label: EONET[series.slice(6) as EonetKey].label, unit: "", min: 0, max: 5000 };
+  if (isNeo(series)) return { category: "nature", label: "Asteroid", unit: "", min: 0, max: 1 };
   if (isLaunch(series)) return { category: "nature", label: "Launch", unit: "", min: 0, max: 1 };
   if (isF1(series)) return { category: "culture", label: "F1", unit: "", min: 0, max: 1 };
   if (isHouse(series)) return { category: "culture", label: "Esclusiva", unit: "", min: 0, max: 1 };
@@ -178,7 +187,7 @@ export function tickYes(series: string, value: number, threshold: number): boole
 export function tickGrain(series: string): number {
   if (series === "kp") return 1 / 3;
   if (isStorm(series)) return 5;
-  if (isHn(series) || isChess(series) || isLaunch(series) || isF1(series)) return 1;
+  if (isHn(series) || isChess(series) || isLaunch(series) || isF1(series) || isNeo(series) || isEonet(series)) return 1;
   if (isAlert(series) || isNws(series) || isRiver(series) || isCarbon(series) || isFearGreed(series) || isTicket(series) || isBikes(series) || isSteam(series) || isLastfm(series) || isHf(series) || series.startsWith("wiki:")) return 1;
   if (isTv(series)) return 0.1;
   if (isFuel(series) || isTide(series)) return 0.001;
@@ -362,6 +371,7 @@ export function tickSigma(series: string, ref: number, hours: number): number {
   if (isCrypto(series)) return ref * 0.005 * Math.sqrt(Math.max(1, hours));
   if (isMetal(series)) return ref * METALS[series.slice(6) as MetalKey].vol * Math.sqrt(Math.max(1, hours));
   if (isFx(series)) return ref * FX[series.slice(3) as FxKey].vol * Math.sqrt(Math.max(1, hours / 24));
+  if (isEonet(series)) return Math.max(1.5, ref * 0.12 * Math.sqrt(Math.max(1, hours) / 24 + 0.5));
   if (isHn(series)) return Math.max(60, ref * 0.25 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4));
   if (isChess(series)) return 18 * Math.sqrt(Math.max(1, hours) / 12 + 1);
   if (isCarbon(series)) return Math.max(12, ref * 0.2 * Math.sqrt(Math.min(Math.max(1, hours), 12) / 4));
@@ -387,6 +397,7 @@ export function tickStep(series: string, ref: number): number {
   if (isCrypto(series)) return CRYPTO[series].step;
   if (isMetal(series)) return METALS[series.slice(6) as MetalKey].step;
   if (isFx(series)) return FX[series.slice(3) as FxKey].step;
+  if (isEonet(series)) return ref >= 30 ? 5 : ref >= 10 ? 2 : 1;
   if (isHn(series)) return ref >= 800 ? 100 : 50;
   if (isChess(series)) return 10;
   if (isCarbon(series)) return 5;
@@ -576,6 +587,41 @@ export function buildF1Markets(race: { season: number; round: number; name: stri
     if (!/^[A-Z]{2,3}$/.test(d.code) || !(d.points > 0)) continue;
     const share = d.points ** 2 / total, win = Math.min(0.6, Math.max(0.05, share)), pod = Math.min(0.9, Math.max(0.12, share * 2.8 + 0.1));
     for (const [what, p] of [["w", win], ["p", pod]] as const) out.push(factMarket(`f1:${race.season}-${race.round}:${d.code}:${what}`, d.name, race.name, p, at, race.start - 300, at + 24 * H));
+  }
+  return out;
+}
+
+/** NASA EONET open events per category: a question per category at 00 and 12 UTC for the next 36 hours. */
+export function buildEonetMarkets(counts: Partial<Record<EonetKey, number>>, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  for (const k of Object.keys(EONET) as EonetKey[]) {
+    const c = counts[k];
+    if (!(typeof c === "number" && c >= 3 && c <= 5000)) continue;
+    const series = `eonet:${k}`, def = tickDef(series)!, step = tickStep(series, c);
+    for (let at = Math.floor(now / (12 * H)) * 12 * H + 12 * H; at <= now + 36 * H; at += 12 * H) {
+      if (at - 600 <= now + 300) continue;
+      const hours = Math.max(1, (at - now) / H);
+      out.push(withDigits(tickMarket(series, def, c, Math.max(step, Math.round(c / step) * step), tickSigma(series, c, hours), at, at - 600, at + 3 * H), 0));
+    }
+  }
+  return out;
+}
+
+/**
+ * Asteroids: for the next two weeks (Monday to Sunday, UTC), "will one pass within ten lunar distances?". The chance is the share of the last weeks in which one
+ * did (NASA's list as it stands now, with the late discoveries in it), smoothed so it never gets extreme. Read a day after the week ends.
+ */
+export function buildNeoMarkets(past: { weeks: number; hits: number } | null, now: number): TickMarketInsert[] {
+  const out: TickMarketInsert[] = [];
+  if (!past || past.weeks < 4) return out;
+  const p = Math.min(0.85, Math.max(0.15, (past.hits + 1) / (past.weeks + 2)));
+  const day = Math.floor(now / 86400), dow = (day + 3) % 7; // 0 = Monday (1 Jan 1970 was a Thursday)
+  for (let k = 0; k < 2; k++) {
+    const start = (day - dow + 7 * (k + 1)) * 86400;
+    if (!(start - 900 > now + 3600)) continue;
+    const ymd = new Date(start * 1000).toISOString().slice(0, 10), at = start + 8 * 86400;
+    const m = factMarket(`neo:${ymd.replace(/-/g, "")}`, "Asteroid", String(NEO_LD), p, at, start - 900, at + 24 * H);
+    out.push({ ...m, params: { ...m.params, from: ymd, to: new Date((start + 6 * 86400) * 1000).toISOString().slice(0, 10) } });
   }
   return out;
 }

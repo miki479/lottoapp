@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MESSAGES } from "../web/src/i18n/all.ts";
 import { question } from "../web/src/lib/format.ts";
-import { buildChessMarkets, buildF1Markets, buildHnMarkets, buildLaunchMarkets, isF1, isLaunch, tickDef, tickYes } from "../shared/ticks.ts";
+import { buildEonetMarkets, buildNeoMarkets, isNeo, buildChessMarkets, buildF1Markets, buildHnMarkets, buildLaunchMarkets, isF1, isLaunch, tickDef, tickYes } from "../shared/ticks.ts";
 
 const now = Date.UTC(2026, 9, 17, 13, 0) / 1000;
 
@@ -39,6 +39,22 @@ describe("hacker news, chess, launches and Formula 1 questions", () => {
     expect(buildF1Markets({ season: 2026, round: 19, name: "x", start: now + 20 * 86400 }, st, now)).toEqual([]);
     expect(buildF1Markets(null, st, now)).toEqual([]);
   });
+  it("asks about asteroids for the next two weeks, priced from the weeks before", () => {
+    const m = buildNeoMarkets({ weeks: 8, hits: 4 }, now);
+    expect(m).toHaveLength(2);
+    expect(m.every((x) => isNeo(String(x.params.series)) && x.params.note === "10" && String(x.params.from).length === 10)).toBe(true);
+    const monday = new Date(String(m[0]!.params.from) + "T00:00:00Z").getUTCDay();
+    expect(monday).toBe(1);
+    expect(Math.abs(m[0]!.odds_yes - 1 / 0.5)).toBeLessThan(0.4);   // four weeks in eight: close to even
+    expect(buildNeoMarkets({ weeks: 8, hits: 8 }, now)[0]!.odds_yes).toBeGreaterThan(1);
+    expect(buildNeoMarkets({ weeks: 2, hits: 1 }, now)).toEqual([]);
+    expect(buildNeoMarkets(null, now)).toEqual([]);
+  });
+  it("asks about open natural events per category", () => {
+    const m = buildEonetMarkets({ volcanoes: 32, storms: 8, ice: 34 }, now);
+    expect(new Set(m.map((x) => x.params.series))).toEqual(new Set(["eonet:volcanoes", "eonet:storms", "eonet:ice"]));
+    expect(buildEonetMarkets({ volcanoes: 1 }, now)).toEqual([]);
+  });
   it("reads a fact as yes only on 1", () => {
     expect(tickYes("f1:2026-18:ANT:w", 1, 0.5)).toBe(true);
     expect(tickYes("f1:2026-18:ANT:w", 0, 0.5)).toBe(false);
@@ -57,6 +73,8 @@ describe("hacker news, chess, launches and Formula 1 questions", () => {
         question(row("chess:hikaru", { label: "Hikaru Nakamura" }, at), msg, loc, "", "UTC"),
         question(row("launch:3b430f81-0ff1-4d85-8a1a-cef0de326198", { label: "Falcon 9 | Bandwagon 5", threshold: 0.5 }, at), msg, loc, "", "UTC"),
         question(row("f1:2026-18:ANT:w", { label: "Antonelli", note: "United States Grand Prix", threshold: 0.5 }, "2026-10-25T23:00:00Z"), msg, loc, "", "UTC"),
+        question(row("neo:20261019", { label: "Asteroid", note: "10", from: "2026-10-19", to: "2026-10-25", threshold: 0.5 }, "2026-10-27T00:00:00Z"), msg, loc, "", "UTC"),
+        question(row("eonet:volcanoes", { label: "Volcanoes" }, at), msg, loc, "", "UTC"),
         question(row("f1:2026-18:ANT:p", { label: "Antonelli", note: "United States Grand Prix", threshold: 0.5 }, "2026-10-25T23:00:00Z"), msg, loc, "", "UTC"),
       ];
       for (const s of texts) { expect(s.length, loc).toBeGreaterThan(15); expect(s, loc).not.toMatch(/undefined|\$\{|NaN/); }

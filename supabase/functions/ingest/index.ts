@@ -11,12 +11,14 @@ import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traf
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
 import { tvReference, tvRating, tvUpcoming } from "../_lib/tv.ts";
 import { RIVERS, TIDES, buildPowerMarkets, buildRiverMarkets, buildTideMarkets, isPower, isRiver, isTide, type RiverKey, type TideKey } from "../_shared/shared/ticks.ts";
-import { CHESS, buildChessMarkets, buildF1Markets, buildHnMarkets, buildLaunchMarkets, isChess, isHn, isLaunch, isF1, type ChessKey, FX, buildCarbonMarkets, buildFearGreedMarkets, buildFxMarkets, isCarbon, isFearGreed, isFx, type FxKey } from "../_shared/shared/ticks.ts";
+import { EONET, NEO_LD, buildEonetMarkets, buildNeoMarkets, isEonet, isNeo, type EonetKey, CHESS, buildChessMarkets, buildF1Markets, buildHnMarkets, buildLaunchMarkets, isChess, isHn, isLaunch, isF1, type ChessKey, FX, buildCarbonMarkets, buildFearGreedMarkets, buildFxMarkets, isCarbon, isFearGreed, isFx, type FxKey } from "../_shared/shared/ticks.ts";
 import { TM_PLACES, buildTicketMarkets, buildTvMarket, isTicket, isTv, tmWindow, type TmPlace } from "../_shared/shared/ticks.ts";
 import { FUELS, METALS, OIL, buildFuelMarkets, buildMetalMarkets, buildOilMarkets, isFuel, isMetal, isOil, type FuelKey, type MetalKey, type OilKey } from "../_shared/shared/ticks.ts";
 import { LASTFM, buildLastfmMarkets, BIKES, buildBikesMarkets, bikesPlausible, buildNwsMarkets, isNws } from "../_shared/shared/ticks.ts";
 import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildAlertMarkets, alertLevel, alertQueryDate, ALERT_AREAS, ALERT_HAZARDS, ALERT_URL, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
 import { bookPriors, buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, MIN_FORM_GAMES, type Fixture, type Geo, type MatchBet, type TableRow } from "../_shared/shared/sport.ts";
+import { sameTeam } from "../_shared/shared/live.ts";
+import { FD_CODES, fdFixtures, fdKey, fdResult } from "../_lib/footballdata.ts";
 import { apiFootball, apiKey, deepTable, discoverFixtures, fetchBookQuotes, fetchDetails, fetchPlayerFacts, isItalianClub, loadTable, tsdbGate } from "../_lib/football.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { DEFAULT_YES_PROBABILITY, TRAIN_START_FLOOR, TRAIN_START_STOPS, calibrateTrainYes, computeOdds, delayContextAt, learnedPrior, liveYesProbability, rainYesProbability, routePrior } from "../_shared/shared/odds.ts";
@@ -757,12 +759,53 @@ async function fetchF1Standings(): Promise<{ code: string; name: string; points:
   const list = (await getJson("https://api.jolpi.ca/ergast/f1/current/driverStandings.json"))?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings ?? [];
   return (list as Array<{ points?: string; Driver?: { code?: string; familyName?: string } }>).flatMap((d) => d.Driver?.code ? [{ code: d.Driver.code, name: String(d.Driver.familyName ?? d.Driver.code), points: Number(d.points) }] : []);
 }
+/** OpenF1 (free, keyless) as the second source for a race result when Jolpica has none: the race session starting within six hours of `startEpoch`, its finishing order and the drivers' three-letter codes. */
+async function fetchF1ResultsOpenF1(startEpoch: number): Promise<Map<string, number> | null> {
+  const year = new Date(startEpoch * 1000).getUTCFullYear();
+  const sessions = (await getJson(`https://api.openf1.org/v1/sessions?year=${year}&session_name=Race`)) as Array<{ session_key?: number; date_start?: string }>;
+  const hit = (Array.isArray(sessions) ? sessions : []).find((x) => Math.abs(Date.parse(String(x.date_start ?? "")) / 1000 - startEpoch) <= 6 * 3600);
+  if (!hit?.session_key) return null;
+  const [res, drivers] = await Promise.all([getJson(`https://api.openf1.org/v1/session_result?session_key=${hit.session_key}`), getJson(`https://api.openf1.org/v1/drivers?session_key=${hit.session_key}`)]);
+  if (!Array.isArray(res) || res.length < 10 || !Array.isArray(drivers)) return null;
+  const code = new Map((drivers as Array<{ driver_number?: number; name_acronym?: string }>).flatMap((d) => d.name_acronym ? [[Number(d.driver_number), d.name_acronym] as [number, string]] : []));
+  return new Map((res as Array<{ position?: number | null; driver_number?: number; dns?: boolean; dsq?: boolean }>).flatMap((r) => { const c = code.get(Number(r.driver_number)); return c ? [[c, r.dns || r.dsq || !r.position ? 99 : Number(r.position)] as [string, number]] : []; }));
+}
 async function fetchF1Results(season: number, round: number): Promise<Map<string, number> | null> {
   const res = (await getJson(`https://api.jolpi.ca/ergast/f1/${season}/${round}/results.json`))?.MRData?.RaceTable?.Races?.[0]?.Results;
   if (!Array.isArray(res) || res.length < 10) return null;
   return new Map((res as Array<{ position?: string; Driver?: { code?: string } }>).flatMap((r) => r.Driver?.code ? [[r.Driver.code, Number(r.position)] as [string, number]] : []));
 }
 
+/** NASA EONET: how many events are open in each category we ask about (public, keyless). */
+async function fetchEonet(): Promise<Partial<Record<EonetKey, number>>> {
+  const out: Partial<Record<EonetKey, number>> = {};
+  for (const k of Object.keys(EONET) as EonetKey[]) {
+    try { const j = await getJson(`https://eonet.gsfc.nasa.gov/api/v3/events?status=open&category=${EONET[k].id}&limit=2000`); if (Array.isArray(j?.events)) out[k] = j.events.length; } catch { /* leave out */ }
+  }
+  return out;
+}
+/** NASA NeoWs: the closest approach, in lunar distances, of any asteroid listed for the seven days from `startYmd` (needs NASA_KEY; 7 days is the most one call may span). */
+async function neoClosest(startYmd: string): Promise<number | null> {
+  const key = (Deno.env.get("NASA_KEY") ?? "").trim();
+  if (!key) return null;
+  const end = new Date(Date.parse(`${startYmd}T00:00:00Z`) + 6 * 86400_000).toISOString().slice(0, 10);
+  const j = await getJson(`https://api.nasa.gov/neo/rest/v1/feed?start_date=${startYmd}&end_date=${end}&api_key=${encodeURIComponent(key)}`);
+  const objs = Object.values((j?.near_earth_objects ?? {}) as Record<string, Array<{ close_approach_data?: Array<{ miss_distance?: { lunar?: string } }> }>>).flat();
+  if (!objs.length) return null;
+  const lds = objs.map((o) => Number(o.close_approach_data?.[0]?.miss_distance?.lunar)).filter((n) => Number.isFinite(n));
+  return lds.length ? Math.min(...lds) : null;
+}
+/** How many of the last eight finished weeks had an asteroid within NEO_LD lunar distances (the base rate the question is priced from). */
+async function neoHistory(now: number): Promise<{ weeks: number; hits: number } | null> {
+  const day = Math.floor(now / 86400), dow = (day + 3) % 7;
+  let weeks = 0, hits = 0;
+  for (let w = 1; w <= 8; w++) {
+    const start = new Date((day - dow - 7 * w) * 86400_000).toISOString().slice(0, 10);
+    try { const d = await neoClosest(start); if (d !== null) { weeks++; if (d < NEO_LD) hits++; } } catch { /* skip the week */ }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  return weeks >= 4 ? { weeks, hits } : null;
+}
 /** US weather alerts in force on land zones (NWS, keyless; a User-Agent is required). */
 async function fetchNws(): Promise<number | null> {
   const j = await getJson("https://api.weather.gov/alerts/active/count");
@@ -952,11 +995,24 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       for (const d of f1Due) { const k = d.x.split(":")[1]!; byRace.set(k, [...(byRace.get(k) ?? []), d]); }
       for (const [k, list] of byRace) {
         const [season, round] = k.split("-").map(Number) as [number, number];
-        const order = await fetchF1Results(season, round);
+        let order = await fetchF1Results(season, round).catch(() => null);
+        // Jolpica has nothing (yet, or it is down): OpenF1 is asked once the race has been over for two hours
+        if (!order && now - Math.min(...list.map((d) => d.at)) >= -3 * 3600 + 2 * 3600) order = await fetchF1ResultsOpenF1(Math.min(...list.map((d) => d.at)) - 3 * 3600).catch(() => null);
         if (!order) continue; // the result is not published yet: look again next run
         for (const { x, at } of list) { const [, , code, what] = x.split(":"); const pos = order.get(code!) ?? 99; rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: pos <= (what === "w" ? 1 : 3) ? 1 : 0, fetched_at: fetchedAt }); }
       }
     } catch (e) { notes.push(`f1: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const eonetDue = [...need.keys()].filter(isEonet).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (eonetDue.length) { const c = await fetchEonet(); for (const { x, at } of eonetDue) { const v = c[x.slice(6) as EonetKey]; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
+    } catch (e) { notes.push(`eonet: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      // an asteroid week is read once it is a day over: 1 when any asteroid came within NEO_LD lunar distances
+      for (const { x, at } of [...need.keys()].filter(isNeo).flatMap((x) => todo(x).map((at) => ({ x, at })))) {
+        const d = await neoClosest(`${x.slice(4, 8)}-${x.slice(8, 10)}-${x.slice(10, 12)}`);
+        if (d !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: d < NEO_LD ? 1 : 0, fetched_at: fetchedAt });
+      }
+    } catch (e) { notes.push(`neo: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
       const nwsDue = [...need.keys()].filter(isNws).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
       if (nwsDue.length) { const v = await fetchNws(); if (v !== null) for (const { x, at } of nwsDue) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); }
@@ -1090,6 +1146,8 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     try { markets.push(...buildChessMarkets(await fetchChess(), now)); ok++; } catch (e) { notes.push(`chess: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try { markets.push(...buildLaunchMarkets(await fetchLaunchesUpcoming(), now)); ok++; } catch (e) { notes.push(`launch: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try { const race = await fetchF1Next(); if (race && race.start < now + 6 * 86400) markets.push(...buildF1Markets(race, await fetchF1Standings(), now)); ok++; } catch (e) { notes.push(`f1: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { markets.push(...buildEonetMarkets(await fetchEonet(), now)); ok++; } catch (e) { notes.push(`eonet: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { if ((Deno.env.get("NASA_KEY") ?? "").trim() && Math.floor(now / 3600) % 6 === 0) markets.push(...buildNeoMarkets(await neoHistory(now), now)); ok++; } catch (e) { notes.push(`neo: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try { const c = await fetchNws(); markets.push(...buildNwsMarkets(c, now)); if (c !== null) extraHist.push({ series: "nws:us", at: hourIso, value: c }); ok++; } catch (e) { notes.push(`nws: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
       const pw = await fetchPower(isoDay(now - 86400), isoDay(now + 2 * 86400));
@@ -1228,6 +1286,11 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
     }
     for (const id of pending.filter((x) => !fromLive.has(x)).slice(0, 12)) {
       try {
+        if (String(id).startsWith("fd")) { // a match listed by football-data.org: its result comes from there
+          const r = await fdResult(String(id));
+          if (r) rows.push({ event_id: id, kickoff: new Date((kick.get(id) as number) * 1000).toISOString(), home_goals: r.hg, away_goals: r.ag, status: r.status, fetched_at: new Date().toISOString() });
+          continue;
+        }
         const e = ((await tsdb(`${base}/lookupevent.php?id=${id}`))?.events ?? [])[0];
         if (!e) continue;
         const hg = e.intHomeScore === null || e.intHomeScore === undefined ? null : Number(e.intHomeScore), ag = e.intAwayScore === null || e.intAwayScore === undefined ? null : Number(e.intAwayScore);
@@ -1307,6 +1370,23 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
             if (e.idEvent && e.strHomeTeam && e.strAwayTeam && Number.isFinite(k)) { fixtures.push({ eventId: e.idEvent, league: league.name, home: e.strHomeTeam, away: e.strAwayTeam, kickoff: k, ...(e.idAPIfootball ? { apiId: e.idAPIfootball } : {}), ...(e.strHomeTeamBadge ? { homeBadge: e.strHomeTeamBadge } : {}), ...(e.strAwayTeamBadge ? { awayBadge: e.strAwayTeamBadge } : {}) }); season = season || String(e.strSeason ?? ""); }
           }
         }
+        // football-data.org lists every match of its leagues: the ones TheSportsDB did not give (it shows only a few a day) are added, and when it answers
+        // the slow scoreboard search below is skipped. When it does not answer (no key, limit, down) everything below works as before.
+        let fdOk = false;
+        if (fdKey() && FD_CODES[league.name]) {
+          try {
+            const { data: openFx } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").eq("params->>league", league.name).limit(600);
+            const held = (openFx ?? []).map((m) => m.params as { home: string; away: string; kickoff: number });
+            const known = [...new Set([...fixtures.flatMap((f) => [f.home, f.away]), ...held.flatMap((h) => [h.home, h.away])])];
+            const iso = (d: number) => new Date((now + d * 86400) * 1000).toISOString().slice(0, 10);
+            const listed = await fdFixtures(league.name, iso(0), iso(7), known);
+            fdOk = true;
+            const same = (a: { home: string; away: string; kickoff: number }, b: { home: string; away: string; kickoff: number }) => Math.abs(a.kickoff - b.kickoff) <= 6 * 3600 && sameTeam(a.home, b.home) && sameTeam(a.away, b.away);
+            let added = 0;
+            for (const f of listed) if (!fixtures.some((x) => same(x, f)) && !held.some((h) => same(h, f))) { fixtures.push(f); added++; }
+            notes.push(`${league.name}: football-data ${listed.length} listed, +${added}`);
+          } catch (e) { notes.push(`${league.name}: football-data ${String((e as Error).message ?? e).slice(0, 40)} (TheSportsDB takes over)`); }
+        }
         // the last three days: finished matches feed the team strengths
         const played: Record<string, unknown>[] = [];
         for (let d = 1; d <= 3; d++) {
@@ -1322,7 +1402,7 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
         }
         if (played.length) await sb.from("team_form").upsert(played, { onConflict: "event_id" });
         // European football: the day listing shows only 3 matches a day, the rest comes from the ESPN scoreboard
-        if (league.deep) {
+        if (league.deep && !fdOk) {
           const { data: openM } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").eq("params->>league", league.name).limit(600);
           const have = new Map<string, Fixture>();
           for (const m of openM ?? []) { const p = m.params as { eventId: string; home: string; away: string; kickoff: number }; have.set(String(p.eventId), { eventId: String(p.eventId), league: league.name, home: p.home, away: p.away, kickoff: Number(p.kickoff) }); }

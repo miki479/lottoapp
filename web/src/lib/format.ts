@@ -85,6 +85,8 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     if (series.startsWith("hf:")) { const nm = String(m.params.label), lb = locale === "it" ? `Mi piace su Hugging Face di ${nm}` : locale === "ja" ? `Hugging Faceの「${nm}」のいいね数` : `Hugging Face likes of ${nm}`; return msg.question.tick({ kind: "price", label: lb, value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" }); }
     if (series === "sw") return msg.question.tick({ kind: "price", label: locale === "it" ? "Vento solare" : locale === "ja" ? "太陽風の速さ" : "Solar wind speed", value: `${nf.format(thr)} km/s`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("bikes:")) return msg.question.tick({ kind: "bikes", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (/^neo:\d{8}$/.test(series)) { const d = (iso: unknown) => dtf(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${String(iso)}T00:00:00Z`)); return msg.question.tick({ kind: "neo", label: "", value: String(m.params.note ?? 10), time: "", from: d(m.params.from), to: d(m.params.to), day: "" }); }
+    if (series.startsWith("eonet:")) { const names: Record<string, [string, string, string]> = { volcanoes: ["eruzioni vulcaniche", "volcanic", "火山"], storms: ["tempeste violente", "severe storm", "激しい嵐"], ice: ["ghiacci marini e lacustri", "sea and lake ice", "海氷・湖氷"] }; const n = names[series.slice(6)] ?? ["", "", ""]; return msg.question.tick({ kind: "eonet", label: locale === "it" ? n[0] : locale === "ja" ? n[2] : n[1], value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" }); }
     if (series === "hn:max") return msg.question.tick({ kind: "hn", label: "", value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("chess:")) return msg.question.tick({ kind: "chess", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("launch:")) return msg.question.tick({ kind: "launch", label: String(m.params.label), value: "", time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
@@ -181,7 +183,7 @@ export function tickValueText(series: string, v: number, digits: number, locale:
   const nd = (x: number) => fmtDec(x, digits, locale), cur = (sym: string) => (locale === "it" ? `${nd(v)} ${sym}` : `${sym}${nd(v)}`);
   if (series === "kp") return fmtDec(v, 1, locale);
   if (series.startsWith("storm:")) return `${fmtInt(v, locale)} kt`;
-  if (/^(lastfm|bikes|steam|wiki|tv|tm|alert|chess|launch|f1):/.test(series) || series === "hn:max") return fmtInt(v, locale);
+  if (/^(lastfm|bikes|steam|wiki|tv|tm|alert|chess|launch|f1|neo|eonet):/.test(series) || series === "hn:max") return fmtInt(v, locale);
   if (series.startsWith("fuel:")) return cur("€");
   if (series.startsWith("fx:") || series === "feargreed" || series === "nws:us") return nd(v);
   if (series === "carbon:gb") return `${nd(v)} g/kWh`;

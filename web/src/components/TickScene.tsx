@@ -15,6 +15,35 @@ export function TickScene({ m, hint, msg, now }: { m: MarketRow; hint: Hint; msg
   const kind = series === "kp" ? "kp" : series.startsWith("wiki:") ? "wiki" : series.startsWith("storm:") ? "storm" : series.startsWith("alert:") ? "alert" : series.startsWith("metal:") ? "metal" : series.startsWith("fuel:") ? "fuel" : series.startsWith("oil:") ? "oil" : series.startsWith("tm:") ? "concert" : /^tv:\d+$/.test(series) ? "tv" : "price";
   const cls = `mscene tick ${kind} ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`;
   const cap = kind === "kp" ? "Kp ≥ " + m.params.threshold : alertLabel(series, msg) || (msg.cm[String(m.params.label ?? "")] ?? String(m.params.label ?? ""));
+  if (series.startsWith("neo:")) {
+    const near = hint === "yes" ? 74 : hint === "no" ? 20 : 48;
+    return (
+      <div class={`mscene tick neo ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="84" fill="#080c24" />
+          {[[30, 12], [86, 54], [140, 16], [196, 62], [254, 20], [300, 48]].map(([x, y], i) => <circle key={i} class="lc-star" style={`--d:${i * 220}ms`} cx={x} cy={y} r="1.400" fill="#fff" />)}
+          <circle cx="262" cy="64" r="34" fill="#2a6fdb" /><path d="M240 50q14-8 26 2t10 18q-14 10-30 4z" fill="#3fae6a" opacity=".9" />
+          <path d="M20 70Q130 10 230 56" fill="none" stroke="#7a86b8" stroke-width="1" stroke-dasharray="4 5" />
+          <g class="neo-rock" style={`transform:translateX(${near}px)`}><path d="M96 34l8-5 9 3 4 8-5 8-10 2-8-6z" fill="#b6a58c" /><circle cx="101" cy="36" r="2" fill="#8b7b64" /><circle cx="108" cy="40" r="1.500" fill="#8b7b64" /></g>
+        </svg>
+        <b>NASA</b>
+      </div>
+    );
+  }
+  if (series.startsWith("eonet:")) {
+    const key = series.slice(6), hot = hint === "yes";
+    return (
+      <div class={`mscene tick eonet ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`} aria-hidden="true">
+        <svg viewBox="0 0 320 84" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="84" fill={key === "ice" ? "#cfe9f7" : key === "storms" ? "#3b4663" : "#2a2230"} />
+          {key === "volcanoes" && <g><path d="M110 84L150 26h20l40 58z" fill="#4a3a3a" /><path class="eo-lava" d="M154 26h12l-3 14h-6z" fill="#ff6a1a" opacity={hot ? 1 : 0.7} />{[0, 1, 2].map((i) => <circle key={i} class="lc-star" style={`--d:${i * 300}ms`} cx={150 + i * 10} cy={16 - i * 4} r={4 + i} fill="#6b5f66" opacity=".7" />)}</g>}
+          {key === "storms" && <g><path d="M110 40q0-18 24-18 8-12 26-8 16 2 18 16 20 0 22 14H120q-10 0-10-4z" fill="#8c96b4" /><path d="M150 52l-8 16h10l-6 14 16-20h-10l6-10z" fill="#ffd54a" /></g>}
+          {key === "ice" && <g><path d="M96 70l24-26 18 12 24-30 22 28 20-8 14 24z" fill="#ffffff" /><path d="M0 70h320v14H0z" fill="#6fb6d9" /></g>}
+        </svg>
+        <b>NASA EONET</b>
+      </div>
+    );
+  }
   if (series === "hn:max") {
     const up = hint === "yes" ? -10 : hint === "no" ? 8 : 0;
     return (
