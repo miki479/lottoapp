@@ -52,10 +52,10 @@ export interface PackDef {
   odds: Record<PackRarity, number>;
 }
 export const PACKS: readonly PackDef[] = [
-  { tier: 1, price: 60, odds: { common: 7700, rare: 1900, epic: 350, legendary: 50 } },
-  { tier: 2, price: 250, odds: { common: 4800, rare: 3500, epic: 1500, legendary: 200 } },
-  { tier: 3, price: 700, odds: { common: 1800, rare: 4200, epic: 3300, legendary: 700 } },
-  { tier: 4, price: 2000, odds: { common: 500, rare: 2000, epic: 4000, legendary: 3500 } },
+  { tier: 1, price: 60, odds: { common: 7740, rare: 1900, epic: 350, legendary: 10 } },
+  { tier: 2, price: 250, odds: { common: 4800, rare: 3500, epic: 1660, legendary: 40 } },
+  { tier: 3, price: 700, odds: { common: 1800, rare: 4200, epic: 3880, legendary: 120 } },
+  { tier: 4, price: 2000, odds: { common: 500, rare: 2000, epic: 7100, legendary: 400 } },
 ];
 export const packOf = (tier: number): PackDef | undefined => PACKS.find((p) => p.tier === tier);
 

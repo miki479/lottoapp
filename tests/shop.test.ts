@@ -15,6 +15,8 @@ const sql = readFileSync(new URL("../supabase/migrations/0107_shop_daily.sql", i
 const sql127 = readFileSync(new URL("../supabase/migrations/0146_free_avatars.sql", import.meta.url), "utf8");
 const fnBody = (name: string) => { const i = sql.indexOf(`function public.${name}(`); expect(i, name).toBeGreaterThan(-1); return sql.slice(i, sql.indexOf("$$;", sql.indexOf("$$", i) + 2)); };
 
+const sql150 = readFileSync(new URL("../supabase/migrations/0150_rarer_legendaries.sql", import.meta.url), "utf8");
+const fnBodyAt = (src: string, name: string) => { const i = src.indexOf(`function public.${name}(`); expect(i, name).toBeGreaterThan(-1); return src.slice(i, src.indexOf("$$;", src.indexOf("$$", i) + 2)); };
 const fnBody127 = (name: string) => { const i = sql127.indexOf(`function public.${name}(`); expect(i, name).toBeGreaterThan(-1); return sql127.slice(i, sql127.indexOf("$$;", sql127.indexOf("$$", i) + 2)); };
 
 describe("daily bonus", () => {
@@ -52,12 +54,12 @@ describe("pack odds", () => {
   });
   it("maps a roll to the first slice that covers it", () => {
     const p = PACKS[0]!;
-    expect(rarityForRoll(p, 0)).toBe("common"); expect(rarityForRoll(p, 7699)).toBe("common"); expect(rarityForRoll(p, 7700)).toBe("rare");
-    expect(rarityForRoll(p, 9599)).toBe("rare"); expect(rarityForRoll(p, 9600)).toBe("epic"); expect(rarityForRoll(p, 9949)).toBe("epic"); expect(rarityForRoll(p, 9950)).toBe("legendary"); expect(rarityForRoll(p, 9999)).toBe("legendary");
+    expect(rarityForRoll(p, 0)).toBe("common"); expect(rarityForRoll(p, 7739)).toBe("common"); expect(rarityForRoll(p, 7740)).toBe("rare");
+    expect(rarityForRoll(p, 9639)).toBe("rare"); expect(rarityForRoll(p, 9640)).toBe("epic"); expect(rarityForRoll(p, 9989)).toBe("epic"); expect(rarityForRoll(p, 9990)).toBe("legendary"); expect(rarityForRoll(p, 9999)).toBe("legendary");
   });
   it("every rarity that can be rolled has something in it", () => { for (const r of PACK_RARITIES) expect(itemsOfRarity(r).length, r).toBeGreaterThan(0); });
   it("is mirrored by the SQL", () => {
-    const rows = [...fnBody("shop_packs").matchAll(/\((\d), +(\d+), +(\d+), +(\d+), +(\d+), +(\d+)\)/g)].map((m) => m.slice(1).map(Number));
+    const rows = [...fnBodyAt(sql150, "shop_packs").matchAll(/\((\d), +(\d+), +(\d+), +(\d+), +(\d+), +(\d+)\)/g)].map((m) => m.slice(1).map(Number));
     expect(rows).toEqual(PACKS.map((p) => [p.tier, p.price, p.odds.common, p.odds.rare, p.odds.epic, p.odds.legendary]));
     expect(fnBody("shop_limits")).toContain(`select ${REFUND_PCT}, ${DAILY_PACK_CAP}, ${PACK_GAP_SEC}`);
   });
