@@ -19,12 +19,22 @@ export interface FullQ { occ: "empty" | "few" | "standing"; route: string; stop:
 export interface TrafficQ { site: string; toward: string; from: string; to: string; kmh: number }
 export interface StrikeQ { date: string; day: string; who: string; hours: string }
 export interface QuakeQ { mag: string; from: string; to: string; region?: string }
-export type TrophyId = "limit_breaker" | "first_win" | "long_shot" | "rain_man" | "train_whisperer" | "ghost_feed" | "high_roller" | "all_rings" | "streak_7" | "streak_30" | "wins_100" | "wins_500" | "streak_100" | "bets_500" | "all_categories" | "win_row_10" | "big_odds" | "parlay_5" | "friends_10" | "level_25" | "level_50" | "chest_30" | "collector";
-export const TROPHY_IDS: TrophyId[] = ["limit_breaker", "first_win", "all_rings", "long_shot", "rain_man", "streak_7", "train_whisperer", "high_roller", "streak_30", "ghost_feed", "wins_100", "wins_500", "streak_100", "bets_500", "all_categories", "win_row_10", "big_odds", "parlay_5", "friends_10", "level_25", "level_50", "chest_30", "collector"];
+export type TrophyId = "limit_breaker" | "first_win" | "long_shot" | "rain_man" | "train_whisperer" | "ghost_feed" | "high_roller" | "all_rings" | "streak_7" | "streak_30" | "wins_100" | "wins_500" | "streak_100" | "bets_500" | "all_categories" | "win_row_10" | "big_odds" | "parlay_5" | "friends_10" | "level_25" | "level_50" | "chest_30" | "collector" | "alliance" | "compass" | "champion" | "five_row" | "cup" | "pace" | "diamond" | "ghost_streak" | "phoenix" | "insight" | "wave" | "rocket";
+export const TROPHY_IDS: TrophyId[] = ["limit_breaker", "first_win", "all_rings", "long_shot", "rain_man", "streak_7", "train_whisperer", "high_roller", "streak_30", "ghost_feed", "wins_100", "wins_500", "streak_100", "bets_500", "all_categories", "win_row_10", "big_odds", "parlay_5", "friends_10", "level_25", "level_50", "chest_30", "collector", "alliance", "compass", "champion", "five_row", "cup", "pace", "diamond", "ghost_streak", "phoenix", "insight", "wave", "rocket"];
+/** The trophies by type, in the order they are shown (profile page and public profile). Every id appears exactly once. */
+export const TROPHY_GROUPS: { id: "wins" | "streaks" | "play" | "social" | "level" | "special"; ids: TrophyId[] }[] = [
+  { id: "wins", ids: ["first_win", "champion", "wins_100", "wins_500", "big_odds", "long_shot", "rocket", "diamond", "insight", "parlay_5"] },
+  { id: "streaks", ids: ["five_row", "win_row_10", "streak_7", "streak_30", "streak_100", "wave", "phoenix", "ghost_streak"] },
+  { id: "play", ids: ["all_rings", "pace", "cup", "bets_500", "compass", "all_categories", "rain_man", "train_whisperer", "chest_30"] },
+  { id: "social", ids: ["alliance", "friends_10"] },
+  { id: "level", ids: ["level_25", "level_50"] },
+  { id: "special", ids: ["limit_breaker", "high_roller", "ghost_feed", "collector"] },
+];
 export const TROPHY_RARITY: Record<TrophyId, "common" | "rare" | "epic" | "legendary" | "mythic"> = {
   limit_breaker: "legendary", first_win: "common", all_rings: "common", long_shot: "rare", rain_man: "rare", streak_7: "rare",
   train_whisperer: "epic", high_roller: "epic", streak_30: "epic", ghost_feed: "epic",
   wins_100: "epic", wins_500: "mythic", streak_100: "legendary", bets_500: "legendary", all_categories: "epic", win_row_10: "legendary", big_odds: "epic", parlay_5: "legendary", friends_10: "epic", level_25: "legendary", level_50: "mythic", chest_30: "epic", collector: "mythic",
+  alliance: "rare", compass: "rare", champion: "epic", five_row: "epic", cup: "epic", pace: "rare", diamond: "epic", ghost_streak: "rare", phoenix: "legendary", insight: "epic", wave: "rare", rocket: "legendary",
 };
 
 /** Every locale implements this: add `ja` by creating ja.ts and registering it in index.ts. */
@@ -101,7 +111,7 @@ export interface Messages {
     title: string; guest: string; guestHint: string; signIn: string; account: string;
     stats: { title: string; winRate: string; streak: string; best: string; bets: string; net: string; trophies: string; days: (n: number) => string };
     streakHint: string; freezes: (n: number) => string; freezeHint: string;
-    trophies: string; locked: string; rarity: { common: string; rare: string; epic: string; legendary: string; mythic: string };
+    trophies: string; groups: Record<"wins" | "streaks" | "play" | "social" | "level" | "special", string>; locked: string; rarity: { common: string; rare: string; epic: string; legendary: string; mythic: string };
     trophy: Record<TrophyId, { name: string; desc: string }>;
     shareCard: string; shareText: string; settings: string; signOut: string;
     delete: { action: string; title: string; body: string; confirm: string; done: string };

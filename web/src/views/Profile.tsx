@@ -4,7 +4,7 @@ import { Sheet } from "../components/Sheet.tsx";
 import { StreakCard } from "../components/StreakCard.tsx";
 import { BankCard } from "../components/BankCard.tsx";
 import { money } from "../lib/format.ts";
-import { LOCALES, TROPHY_IDS, TROPHY_RARITY, type Locale, type Messages } from "../i18n/index.ts";
+import { LOCALES, TROPHY_GROUPS, TROPHY_IDS, TROPHY_RARITY, type Locale, type Messages } from "../i18n/index.ts";
 import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
 import { HistoryCard } from "../components/HistoryCard.tsx";
@@ -109,18 +109,23 @@ export function ProfileView(p: {
 
         <div class="stack">
           <h2>{m.trophies}</h2>
-          <div class="trophies">
-            {TROPHY_IDS.map((id) => {
-              const have = p.trophies.has(id), t = m.trophy[id];
-              return (
-                <div class={`card trophy ${have ? "" : "lock"} ${p.fresh.has(id) ? "fresh" : ""}`} key={id}>
-                  <span class="ti b3"><Trophy3D id={id} have={have} size={56} /></span>
-                  <b>{have ? t.name : "???"}</b><small>{have ? t.desc : m.locked}</small>
-                  <span class="detail">{m.rarity[TROPHY_RARITY[id]]}</span>
-                </div>
-              );
-            })}
-          </div>
+          {TROPHY_GROUPS.map((g) => (
+            <div class="tgroup" key={g.id}>
+              <h3 class="tghead">{m.groups[g.id]} <small class="num">{g.ids.filter((id) => p.trophies.has(id)).length}/{g.ids.length}</small></h3>
+              <div class="trophies">
+                {g.ids.map((id) => {
+                  const have = p.trophies.has(id), t = m.trophy[id];
+                  return (
+                    <div class={`card trophy ${have ? "" : "lock"} ${p.fresh.has(id) ? "fresh" : ""}`} key={id}>
+                      <span class="ti b3"><Trophy3D id={id} have={have} size={56} /></span>
+                      <b>{have ? t.name : "???"}</b><small>{have ? t.desc : m.locked}</small>
+                      <span class="detail">{m.rarity[TROPHY_RARITY[id]]}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
           <button class="btn secondary wide" onClick={p.onShareProfile}><Share2 size={18} />{m.shareCard}</button>
 
           <h2 style="margin-top:8px">{m.settings}</h2>
