@@ -43,5 +43,5 @@ Stato al 16/10/2026. Il gioco è gratuito, senza denaro e senza pubblicità: que
 
 ## Dominio latebet.it
 - Registrato da Michele Forte, presso Register.it. L'indirizzo del registrante risulta nel Whois solo se dai il consenso (sezione 5 del modulo): consigliato **non** darlo per un privato.
-- Passi: (1) record DNS di Resend per le email; (2) Firebase Hosting → "Aggiungi dominio personalizzato" per usare latebet.it per il sito; (3) aggiornare l'indirizzo del sito in Supabase e in OneSignal.
+- Stato: latebet.it è collegato a Firebase Hosting con certificato HTTPS (www reindirizza). Supabase usa latebet.it come indirizzo del sito; latelotto.web.app resta attivo come riserva. Resta da fare: conferma email con Resend (record DNS già inseriti) e Site URL di OneSignal.
 - Attenzione: le notifiche push sono legate all'indirizzo del sito. Passare a latebet.it significa che gli utenti dovranno riattivarle: si può fare con calma, tenendo latelotto.web.app come indirizzo secondario che reindirizza.

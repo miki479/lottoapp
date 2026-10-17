@@ -12,7 +12,7 @@ import { detailsAvailable, fetchLineup, loadTable } from "../_lib/football.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
-const UA = { "User-Agent": "LateLotto/0.1 (satirical fake-credit game; https://latelotto.web.app)" };
+const UA = { "User-Agent": "LateLotto/0.1 (satirical fake-credit game; https://latebet.it)" };
 const PER_USER_PER_DAY = 10, PER_USER_OPEN = 6, MAX_OPEN_CUSTOM = 500;
 
 

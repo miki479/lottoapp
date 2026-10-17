@@ -41,7 +41,7 @@
       "kind": "trip_updates_seq",
       "url": "https://proxy.busone.app/sta/gtfs-rt/trip-updates.pb",
       "headers": {
-        "X-BusOne-Client": "LateLotto (play-money game; https://latelotto.web.app)",
+        "X-BusOne-Client": "LateLotto (play-money game; https://latebet.it)",
         "X-BusOne-Use": "personal"
       },
       "requiresKey": null,

@@ -594,7 +594,7 @@ async function ingestPerTrain(sb: ReturnType<typeof db>, city: CityConfig, feed:
 
 
 // ---- Global "number at an instant" questions: coin prices (CoinGecko), Kp index (NOAA SWPC), Wikipedia page views (Wikimedia) ----
-const UA = { "User-Agent": "LateLotto/0.1 (satirical fake-credit game; https://latelotto.web.app)" };
+const UA = { "User-Agent": "LateLotto/0.1 (satirical fake-credit game; https://latebet.it)" };
 const getJson = async (url: string) => JSON.parse(new TextDecoder().decode(await fetchBytes(url, UA)));
 const KP_URL = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json";
 const COINGECKO = (ids: string) => `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&precision=2`;
