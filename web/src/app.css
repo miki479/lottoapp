@@ -2050,3 +2050,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 .card.event .actions2 .opt { background: var(--surface-2); border-color: var(--border-strong); box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 8%, transparent); }
 .card.event .actions2 .opt.yes { background: color-mix(in srgb, var(--action) 14%, var(--surface-2)); border-color: color-mix(in srgb, var(--action) 45%, var(--border-strong)); }
 .legal .busone{margin:var(--space-2) 0 0;font-size:var(--fs-xs);color:var(--muted);text-align:center}.legal .busone a{color:inherit;text-decoration:underline}
+/* the four parts of the day always sit on one line */
+.rgsel { grid-auto-columns: minmax(0, auto); justify-content: stretch; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-flow: row; }
+.rgsel button { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 4px; white-space: nowrap; }
+@media (max-width: 430px) { .rgsel { padding: 4px; gap: 4px; } .rgsel button { font-size: var(--fs-xs); gap: 3px; } .rgsel button svg { display: none; } }

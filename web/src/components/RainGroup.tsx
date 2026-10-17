@@ -12,11 +12,11 @@ import { dtf } from "../lib/intl.ts";
 
 interface Strings { title: (c: string) => string; all: string; m: string; a: string; e: string; threshold: (mm: string) => string; best: string; closes: string; hist: (rainy: number, hours: number, avg: string, max: string) => string; none: string; pick: string }
 const T: Record<string, Strings> = {
-  it: { title: (c) => `Pioverà a ${c}?`, all: "Tutte", m: "Mattina", a: "Pomeriggio", e: "Sera e notte", threshold: (mm) => `Pioggia almeno ${mm} mm`, best: "Quota migliore", closes: "Chiude tra", pick: "Scegli un'ora e il tuo Sì o No",
+  it: { title: (c) => `Pioverà a ${c}?`, all: "Tutte", m: "Mattina", a: "Pomeriggio", e: "Notte", threshold: (mm) => `Pioggia almeno ${mm} mm`, best: "Quota migliore", closes: "Chiude tra", pick: "Scegli un'ora e il tuo Sì o No",
     hist: (r, h, avg, max) => `Negli ultimi 7 giorni in questa fascia ha piovuto in ${r} ore su ${h}${r ? ` · media ${avg} mm, massimo ${max} mm` : ""}`, none: "Per questa fascia non ci sono ancora abbastanza ore concluse." },
-  "en-US": { title: (c) => `Will it rain in ${c}?`, all: "All", m: "Morning", a: "Afternoon", e: "Evening & night", threshold: (mm) => `Rain of at least ${mm} mm`, best: "Best odds", closes: "Closes in", pick: "Pick an hour and your Yes or No",
+  "en-US": { title: (c) => `Will it rain in ${c}?`, all: "All", m: "Morning", a: "Afternoon", e: "Night", threshold: (mm) => `Rain of at least ${mm} mm`, best: "Best odds", closes: "Closes in", pick: "Pick an hour and your Yes or No",
     hist: (r, h, avg, max) => `Over the last 7 days in this part of the day it rained in ${r} of ${h} hours${r ? ` · average ${avg} mm, highest ${max} mm` : ""}`, none: "Not enough finished hours for this part of the day yet." },
-  "en-GB": { title: (c) => `Will it rain in ${c}?`, all: "All", m: "Morning", a: "Afternoon", e: "Evening & night", threshold: (mm) => `Rain of at least ${mm} mm`, best: "Best odds", closes: "Closes in", pick: "Pick an hour and your Yes or No",
+  "en-GB": { title: (c) => `Will it rain in ${c}?`, all: "All", m: "Morning", a: "Afternoon", e: "Night", threshold: (mm) => `Rain of at least ${mm} mm`, best: "Best odds", closes: "Closes in", pick: "Pick an hour and your Yes or No",
     hist: (r, h, avg, max) => `Over the last 7 days in this part of the day it rained in ${r} of ${h} hours${r ? ` · average ${avg} mm, highest ${max} mm` : ""}`, none: "Not enough finished hours for this part of the day yet." },
   ja: { title: (c) => `${c}で雨は降る?`, all: "すべて", m: "朝", a: "午後", e: "夜", threshold: (mm) => `${mm}mm以上の雨`, best: "最高オッズ", closes: "締切まで", pick: "時間と「はい」か「いいえ」を選んでください",
     hist: (r, h, avg, max) => `過去7日間のこの時間帯は${h}時間中${r}時間で雨${r ? ` · 平均${avg}mm、最大${max}mm` : ""}`, none: "この時間帯はまだ十分なデータがありません。" },
