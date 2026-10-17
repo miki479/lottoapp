@@ -130,7 +130,7 @@ const ja: Messages = {
     groups: { create: "グループを作成", join: "コードで参加", namePh: "グループ名", codePh: "コード", yourCode: (c) => `招待コード：${c}`, none: "グループを作るか、友だちのコードで参加しましょう。" },
   },
   profile: { howItWorks: "遊び方", terms: "利用規約", privacy: "プライバシー",
-    title: "プロフィール", guest: "ゲスト", guestHint: "アカウントなしで遊んでいます。プロフィールを保存すると、クレジットと連続記録をどの端末でも使えます。", signIn: "ログインまたは作成", account: "アカウント",
+    title: "プロフィール", guest: "ゲスト", guestHint: "ログインまたはプロフィールを作成すると、賭けができ、クレジット・連続記録・トロフィーをすべての端末で保てます。", signIn: "ログインまたは作成", account: "アカウント",
     stats: { title: "統計", winRate: "勝率", streak: "連続記録", best: "最高配当", bets: "予想数", net: "シーズン収支", trophies: "トロフィー", days: (n) => `${n}日` },
     streakHint: "1日1回の予想で連続記録が続きます。", freezes: (n) => `フリーズ${n}個`, freezeHint: "フリーズがあれば、1日休んでも連続記録は途切れません。7日ごとに1個もらえます。",
     trophies: "トロフィー", groups: { wins: "勝利", streaks: "連続", play: "プレイ", social: "フレンド", level: "レベル", special: "特別" }, locked: "未獲得", rarity: { common: "コモン", rare: "レア", epic: "伝説", legendary: "神話", mythic: "究極" },

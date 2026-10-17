@@ -46,6 +46,28 @@ export function ProfileView(p: {
   const owned = TROPHY_IDS.filter((t) => p.trophies.has(t)).length;
   const name = p.profile?.display_name ?? (p.registered ? m.guest : null) ?? m.guest;
 
+  const referralCard = (
+        <section class="card stack referral">
+            <div style="display:flex;gap:12px;align-items:center"><span class="refico"><Gift size={22} /></span><div><b>{p.msg.referral.title}</b><p class="hint">{p.msg.referral.body(money(1500, p.locale))} {p.msg.frd.referralNote}</p></div></div>
+            {p.referral
+              ? <><div class="refcode"><span class="detail">{p.msg.referral.code}</span><b class="num">{p.referral.code}</b></div>
+                  <button class="btn primary wide" onClick={p.onShareReferral}><Share2 size={18} />{p.msg.referral.share}</button>
+                  <p class="hint">{p.msg.referral.counts(p.referral.invited, p.referral.paid)}</p></>
+              : <p class="hint">{p.msg.referral.guest}</p>}
+          </section>
+  );
+  // a guest sees nothing of the profile: only the way in (and the invite card, which tells them the code comes with the profile)
+  if (!p.registered) return (
+    <div class="screen stack">
+      <h1>{m.title}</h1>
+      <section class="card stack idcard">
+        <b class="idname">{m.guest}</b>
+        <p class="hint">{m.guestHint}</p>
+        <button class="btn primary wide" onClick={p.onAuth}>{m.signIn}</button>
+      </section>
+      {referralCard}
+    </div>
+  );
   return (
     <div class="screen stack">
       <h1>{m.title}</h1>
@@ -83,14 +105,7 @@ export function ProfileView(p: {
           {p.missionsNode}
           {p.registered && <BankCard locale={p.locale} credits={p.profile?.credits} />}
           <ProfileAlbum locale={p.locale} msg={p.msg} />
-          <section class="card stack referral">
-            <div style="display:flex;gap:12px;align-items:center"><span class="refico"><Gift size={22} /></span><div><b>{p.msg.referral.title}</b><p class="hint">{p.msg.referral.body(money(1500, p.locale))} {p.msg.frd.referralNote}</p></div></div>
-            {p.referral
-              ? <><div class="refcode"><span class="detail">{p.msg.referral.code}</span><b class="num">{p.referral.code}</b></div>
-                  <button class="btn primary wide" onClick={p.onShareReferral}><Share2 size={18} />{p.msg.referral.share}</button>
-                  <p class="hint">{p.msg.referral.counts(p.referral.invited, p.referral.paid)}</p></>
-              : <p class="hint">{p.msg.referral.guest}</p>}
-          </section>
+          {referralCard}
 
           <h2 style="margin-top:8px">{m.stats.title}</h2>
           {stats === null ? <div class="sk" /> : <div class="bento">

@@ -130,7 +130,7 @@ const it: Messages = {
     groups: { create: "Crea gruppo", join: "Entra con codice", namePh: "Nome del gruppo", codePh: "CODICE", yourCode: (c) => `Codice invito: ${c}`, none: "Crea un gruppo o entra con il codice di un amico." },
   },
   profile: { howItWorks: "Come funziona", terms: "Termini", privacy: "Privacy",
-    title: "Profilo", guest: "Ospite", guestHint: "Stai giocando senza account. Salva il profilo per tenere crediti e serie su ogni dispositivo.", signIn: "Accedi o crea il profilo", account: "Account",
+    title: "Profilo", guest: "Ospite", guestHint: "Accedi o crea un profilo per puntare e per tenere crediti, serie e trofei su ogni dispositivo.", signIn: "Accedi o crea il profilo", account: "Account",
     stats: { title: "Statistiche", winRate: "Vittorie", streak: "Serie", best: "Miglior vincita", bets: "Puntate", net: "Saldo stagione", trophies: "Trofei", days: (n) => (n === 1 ? "1 giorno" : `${n} giorni`) },
     streakHint: "Una puntata al giorno tiene viva la serie.", freezes: (n) => (n === 1 ? "1 congelamento" : `${n} congelamenti`), freezeHint: "Un giorno saltato non spezza la serie se hai un congelamento. Ne ottieni uno ogni 7 giorni.",
     trophies: "Trofei", groups: { wins: "Vittorie", streaks: "Serie", play: "Giocate", social: "Amici", level: "Livello", special: "Speciali" }, locked: "Da sbloccare", rarity: { common: "comune", rare: "raro", epic: "leggendario", legendary: "mitico", mythic: "supremo" },

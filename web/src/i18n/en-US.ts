@@ -130,7 +130,7 @@ const enUS: Messages = {
     groups: { create: "Create group", join: "Join with code", namePh: "Group name", codePh: "CODE", yourCode: (c) => `Invite code: ${c}`, none: "Create a group or join with a friend's code." },
   },
   profile: { howItWorks: "How it works", terms: "Terms", privacy: "Privacy",
-    title: "Profile", guest: "Guest", guestHint: "You're playing without an account. Save your profile to keep credits and streak on every device.", signIn: "Sign in or create profile", account: "Account",
+    title: "Profile", guest: "Guest", guestHint: "Sign in or create a profile to place bets and keep your credits, streaks and trophies on every device.", signIn: "Sign in or create profile", account: "Account",
     stats: { title: "Stats", winRate: "Win rate", streak: "Streak", best: "Best win", bets: "Bets", net: "Season net", trophies: "Trophies", days: (n) => (n === 1 ? "1 day" : `${n} days`) },
     streakHint: "One bet a day keeps the streak alive.", freezes: (n) => (n === 1 ? "1 freeze" : `${n} freezes`), freezeHint: "A missed day won't break your streak if you have a freeze. You earn one every 7 days.",
     trophies: "Trophies", groups: { wins: "Wins", streaks: "Streaks", play: "Playing", social: "Friends", level: "Level", special: "Special" }, locked: "Locked", rarity: { common: "common", rare: "rare", epic: "legendary", legendary: "mythic", mythic: "ultimate" },
