@@ -1935,3 +1935,5 @@ textarea.field { resize: vertical; min-height: 84px; }
 @media (hover: hover) { .cc.games:not(:disabled):hover .gh-pawn { animation: pawnhop .7s ease-in-out 2 both; } }
 .cc.play.games .gh-pawn { animation: pawnhop .7s ease-in-out 2 both; }
 .k-videogames { animation: kchess 3s cubic-bezier(.45, 0, .55, 1) infinite; } @media (prefers-reduced-motion: reduce) { .k-videogames { animation: none; } }
+
+.legal .climate { margin: var(--space-3) 0 0; display: flex; justify-content: center; } .legal .climate iframe { border: 0; max-width: 100%; height: 38px; color-scheme: normal; }
