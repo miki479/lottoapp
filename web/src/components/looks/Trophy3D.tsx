@@ -3,12 +3,12 @@ import { TROPHY_RARITY } from "../../i18n/index.ts";
 import { trophySvg } from "./trophyArt";
 
 /** Trophies that have a rendered picture (web/public/trophies/<id>.webp); the others keep their drawn badge until theirs arrives. */
-const PICTURED = new Set<string>(["contrarian", "exact_minute", "double_sense", "local_explorer", "tide_turn", "friend_challenge", "limit_breaker", "first_win", "all_rings", "long_shot", "rain_man", "streak_7", "all_categories", "wins_500", "train_whisperer", "big_odds", "level_25", "streak_100", "level_50", "wins_100", "win_row_10", "collector", "bets_500", "streak_30", "chest_30", "friends_10", "high_roller", "ghost_feed", "alliance", "compass", "champion", "five_row", "cup", "pace", "diamond", "ghost_streak", "phoenix", "insight", "wave", "rocket"]);
+const PICTURED = new Set<string>(["contrarian", "exact_minute", "double_sense", "local_explorer", "tide_turn", "friend_challenge", "limit_breaker", "first_win", "all_rings", "long_shot", "rain_man", "streak_7", "all_categories", "wins_500", "train_whisperer", "big_odds", "level_25", "streak_100", "level_50", "wins_100", "win_row_10", "collector", "bets_500", "streak_30", "chest_30", "friends_10", "high_roller", "ghost_feed", "alliance", "compass", "champion", "five_row", "cup", "pace", "diamond", "ghost_streak", "phoenix", "insight", "wave", "rocket", "avatars_30", "bets_2000", "big_odds_25", "category_100", "chal_joined_25", "comeback_10", "decos_15", "early_bird", "friends_25", "friends_50", "group_owner", "hall_25", "level_10", "level_100", "level_20", "level_30", "level_40", "level_60", "level_70", "level_80", "level_90", "night_owl", "organizer_10", "packs_100", "perfect_week", "recruiter_5", "regular_100", "rocket_x3", "single_win_25k", "win_row_20", "wins_1000", "wins_250"]);
 
 /** A trophy as a 3D badge. The metal and shape are its own; the higher the rarity, the more it shines. */
 export function Trophy3D({ id, have, size = 56 }: { id: TrophyId; have: boolean; size?: number }) {
   if (PICTURED.has(id)) {
-    const src = `/trophies/${id}.webp?v=6`;
+    const src = `/trophies/${id}.webp?v=7`;
     // the sheen is a moving light clipped to the picture's own shape (its alpha) by a CSS mask
     return (
       <span class={`tr3dwrap ${have ? "lit" : ""}`} style={{ width: size, height: size, "--tm": `url(${src})` }}>
