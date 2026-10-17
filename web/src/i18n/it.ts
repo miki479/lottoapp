@@ -1,5 +1,5 @@
 import { fmtInt } from "../lib/num.ts";
-import type { Messages } from "./types.ts";
+import { moreTrophyText, type Messages } from "./types.ts";
 
 const it: Messages = {
   nav: { home: "Home", bets: "Le mie puntate", friends: "Amici", ranking: "Classifica", profile: "Profilo", label: "Navigazione principale", fresh: "novità" },
@@ -133,6 +133,7 @@ const it: Messages = {
     streakHint: "Una puntata al giorno tiene viva la serie.", freezes: (n) => (n === 1 ? "1 congelamento" : `${n} congelamenti`), freezeHint: "Un giorno saltato non spezza la serie se hai un congelamento. Ne ottieni uno ogni 7 giorni.",
     trophies: "Trofei", groups: { wins: "Vittorie", streaks: "Serie", play: "Giocate", social: "Amici", level: "Livello", special: "Speciali" }, locked: "Da sbloccare", rarity: { common: "comune", rare: "raro", epic: "leggendario", legendary: "mitico", mythic: "supremo" },
     trophy: {
+      ...moreTrophyText("it"),
       first_win: { name: "Primo sangue", desc: "La tua prima vittoria. Il ritardo era dalla tua parte." },
       all_rings: { name: "Chiudi-tutto", desc: "Tre missioni chiuse in un giorno. Che disciplina." },
       long_shot: { name: "Profeta del ritardo", desc: "Vinto con una quota da 5 o più. Hai fiutato il disastro." },

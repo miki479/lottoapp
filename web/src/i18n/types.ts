@@ -19,10 +19,11 @@ export interface FullQ { occ: "empty" | "few" | "standing"; route: string; stop:
 export interface TrafficQ { site: string; toward: string; from: string; to: string; kmh: number }
 export interface StrikeQ { date: string; day: string; who: string; hours: string }
 export interface QuakeQ { mag: string; from: string; to: string; region?: string }
-export type TrophyId = "limit_breaker" | "first_win" | "long_shot" | "rain_man" | "train_whisperer" | "ghost_feed" | "high_roller" | "all_rings" | "streak_7" | "streak_30" | "wins_100" | "wins_500" | "streak_100" | "bets_500" | "all_categories" | "win_row_10" | "big_odds" | "parlay_5" | "friends_10" | "level_25" | "level_50" | "chest_30" | "collector" | "alliance" | "compass" | "champion" | "five_row" | "cup" | "pace" | "diamond" | "ghost_streak" | "phoenix" | "insight" | "wave" | "rocket";
-export const TROPHY_IDS: TrophyId[] = ["limit_breaker", "first_win", "all_rings", "long_shot", "rain_man", "streak_7", "train_whisperer", "high_roller", "streak_30", "ghost_feed", "wins_100", "wins_500", "streak_100", "bets_500", "all_categories", "win_row_10", "big_odds", "parlay_5", "friends_10", "level_25", "level_50", "chest_30", "collector", "alliance", "compass", "champion", "five_row", "cup", "pace", "diamond", "ghost_streak", "phoenix", "insight", "wave", "rocket"];
+import { MORE_TROPHIES, type MoreTrophyId } from "../../../shared/trophies-more.ts";
+export type TrophyId = MoreTrophyId | "limit_breaker" | "first_win" | "long_shot" | "rain_man" | "train_whisperer" | "ghost_feed" | "high_roller" | "all_rings" | "streak_7" | "streak_30" | "wins_100" | "wins_500" | "streak_100" | "bets_500" | "all_categories" | "win_row_10" | "big_odds" | "parlay_5" | "friends_10" | "level_25" | "level_50" | "chest_30" | "collector" | "alliance" | "compass" | "champion" | "five_row" | "cup" | "pace" | "diamond" | "ghost_streak" | "phoenix" | "insight" | "wave" | "rocket";
+export const TROPHY_IDS: TrophyId[] = ["limit_breaker", "first_win", "all_rings", "long_shot", "rain_man", "streak_7", "train_whisperer", "high_roller", "streak_30", "ghost_feed", "wins_100", "wins_500", "streak_100", "bets_500", "all_categories", "win_row_10", "big_odds", "parlay_5", "friends_10", "level_25", "level_50", "chest_30", "collector", "alliance", "compass", "champion", "five_row", "cup", "pace", "diamond", "ghost_streak", "phoenix", "insight", "wave", "rocket", ...MORE_TROPHIES.map((t) => t.id)];
 /** The trophies by type, in the order they are shown (profile page and public profile). Every id appears exactly once. */
-export const TROPHY_GROUPS: { id: "wins" | "streaks" | "play" | "social" | "level" | "special"; ids: TrophyId[] }[] = [
+const GROUPS_BASE: { id: "wins" | "streaks" | "play" | "social" | "level" | "special"; ids: TrophyId[] }[] = [
   { id: "wins", ids: ["first_win", "champion", "diamond", "insight", "rocket", "long_shot", "wins_100", "wins_500", "big_odds", "parlay_5"] },
   { id: "streaks", ids: ["five_row", "wave", "ghost_streak", "phoenix", "streak_7", "win_row_10", "streak_30", "streak_100"] },
   { id: "play", ids: ["all_rings", "pace", "cup", "compass", "rain_man", "bets_500", "all_categories", "train_whisperer", "chest_30"] },
@@ -30,8 +31,13 @@ export const TROPHY_GROUPS: { id: "wins" | "streaks" | "play" | "social" | "leve
   { id: "level", ids: ["level_25", "level_50"] },
   { id: "special", ids: ["limit_breaker", "high_roller", "ghost_feed", "collector"] },
 ];
+const levelOf = (id: string) => Number(id.replace("level_", ""));
+export const TROPHY_GROUPS: { id: "wins" | "streaks" | "play" | "social" | "level" | "special"; ids: TrophyId[] }[] = GROUPS_BASE.map((g) => {
+  const ids = [...g.ids, ...MORE_TROPHIES.filter((t) => t.group === g.id).map((t) => t.id)];
+  return { id: g.id, ids: g.id === "level" ? ids.sort((a, b) => levelOf(a) - levelOf(b)) : ids };
+});
 /** The same trophies by the look of their picture (rows on a public profile): stone tiles, plain 3D icons, shiny faceted badges. Every id appears exactly once. */
-const PLAIN: TrophyId[] = ["alliance", "compass", "champion", "five_row", "cup", "pace", "diamond", "ghost_streak", "phoenix", "insight", "wave", "rocket"];
+const PLAIN: TrophyId[] = [...MORE_TROPHIES.filter((t) => t.style === "plain").map((t) => t.id), "alliance", "compass", "champion", "five_row", "cup", "pace", "diamond", "ghost_streak", "phoenix", "insight", "wave", "rocket"];
 const STONE: TrophyId[] = ["first_win", "long_shot", "rain_man", "streak_7", "all_rings", "limit_breaker"];
 export const TROPHY_STYLES: { id: "stone" | "plain" | "shiny"; ids: TrophyId[] }[] = [
   { id: "stone", ids: STONE },
@@ -43,6 +49,7 @@ export const TROPHY_RARITY: Record<TrophyId, "common" | "rare" | "epic" | "legen
   train_whisperer: "epic", high_roller: "epic", streak_30: "epic", ghost_feed: "epic",
   wins_100: "epic", wins_500: "mythic", streak_100: "legendary", bets_500: "legendary", all_categories: "epic", win_row_10: "legendary", big_odds: "epic", parlay_5: "legendary", friends_10: "epic", level_25: "legendary", level_50: "mythic", chest_30: "epic", collector: "mythic",
   alliance: "common", compass: "common", champion: "rare", five_row: "rare", cup: "rare", pace: "common", diamond: "rare", ghost_streak: "common", phoenix: "rare", insight: "rare", wave: "common", rocket: "rare",
+  ...(Object.fromEntries(MORE_TROPHIES.map((t) => [t.id, t.rarity])) as Record<MoreTrophyId, "common" | "rare" | "epic" | "legendary" | "mythic">),
 };
 
 /** Every locale implements this: add `ja` by creating ja.ts and registering it in index.ts. */
@@ -153,3 +160,6 @@ export interface Messages {
     hot: string; friendsOn: (n: number) => string; inboxTitle: string; inboxFrom: (who: string) => string; inboxOpen: string; referralNote: string; errors: Record<"invite_limit" | "too_many_invites" | "not_in_challenge" | "generic", string>;
   };
 }
+
+/** Names and descriptions of the later trophies in one language (en serves both English locales). */
+export const moreTrophyText = (lang: "it" | "en" | "ja"): Record<MoreTrophyId, { name: string; desc: string }> => Object.fromEntries(MORE_TROPHIES.map((t) => [t.id, t.text[lang]])) as Record<MoreTrophyId, { name: string; desc: string }>;

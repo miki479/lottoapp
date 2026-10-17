@@ -1,5 +1,5 @@
 import { fmtInt } from "../lib/num.ts";
-import type { Messages } from "./types.ts";
+import { moreTrophyText, type Messages } from "./types.ts";
 
 const ja: Messages = {
   nav: { home: "ホーム", bets: "マイ予想", friends: "友達", ranking: "ランキング", profile: "プロフィール", label: "メインメニュー", fresh: "新着" },
@@ -133,6 +133,7 @@ const ja: Messages = {
     streakHint: "1日1回の予想で連続記録が続きます。", freezes: (n) => `フリーズ${n}個`, freezeHint: "フリーズがあれば、1日休んでも連続記録は途切れません。7日ごとに1個もらえます。",
     trophies: "トロフィー", groups: { wins: "勝利", streaks: "連続", play: "プレイ", social: "フレンド", level: "レベル", special: "特別" }, locked: "未獲得", rarity: { common: "コモン", rare: "レア", epic: "伝説", legendary: "神話", mythic: "究極" },
     trophy: {
+      ...moreTrophyText("ja"),
       first_win: { name: "初勝利", desc: "最初の勝利。遅延があなたの味方でした。" },
       all_rings: { name: "コンプリート", desc: "1日で3つのミッションを達成。見事な自己管理です。" },
       long_shot: { name: "遅延の預言者", desc: "オッズ5倍以上で勝利。大混乱を嗅ぎ当てました。" },

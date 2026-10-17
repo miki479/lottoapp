@@ -1,5 +1,5 @@
 import { fmtInt } from "../lib/num.ts";
-import type { Messages } from "./types.ts";
+import { moreTrophyText, type Messages } from "./types.ts";
 
 const enGB: Messages = {
   nav: { home: "Home", bets: "My bets", friends: "Friends", ranking: "League", profile: "Profile", label: "Main navigation", fresh: "new" },
@@ -133,6 +133,7 @@ const enGB: Messages = {
     streakHint: "One bet a day keeps the streak going.", freezes: (n) => (n === 1 ? "1 freeze" : `${n} freezes`), freezeHint: "A missed day won't break your streak if you have a freeze. You earn one every 7 days.",
     trophies: "Trophies", groups: { wins: "Wins", streaks: "Streaks", play: "Playing", social: "Friends", level: "Level", special: "Special" }, locked: "Locked", rarity: { common: "common", rare: "rare", epic: "legendary", legendary: "mythic", mythic: "ultimate" },
     trophy: {
+      ...moreTrophyText("en"),
       first_win: { name: "First One in the Bag", desc: "Your first win. The timetable gods smiled." },
       all_rings: { name: "Full Set", desc: "All three missions in a day. Frightfully disciplined." },
       long_shot: { name: "Oracle of the Late Running", desc: "Won at odds of 5 or more. You smelled the disaster." },

@@ -3,7 +3,7 @@ import { TROPHY_RARITY } from "../../i18n/index.ts";
 import { trophySvg } from "./trophyArt";
 
 /** Trophies that have a rendered picture (web/public/trophies/<id>.webp); the others keep their drawn badge until theirs arrives. */
-const PICTURED = new Set<string>(["limit_breaker", "first_win", "all_rings", "long_shot", "rain_man", "streak_7", "all_categories", "wins_500", "train_whisperer", "big_odds", "level_25", "streak_100", "level_50", "wins_100", "win_row_10", "collector", "bets_500", "streak_30", "chest_30", "friends_10", "high_roller", "ghost_feed", "alliance", "compass", "champion", "five_row", "cup", "pace", "diamond", "ghost_streak", "phoenix", "insight", "wave", "rocket"]);
+const PICTURED = new Set<string>(["contrarian", "exact_minute", "double_sense", "local_explorer", "tide_turn", "friend_challenge", "limit_breaker", "first_win", "all_rings", "long_shot", "rain_man", "streak_7", "all_categories", "wins_500", "train_whisperer", "big_odds", "level_25", "streak_100", "level_50", "wins_100", "win_row_10", "collector", "bets_500", "streak_30", "chest_30", "friends_10", "high_roller", "ghost_feed", "alliance", "compass", "champion", "five_row", "cup", "pace", "diamond", "ghost_streak", "phoenix", "insight", "wave", "rocket"]);
 
 /** A trophy as a 3D badge. The metal and shape are its own; the higher the rarity, the more it shines. */
 export function Trophy3D({ id, have, size = 56 }: { id: TrophyId; have: boolean; size?: number }) {
