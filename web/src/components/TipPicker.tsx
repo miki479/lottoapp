@@ -33,7 +33,7 @@ export function TipPicker(p: { marketId: string; pick: Pick; locale: Locale; msg
           const on = sel.has(f.user_id), name = f.display_name || p.msg.frd.anon;
           return (
             <button key={f.user_id} class={`frchip ${on ? "on" : ""}`} aria-pressed={on} onClick={() => toggle(f.user_id)}>
-              <span class="fav" aria-hidden="true">{looks[f.user_id] ? <Look avatar={looks[f.user_id]!.avatar} decoration={looks[f.user_id]!.decoration} size={30} /> : on ? <Check size={14} strokeWidth={3} /> : name.slice(0, 1).toUpperCase()}</span>
+              <span class="fav" aria-hidden="true">{looks[f.user_id] ? <Look avatar={looks[f.user_id]!.avatar} decoration={looks[f.user_id]!.decoration} aura={looks[f.user_id]!.aura} size={30} /> : on ? <Check size={14} strokeWidth={3} /> : name.slice(0, 1).toUpperCase()}</span>
               <span class="fn"><span>{name}</span></span>
             </button>
           );

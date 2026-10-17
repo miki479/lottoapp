@@ -105,7 +105,7 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
       {c.people.length > 0 && <div class="tickchart"><div class="tchead"><b>{f.people}</b></div>
         {[...c.people].sort((a, b) => (a.name === "?" ? "~" : a.name).localeCompare(b.name === "?" ? "~" : b.name, p.locale)).map((x, i) => (
           <div key={i} class="pplrow">
-            <span class="lkwrap">{x.uid && looks[x.uid] ? <Look avatar={looks[x.uid]!.avatar} decoration={looks[x.uid]!.decoration} size={26} /> : <span class="lkph" />}</span>
+            <span class="lkwrap">{x.uid && looks[x.uid] ? <Look avatar={looks[x.uid]!.avatar} decoration={looks[x.uid]!.decoration} aura={looks[x.uid]!.aura} size={26} /> : <span class="lkph" />}</span>
             <span class="pplname">{x.name === "?" ? p.msg.ticker.anon : x.name}<PlayerTitle id={x.uid ? looks[x.uid]?.title : null} locale={p.locale} /></span>
             <span class="num pplpick"><b>{x.pick === null ? <Check size={14} aria-label="✓" /> : x.pick === "yes" ? f.yes : f.no}</b>{(x.payout ?? 0) > 0 && c.status === "resolved" ? ` · ${f.won} ${money(x.payout ?? 0, p.locale)}` : ""}</span>
           </div>

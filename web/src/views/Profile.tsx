@@ -58,7 +58,7 @@ export function ProfileView(p: {
         <div class="stack">
           <section class="card stack idcard">
             <div class="idtop">
-              {p.look ? <button class="lkme" onClick={p.onLook} aria-label={p.msg.look.change}><Look avatar={p.look.avatar} decoration={p.look.decoration} size={72} /><span class="lvl num">{p.look.level}</span></button> : <span class="rank top" style="width:56px;height:56px;border-radius:18px;font-size:var(--fs-xl)"><User size={26} /></span>}
+              {p.look ? <button class="lkme" onClick={p.onLook} aria-label={p.msg.look.change}><Look avatar={p.look.avatar} decoration={p.look.decoration} aura={p.look.aura} size={72} /><span class="lvl num">{p.look.level}</span></button> : <span class="rank top" style="width:56px;height:56px;border-radius:18px;font-size:var(--fs-xl)"><User size={26} /></span>}
               <div class="idtxt">
                 <b class="idname">{name}</b>
                 {!p.registered && name !== m.guest && <span class="idmail">{m.guest}</span>}

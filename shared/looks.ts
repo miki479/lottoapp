@@ -65,3 +65,10 @@ export function levelProgress(xp: number): { level: number; into: number; need: 
 export const unlockedByLevel = (level: number): string[] => DECORATIONS.filter((d) => d.level !== undefined && d.level <= level).map((d) => d.id);
 /** The next level-based decoration and the level it needs, if any. */
 export const nextUnlock = (level: number): DecorationDef | null => DECORATIONS.filter((d) => d.level !== undefined && d.level > level).sort((a, b) => a.level! - b.level!)[0] ?? null;
+
+/** The colour of each ring, used for the soft aura around the picture of a player from level 50. */
+export const AURA_COLOR: Record<string, string> = {
+  copper: "#d98245", bronze: "#c08a45", silver: "#cfd8e6", gold: "#ffc933", diamond: "#7fe3ff", amethyst: "#a56bff", platinum: "#e3ebf5", mithril: "#6fe0d0",
+  orichalcum: "#ff8a4a", adamantium: "#ff4b6a", jade: "#3fd18a", ruby: "#ff3d5e", sapphire: "#3d7bff", obsidian: "#9a78ff", opal: "#9fe8ff", cinder: "#ff6a2a",
+  rosegold: "#ff9aa8", starlight: "#ffe27a", aurum: "#ffb800", glacier: "#8fdcff", crimson: "#e0203a", azure: "#3aa0ff", vortex: "#7a5cff", onyx: "#b4b8cf",
+};

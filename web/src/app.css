@@ -1937,3 +1937,10 @@ textarea.field { resize: vertical; min-height: 84px; }
 .k-videogames { animation: kchess 3s cubic-bezier(.45, 0, .55, 1) infinite; } @media (prefers-reduced-motion: reduce) { .k-videogames { animation: none; } }
 
 .legal .climate { margin: var(--space-3) 0 0; display: flex; justify-content: center; } .legal .climate iframe { border: 0; max-width: 100%; height: 38px; color-scheme: normal; }
+
+/* the aura: a soft glow in the colour of the ring, drawn with drop-shadow so it never changes the layout (it can only be clipped by a container that hides overflow) */
+.look.aura { overflow: visible; filter: drop-shadow(0 0 var(--ab, 4px) var(--aura)) drop-shadow(0 0 calc(var(--ab, 4px) * 2.4) color-mix(in srgb, var(--aura) 60%, transparent)); animation: aurabreath 4s ease-in-out infinite; }
+@keyframes aurabreath { 0%, 100% { filter: drop-shadow(0 0 var(--ab, 4px) var(--aura)) drop-shadow(0 0 calc(var(--ab, 4px) * 2.4) color-mix(in srgb, var(--aura) 55%, transparent)); } 50% { filter: drop-shadow(0 0 calc(var(--ab, 4px) * 1.3) var(--aura)) drop-shadow(0 0 calc(var(--ab, 4px) * 3) color-mix(in srgb, var(--aura) 75%, transparent)); } }
+@media (prefers-reduced-motion: reduce) { .look.aura { animation: none; } }
+.aurarow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: var(--radius-control); background: var(--surface-2); }
+.aurarow.lock { opacity: .75; } .aurarow small { color: var(--text-2); }

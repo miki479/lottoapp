@@ -96,7 +96,7 @@ function Board({ league, locale, msg, onProfile }: { league: number; locale: Loc
       return (
         <div class={`row ${r.is_me ? "me" : ""}`} key={r.user_id}>
           <span class={`rank ${r.rank <= 3 ? "top" : ""}`}>{r.rank}</span>
-          {l ? <Look avatar={l.avatar} decoration={l.decoration} size={36} /> : <span class="lkph" />}
+          {l ? <Look avatar={l.avatar} decoration={l.decoration} aura={l.aura} size={36} /> : <span class="lkph" />}
           <button class="grow rowlink" onClick={() => onProfile(r.user_id)}><span class="nick"><b>{r.display_name}</b><LevelBadge level={l?.level} msg={msg} /></span><span class="subline">{r.is_me && <em class="youtag">{t.you}</em>}<PlayerTitle id={l?.title} locale={locale} /></span></button>
           <span class="scorebox"><span class="score num zero">{nf.format(r.credits)}</span><small class="scorelbl">{msg.ranking.monthLbl}</small></span>
         </div>

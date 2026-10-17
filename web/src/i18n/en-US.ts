@@ -192,6 +192,7 @@ const enUS: Messages = {
   },
   feedWarning: "Some data is running late. Bets tied to a stalled feed get refunded.",
   look: {
+    aura: "Aura", auraHint: "A soft glow in the colour of your ring around your picture, visible to everyone.", auraLock: "Unlocks at level 50.",
     title: "Decorations",
     avatars: "Character",
     forged: "Forged · Amber and Amethyst style",

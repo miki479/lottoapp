@@ -55,7 +55,7 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
     if (up.size) { setClimbed(up); const to = setTimeout(() => setClimbed(new Set()), 3500); return () => clearTimeout(to); }
   }, [rows]);
   const looks = useLooks([...(rows ?? []).map((r) => r.user_id), ...(friends ?? []).map((r) => r.user_id)]);
-  const face = (id: string) => { const l = looks[id]; return l ? <Look avatar={l.avatar} decoration={l.decoration} size={36} /> : <span class="lkph" />; };
+  const face = (id: string) => { const l = looks[id]; return l ? <Look avatar={l.avatar} decoration={l.decoration} aura={l.aura} size={36} /> : <span class="lkph" />; };
 
   const loadGroups = async () => {
     const { data } = await sb.from("groups").select("code,name").order("created_at", { ascending: false });

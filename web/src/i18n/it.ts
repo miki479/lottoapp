@@ -192,6 +192,7 @@ const it: Messages = {
   },
   feedWarning: "Alcuni dati sono in ritardo. Le puntate legate a un feed fermo vengono rimborsate.",
   look: {
+    aura: "Aura", auraHint: "Un alone sfumato del colore della decorazione attorno alla tua immagine, visibile a tutti.", auraLock: "Si sblocca dal livello 50.",
     title: "Decorazioni",
     avatars: "Personaggio",
     forged: "Forgiati · stile Ambra e Ametista",

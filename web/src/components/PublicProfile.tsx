@@ -36,7 +36,7 @@ export function PublicProfile({ id, msg, locale, onClose, onToast }: { id: strin
     <Sheet onClose={onClose} label={d?.name ?? msg.frd.anon}>
       {!d ? (failed ? <p class="hint">{msg.errors.generic}</p> : <div class="sk s" />) : (
         <>
-          <div class="lkprev"><Look avatar={d.avatar} decoration={d.decoration} size={132} /><b style="font-size:var(--fs-lg)">{d.name || msg.frd.anon}</b><PlayerTitle id={d.title} locale={locale} /><span class="hint">{t.level(d.level)}</span></div>
+          <div class="lkprev"><Look avatar={d.avatar} decoration={d.decoration} aura={d.aura} size={132} /><b style="font-size:var(--fs-lg)">{d.name || msg.frd.anon}</b><PlayerTitle id={d.title} locale={locale} /><span class="hint">{t.level(d.level)}</span></div>
           <div class="pstats">
             <div class="card"><Flame size={18} /><b class="num">{d.best_streak}</b><small>{t.streak}</small></div>
             <div class="card"><b class="num">{moneySigned(d.best_win, locale)}</b><small>{t.bestWin}</small></div>

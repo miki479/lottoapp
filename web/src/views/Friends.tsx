@@ -27,7 +27,7 @@ export function Friends(p: { locale: Locale; msg: Messages; registered: boolean;
   useEffect(() => { if (p.registered) { refresh(); loadFeed(); } }, [p.registered]);
   useEffect(() => { if (p.registered) loadReqs(); }, [p.registered, p.reqTick]);
   const looks = useLooks([...(friends ?? []).map((r) => r.user_id), ...reqs.map((r) => r.user_id)]);
-  const face = (id: string) => { const l = looks[id]; return l ? <Look avatar={l.avatar} decoration={l.decoration} size={36} /> : <span class="lkph" />; };
+  const face = (id: string) => { const l = looks[id]; return l ? <Look avatar={l.avatar} decoration={l.decoration} aura={l.aura} size={36} /> : <span class="lkph" />; };
   const [busy, run] = useBusy(), oops = () => p.onToast(p.msg.errors.generic!, "err");
   const declineAll = () => run(async () => { const { error } = await sb.rpc("decline_all_friend_requests"); if (error) { oops(); return; } await loadReqs(); p.onReqs?.(); }, oops);
   const answer = (id: string, ok: boolean) => run(async () => { const { error } = await sb.rpc("respond_friend", { p_user: id, p_accept: ok }); if (error) { oops(); return; } if (ok) p.onToast(p.msg.look.nowFriends); await Promise.all([loadReqs(), refresh()]); p.onReqs?.(); }, oops);
