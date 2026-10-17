@@ -4,8 +4,10 @@
  */
 /** The cartoon characters first; the "Forged" collection (rendered, faceted amber and amethyst) after them. */
 export const FORGED_AVATARS = ["pilot", "star", "emerald", "orb", "bear", "ziggurat", "gear", "goldspiral", "falcon", "ninja", "steelspiral", "cobra", "shogun", "cosmonaut", "eagle", "raven", "sculpt", "owl", "lionheart", "wyvern", "tiger", "knight", "drop", "panther", "mech", "vixen", "prism", "twinrings", "ember", "wolf"] as const;
-export const AVATARS = ["conductor", "busbot", "cloud", "fox", "ball", "bolt", "alien", "astro", "clock", "kandinsky", "robot", "panda", "wizard", "samurai", "dragon", "lion", ...FORGED_AVATARS] as const;
-export const CLASSIC_AVATARS = AVATARS.filter((a) => !(FORGED_AVATARS as readonly string[]).includes(a));
+/** The "Routes" collection: the app's own worlds (bus, train, weather) as faceted crystal and steel objects. */
+export const ROUTE_AVATARS = ["coach", "rail", "skycloud", "grove", "horn", "citybus", "express"] as const;
+export const AVATARS = ["conductor", "busbot", "cloud", "fox", "ball", "bolt", "alien", "astro", "clock", "kandinsky", "robot", "panda", "wizard", "samurai", "dragon", "lion", ...FORGED_AVATARS, ...ROUTE_AVATARS] as const;
+export const CLASSIC_AVATARS = AVATARS.filter((a) => !(FORGED_AVATARS as readonly string[]).includes(a) && !(ROUTE_AVATARS as readonly string[]).includes(a));
 export type AvatarId = (typeof AVATARS)[number];
 export const isAvatar = (s: unknown): s is AvatarId => (AVATARS as readonly string[]).includes(String(s));
 

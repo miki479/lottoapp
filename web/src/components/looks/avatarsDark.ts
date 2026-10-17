@@ -126,8 +126,10 @@ const SAMURAI = (() => {
 
 /** Backgrounds are deep charcoal with one colour of the character: nothing pastel. */
 /** The rendered pictures (web/public/avatars/<id>.webp): one framed square each, clipped to the disc like every other character. */
-const pic = (id: string): { bg: string; art: string } => ({ bg: "#141519", art: `<image href="/avatars/${id}.webp" x="14" y="14" width="92" height="92" preserveAspectRatio="xMidYMid slice"/>` });
-const PICTURED = ["ball", "pilot", "star", "emerald", "orb", "bear", "ziggurat", "gear", "goldspiral", "falcon", "ninja", "steelspiral", "cobra", "shogun", "cosmonaut", "eagle", "raven", "sculpt", "owl", "lionheart", "wyvern", "tiger", "knight", "drop", "panther", "mech", "vixen", "prism", "twinrings", "ember", "wolf"] as const;
+/** Whole scenes (a bus, a train) are drawn smaller so they fit inside the disc. */
+const SCENES = new Set(["coach", "rail", "skycloud", "grove", "horn", "citybus", "express"]);
+const pic = (id: string): { bg: string; art: string } => { const n = SCENES.has(id) ? 78 : 92, o = (120 - n) / 2; return { bg: "#141519", art: `<image href="/avatars/${id}.webp" x="${o}" y="${o}" width="${n}" height="${n}" preserveAspectRatio="xMidYMid slice"/>` }; };
+const PICTURED = ["ball", "pilot", "star", "emerald", "orb", "bear", "ziggurat", "gear", "goldspiral", "falcon", "ninja", "steelspiral", "cobra", "shogun", "cosmonaut", "eagle", "raven", "sculpt", "owl", "lionheart", "wyvern", "tiger", "knight", "drop", "panther", "mech", "vixen", "prism", "twinrings", "ember", "wolf", "coach", "rail", "skycloud", "grove", "horn", "citybus", "express"] as const;
 
 export const DARK_AVATARS: Record<string, { bg: string; art: string }> = {
   // the fox is a rendered picture (web/public/avatars/fox.webp), clipped to the disc like every other character
