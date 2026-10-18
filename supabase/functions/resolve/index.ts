@@ -54,6 +54,12 @@ Deno.serve(safe(async (req) => {
   // maps means its batch was not read (too many rows or an error): that market then asks for its own rows, as before.
   const hourOf = (t: number) => Math.floor(t / 3600) * 3600;
   const chunks = <T,>(a: T[], n: number): T[][] => { const o: T[][] = []; for (let i = 0; i < a.length; i += n) o.push(a.slice(i, i + n)); return o; };
+  // a batch can hold more than the 1000 rows one request returns: read it page by page (null: a page failed, so the markets fall back to their own request)
+  const readAll = async <R,>(page: (from: number, to: number) => PromiseLike<{ data: R[] | null; error: unknown }>): Promise<R[] | null> => {
+    const all: R[] = [];
+    for (let from = 0; from < 20_000; from += 1000) { const { data, error: e } = await page(from, from + 999); if (e) return null; all.push(...(data ?? [])); if ((data?.length ?? 0) < 1000) return all; }
+    return null;
+  };
   const metricRows = new Map<string, MetricObservation[]>(), rainRows = new Map<string, WeatherObservation[]>(), tickRows = new Map<string, TickObservation[]>(), matchRows = new Map<string, MatchObservation>(), matchDone = new Set<string>();
   try {
     const need = { metric: [] as { feedId: string; metric: string; hour: number }[], rain: [] as { feedId: string; hour: number }[], tick: [] as { series: string; at: number }[], match: new Set<string>() };
@@ -69,22 +75,22 @@ Deno.serve(safe(async (req) => {
     const iso = (t: number) => new Date(t * 1000).toISOString();
     for (const part of chunks([...new Set(need.metric.map((x) => x.feedId))], 40)) {
       const hours = [...new Set(need.metric.filter((x) => part.includes(x.feedId)).map((x) => x.hour))];
-      const { data, error: e } = await sb.from("metric_observations").select("feed_id,metric,hour_start,value,fetched_at").in("feed_id", part).in("hour_start", hours.map(iso)).limit(1000);
-      if (e || (data?.length ?? 0) >= 1000) continue;
+      const data = await readAll((a, b) => sb.from("metric_observations").select("feed_id,metric,hour_start,value,fetched_at").in("feed_id", part).in("hour_start", hours.map(iso)).order("feed_id").order("metric").order("hour_start").range(a, b));
+      if (!data) continue;
       for (const x of need.metric) if (part.includes(x.feedId)) metricRows.set(`${x.feedId}|${x.metric}|${x.hour}`, []);
       for (const w of data ?? []) metricRows.get(`${w.feed_id}|${w.metric}|${hourOf(Date.parse(w.hour_start) / 1000)}`)?.push({ feedId: w.feed_id, metric: w.metric, hourStart: Date.parse(w.hour_start) / 1000, value: Number(w.value), fetchedAt: Date.parse(w.fetched_at) / 1000 });
     }
     for (const part of chunks([...new Set(need.rain.map((x) => x.feedId))], 80)) {
       const hours = [...new Set(need.rain.filter((x) => part.includes(x.feedId)).map((x) => x.hour))];
-      const { data, error: e } = await sb.from("weather_observations").select("feed_id,hour_start,precipitation_mm,fetched_at").in("feed_id", part).in("hour_start", hours.map(iso)).limit(1000);
-      if (e || (data?.length ?? 0) >= 1000) continue;
+      const data = await readAll((a, b) => sb.from("weather_observations").select("feed_id,hour_start,precipitation_mm,fetched_at").in("feed_id", part).in("hour_start", hours.map(iso)).order("feed_id").order("hour_start").range(a, b));
+      if (!data) continue;
       for (const x of need.rain) if (part.includes(x.feedId)) rainRows.set(`${x.feedId}|${x.hour}`, []);
       for (const w of data ?? []) rainRows.get(`${w.feed_id}|${hourOf(Date.parse(w.hour_start) / 1000)}`)?.push({ feedId: w.feed_id, hourStart: Date.parse(w.hour_start) / 1000, precipitationMm: Number(w.precipitation_mm), fetchedAt: Date.parse(w.fetched_at) / 1000 });
     }
     for (const part of chunks([...new Set(need.tick.map((x) => x.series))], 40)) {
       const ats = [...new Set(need.tick.filter((x) => part.includes(x.series)).map((x) => x.at))];
-      const { data, error: e } = await sb.from("tick_observations").select("series,at,value,fetched_at").in("series", part).in("at", ats.map(iso)).limit(1000);
-      if (e || (data?.length ?? 0) >= 1000) continue;
+      const data = await readAll((a, b) => sb.from("tick_observations").select("series,at,value,fetched_at").in("series", part).in("at", ats.map(iso)).order("series").order("at").range(a, b));
+      if (!data) continue;
       for (const x of need.tick) if (part.includes(x.series)) tickRows.set(`${x.series}|${x.at}`, []);
       for (const o of data ?? []) tickRows.get(`${o.series}|${Date.parse(o.at) / 1000}`)?.push({ series: o.series, at: Date.parse(o.at) / 1000, value: Number(o.value), fetchedAt: Date.parse(o.fetched_at) / 1000 });
     }
