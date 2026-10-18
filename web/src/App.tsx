@@ -561,9 +561,9 @@ export function App() {
     const daily = <T,>(a: T[]): T | undefined => a[Math.floor(now / 86400_000) % Math.min(3, a.length)];
     const sub = (m: MarketRow) => question(m, msg, locale, cityName(cityOf(m.city_id), locale), cityOf(m.city_id).timezone, new Date(now));
     const feat = (id: string, icon: TopItem["icon"], label: string, m: MarketRow | undefined, big: preact.ComponentChildren, pick: "yes" | "no" = "yes") => { if (m) items.push({ mid: m.id, id, icon, label, big, sub: sub(m), onClick: () => setSheet({ m, pick }) }); };
-    // the game everybody is waiting for: one hour in, one hour out, so the featured row does not fill up
+    // the game everybody is waiting for: always first in the trends row
     const gta = open.find((m) => String(m.params.series ?? "") === "house:gta6" && Date.parse(m.closes_at) > now);
-    if (gta && Math.floor(now / 3600_000) % 2 === 0) { const d = daysUntil(Number(gta.params.releaseAt) * 1000, now); items.unshift({ mid: gta.id, id: "gta", cls: "gta", icon: Gamepad2, label: msg.house.excl, big: <>{d}<small>{msg.house.daysWord(d)}</small></>, sub: sub(gta), onClick: () => setSheet({ m: gta, pick: "yes" }) }); }
+    if (gta) { const d = daysUntil(Number(gta.params.releaseAt) * 1000, now); items.unshift({ mid: gta.id, id: "gta", cls: "gta", icon: Gamepad2, label: msg.house.excl, big: <>{d}<small>{msg.house.daysWord(d)}</small></>, sub: sub(gta), onClick: () => setSheet({ m: gta, pick: "yes" }) }); }
     // football: the likeliest draw, the match where both teams most likely score (its goal bet is opened on tap), the longest-priced away win
     const three = open1("sport", 72).filter((m) => ["home_win", "draw", "away_win"].includes(String(m.params.bet)));
     const prior = (m: MarketRow, k: string) => Number((m.params.priors as Record<string, number> | undefined)?.[k]);
