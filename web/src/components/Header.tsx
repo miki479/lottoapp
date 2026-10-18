@@ -27,7 +27,7 @@ const LONG_FIGURE = 6;
  * The balance, a group of its own in the top bar: every change counts up or down in 400 ms, flashes green or red and leaves a chip with the difference for
  * a moment (all of it off for people who ask for less motion). A different player (signing in or out) is not a change.
  */
-function Balance({ credits, who, locale, coin, label, claimable, onClick }: { credits: number | null; who: string | null; locale: Locale; coin: string; label: string; claimable: number; onClick: () => void }) {
+function Balance({ credits, who, locale, coin, label, claimable, quiet, burst, onClick }: { quiet?: boolean; burst?: number; credits: number | null; who: string | null; locale: Locale; coin: string; label: string; claimable: number; onClick: () => void }) {
   const shown = useCountUp(credits ?? 0, 400);
   const [tap, setTap] = useState(0);
   const press = () => { if (!reducedMotion()) { setTap(Date.now()); } onClick(); };
@@ -37,18 +37,20 @@ function Balance({ credits, who, locale, coin, label, claimable, onClick }: { cr
     if (credits === null) return;
     const before = last.current;
     last.current = { who, credits };
-    if (before.credits === null || before.who !== who || before.credits === credits || reducedMotion()) return;
+    if (before.credits === null || before.who !== who || before.credits === credits || reducedMotion() || quiet) return;
     setChange({ n: credits - before.credits, at: Date.now() });
     const t = window.setTimeout(() => setChange(null), 1500);
     return () => window.clearTimeout(t);
   }, [credits, who]);
+  const [boom, setBoom] = useState(false);
+  useEffect(() => { if (burst && !reducedMotion()) { setBoom(true); setTap(Date.now()); } }, [burst]);
   const kind = change ? (change.n > 0 ? "gain" : "loss") : "";
   const figure = credits === null ? "···" : fmtInt(shown, locale);
   return (
     <>
       <button class={`wallet walletbtn ${kind} ${figure.length > LONG_FIGURE ? "long" : ""} ${tap ? "tapped" : ""}`} key={tap ? `t${tap}` : "w"} title={label} aria-label={credits === null ? label : `${label}: ${fmtInt(credits, locale)}`} onClick={press}>
         <i class="coin" aria-hidden="true">{coin}</i>
-        {tap > 0 && <span class="coinburst" aria-hidden="true"><b /><b /><b /><b /><b /><b /></span>}
+        {tap > 0 && <span class={`coinburst ${boom ? "big" : ""}`} aria-hidden="true"><b /><b /><b /><b /><b /><b /></span>}
         <span class="num bal" aria-hidden="true">{figure}</span>
         {claimable > 0 && <span class="dotbadge" aria-hidden="true">{claimable}</span>}
         {change && <span class={`deltachip ${kind}`} key={change.at} aria-hidden="true">{fmtSigned(change.n, locale)}</span>}
@@ -58,7 +60,7 @@ function Balance({ credits, who, locale, coin, label, claimable, onClick }: { cr
   );
 }
 
-export function Header({ satire, claimable, onWallet, onShop, shopNew, shopLabel, shopDeal, voice, locale, onLocale, credits, who, coin, languageLabel, creditsLabel, onHome, extra }: { extra?: ComponentChildren; satire?: string; locale: Locale; onLocale: (l: Locale) => void; credits: number | null; who: string | null; coin: string; claimable: number; onWallet: () => void; onShop: () => void; shopNew: boolean; shopLabel: string; shopDeal?: number; voice: { on: boolean; label: string; toggle: () => void } | null; languageLabel: string; creditsLabel: string; onHome: () => void }) {
+export function Header({ quiet, burst, satire, claimable, onWallet, onShop, shopNew, shopLabel, shopDeal, voice, locale, onLocale, credits, who, coin, languageLabel, creditsLabel, onHome, extra }: { quiet?: boolean; burst?: number; extra?: ComponentChildren; satire?: string; locale: Locale; onLocale: (l: Locale) => void; credits: number | null; who: string | null; coin: string; claimable: number; onWallet: () => void; onShop: () => void; shopNew: boolean; shopLabel: string; shopDeal?: number; voice: { on: boolean; label: string; toggle: () => void } | null; languageLabel: string; creditsLabel: string; onHome: () => void }) {
   const [scrolled, setScrolled] = useState(false), [compact, setCompact] = useState(false);
   useEffect(() => {
     // the bar shrinks past 56 px and grows back under 16, so it never flickers at the edge
@@ -76,7 +78,7 @@ export function Header({ satire, claimable, onWallet, onShop, shopNew, shopLabel
         {voice && <button class={`iconbtn voicebtn ${voice.on ? "voiceon" : ""}`} onClick={voice.toggle} aria-pressed={voice.on} aria-label={voice.label}>{voice.on ? <Volume2 size={22} /> : <VolumeX size={22} />}</button>}
         {extra}
         </div>
-        <Balance credits={credits} who={who} locale={locale} coin={coin} label={creditsLabel} claimable={claimable} onClick={onWallet} />
+        <Balance quiet={quiet} burst={burst} credits={credits} who={who} locale={locale} coin={coin} label={creditsLabel} claimable={claimable} onClick={onWallet} />
       </div>
     </header>
   );
