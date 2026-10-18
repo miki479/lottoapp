@@ -20,6 +20,8 @@ const JOBS = [
   { job: "resolve", fn: "resolve", query: "", every: 1, port: 8102 },
   { job: "live", fn: "live", query: "", every: 2, port: 8103 },
   { job: "snapshot", fn: "snapshot", query: "", every: 2, port: 8104 },
+  // aircraft over Italy: OpenSky does not answer to the cloud, so only a home computer can read it (there is no Supabase cron for this one)
+  { job: "flights", fn: "flights", query: "", every: 5, port: 8105 },
 ];
 const only = (process.argv[2] ?? "").split(",").filter(Boolean); // e.g. `ingest,live` to run just those
 const jobs = JOBS.filter((j) => !only.length || only.includes(j.job));
