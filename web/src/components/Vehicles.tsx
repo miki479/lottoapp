@@ -214,9 +214,12 @@ export function SpaceGhost() {
   return (
     <svg viewBox="0 0 80 70" class="gh gh-space" aria-hidden="true">
       <path d="M0 62Q22 57 44 61T80 59V70H0Z" fill="#4a6cf0" opacity=".25" />
-      <g fill="#fff" opacity=".85"><circle cx="10" cy="12" r="1.200" /><circle cx="30" cy="6" r="1" /><circle cx="66" cy="10" r="1.200" /><circle cx="72" cy="30" r="1" /><circle cx="16" cy="34" r="1" /></g>
+      <g fill="#fff" opacity=".85"><circle class="gh-tw a" cx="10" cy="12" r="1.200" /><circle class="gh-tw b" cx="30" cy="6" r="1" /><circle class="gh-tw c" cx="66" cy="10" r="1.200" /><circle class="gh-tw b" cx="72" cy="30" r="1" /><circle class="gh-tw a" cx="16" cy="34" r="1" /></g>
+      <g class="gh-p2"><circle cx="13" cy="22" r="4.500" fill="#ff8f6b" /><path d="M10 21q3-2 6 0" stroke="#fff" stroke-width=".9" fill="none" opacity=".4" /></g>
+      <g class="gh-p3"><circle cx="46" cy="9" r="2.800" fill="#5fd0b4" /></g>
       <g class="gh-planet"><circle cx="58" cy="26" r="11" fill="#7d6bff" /><path d="M50 22q8-5 16 0" stroke="#fff" stroke-width="1.200" fill="none" opacity=".35" /><ellipse cx="58" cy="28" rx="19" ry="4.500" fill="none" stroke="#ffb86b" stroke-width="2.200" transform="rotate(-18 58 28)" /></g>
-      <g class="gh-rocket"><path d="M30 14c-6 7-6 21-6 29h12c0-8 0-22-6-29z" fill="#ffffff" stroke="#3b4a8a" stroke-width="1.600" stroke-linejoin="round" /><path d="M30 14c-3 3-5 7-5.500 12h11C35 21 33 17 30 14z" fill="#ff5a4d" /><circle cx="30" cy="31" r="3.200" fill="#4a7bff" /><path d="M24 38l-6 8 6-2zM36 38l6 8-6-2z" fill="#ff5a4d" stroke="#3b4a8a" stroke-width="1.200" stroke-linejoin="round" /><g transform="translate(30 43) scale(.55)"><g class="gh-fire"><Flame /></g></g></g>
+      <g class="gh-moon"><circle cx="58" cy="10" r="2" fill="#e8ecf5" /></g>
+      <g class="gh-rocket"><path d="M30 14c-6 7-6 21-6 29h12c0-8 0-22-6-29z" fill="#ffffff" stroke="#3b4a8a" stroke-width="1.600" stroke-linejoin="round" /><path d="M30 14c-3 3-5 7-5.500 12h11C35 21 33 17 30 14z" fill="#ff5a4d" /><circle cx="30" cy="31" r="3.200" fill="#4a7bff" /><path d="M24 38l-6 8 6-2zM36 38l6 8-6-2z" fill="#ff5a4d" stroke="#3b4a8a" stroke-width="1.200" stroke-linejoin="round" /><g class="gh-fpos" transform="translate(30 43) scale(.55)"><g class="gh-fire"><Flame /></g></g></g>
       <rect x="20" y="58" width="20" height="3" rx="1.500" fill="#2a2f3a" opacity=".55" />
     </svg>
   );

@@ -1901,7 +1901,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 
 /* Space & Earth tile: the rocket lights up, climbs and is back on the pad */
 .cc.space { --cat: #4a6cf0; --cat-soft: color-mix(in srgb, #4a6cf0 12%, var(--surface)); }
-.cc.space .gh-fire { opacity: .0; transform-box: fill-box; transform-origin: 50% 0; } .cc.space .gh-rocket { transform-box: fill-box; }
+.cc.space .gh-fire { opacity: .0; transform-box: view-box; transform-origin: 0 0; } .cc.space .gh-rocket { transform-box: fill-box; }
 .cc.space .gh-planet { transform-box: fill-box; transform-origin: 50% 50%; animation: planetdrift 7s ease-in-out infinite alternate; }
 @keyframes planetdrift { from { transform: rotate(-3deg); } to { transform: rotate(3deg) translateY(-1px); } }
 @keyframes spacego { 0% { transform: translate(0, 0); } 10% { transform: translate(-.6px, 0); } 20% { transform: translate(.6px, 0); } 30% { transform: translate(0, -2px); } 62% { transform: translate(5px, -38px); opacity: 1; } 63% { transform: translate(5px, -38px); opacity: 0; } 80% { transform: translate(0, 4px); opacity: 0; } 100% { transform: translate(0, 0); opacity: 1; } }
@@ -2092,3 +2092,15 @@ textarea.field { resize: vertical; min-height: 84px; }
 .hwhdr.locked .hwlogo { filter: grayscale(1) brightness(.85); }
 .hwhdr.locked .hwcount { color: var(--text-2); }
 .hwhdr.locked { cursor: default; }
+
+/* Space tile: the other worlds keep moving too (a small red planet bobs, a green one drifts, a moon circles the ringed one, the stars twinkle) */
+.cc.space .gh-p2 { animation: p2bob 4.6s ease-in-out infinite alternate; }
+.cc.space .gh-p3 { animation: p3drift 6s ease-in-out infinite alternate; }
+.cc.space .gh-moon { transform-box: view-box; transform-origin: 58px 26px; animation: moonorbit 7s linear infinite; }
+.cc.space .gh-tw { animation: twinkle 2.4s ease-in-out infinite; } .cc.space .gh-tw.b { animation-delay: -.8s; } .cc.space .gh-tw.c { animation-delay: -1.6s; }
+@keyframes p2bob { from { transform: translate(0, -1.5px); } to { transform: translate(1px, 2px); } }
+@keyframes p3drift { from { transform: translate(-2px, 0); } to { transform: translate(3px, 1.5px); } }
+@keyframes moonorbit { to { transform: rotate(360deg); } }
+@keyframes twinkle { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .cc.space .gh-p2, .cc.space .gh-p3, .cc.space .gh-moon, .cc.space .gh-tw { animation: none; } }
+.gh .gh-fpos { transform-box: view-box; } /* the flame sits at the nozzle: its translate/scale must not be measured from the flame's own box (that shifted it to the left) */
