@@ -25,6 +25,7 @@ const JOBS = [
 ];
 const only = (process.argv[2] ?? "").split(",").filter(Boolean); // e.g. `ingest,live` to run just those
 const jobs = JOBS.filter((j) => !only.length || only.includes(j.job));
+const withTrains = !only.length || only.includes("trains"); // Italian trains (ViaggiaTreno): it blocks datacenters, so only a home computer can read it
 const deno = env.DENO_BIN || "deno";
 const stamp = () => new Date().toISOString().slice(11, 19);
 
@@ -54,10 +55,18 @@ async function run(j) {
   } finally { busy.delete(j.job); }
 }
 
+// ViaggiaTreno: scripts/viaggiatreno-local.mjs makes the train questions every 3 hours and reads the real times every 2 minutes; it needs `npm install` once
+function startTrains() {
+  const p = spawn(process.execPath, ["--experimental-strip-types", "--no-warnings", join("scripts", "viaggiatreno-local.mjs")], { cwd: root, env, stdio: ["ignore", "inherit", "inherit"] });
+  p.on("exit", (c) => { console.error(`[${stamp()}] trains stopped (${c}), restarting in 30 s`); trains = null; setTimeout(() => { trains = startTrains(); }, 30_000); });
+  return p;
+}
+let trains = withTrains ? startTrains() : null;
+
 // the first minute is the time Deno needs to start and download what it needs
 let n = 0;
 setInterval(() => { n++; for (const j of jobs) if (n % j.every === 0) void run(j); }, 60_000);
 setTimeout(() => { for (const j of jobs) void run(j); }, 20_000);
-const stop = () => { for (const p of servers.values()) p.kill(); process.exit(0); };
+const stop = () => { for (const p of servers.values()) p.kill(); trains?.kill(); process.exit(0); };
 process.on("SIGINT", stop); process.on("SIGTERM", stop);
-console.log(`Home cron started: ${jobs.map((j) => j.job).join(", ")}`);
+console.log(`Home cron started: ${jobs.map((j) => j.job).join(", ")}${withTrains ? ", trains" : ""}`);
