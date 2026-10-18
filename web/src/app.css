@@ -2087,3 +2087,4 @@ textarea.field { resize: vertical; min-height: 84px; }
 /* the banner underneath keeps its text clear of the one in front: bottom right */
 .newsstack > .promowrap:not(:only-child):last-child .promotxt { left: auto; right: 5%; top: auto; bottom: 10px; transform: none; text-align: right; align-items: flex-end; }
 .newsstack > .promowrap:not(:only-child):last-child .promotxt { padding: 6px 10px; border-radius: 12px; background: rgba(8, 4, 28, .62); width: auto; max-width: 62%; }
+.hwhdr.locked { filter: grayscale(1); opacity: .55; cursor: default; }

@@ -5,6 +5,7 @@ import { RING_BONUS, STREAK_MILESTONES } from "../../shared/rewards.ts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { LevelUpFx } from "./components/LevelUpFx.tsx";
 import "./components/LevelUpFx.css";
+import { HalloweenHeaderBtn } from "./components/HalloweenHeaderBtn.tsx";
 import { BetSheet } from "./components/BetSheet.tsx";
 import { offerOdds } from "../../shared/offers.ts";
 import { OFFER_EVENT, offerErrorText, type OfferUse } from "./components/PersonalOffer.tsx";
@@ -910,7 +911,7 @@ export function App() {
     <div class={`shell${ready ? "" : " booting"}`} aria-busy={!ready}>
       <Sidebar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} rankBadge={reqCount} social={social} />
       <div>
-        <Header satire={msg.home.satire} claimable={claimable} onWallet={() => { setRewardsTab("today"); setRewardsOpen(true); }} onShop={() => { store.set("shopseen", new Date().toISOString().slice(0, 10)); setShopSeen(true); setRewardsTab("shop"); setRewardsOpen(true); }} shopNew={!shopSeen || !!pending.get()} shopLabel={hubText(locale).tabs.shop} shopDeal={dealOf(Date.now()).pct} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} credits={profile ? (showWelcome ? welcomeN : profile.credits) : null} who={profile?.id ?? null} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
+        <Header satire={msg.home.satire} claimable={claimable} onWallet={() => { setRewardsTab("today"); setRewardsOpen(true); }} onShop={() => { store.set("shopseen", new Date().toISOString().slice(0, 10)); setShopSeen(true); setRewardsTab("shop"); setRewardsOpen(true); }} shopNew={!shopSeen || !!pending.get()} shopLabel={hubText(locale).tabs.shop} shopDeal={dealOf(Date.now()).pct} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} credits={profile ? (showWelcome ? welcomeN : profile.credits) : null} who={profile?.id ?? null} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} extra={<HalloweenHeaderBtn msg={msg} now={Date.now()} />} />
         <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
         <Ticker items={tickerItems} label={msg.ticker.label} />
         <main class="content">

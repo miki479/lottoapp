@@ -16,7 +16,6 @@ import { Trophy3D } from "../components/looks/Trophy3D.tsx";
 import { XpInfo } from "../components/XpInfo.tsx";
 import { Meter } from "../components/Meter.tsx";
 import { ProfileAlbum } from "../components/ProfileAlbum.tsx";
-import { HalloweenEntry } from "../components/HalloweenEntry.tsx";
 import { LeagueBadge } from "../components/League.tsx";
 import { levelProgress } from "../../../shared/looks";
 import type { MyProgress } from "../lib/looks.ts";
@@ -102,7 +101,6 @@ export function ProfileView(p: {
             {!p.registered ? <button class="btn primary wide" onClick={p.onAuth}>{m.signIn}</button> : !p.profile?.display_name && <button class="btn secondary wide" onClick={p.onNickname}>{m.nickname.title}</button>}
           </section>
 
-          <HalloweenEntry msg={p.msg} now={Date.now()} />
           <StreakCard streak={p.profile?.streak ?? 0} freezes={p.profile?.freezes ?? 0} msg={p.msg} locale={p.locale} />
           {p.missionsNode}
           {p.registered && <BankCard locale={p.locale} credits={p.profile?.credits} />}
