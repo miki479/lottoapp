@@ -87,6 +87,7 @@ export interface Messages {
   tip: { btn: string; title: string; hint: string; send: (n: number) => string; sent: (n: number) => string; none: string; noFriends: string; banner: (who: string) => string; error: string };
   loss: { title: string; body: (balance: string, bonus: string) => string; share: string; signup: string; later: string };
   referral: { title: string; body: (bonus: string) => string; code: string; copy: string; copied: string; share: string; shareText: (code: string) => string; counts: (invited: number, paid: number) => string; guest: string; accepted: string };
+  welcome: { title: string; sub: string; steps: string[]; gift: (n: string) => string; play: string; note: string };
   voice: { on: string; off: string; placed: (win: string) => string; won: (amount: string) => string; lost: string; flash: string; label: string };
   ladder: { info: string; infoLabel: string; base: string; title: string; sub: (min: number) => string; estimate: string; chip: string };
   push: { active: string; events: string; friendsPref: string; flashPref: string; streakPref: string; prefsHint: string; title: string; body: string; enable: string; disable: string; on: string; off: string; denied: string; later: string; askTitle: string; askBody: string; yes: string };

@@ -146,8 +146,10 @@ export function Home(p: HomeProps) {
         <h1>{slogan.title}</h1>
         <p>{slogan.body}</p>
       </section>
-      <HalloweenBanner msg={msg} />
-      <PromoBanner msg={msg} onOpen={p.onPromo} reopen={p.newsKey} />
+      <div class="newsstack">
+        <HalloweenBanner msg={msg} />
+        <PromoBanner msg={msg} onOpen={p.onPromo} reopen={p.newsKey} />
+      </div>
       {howOpen && (
         <section class="howto" aria-label={msg.home.how.title}>
           <div class="howhead"><h2>{msg.home.how.title}</h2><button class="howx" onClick={() => { safe.set("how", "1"); setHowOpen(false); }}>{msg.home.how.close}</button></div>

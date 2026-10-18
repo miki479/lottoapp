@@ -87,6 +87,7 @@ const AdminPage = lazyNamed<Parameters<typeof import("./components/AdminPage.tsx
 const LookSheet = lazyNamed<Parameters<typeof import("./components/LookSheet.tsx")["LookSheet"]>[0]>(() => import("./components/LookSheet.tsx").then((m) => m.LookSheet));
 const PublicProfile = lazyNamed<Parameters<typeof import("./components/PublicProfile.tsx")["PublicProfile"]>[0]>(() => import("./components/PublicProfile.tsx").then((m) => m.PublicProfile));
 const PlacePicker = lazyNamed<Parameters<typeof import("./components/PlacePicker.tsx")["PlacePicker"]>[0]>(() => import("./components/PlacePicker.tsx").then((m) => m.PlacePicker));
+const WelcomeIntro = lazyNamed<Parameters<typeof import("./components/WelcomeIntro.tsx")["WelcomeIntro"]>[0]>(() => import("./components/WelcomeIntro.tsx").then((m) => m.WelcomeIntro));
 const RewardsSheet = lazyNamed<Parameters<typeof import("./components/RewardsSheet.tsx")["RewardsSheet"]>[0]>(() => import("./components/RewardsSheet.tsx").then((m) => m.RewardsSheet));
 
 const store = {
@@ -149,6 +150,8 @@ export function App() {
   const [levelFx, setLevelFx] = useState<{ from: number; to: number } | null>(null);
   const [look, setLook] = useState<MyProgress | null>(null), [lookOpen, setLookOpen] = useState(false), [pubUser, setPubUser] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  /** First visit: the welcome (how to play + gift of credits) is on until it has run; `welcomeN` is the figure the wallet shows meanwhile. */
+  const [welcomeDone, setWelcomeDone] = useState(false), [welcomeN, setWelcomeN] = useState(0);
   const [sheet, setSheet] = useState<{ m: MarketRow; pick: Pick; offer?: OfferUse; tipFrom?: string } | null>(null);
   const [auth, setAuth] = useState(false);
   const [nick, setNick] = useState(false);
@@ -205,6 +208,7 @@ export function App() {
   const [installEvt, setInstallEvt] = useState<Event | null>(null);
 
   const msg = t(locale);
+  const showWelcome = ready && !!profile && !welcomeDone && !store.get("welcomed") && bets.length === 0;
   const tz = profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [activity, setActivity] = useState<ActivityRow[]>([]), [limitBuys, setLimitBuys] = useState<{ who: string; at: string }[]>([]);
   const toastTimer = useRef<number | undefined>(undefined);
@@ -897,7 +901,7 @@ export function App() {
     <div class={`shell${ready ? "" : " booting"}`} aria-busy={!ready}>
       <Sidebar value={screen === "admin" ? "profile" : screen} onPick={go} msg={msg} openBets={openBets} profileDot={giftDot} rankBadge={reqCount} social={social} />
       <div>
-        <Header satire={msg.home.satire} claimable={claimable} onWallet={() => { setRewardsTab("today"); setRewardsOpen(true); }} onShop={() => { store.set("shopseen", new Date().toISOString().slice(0, 10)); setShopSeen(true); setRewardsTab("shop"); setRewardsOpen(true); }} shopNew={!shopSeen || !!pending.get()} shopLabel={hubText(locale).tabs.shop} shopDeal={dealOf(Date.now()).pct} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} credits={profile ? profile.credits : null} who={profile?.id ?? null} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
+        <Header satire={msg.home.satire} claimable={claimable} onWallet={() => { setRewardsTab("today"); setRewardsOpen(true); }} onShop={() => { store.set("shopseen", new Date().toISOString().slice(0, 10)); setShopSeen(true); setRewardsTab("shop"); setRewardsOpen(true); }} shopNew={!shopSeen || !!pending.get()} shopLabel={hubText(locale).tabs.shop} shopDeal={dealOf(Date.now()).pct} voice={voiceSupported() ? { on: voiceOn, label: msg.voice.label, toggle: toggleVoice } : null} locale={locale} onLocale={changeLocale} credits={profile ? (showWelcome ? welcomeN : profile.credits) : null} who={profile?.id ?? null} coin={currencySymbol(locale)} languageLabel={msg.common.language} creditsLabel={msg.common.credits} onHome={() => go("home")} />
         <OfflineBar offline={offline} msg={msg} onRetry={() => { loadMarkets(); setOffline(!navigator.onLine); }} />
         <Ticker items={tickerItems} label={msg.ticker.label} />
         <main class="content">
@@ -929,6 +933,7 @@ export function App() {
       {lookOpen && look && <LookSheet progress={look} msg={msg} myId={profile?.id ?? ""} onClose={() => setLookOpen(false)} onSaved={(p) => { setLook(p); flash(msg.look.saved); }} />}
       {pubUser && <PublicProfile id={pubUser} msg={msg} locale={locale} onClose={() => { setPubUser(null); loadReqs(); setReqTick((n) => n + 1); }} onToast={flash} />}
       {nick && <NicknameSheet msg={msg} current={profile?.display_name ?? null} onClose={() => setNick(false)} onSaved={(n) => { setNick(false); loadProfile(); loadQuests(); flash(n); }} />}
+      {showWelcome && profile && <WelcomeIntro text={msg.welcome} amount={profile.credits} coin={currencySymbol(locale)} locale={locale} onShown={setWelcomeN} onDone={() => { store.set("welcomed", "1"); setWelcomeDone(true); }} />}
       {ready && !resultBet && !sheet && !auth && !nick && unseen.length >= 4 && !digestSkip && <ResultsDigest bets={unseen} msg={msg} locale={locale} onOne={() => setDigestSkip(true)} onAll={markAllSeen} />}
       {resultBet && <ResultScreen onSkipAll={markAllSeen} bet={resultBet} msg={msg} locale={locale} balance={profile ? balanceMove(unseen, resultBet, profile.credits) : null} remaining={Math.max(0, unseen.filter((b) => b.id !== resultBet.id).length)} onClose={closeResult} onShare={shareResult} onNext={() => { markSeen(resultBet.id); const next = unseen.find((b) => b.id !== resultBet.id); setResultBet(next ?? null); }} />}
       {toast && <Toast text={toast.text} kind={toast.kind} lift={slip.length > 0} />}
