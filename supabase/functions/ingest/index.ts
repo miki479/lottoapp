@@ -1231,7 +1231,7 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       markets.push(...buildHourlyMarkets("wave", wv, now), ...buildHourlyMarkets("air", aq, now)); ok++;
     } catch (e) { notes.push(`om: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
-      const n = await fetchFlights().catch(() => null);
+      const n = await fetchFlights().catch(async (e) => { const m = String((e as Error).message ?? e).slice(0, 200); notes.push(`flights: ${m}`); await sb.from("feed_health").upsert({ feed_id: "opensky", last_error: m, last_error_at: new Date().toISOString() }); return null; });
       if (n !== null) { extraHist.push({ series: "flights:it", at: hourIso, value: n }); markets.push(...buildFlightMarkets(n, now)); ok++; }
     } catch (e) { notes.push(`flights: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
