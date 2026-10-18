@@ -94,9 +94,10 @@ export async function notifyStreak(sb: Db): Promise<number> {
 }
 
 /** Announce results settled in the last 30 minutes, once each. Returns how many were handled. */
-export async function notifyResults(sb: Db): Promise<number> {
+/** `windowMin`: how far back a settled bet still counts as news (30 minutes; a manual run may widen it to resend what a push outage lost). */
+export async function notifyResults(sb: Db, windowMin = 30): Promise<number> {
   if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
-  const since = new Date(Date.now() - 30 * 60_000).toISOString();
+  const since = new Date(Date.now() - windowMin * 60_000).toISOString();
   const { data: bets } = await sb.from("bets").select("id,user_id,status,stake,payout,markets(params,city_id,kind),profiles(locale)")
     .eq("notified", false).neq("status", "open").gte("settled_at", since).limit(200);
   const { data: pars } = await sb.from("parlays").select("id,user_id,status,stake,payout,profiles(locale)")

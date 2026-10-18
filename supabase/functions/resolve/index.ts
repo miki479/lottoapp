@@ -16,6 +16,8 @@ Deno.serve(safe(async (req) => {
   const denied = requireCron(req);
   if (denied) return denied;
   const sb = db();
+  // "?notify_window=360" (minutes, up to 12 h) resends results that a push outage left unannounced; the normal call looks back 30 minutes
+  const nw = Number(new URL(req.url).searchParams.get("notify_window")), notifyWindow = nw > 30 && nw <= 720 ? nw : 30;
   const nowIso = new Date().toISOString();
   const now = Math.floor(Date.now() / 1000);
   const cities = new Map((await loadCities()).map((c) => [c.id, c]));
@@ -220,7 +222,7 @@ Deno.serve(safe(async (req) => {
   const safeCount = (p: Promise<number>) => p.catch((e) => { console.error("notify failed", e); return 0; });
   // the pending-push checks cost one database request each: run them every third minute, or at once when something was just settled (a result push must not wait)
   const checkPushes = out.settled + out.voided > 0 || minute % 3 === 0;
-  const notified = (checkPushes ? await safeCount(notifyResults(sb)) + await safeCount(notifyFlash(sb)) + await safeCount(notifyStreak(sb)) + await safeCount(notifyModeration(sb)) + await safeCount(notifyInvites(sb)) + await safeCount(notifySupers(sb)) + await safeCount(notifyFriendWins(sb)) + await safeCount(notifyFriendRequests(sb)) + await safeCount(notifyReminders(sb)) + await safeCount(notifyBroadcast(sb)) + await safeCount(notifyDirect(sb)) + await safeCount(notifyLiveDelay(sb)) + await safeCount(notifyOffers(sb)) + (minute % 2 === 0 ? await safeCount(notifyRewards(sb)) : 0) + await safeCount(notifyTips(sb)) + (minute % 5 === 1 ? await safeCount(notifyOvertaken(sb)) : 0) + (minute % 10 === 3 ? await safeCount(notifyDaily(sb)) + await safeCount(notifyVotes(sb)) : 0) + (minute % 10 === 7 ? await safeCount(notifyLoss(sb)) : 0) + (minute % 10 === 0 ? await safeCount(notifyRecap(sb)) + await safeCount(notifyComeback(sb)) : 0) : 0);
+  const notified = (checkPushes ? await safeCount(notifyResults(sb, notifyWindow)) + await safeCount(notifyFlash(sb)) + await safeCount(notifyStreak(sb)) + await safeCount(notifyModeration(sb)) + await safeCount(notifyInvites(sb)) + await safeCount(notifySupers(sb)) + await safeCount(notifyFriendWins(sb)) + await safeCount(notifyFriendRequests(sb)) + await safeCount(notifyReminders(sb)) + await safeCount(notifyBroadcast(sb)) + await safeCount(notifyDirect(sb)) + await safeCount(notifyLiveDelay(sb)) + await safeCount(notifyOffers(sb)) + (minute % 2 === 0 ? await safeCount(notifyRewards(sb)) : 0) + await safeCount(notifyTips(sb)) + (minute % 5 === 1 ? await safeCount(notifyOvertaken(sb)) : 0) + (minute % 10 === 3 ? await safeCount(notifyDaily(sb)) + await safeCount(notifyVotes(sb)) : 0) + (minute % 10 === 7 ? await safeCount(notifyLoss(sb)) : 0) + (minute % 10 === 0 ? await safeCount(notifyRecap(sb)) + await safeCount(notifyComeback(sb)) : 0) : 0);
   return Response.json({ ...out, notified, notifyError: lastNotifyError.msg });
 }));
 
