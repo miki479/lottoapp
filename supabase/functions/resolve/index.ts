@@ -60,9 +60,9 @@ Deno.serve(safe(async (req) => {
     for (let from = 0; from < 20_000; from += 1000) { const { data, error: e } = await page(from, from + 999); if (e) return null; all.push(...(data ?? [])); if ((data?.length ?? 0) < 1000) return all; }
     return null;
   };
-  const metricRows = new Map<string, MetricObservation[]>(), rainRows = new Map<string, WeatherObservation[]>(), tickRows = new Map<string, TickObservation[]>(), matchRows = new Map<string, MatchObservation>(), matchDone = new Set<string>();
+  const delayRows = new Map<string, DelayObservation[]>(), metricRows = new Map<string, MetricObservation[]>(), rainRows = new Map<string, WeatherObservation[]>(), tickRows = new Map<string, TickObservation[]>(), matchRows = new Map<string, MatchObservation>(), matchDone = new Set<string>();
   try {
-    const need = { metric: [] as { feedId: string; metric: string; hour: number }[], rain: [] as { feedId: string; hour: number }[], tick: [] as { series: string; at: number }[], match: new Set<string>() };
+    const need = { delay: [] as { feedId: string; tripId: string }[], metric: [] as { feedId: string; metric: string; hour: number }[], rain: [] as { feedId: string; hour: number }[], tick: [] as { series: string; at: number }[], match: new Set<string>() };
     for (const row of dueList) {
       try {
         const e = marketToEvent(row);
@@ -70,9 +70,19 @@ Deno.serve(safe(async (req) => {
         else if (e.kind === "rain_at") need.rain.push({ feedId: e.feedId, hour: hourOf(e.targetAt) });
         else if (e.kind === "tick_gt") need.tick.push({ series: e.series, at: e.targetAt });
         else if (e.kind === "match_bet") need.match.add(e.eventId);
+        else if (e.kind === "bus_delay_gt" || e.kind === "train_delay_gt") need.delay.push({ feedId: e.feedId, tripId: e.tripId });
       } catch { /* the loop below reports it */ }
     }
     const iso = (t: number) => new Date(t * 1000).toISOString();
+    for (const part of chunks([...new Set(need.delay.map((x) => x.tripId))], 25)) {
+      const data = await readAll((a, b) => sb.from("delay_observations").select("feed_id,trip_id,stop_id,stop_sequence,route_id,observed_at,delay_sec,predicted_at").in("trip_id", part).order("feed_id").order("trip_id").order("observed_at").order("stop_id").range(a, b));
+      if (!data) continue;
+      for (const x of need.delay) if (part.includes(x.tripId)) delayRows.set(`${x.feedId}|${x.tripId}`, []);
+      for (const d of data) delayRows.get(`${d.feed_id}|${d.trip_id}`)?.push({
+        feedId: d.feed_id, tripId: d.trip_id, stopId: d.stop_id, stopSequence: d.stop_sequence ?? undefined, routeId: d.route_id,
+        observedAt: Date.parse(d.observed_at) / 1000, delaySec: d.delay_sec, predictedAt: d.predicted_at ? Date.parse(d.predicted_at) / 1000 : undefined,
+      });
+    }
     for (const part of chunks([...new Set(need.metric.map((x) => x.feedId))], 40)) {
       const hours = [...new Set(need.metric.filter((x) => part.includes(x.feedId)).map((x) => x.hour))];
       const data = await readAll((a, b) => sb.from("metric_observations").select("feed_id,metric,hour_start,value,fetched_at").in("feed_id", part).in("hour_start", hours.map(iso)).order("feed_id").order("metric").order("hour_start").range(a, b));
@@ -162,13 +172,16 @@ Deno.serve(safe(async (req) => {
           weather = (data ?? []).map((w) => ({ feedId: w.feed_id, hourStart: Date.parse(w.hour_start) / 1000, precipitationMm: Number(w.precipitation_mm), fetchedAt: Date.parse(w.fetched_at) / 1000 }));
         }
       } else {
-        const { data } = await sb.from("delay_observations").select("feed_id,trip_id,stop_id,stop_sequence,route_id,observed_at,delay_sec,predicted_at")
-          .eq("feed_id", event.feedId).eq("trip_id", event.tripId);
-        delays = (data ?? []).map((d) => ({
-          feedId: d.feed_id, tripId: d.trip_id, stopId: d.stop_id, stopSequence: d.stop_sequence ?? undefined, routeId: d.route_id,
-          observedAt: Date.parse(d.observed_at) / 1000, delaySec: d.delay_sec,
-          predictedAt: d.predicted_at ? Date.parse(d.predicted_at) / 1000 : undefined,
-        }));
+        const hit = delayRows.get(`${event.feedId}|${event.tripId}`);
+        if (hit) delays = hit; else {
+          const { data } = await sb.from("delay_observations").select("feed_id,trip_id,stop_id,stop_sequence,route_id,observed_at,delay_sec,predicted_at")
+            .eq("feed_id", event.feedId).eq("trip_id", event.tripId);
+          delays = (data ?? []).map((d) => ({
+            feedId: d.feed_id, tripId: d.trip_id, stopId: d.stop_id, stopSequence: d.stop_sequence ?? undefined, routeId: d.route_id,
+            observedAt: Date.parse(d.observed_at) / 1000, delaySec: d.delay_sec,
+            predictedAt: d.predicted_at ? Date.parse(d.predicted_at) / 1000 : undefined,
+          }));
+        }
       }
 
       const res = resolveEvent({
