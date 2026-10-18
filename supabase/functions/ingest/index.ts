@@ -566,7 +566,7 @@ const MAX_TRAINS_PER_RUN = 40;
 async function ingestPerTrain(sb: ReturnType<typeof db>, city: CityConfig, feed: FeedConfig, now: number, tracked: Map<string, Set<string>>): Promise<number> {
   const adapter = trainJsonAdapterFor(feed)!;
   // Datacenter IPs are refused upstream: VIAGGIATRENO_BASE_URL + RELAY_SECRET point to scripts/viaggiatreno-relay.mjs on a normal connection.
-  const base = (Deno.env.get("VIAGGIATRENO_BASE_URL") ?? feed.url).replace(/\/$/, "");
+  const base = (Deno.env.get("VIAGGIATRENO_BASE_URL") || feed.url).replace(/\/$/, "");
   const relayHeaders: Record<string, string> = Deno.env.get("RELAY_SECRET") ? { "x-relay-secret": Deno.env.get("RELAY_SECRET")! } : {};
   const trips = [...tracked.keys()].slice(0, MAX_TRAINS_PER_RUN);
   if (trips.length === 0) return 0;

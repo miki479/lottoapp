@@ -164,7 +164,7 @@ function vtDate(epoch) {
 const hms = (secs) => `${pad(Math.floor(secs / 3600))}:${pad(Math.floor((secs % 3600) / 60))}:${pad(secs % 60)}`;
 
 async function trainMarkets(feed) {
-  const base = (process.env.VIAGGIATRENO_BASE_URL ?? feed.url).replace(/\/$/, "");
+  const base = (process.env.VIAGGIATRENO_BASE_URL || feed.url).replace(/\/$/, "");
   const headers = { "User-Agent": "LateLotto-markets/0.1", ...(process.env.RELAY_SECRET ? { "x-relay-secret": process.env.RELAY_SECRET } : {}) };
   const vt = async (path) => {
     if (pause) await new Promise((r) => setTimeout(r, pause));

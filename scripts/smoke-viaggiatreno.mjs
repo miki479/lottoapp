@@ -4,7 +4,7 @@
 import { viaggiatrenoAdapter } from "../shared/adapters/viaggiatreno.ts";
 
 const station = process.argv[2] ?? "MILANO CENTRALE";
-const base = (process.argv[3] ?? process.env.VIAGGIATRENO_BASE_URL ?? "https://www.viaggiatreno.it/infomobilitamobile/resteasy/viaggiatreno").replace(/\/$/, "");
+const base = (process.argv[3] ?? (process.env.VIAGGIATRENO_BASE_URL || undefined) ?? "https://www.viaggiatreno.it/infomobilitamobile/resteasy/viaggiatreno").replace(/\/$/, "");
 const headers = { "User-Agent": "LateLotto-smoke/0.1", ...(process.env.RELAY_SECRET ? { "x-relay-secret": process.env.RELAY_SECRET } : {}) };
 
 async function get(path, json = true) {
