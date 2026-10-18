@@ -12,7 +12,7 @@ import { hubText } from "../web/src/lib/shopText.ts";
 
 const sql = readFileSync(new URL("../supabase/migrations/0107_shop_daily.sql", import.meta.url), "utf8");
 /** Rows of a `values (...)` list inside the body of one SQL function. */
-const sql127 = readFileSync(new URL("../supabase/migrations/0166_crew_avatars.sql", import.meta.url), "utf8");
+const sql127 = readFileSync(new URL("../supabase/migrations/0168_picture_cards.sql", import.meta.url), "utf8");
 const fnBody = (name: string) => { const i = sql.indexOf(`function public.${name}(`); expect(i, name).toBeGreaterThan(-1); return sql.slice(i, sql.indexOf("$$;", sql.indexOf("$$", i) + 2)); };
 
 const sql150 = readFileSync(new URL("../supabase/migrations/0150_rarer_legendaries.sql", import.meta.url), "utf8");
@@ -68,8 +68,8 @@ describe("pack odds", () => {
 describe("catalogue", () => {
   it("has 100 numbered cards with unique ids, spread over every category", () => {
     expect(CARDS.length).toBe(CARD_TOTAL);
-    expect(CARDS.map((c) => c.n)).toEqual(Array.from({ length: 100 }, (_, i) => i + 1));
-    expect(new Set(CARDS.map((c) => c.id)).size).toBe(100);
+    expect(CARDS.map((c) => c.n)).toEqual(Array.from({ length: 110 }, (_, i) => i + 1));
+    expect(new Set(CARDS.map((c) => c.id)).size).toBe(110);
     for (const c of CARD_CATS) expect(cardsOfCat(c).length, c).toBeGreaterThanOrEqual(10);
     expect(CARDS.filter((c) => c.rarity === "legendary").length).toBeLessThan(CARDS.filter((c) => c.rarity === "epic").length);
   });
@@ -82,7 +82,7 @@ describe("catalogue", () => {
         expect(cardCaption(c.n, l).length, `${c.id} caption ${l}`).toBeGreaterThan(0); expect(cardCaption(c.n, l).length).toBeLessThanOrEqual(70);
       }
     }
-    for (const l of ["it", "en-US", "ja"] as const) expect(new Set(CARDS.map((c) => cardName(c.n, l))).size, l).toBe(100);
+    for (const l of ["it", "en-US", "ja"] as const) expect(new Set(CARDS.map((c) => cardName(c.n, l))).size, l).toBe(110);
   });
   it("holds the cards, the collectible avatars and the decorations no level unlocks", () => {
     const free = DECORATIONS.filter((d) => d.level === undefined);
@@ -90,8 +90,8 @@ describe("catalogue", () => {
     for (const d of free) expect(SHOP_ITEMS.find((i) => i.id === d.id)?.rarity).toBe(d.rarity);
     expect(SHOP_ITEMS.filter((i) => i.kind === "avatar").length).toBe(77);
     for (const a of DEFAULT_AVATARS) expect(SHOP_ITEMS.some((i) => i.id === a)).toBe(false);
-    expect(SHOP_ITEMS.length).toBe(191);
-    expect(new Set(SHOP_ITEMS.map((i) => itemKey(i.kind, i.id))).size).toBe(191);
+    expect(SHOP_ITEMS.length).toBe(201);
+    expect(new Set(SHOP_ITEMS.map((i) => itemKey(i.kind, i.id))).size).toBe(201);
     expect(SHOP_ITEMS.filter((i) => i.kind !== "card").every((i) => i.rarity !== "common")).toBe(true);
   });
   it("looks are the rarer pulls", () => { for (const p of PACKS) { expect(lookChance(p.tier)).toBeGreaterThan(0); expect(lookChance(p.tier)).toBeLessThan(0.7); } });

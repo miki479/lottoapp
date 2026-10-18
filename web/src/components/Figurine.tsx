@@ -25,6 +25,17 @@ function Backdrop({ cat }: { cat: CardCat }) {
  */
 export function Figurine({ card, name, numText, owned = true, big = false }: { card: CardDef; name: string; numText: string; owned?: boolean; big?: boolean }) {
   const Icon = CARD_ICONS[card.icon] ?? HelpCircle;
+  if (card.img && owned) {
+    // a rendered picture card: the frame is part of the image, the number and the name are written on its empty plates
+    return (
+      <div class={`fig pic fr-${card.rarity} ${big ? "big" : ""}`} role="img" aria-label={`${numText}: ${name}`}>
+        <img class="fgpic" src={card.img} alt="" loading="lazy" decoding="async" draggable={false} />
+        <span class="fgpn num">{numText}</span>
+        <span class="fgpname">{name}</span>
+        <i class="fgshine" aria-hidden="true" />
+      </div>
+    );
+  }
   return (
     <div class={`fig fc-${card.cat} fr-${card.rarity} ${owned ? "" : "miss"} ${big ? "big" : ""}`} role="img" aria-label={owned ? `${numText}: ${name}` : numText}>
       <Backdrop cat={card.cat} />

@@ -114,11 +114,22 @@ const ROWS: readonly (readonly [string, string, string, string, string, string])
   ["Giusto processo", "Fair trial", "公正な裁判", "Richiede tempo, ed è il bello.", "Takes time, which is the point.", "時間はかかる。それが肝心。"],
   ["Nuova norma", "New regulation", "新しい規則", "Pagina 412, comma 7, nota 3.", "Page 412, paragraph 7, footnote 3.", "412ページ、第7項、注3。"],
   ["Sentenza definitiva", "Final verdict", "最終判決", "Definitiva. Davvero definitiva.", "Final. Really final.", "これで決着。本当に決着。"],
+  // picture cards 101-110
+  ["Regionale dal tunnel", "Regional out of the tunnel", "トンネルを出る普通列車", "Arriva col fumo negli occhi. Il ritardo è un dettaglio.", "Arrives in a haze. The delay is a detail.", "煙の中から到着。遅れなんて些細なこと。"],
+  ["Il capotreno e l’orologio", "The conductor and his watch", "車掌と懐中時計", "Guarda l’ora come se potesse cambiarla.", "Checks the time as if he could change it.", "時計を見つめる。変えられるかのように。"],
+  ["Bus sotto la pioggia", "Bus in the rain", "雨の中のバス", "La fermata è lì. Anche l’acqua.", "The stop is right there. So is the water.", "停留所はすぐそこ。水たまりもすぐそこ。"],
+  ["Tabellone dei ritardi", "Delay board", "遅延案内板", "Tutti guardano su. Nessuno è contento.", "Everyone looks up. Nobody is happy.", "みんな見上げる。誰も喜ばない。"],
+  ["Temporale sul segnale", "Storm over the signal", "信号機の上の嵐", "Il lampo arriva prima del treno.", "The lightning shows up before the train.", "電車より先に雷が来る。"],
+  ["La volpe sui binari", "The fox on the tracks", "線路のキツネ", "Conosce l’orario meglio di te.", "Knows the timetable better than you.", "時刻表をあなたより知っている。"],
+  ["Passaggio a livello nella nebbia", "Level crossing in the fog", "霧の踏切", "Rosso fisso. Il treno è un’ipotesi.", "Steady red. The train is a hypothesis.", "赤信号のまま。電車は仮説です。"],
+  ["Merci al tramonto", "Freight at sunset", "夕焼けの貨物列車", "Passa piano e senza fretta. Come i ritardi.", "Rolls by slowly, in no hurry. Like the delays.", "ゆっくり通り過ぎる。遅延のように。"],
+  ["Locomotiva dorata", "The golden locomotive", "黄金の機関車", "Non è mai in ritardo. È il tempo che arriva prima.", "It is never late. Time arrives early.", "遅れない。時間のほうが先に着く。"],
+  ["Torre dell’orologio d’ossidiana", "Obsidian clock tower", "黒曜石の時計塔", "Segna sempre mezzanotte. Qui il ritardo è eterno.", "Always shows midnight. Here the delay is eternal.", "いつも真夜中を指す。ここでは遅れは永遠。"],
 ];
 
 const COL: Record<Locale, number> = { it: 0, "en-US": 1, "en-GB": 1, ja: 2 };
-/** Card n (1..100): its name in the player's language. */
+/** Card n (1..110): its name in the player's language. */
 export const cardName = (n: number, locale: Locale): string => ROWS[n - 1]?.[COL[locale]] ?? "";
-/** Card n (1..100): its short ironic caption. */
+/** Card n (1..110): its short ironic caption. */
 export const cardCaption = (n: number, locale: Locale): string => ROWS[n - 1]?.[3 + COL[locale]] ?? "";
 export const CARD_TEXT_ROWS = ROWS.length;
