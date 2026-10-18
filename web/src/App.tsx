@@ -878,7 +878,8 @@ export function App() {
   useEffect(() => {
     const c = profile?.credits; if (c === undefined) return;
     const was = prevCredits.current; prevCredits.current = c;
-    if (was === null || was < 1000 || c >= 1000 || shopOpenRef.current) return;
+    // a real bad day: the balance falls through half of the starting 1000 (a first stake of 50 is no reason to say so)
+    if (was === null || was < 500 || c >= 500 || shopOpenRef.current) return;
     const day = new Date().toISOString().slice(0, 10);
     if (store.get("lossday") === day) return;
     store.set("lossday", day); setLossOpen(true);
