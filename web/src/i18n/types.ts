@@ -119,7 +119,7 @@ export interface Messages {
     fullMeasured: (level: string) => string; measured: (min: number, sec: number) => string; threshold: (min: number) => string; rainMeasured: (mm: string) => string; tickMeasured: (v: string) => string; matchScore: (home: number, away: number) => string; metricMeasured: (name: string, value: string) => string; strikeOn: string; strikeOff: string; trafficMeasured: (avg: number, thr: number) => string; quakeMeasured: (count: number, max: string) => string;
     stake: string; odds: string; share: string; shareText: string; close: string; more: (n: number) => string; saved: string;
   };
-  rankTabs: { world: string; local: string; friends: string; near: string; country: string; city: string; km: string; needHome: string; radius: string };
+  rankTabs: { world: string; local: string; friends: string; near: string; country: string; city: string; km: string; needHome: string; localHint: string; radius: string };
   ranking: { seasonLbl: string; seasonLegend: string; balanceLbl: string; monthLbl: string; leagueLegend: string;
     title: string; season: (d: number) => string; scopes: { global: string; country: string; city: string; friends: string }; you: string; credits: string;
     empty: { title: string; body: string }; gate: { title: string; body: string; cta: string };

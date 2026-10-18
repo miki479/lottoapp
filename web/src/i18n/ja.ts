@@ -121,7 +121,7 @@ const ja: Messages = {
     measured: (m, s) => (m > 0 ? `実測の遅延：${m}分${s}秒` : `実測の遅延：${s}秒`), threshold: (m) => `しきい値：${m}分超`, rainMeasured: (mm) => `実測の降水量：${mm} mm`, matchScore: (h, a) => `最終スコア：${h}–${a}`, tickMeasured: (v) => `実測値：${v}`, trafficMeasured: (a, t) => `実測の平均速度：${a} km/h（しきい値 ${t}）`, strikeOn: "ストライキは予定通り", strikeOff: "ストライキは中止または延期", metricMeasured: (n, v) => `${n}の実測値：${v}`, quakeMeasured: (c, m) => (c === 0 ? "その時間帯に地震はありませんでした" : `地震${c}回、最大${m}`),
     stake: "賭け額", odds: "オッズ", share: "結果をシェア", shareText: "LateBetでの私の結果", close: "閉じる", more: (n) => `他に${n}件の結果`, saved: "画像を保存しました",
   },
-  rankTabs: { world: "世界", local: "地元", friends: "友達", near: "近く", country: "国", city: "都市", km: "km", needHome: "町を設定すると、近くのプレイヤーが表示されます。", radius: "範囲" },
+  rankTabs: { world: "世界", local: "地元", friends: "友達", near: "近く", country: "国", city: "都市", km: "km", needHome: "町を設定すると、近くのプレイヤーが表示されます。", localHint: "ローカルランキングを見るには、プロフィールで都市を設定し、端末が求めたら位置情報(GPS)を許可してください。", radius: "範囲" },
   ranking: {
     seasonLbl: "今月", seasonLegend: "ランキングは月ごとで、月初からの純損益（勝ち分−負け分）で決まります。プレゼントを含む残高とは別です。", balanceLbl: "残高", monthLbl: "今月", leagueLegend: "数字は今月の残高です。月末に全員リセットされます。",
     title: "ランキング", season: (d) => (d <= 1 ? "シーズンは今日で終了" : `シーズン終了まであと${d}日`),

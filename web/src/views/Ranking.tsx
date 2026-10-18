@@ -95,6 +95,7 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
       <div class="seg" role="tablist">{(["world", "local", "friends"] as Tab[]).map((x) => <button key={x} role="tab" class={tab === x ? "on" : ""} aria-selected={tab === x} onClick={() => setTab(x)}>{p.msg.rankTabs[x]}</button>)}</div>
       {tab === "local" && (
         <section class="card stack">
+          <p class="hint">{p.msg.rankTabs.localHint}</p>
           <div class="mkchips">{(["near", "city", "country"] as Local[]).map((x) => <button key={x} class={`mkchip ${local === x ? "on" : ""}`} aria-pressed={local === x} onClick={() => setLocal(x)}>{p.msg.rankTabs[x]}</button>)}</div>
           {local === "near" && !p.home && <><p class="hint">{p.msg.rankTabs.needHome}</p><HomePlaceField msg={p.msg} locale={p.locale} value={p.home} onChange={p.onHome} /></>}
           {local === "near" && p.home && <><div class="mkchips">{RADII.map((r) => <button key={r} class={`mkchip ${km === r ? "on" : ""}`} aria-pressed={km === r} onClick={() => setKm(r)}>{r} {p.msg.rankTabs.km}</button>)}</div><HomePlaceField msg={p.msg} locale={p.locale} value={p.home} onChange={p.onHome} /></>}
