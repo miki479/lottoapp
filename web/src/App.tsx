@@ -1,3 +1,4 @@
+import { catTiles } from "./lib/countrycats.ts";
 import { memo } from "./lib/cache.ts";
 import { deviceId } from "./lib/device.ts";
 import { Activity, Bitcoin, Clapperboard, Clock, CloudLightning, Crown, Gamepad2, MapPin, Trophy, TrendingUp, Train, Users, Zap } from "lucide-preact";
@@ -531,7 +532,14 @@ export function App() {
   // a question already bet on leaves the lists (it stays in "My bets"), so it cannot be played twice by mistake
   const betOn = useMemo(() => new Set(bets.filter((b) => b.status === "open").map((b) => b.markets.id)), [bets]);
   const byCat = (c: CatId) => inFilter.filter((m) => m.category === c && !betOn.has(m.id));
-  useEffect(() => { if (catChosen || !markets) return; const first = (["bus", "train", "weather"] as CatId[]).find((c) => byCat(c).length > 0); if (first && byCat(cat).length === 0) setCat(first); }, [markets, filter, catChosen]);
+  useEffect(() => {
+    if (catChosen || !markets) return;
+    // Italians open on what they can see out of the window (buses, trains, weather); anyone else opens on their country's first tile that has something in it
+    const order: CatId[] = isItalian ? ["bus", "train", "weather"] : catTiles(profile?.country ?? region(), false, {}).filter((c) => c !== "strike") as CatId[];
+    // the other categories are loaded when opened, so what they hold is read from the counts that come with the picture
+    const first = order.find((c) => (isItalian ? byCat(c).length : counts[c] ?? 0) > 0);
+    if (first && (!isItalian ? cat !== first : byCat(cat).length === 0)) setCat(first);
+  }, [markets, filter, catChosen, shardCounts]);
   const flashFirst = (a: MarketRow[]) => [...a].sort((x, y) => Number((y.flash_multiplier ?? 1) > 1) - Number((x.flash_multiplier ?? 1) > 1));
   // trains and buses: the most delayed right now first, then the rest
   const byDelay = (x: MarketRow[]) => [...x].sort((m1, m2) => Number(!!live[m2.id] && !live[m2.id]!.is_forecast) - Number(!!live[m1.id] && !live[m1.id]!.is_forecast) || (live[m2.id]?.delay_sec ?? -1e9) - (live[m1.id]?.delay_sec ?? -1e9));
@@ -630,6 +638,7 @@ export function App() {
     const lateNow = open.filter((m) => live[m.id] && !live[m.id]!.is_forecast && live[m.id]!.delay_sec >= 180).sort((a, b) => live[b.id]!.delay_sec - live[a.id]!.delay_sec);
     const seenTrip = new Set<string>();
     for (const m of lateNow) {
+      if (!isItalian && CITIES.find((c) => c.id === m.city_id)?.country !== (profile?.country ?? region())) continue; // a late Italian train means nothing to a visitor from elsewhere
       const trip = String(m.params.tripId ?? m.id); if (seenTrip.has(trip)) continue; seenTrip.add(trip);
       const line = msg.ticker.late(lineLabel(String(m.params.routeName ?? ""), m.kind, locale), m.category === "train" ? shortStation(String(m.params.headsign ?? "").toUpperCase()) : String(m.params.headsign ?? ""), Math.round(live[m.id]!.delay_sec / 60));
       system.push({ id: `l${m.id}`, text: line, node: <><i class="amt lost">●</i> {line}</> });
