@@ -9,7 +9,7 @@ import { dirname, join } from "node:path";
 const here = dirname(fileURLToPath(import.meta.url)), root = join(here, "..", "..");
 const env = { ...process.env };
 const envFile = join(here, ".env");
-if (existsSync(envFile)) for (const line of readFileSync(envFile, "utf8").split(/\r?\n/)) { const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/); if (m && !line.trim().startsWith("#")) { const v = m[2].replace(/^["']|["']$/g, ""); if (v) env[m[1]] = v; } // an empty line means "not set" }
+if (existsSync(envFile)) for (const line of readFileSync(envFile, "utf8").split(/\r?\n/)) { const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/); if (m && !line.trim().startsWith("#")) { const v = m[2].replace(/^["']|["']$/g, ""); if (v) env[m[1]] = v; } } // an empty value means "not set"
 for (const k of ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]) if (!env[k]) { console.error(`Missing ${k} in scripts/home-cron/.env`); process.exit(1); }
 env.CRON_SECRET ||= "home-" + Math.random().toString(36).slice(2); // only this computer talks to its own functions: any value will do
 
