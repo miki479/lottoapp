@@ -2081,3 +2081,9 @@ textarea.field { resize: vertical; min-height: 84px; }
 @keyframes newsglow { 0%, 100% { box-shadow: 0 0 4px rgba(255, 226, 122, .35); text-shadow: 0 0 2px rgba(255, 226, 122, .4); } 50% { box-shadow: 0 0 14px rgba(255, 226, 122, .95); text-shadow: 0 0 8px rgba(255, 226, 122, 1); } }
 @media (prefers-reduced-motion: reduce) { .newsstack .promo::before { animation: none; } }
 .newsstack > .promowrap:not(:only-child):last-child .promo::before { top: auto; bottom: 0; border-radius: 0 12px 0 0; border-width: 1px 1px 0 0; }
+/* News tag: just the glowing word, no outline */
+.newsstack .promo::before { background: none; border: 0; padding: 2px 9px; }
+.newsstack > .promowrap:not(:only-child):last-child .promo::before { border: 0; }
+/* the banner underneath keeps its text clear of the one in front: bottom right */
+.newsstack > .promowrap:not(:only-child):last-child .promotxt { left: auto; right: 5%; top: auto; bottom: 10px; transform: none; text-align: right; align-items: flex-end; }
+.newsstack > .promowrap:not(:only-child):last-child .promotxt { padding: 6px 10px; border-radius: 12px; background: rgba(8, 4, 28, .62); width: auto; max-width: 62%; }
