@@ -241,7 +241,7 @@ const ja: Messages = {
     deco: {"copper": "銅", "bronze": "ブロンズ", "silver": "銀", "gold": "金", "diamond": "ダイヤ", "amethyst": "アメジスト", "platinum": "プラチナ", "mithril": "ミスリル", "orichalcum": "オリハルコン", "adamantium": "アダマンチウム", "jade": "翡翠", "ruby": "ルビー", "sapphire": "サファイア", "obsidian": "黒曜石", "opal": "オパール", "cinder": "燠火", "rosegold": "ローズゴールド", "starlight": "星明かり", "aurum": "黄金", "glacier": "氷河", "crimson": "深紅", "azure": "紺碧", "vortex": "渦", "onyx": "オニキス"},
     rarity: {"common": "コモン", "uncommon": "アンコモン", "rare": "レア", "epic": "エピック", "legendary": "レジェンド", "mythic": "ミシック"},
   },
-  house: { viceTitle: "バイスボーナス", viceBody: (n) => `11月19日に本当に発売されたら、受取総額に+${n}%。「はい」のみ、他のボーナスと併用できます。`, excl: "LateBet限定", inDays: (n) => (n <= 0 ? "今日" : n === 1 ? "明日" : `${n}日後`), daysWord: () => "日", remind: "リマインド", reminding: "前日にお知らせします", needPush: "通知を受け取るにはプロフィールで通知をオンにしてください" },
+  house: { viceTitle: "バイスボーナス", viceBody: (n) => `11月19日に本当に発売されたら、受取総額に+${n}%。「はい」のみ、他のボーナスと併用できます。`, excl: "LateBet限定", bets: (n) => `${n}件のベット`, inDays: (n) => (n <= 0 ? "今日" : n === 1 ? "明日" : `${n}日後`), daysWord: () => "日", remind: "リマインド", reminding: "前日にお知らせします", needPush: "通知を受け取るにはプロフィールで通知をオンにしてください" },
   frd: {
     feedTitle: "友達のチャレンジ", feedEmpty: "友達の開催中のチャレンジはありません。自分で作ろう!", listTitle: "友達", by: "作成:", noStake: "賭けなし", credits: "クレジット", closesIn: "締切まで",
     boardTab: "友達", groupsTab: "グループ", inviteTitle: "友達を招待", inviteBody: "招待を受けた人はすぐ友達になります。ここで見つけてチャレンジできます。", inviteBtn: "招待を共有", invitedCount: (n) => `${n}人の友達を招待`,

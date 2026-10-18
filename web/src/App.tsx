@@ -1,4 +1,5 @@
 import { catTiles } from "./lib/countrycats.ts";
+import { useBetCount } from "./lib/betcount.ts";
 import { memo } from "./lib/cache.ts";
 import { deviceId } from "./lib/device.ts";
 import { Activity, Bitcoin, Clapperboard, Clock, CloudLightning, Crown, Gamepad2, MapPin, Trophy, TrendingUp, Train, Users, Zap } from "lucide-preact";
@@ -497,6 +498,7 @@ export function App() {
 
   // ---------- derived ----------
   const open = useMemo(() => (markets ?? []).filter((m) => Date.parse(m.closes_at) > now && !m.params.ladderOf), [markets, Math.floor(now / 1000)]);
+  const gtaId = open.find((m) => String(m.params.series ?? "") === "house:gta6" && Date.parse(m.closes_at) > now)?.id, gtaBets = useBetCount(gtaId);
   /** "Sorry about the delay" rungs, grouped by the market they extend. */
   const ladders = useMemo(() => {
     const g: Record<string, MarketRow[]> = {};
@@ -574,7 +576,7 @@ export function App() {
     const feat = (id: string, icon: TopItem["icon"], label: string, m: MarketRow | undefined, big: preact.ComponentChildren, pick: "yes" | "no" = "yes") => { if (m) items.push({ mid: m.id, id, icon, label, big, sub: sub(m), onClick: () => setSheet({ m, pick }) }); };
     // the game everybody is waiting for: always first in the trends row
     const gta = open.find((m) => String(m.params.series ?? "") === "house:gta6" && Date.parse(m.closes_at) > now);
-    if (gta) { const d = daysUntil(Number(gta.params.releaseAt) * 1000, now); items.unshift({ mid: gta.id, id: "gta", cls: "gta", icon: Gamepad2, label: msg.house.excl, big: <>{d}<small>{msg.house.daysWord(d)}</small></>, sub: sub(gta), onClick: () => setSheet({ m: gta, pick: "yes" }) }); }
+    if (gta) { const d = daysUntil(Number(gta.params.releaseAt) * 1000, now); items.unshift({ mid: gta.id, id: "gta", cls: "gta", icon: Gamepad2, label: msg.house.excl, big: <>{d}<small>{msg.house.daysWord(d)}</small></>, extra: gtaBets !== null ? <span class="gtabets">{msg.house.bets(gtaBets)}</span> : undefined, sub: sub(gta), onClick: () => setSheet({ m: gta, pick: "yes" }) }); }
     // football: the likeliest draw, the match where both teams most likely score (its goal bet is opened on tap), the longest-priced away win
     const three = open1("sport", 72).filter((m) => ["home_win", "draw", "away_win"].includes(String(m.params.bet)));
     const prior = (m: MarketRow, k: string) => Number((m.params.priors as Record<string, number> | undefined)?.[k]);
@@ -606,7 +608,7 @@ export function App() {
     const rest = items.filter((x) => !PIN.includes(x.id) || !pinned.includes(x)).sort((x, y) => h(x.id) - h(y.id));
     // each card with a question gets its small live chart under the title
     return [...pinned, ...rest].slice(0, 5).map((it) => { const mk = it.mid && it.id !== "late" ? open.find((x) => x.id === it.mid) : undefined; return mk ? { ...it, mini: <MiniLive m={mk} live={live[mk.id]} now={now} locale={locale} msg={msg} /> } : it; });
-  }, [inFilter, live, popular, trendRows, friendBets, locale, Math.floor(now / 1000)]);
+  }, [inFilter, live, popular, trendRows, friendBets, gtaBets, locale, Math.floor(now / 1000)]);
 
   const flashId = open.find((m) => (m.flash_multiplier ?? 1) > 1 && m.flash_until && Date.parse(m.flash_until) > now)?.id;
   useEffect(() => { if (flashId) announce(`flash-${flashId}`, msg.voice.flash, locale); }, [flashId]);

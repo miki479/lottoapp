@@ -1241,6 +1241,8 @@ textarea.field { resize: vertical; min-height: 84px; }
 .topcard.gta .head, .topcard.gta .head svg, .topcard.gta .head .detail, .topcard.gta .big small, .topcard.gta .sub { color: rgba(255, 255, 255, .92); }
 .topcard.gta .sub { margin: 0 -8px; padding: 2px 8px; border-radius: 8px; background: rgba(14, 8, 40, .42); } /* a dark plate under the caption, so it reads over the sun too */
 .mscene.house.gta b { text-shadow: 0 1px 6px rgba(40, 8, 90, .6); }
+.mscene .hs-bets { position: absolute; right: 10px; bottom: 6px; font-style: normal; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #fff; background: rgba(20, 8, 60, .55); padding: 1px 8px; border-radius: 10px; }
+.topcard.gta .gtabets { align-self: flex-start; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #fff; background: rgba(14, 8, 40, .5); padding: 2px 9px; border-radius: 10px; }
 .remind { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .remind .btn.on { border-color: var(--action); color: var(--action-ink); }
 
