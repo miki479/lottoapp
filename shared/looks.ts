@@ -8,8 +8,10 @@ export const FORGED_AVATARS = ["pilot", "star", "emerald", "orb", "bear", "ziggu
 export const ROUTE_AVATARS = ["coach", "rail", "skycloud", "grove", "horn"] as const;
 /** The "In the city" collection: the same worlds as soft, bright 3D objects (bus, train, traffic light, loudspeaker, tree, weather). */
 export const CITY_AVATARS = ["citybus", "express", "traffic", "loudspeaker", "oak", "sunny", "clapper", "shades", "wheel", "growth", "spark", "xeno", "curve", "fist", "spacesuit", "beats", "leaf", "junction", "greyalien", "capboy", "bull", "shadesgirl", "busstop", "greenalien", "trainwheel", "basket", "greyhoodie", "peak", "reel", "android"] as const;
-export const AVATARS = ["conductor", "busbot", "cloud", "fox", "ball", "bolt", "alien", "astro", "clock", "kandinsky", "robot", "panda", "wizard", "samurai", "dragon", "lion", ...FORGED_AVATARS, ...ROUTE_AVATARS, ...CITY_AVATARS] as const;
-export const CLASSIC_AVATARS = AVATARS.filter((a) => !(FORGED_AVATARS as readonly string[]).includes(a) && !(ROUTE_AVATARS as readonly string[]).includes(a) && !(CITY_AVATARS as readonly string[]).includes(a));
+/** The "Crew" collection: the people who keep the lines and the forecasts running, as detailed rendered portraits. */
+export const CREW_AVATARS = ["trainmaster", "stationmaster", "inspector", "dispatcher", "foreman", "mechanic", "planner", "tramdriver", "sentinel", "analyst"] as const;
+export const AVATARS = ["conductor", "busbot", "cloud", "fox", "ball", "bolt", "alien", "astro", "clock", "kandinsky", "robot", "panda", "wizard", "samurai", "dragon", "lion", ...FORGED_AVATARS, ...ROUTE_AVATARS, ...CITY_AVATARS, ...CREW_AVATARS] as const;
+export const CLASSIC_AVATARS = AVATARS.filter((a) => !(FORGED_AVATARS as readonly string[]).includes(a) && !(ROUTE_AVATARS as readonly string[]).includes(a) && !(CITY_AVATARS as readonly string[]).includes(a) && !(CREW_AVATARS as readonly string[]).includes(a));
 export type AvatarId = (typeof AVATARS)[number];
 export const isAvatar = (s: unknown): s is AvatarId => (AVATARS as readonly string[]).includes(String(s));
 
