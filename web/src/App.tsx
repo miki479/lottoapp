@@ -310,6 +310,7 @@ export function App() {
 
   // loadMarkets runs on a timer from the first render: it reads the player's current town, country and filter through a ref
   const envRef = useRef({ near, profile, filter, home }); envRef.current = { near, profile, filter, home };
+  const gtaRow = useRef<MarketRow | null | undefined>(undefined); // the featured GTA VI question lives in the "culture" shard: fetched once on its own, so the top row can show it
   const mkSeq = useRef(0); // calls overlap (timer, bets, filter changes): only the newest answer may replace the list
   const loadMarkets = useCallback(async () => {
     const seq = ++mkSeq.current;
@@ -343,10 +344,12 @@ export function App() {
     const snap = await getSnapshot(import.meta.env.VITE_SUPABASE_URL as string);
     if (snap) {
       const isPlace = !!f0 && f0 !== "world" && f0 !== "mine" && !isRegionFilter(f0) && !CITIES.some((c) => c.id === f0);
-      const [mineS, hereS] = await Promise.all([
+      const [mineS, hereS, gtaS] = await Promise.all([
         placeIds.current.length ? open().in("city_id", placeIds.current).order("closes_at").limit(160) : none,
         isPlace && !placeIds.current.includes(f0!) ? open().in("city_id", [f0!]).order("closes_at").limit(400) : none,
+        gtaRow.current === undefined ? open().eq("params->>series", "house:gta6").limit(1) : none,
       ]);
+      if (gtaRow.current === undefined) gtaRow.current = ((gtaS.data ?? []) as MarketRow[])[0] ?? null;
       if (seq !== mkSeq.current) return;
       // the other categories sit in files of their own: only the one being looked at is fetched, the others when the player opens them (their counts come with the picture)
       const base = import.meta.env.VITE_SUPABASE_URL as string, sh = Object.keys(snap.shards ?? {});
@@ -355,7 +358,7 @@ export function App() {
       for (const c of wantS) loadedShards.current.add(c);
       setShardCounts(snap.shards ?? {});
       const seenS = new Set<string>(), allS: MarketRow[] = [];
-      for (const x of [...snap.markets, ...shardRows, ...((mineS.data ?? []) as MarketRow[]), ...((hereS.data ?? []) as MarketRow[])]) if (!seenS.has(x.id)) { seenS.add(x.id); allS.push(x); }
+      for (const x of [...snap.markets, ...shardRows, ...((mineS.data ?? []) as MarketRow[]), ...((hereS.data ?? []) as MarketRow[]), ...(gtaRow.current ? [gtaRow.current] : [])]) if (!seenS.has(x.id)) { seenS.add(x.id); allS.push(x); }
       await learnPlaces(allS.map((x) => x.city_id));
       setMarkets(allS); try { localStorage.setItem("mk1", JSON.stringify({ t: Date.now(), rows: allS.slice(0, 250) })); } catch { /* storage full or unavailable */ }
       if (navigator.onLine) setOffline(false);

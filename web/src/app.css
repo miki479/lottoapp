@@ -2075,6 +2075,7 @@ textarea.field { resize: vertical; min-height: 84px; }
 
 /* the two news banners lie one over the other like newspapers, each with a small glowing "News" tag */
 .newsstack { display: flex; flex-direction: column; padding: 4px 0 6px; }
+.newsstack:empty { display: none; } /* both banners closed: no empty strip (and no extra row gap) between the hero and the next block */
 .newsstack > .promowrap { padding-bottom: 0; }
 .newsstack > .promowrap:first-child { z-index: 2; transform: rotate(-1.1deg); }
 .newsstack > .promowrap:first-child .promo { box-shadow: 0 10px 22px rgba(0, 0, 0, .45); }
