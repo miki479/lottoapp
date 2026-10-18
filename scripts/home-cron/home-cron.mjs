@@ -47,9 +47,12 @@ async function run(j) {
   const t0 = Date.now();
   try {
     const r = await fetch(`http://127.0.0.1:${j.port}/${j.query}`, { method: "POST", headers: { "x-cron-secret": env.CRON_SECRET }, signal: AbortSignal.timeout(55000) });
-    const ok = r.ok; const text = (await r.text()).slice(0, 160);
+    const ok = r.ok; const text = (await r.text()).slice(0, 4000);
     if (ok) await rest("rpc/home_cron_beat", { p_job: j.job }); // only a run that worked tells Supabase to stay quiet
-    console.log(`[${stamp()}] ${j.job}: ${r.status} in ${Date.now() - t0} ms${ok ? "" : " " + text}`);
+    // resolve says how many settled bets it notified and whether the push service refused something: worth seeing every time
+    let extra = ok ? "" : " " + text;
+    if (ok && j.job === "resolve") { try { const b = JSON.parse(text); extra = ` settled ${b.settled ?? 0}, notified ${Array.isArray(b.notified) ? b.notified.length : b.notified ?? 0}${b.notifyError ? ", PUSH ERROR: " + b.notifyError : ""}`; } catch { /* not json */ } }
+    console.log(`[${stamp()}] ${j.job}: ${r.status} in ${Date.now() - t0} ms${extra}`);
   } catch (e) {
     console.error(`[${stamp()}] ${j.job}: ${e.cause?.code === "ECONNREFUSED" ? "server still starting" : String(e.message ?? e)}`);
   } finally { busy.delete(j.job); }
