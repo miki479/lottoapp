@@ -6,7 +6,7 @@ export interface LiveDelay { market_id: string; delay_sec: number; observed_at: 
 export interface SlipLeg { m: import("./format.ts").MarketRow; pick: Pick }
 export interface ParlayRow { id: string; boosted?: boolean; stake: number; odds: number; status: "open" | "won" | "lost" | "void"; payout: number; placed_at: string; settled_at: string | null; parlay_legs: { market_id: string; pick: Pick; odds: number; status: string; markets: { id?: string; city_id: string; category?: string; kind: string; params: Record<string, unknown>; closes_at?: string; target_at?: string; odds_yes?: number; odds_no?: number; status?: string } }[] }
 export interface QuestRow { id: string; kind: "daily" | "once"; reward: number; done: boolean; claimed: boolean }
-export interface ActivityRow { kind: "placed" | "won" | "lost"; who: string | null; amount: number; market_kind: string; label: string; city_id: string; at: string }
+export interface ActivityRow { kind: "placed" | "won" | "lost"; who: string | null; amount: number; market_kind: string; label: string; city_id: string; at: string; category?: string; params?: Record<string, unknown>; closes_at?: string; target_at?: string; pick?: string }
 export interface ResultRow { target_at?: string; id: string; city_id: string; kind: MarketRow["kind"]; status: string; outcome: string | null; void_reason: string | null; params: Record<string, unknown>; evidence: { delaySec?: number } | null }
 export interface Profile {
   id: string; results_seen_at?: string | null; credits: number; city_id: string; locale: string; timezone: string; country: string | null;

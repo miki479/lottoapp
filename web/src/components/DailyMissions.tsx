@@ -9,7 +9,6 @@ import { INTL_TAG } from "../i18n/index.ts";
 import { untilReset } from "./RewardsSheet.tsx";
 import { moneySigned } from "../lib/num.ts";
 import { dtf } from "../lib/intl.ts";
-import { HalloweenEntry } from "./HalloweenEntry.tsx";
 
 const ICON: Record<string, LucideIcon> = {
   m_bets3: Ticket, m_bets5: Ticket, m_bets8: Ticket, m_leg_bets10: Ticket, m_cat_bus: Bus, m_cat_train: TrainFront, m_cat_weather: CloudRain, m_cat_nature: Activity, m_cat_fin: Coins, m_cat_cult: Clapperboard, m_sport: Trophy,
@@ -83,7 +82,6 @@ export function DailyMissions(p: { data: DailyMissionsData | null; msg: Messages
             : <em class="num">{t.chestLocked(3 - doneN)}</em>}
         </span>
       </div>
-      <HalloweenEntry msg={p.msg} now={p.now} />
       {chestOpen && <ChestScene msg={p.msg} locale={p.locale} reward={c.reward} onCollect={() => burst("chest", p.onChest)} onClose={() => setChestOpen(false)} />}
     </section>
   );

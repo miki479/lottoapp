@@ -610,7 +610,16 @@ export function App() {
       const subject = a.label ? (isDelay ? a.label : a.market_kind === "match_bet" ? matchName(a.label, locale) : msg.cm[a.label] ?? alertLabelOf(a.label, msg)) : "", what = isDelay && subject ? `${subject} · ${operatorOf(a.city_id) ?? cityName(c, locale)}` : subject || cityName(c, locale);
       const who = a.who ?? msg.ticker.anon, verb = msg.ticker[a.kind];
       const amt = a.kind === "won" ? moneySigned(a.amount, locale) : a.kind === "lost" ? moneySigned(-a.amount, locale) : money(a.amount, locale);
-      users.push({ id: `a${a.at}${a.who}${a.amount}`, who, text: `${who} ${verb} ${amt} ${msg.ticker.on} ${what}`, node: <><b>{who}</b> {verb} <i class={`amt ${a.kind}`}>{a.kind === "won" ? "▲ " : a.kind === "lost" ? "▼ " : ""}{amt}</i> {msg.ticker.on} {what}</> });
+      // the bet's own question (with the side that was taken) says what it was about; the bare label is only the fallback for old rows
+      let detail = what;
+      if (a.params && a.category && a.closes_at && a.target_at) {
+        try {
+          const mk = { id: "", city_id: a.city_id, category: a.category, kind: a.market_kind, params: a.params, closes_at: a.closes_at, target_at: a.target_at, odds_yes: 0, odds_no: 0, status: "open" } as MarketRow;
+          const side = a.pick === "yes" ? (isDelay ? msg.card.late : msg.card.yes) : a.pick === "no" ? (isDelay ? msg.card.onTime : msg.card.no) : "";
+          detail = `${question(mk, msg, locale, cityName(c, locale), c.timezone, new Date(a.target_at))}${side ? ` · ${side}` : ""}`;
+        } catch { /* keep the label */ }
+      }
+      users.push({ id: `a${a.at}${a.who}${a.amount}`, who, text: `${who} ${verb} ${amt} ${msg.ticker.on} ${detail}`, node: <><b>{who}</b> {verb} <i class={`amt ${a.kind}`}>{a.kind === "won" ? "▲ " : a.kind === "lost" ? "▼ " : ""}{amt}</i> {msg.ticker.on} {detail}</> });
     }
     const q = (m: MarketRow) => { const c = cityOf(m.city_id); return question(m, msg, locale, cityName(c, locale), c.timezone, new Date(now)); };
     // services that are late right now: the most delayed first (their delay is a real reading, not a forecast)
