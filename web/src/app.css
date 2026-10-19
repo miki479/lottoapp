@@ -2131,3 +2131,8 @@ textarea.field { resize: vertical; min-height: 84px; }
 .rit-method { padding-left: 20px; margin: 8px 0 0; }
 .rit-cta { margin-top: 36px; padding: 18px; border-radius: var(--radius-card); background: var(--action-soft); }
 .rit-cta h2 { margin-top: 0; } .rit-cta .btn { display: inline-flex; margin-top: 6px; text-decoration: none; }
+.rit-trains { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.rit-trains li { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 12px; border-radius: var(--radius-card); background: var(--action-soft); }
+.rit-tn { font-size: var(--fs-md); } .rit-tn b { font-weight: 800; }
+.rit-late { font-weight: 800; color: var(--delay); white-space: nowrap; text-align: right; }
+.rit-where { grid-column: 1 / -1; color: var(--muted); font-size: var(--fs-sm); }

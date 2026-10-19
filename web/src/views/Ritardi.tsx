@@ -1,7 +1,10 @@
 import { useEffect, useState } from "preact/hooks";
 import { sb } from "../lib/api.ts";
 
-interface Stats { t: string; days: number; total: number; late_pct: number; rows: { kind: string; mins: number; n: number; pct: number }[]; hours: { hour: number; n: number; pct: number }[] }
+interface Stats { t: string; days: number; total: number; late_pct: number; rows: { kind: string; mins: number; n: number; pct: number }[]; hours: { hour: number; n: number; pct: number }[]; worst?: { name: string; to: string | null; n: number; late: number }[] }
+interface LateNow { t: string; trains: { name: string; to: string | null; at: string | null; mins: number; seen: string }[] }
+const trainName = (n: string) => (/^\d+$/.test(n.trim()) ? `Treno ${n.trim()}` : n.trim());
+const hhmm = (iso: string) => new Date(iso).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
 
 const KIND: Record<string, string> = { REG: "Regionale", RV: "Regionale Veloce", FR: "Frecciarossa", FA: "Frecciargento", FB: "Frecciabianca", IC: "Intercity", ICN: "Intercity Notte", EC: "EuroCity" };
 const nf = new Intl.NumberFormat("it-IT");
@@ -13,13 +16,18 @@ const nf = new Intl.NumberFormat("it-IT");
 export function Ritardi() {
   const [s, setS] = useState<Stats | null>(null);
   const [err, setErr] = useState(false);
+  const [now, setNow] = useState<LateNow | null>(null);
   useEffect(() => {
     document.title = "Treni in ritardo: i numeri della settimana · LateBet";
     const d = document.querySelector('meta[name="description"]');
     d?.setAttribute("content", "Quanti treni italiani arrivano davvero in ritardo? I dati in tempo reale di ViaggiaTreno degli ultimi 7 giorni, per tipo di treno e per fascia oraria.");
     let live = true;
     sb.rpc("delay_stats").then(({ data, error }) => { if (!live) return; if (error || !data || !(data as Stats).total) setErr(true); else setS(data as Stats); });
-    return () => { live = false; };
+    // the trains late right now: one read, then one a minute for as long as the page is open and in view (the server keeps the answer for a minute, so many readers cost one)
+    const poll = () => { if (document.hidden) return; sb.rpc("late_trains_now").then(({ data, error }) => { if (live && !error && data) setNow(data as LateNow); }); };
+    poll();
+    const timer = window.setInterval(poll, 60_000);
+    return () => { live = false; window.clearInterval(timer); };
   }, []);
   const when = s ? new Date(s.t).toLocaleString("it-IT", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : "";
   const worst = s ? [...s.hours].sort((a, b) => b.pct - a.pct)[0] : undefined, best = s ? [...s.hours].sort((a, b) => a.pct - b.pct)[0] : undefined;
@@ -28,7 +36,22 @@ export function Ritardi() {
       <a class="rit-back" href="/">← LateBet</a>
       <h1>Quanti treni sono davvero in ritardo?</h1>
       <p class="rit-sub">Ultimi 7 giorni, dati in tempo reale di ViaggiaTreno{s ? ` · aggiornato il ${when}` : ""}.</p>
-      {err && <p class="rit-note">I numeri non sono disponibili in questo momento. Riprova tra qualche minuto.</p>}
+      <h2>In ritardo adesso</h2>
+      {!now && <p class="rit-note">Carico i treni…</p>}
+      {now && now.trains.length === 0 && <p class="rit-note">In questo momento nessun treno tra quelli che stiamo seguendo supera i 5 minuti di ritardo.</p>}
+      {now && now.trains.length > 0 && (
+        <ul class="rit-trains">
+          {now.trains.map((x) => (
+            <li key={x.name + x.seen}>
+              <span class="rit-tn"><b>{trainName(x.name)}</b>{x.to ? ` → ${x.to}` : ""}</span>
+              <span class="rit-late">+{x.mins} min</span>
+              <span class="rit-where">{x.at ? `ultima fermata nota: ${x.at} · ` : ""}rilevato alle {hhmm(x.seen)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p class="rit-note">Solo i treni che il sistema sta seguendo in questo momento; si aggiorna ogni minuto.</p>
+      {err && <p class="rit-note">I numeri della settimana non sono disponibili in questo momento. Riprova tra qualche minuto.</p>}
       {!s && !err && <p class="rit-note">Carico i dati…</p>}
       {s && (
         <>
@@ -47,6 +70,21 @@ export function Ritardi() {
               </li>
             ))}
           </ul>
+          {s.worst && s.worst.length > 0 && (
+            <>
+              <h2>I treni più spesso in ritardo</h2>
+              <p class="rit-note">Treni con almeno 3 verifiche questa settimana e più di 5 minuti di ritardo in almeno 2. Sono pochi controlli per treno: è un indizio, non un verdetto.</p>
+              <ul class="rit-trains">
+                {s.worst.map((x) => (
+                  <li key={x.name + x.to}>
+                    <span class="rit-tn"><b>{trainName(x.name)}</b>{x.to ? ` → ${x.to}` : ""}</span>
+                    <span class="rit-late">{x.late} su {x.n}</span>
+                    <span class="rit-where">verifiche con oltre 5 minuti di ritardo</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           <h2>Per fascia oraria</h2>
           <p class="rit-note">Quota di verifiche con più di 5 minuti di ritardo, per ora del giorno (ora italiana).{worst && best ? ` Nel nostro campione l'ora peggiore è quella delle ${worst.hour}:00 (${worst.pct}%), la migliore quella delle ${best.hour}:00 (${best.pct}%).` : ""}</p>
           <ul class="rit-bars rit-hours">
