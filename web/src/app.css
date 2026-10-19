@@ -2111,3 +2111,23 @@ textarea.field { resize: vertical; min-height: 84px; }
 @keyframes twinkle { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .cc.space .gh-p2, .cc.space .gh-p3, .cc.space .gh-moon, .cc.space .gh-tw { animation: none; } }
 .gh .gh-fpos { transform-box: view-box; } /* the flame sits at the nozzle: its translate/scale must not be measured from the flame's own box (that shifted it to the left) */
+
+/* /ritardi: the public page of delay numbers */
+.rit { max-width: 720px; margin: 0 auto; padding: 28px var(--gutter, 16px) 64px; }
+.rit h1 { font-size: var(--fs-xl); letter-spacing: -.02em; margin: 8px 0 6px; line-height: 1.2; }
+.rit h2 { font-size: var(--fs-lg); letter-spacing: -.01em; margin: 28px 0 4px; }
+.rit-back { display: inline-block; font-weight: 700; text-decoration: none; color: var(--action-ink); }
+.rit-sub, .rit-note, .rit-method li, .rit-cta p { color: var(--muted); font-size: var(--fs-md); }
+.rit-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0 4px; }
+.rit-hero div { background: var(--action-soft); border-radius: var(--radius-card); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+.rit-hero b { font-size: var(--fs-xxl); line-height: 1.1; }
+.rit-hero span { color: var(--muted); font-size: var(--fs-sm); }
+.rit-bars { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.rit-bars li { display: grid; grid-template-columns: minmax(110px, 40%) 1fr auto; align-items: center; gap: 10px; font-size: var(--fs-sm); }
+.rit-hours li { grid-template-columns: 52px 1fr 40px; }
+.rit-track { height: 12px; border-radius: 6px; background: var(--border); overflow: hidden; }
+.rit-track i { display: block; height: 100%; background: var(--action); border-radius: 6px; }
+.rit-val { font-weight: 700; text-align: right; white-space: nowrap; } .rit-val small { color: var(--muted); font-weight: 400; }
+.rit-method { padding-left: 20px; margin: 8px 0 0; }
+.rit-cta { margin-top: 36px; padding: 18px; border-radius: var(--radius-card); background: var(--action-soft); }
+.rit-cta h2 { margin-top: 0; } .rit-cta .btn { display: inline-flex; margin-top: 6px; text-decoration: none; }
