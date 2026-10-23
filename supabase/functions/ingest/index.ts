@@ -102,7 +102,7 @@ Deno.serve(safe(async (req) => {
         const n = feed.occupancyOnly ? 0 : await ingestFeed(sb, city, feed, now, tracked.get(feed.id) ?? new Map(), rtCache); // occupancyOnly: no delay question exists, only the vehicles are read
         okRows.push({ feed_id: feed.id, last_ok_at: new Date().toISOString(), last_error: null });
         report[feed.id] = `ok ${n} ${Date.now() - tf}ms`;
-        if (feed.vehiclesUrl) report[`${feed.id}-vehicles`] = await ingestVehicles(sb, feed, now, trackedVeh.get(feed.id) ?? new Set()).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
+        if (feed.vehiclesUrl && feed.category !== "bus") report[`${feed.id}-vehicles`] = await ingestVehicles(sb, feed, now, trackedVeh.get(feed.id) ?? new Set()).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
       } catch (e) {
         const msg = String((e as Error).message ?? e).slice(0, 300);
         errRows.push({ feed_id: feed.id, last_error: msg, last_error_at: new Date().toISOString() });
