@@ -1899,6 +1899,10 @@ textarea.field { resize: vertical; min-height: 84px; }
 .k-storms { animation: kstorm 3.2s cubic-bezier(.45, 0, .55, 1) infinite; } @keyframes kstorm { 0%, 60%, 100% { transform: none; filter: none; } 66% { transform: translateX(-1px); filter: drop-shadow(0 0 4px #ffd54a); } 72% { transform: translateX(1px); } 78% { filter: none; } }
 .k-ice { animation: kneo 9s linear infinite; }
 .f1head { display: flex; align-items: center; gap: 8px; }
+.f1toggle { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.f1toggle em { font-style: normal; opacity: .7; }
+.f1chev { margin-left: auto; transition: transform .2s; }
+.f1chev.open { transform: rotate(180deg); }
 @media (prefers-reduced-motion: reduce) { .k-volcanoes, .k-storms, .k-ice { animation: none; } }
 
 /* Space & Earth tile: the rocket lights up, climbs and is back on the pad */

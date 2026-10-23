@@ -79,6 +79,7 @@ export function Home(p: HomeProps) {
   const order = p.cat === "weather" ? ["rain", "temp", "wind", "snow", "uv", "aqi", "pollen", "hail"] : p.cat === "nature" ? ["world", "jp", "it", "ca", "tr"] : p.cat === "games" ? ["videogames", "chess"] : p.cat === "space" ? ["launch", "neo", "volcanoes", "storms", "ice"] : p.cat === "finance" ? ["crypto", "metals", "fx", "oil", "fuel", "power"] : [];
   const [filterOpen, setFilterOpen] = useState(false);
   const [staleOff, setStaleOff] = useState(false);
+  const [f1Open, setF1Open] = useState(false); // Formula 1 stays folded: football, NBA and the other sports come first
   const [howOpen, setHowOpen] = useState(() => safe.get("how") !== "1");
   const mq = typeof matchMedia === "function" ? matchMedia("(max-width: 560px)") : null;
   const [phone, setPhone] = useState(!!mq?.matches);
@@ -229,8 +230,8 @@ export function Home(p: HomeProps) {
             {f1Soon && <span class="chip soonchip" aria-disabled="true"><Gauge size={16} class="kico k-f1" />{filterLabel(msg, "f1")}<em>{F1_SOON[p.locale] ?? F1_SOON["en-US"]}</em></span>}
             {p.markets !== null && !sportQ && <span class="chip soonchip" aria-disabled="true"><Disc size={16} class="kico" />{FRISBEE_NAME[p.locale] ?? FRISBEE_NAME["en-US"]}<em>{FRISBEE_SOON[p.locale] ?? FRISBEE_SOON["en-US"]}</em></span>}
           </div>}
-          {p.cat === "sport" && f1Rows.length > 0 && <><h2 class="steplabel f1head"><Gauge size={16} class="kico k-f1" /> {filterLabel(msg, "f1")}</h2><div class="cardgrid">{f1Rows.map(card)}</div></>}
           {p.cat === "sport" && p.markets !== null && <MatchList matches={groupMatches(shown)} msg={msg} locale={p.locale} onPick={p.onPick} registered={p.registered} onAuth={p.onAuth} details={p.details} friendBets={p.friendBets} />}
+          {p.cat === "sport" && f1Rows.length > 0 && <><h2 class="steplabel f1head"><button type="button" class="f1toggle" aria-expanded={f1Open} onClick={() => setF1Open(!f1Open)}><Gauge size={16} class="kico k-f1" /> {filterLabel(msg, "f1")} <em>{f1Rows.length}</em><ChevronDown size={16} class={f1Open ? "f1chev open" : "f1chev"} /></button></h2>{f1Open && <div class="cardgrid">{f1Rows.map(card)}</div>}</>}
           {p.stale && !staleOff && <p class="note warn stalenote"><span>{msg.feedWarning}</span><button class="stalex" aria-label={msg.common.close} onClick={() => setStaleOff(true)}><X size={14} /></button></p>}
           <div class="cardgrid" style={p.cat === "sport" ? "display:none" : undefined}>
             {p.filter === "mine" && p.mineWide && p.markets !== null && shown.length > 0 && <p class="hint" style="grid-column:1/-1;margin:0" role="note">{NEAR_WIDE[p.locale] ?? NEAR_WIDE["en-US"]}</p>}
