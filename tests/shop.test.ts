@@ -4,7 +4,7 @@ import { CARDS, CARD_CATS, CARD_TOTAL, cardsOfCat } from "../shared/cards.ts";
 import { DECORATIONS } from "../shared/looks.ts";
 import {
   DAILY_AMOUNTS, DAILY_PACK_CAP, DAILY_WEEK_TOTAL, DEFAULT_AVATARS, PACKS, PACK_GAP_SEC, PACK_RARITIES, REFUND_PCT, SHOP_ITEMS, dailyAmount, dailyDay, daysBetween, duplicateChance,
-  expectedNetCost, expectedRefund, itemKey, itemsOfRarity, lookChance, maxExpectedRefund, packRefund, rarityForRoll, rollPack, streakDayToday, dealOf, dealPrice,
+  expectedNetCost, expectedRefund, itemKey, itemsOfRarity, lookChance, maxExpectedRefund, packRefund, rarityForRoll, rollPack, streakDayToday, dealOf, dealPrice, SUPPLIES, supplyFull,
 } from "../shared/shop.ts";
 import { CARD_ICONS } from "../web/src/components/cardIcons.ts";
 import { CARD_TEXT_ROWS, cardCaption, cardName } from "../web/src/lib/cardText.ts";
@@ -12,9 +12,11 @@ import { hubText } from "../web/src/lib/shopText.ts";
 
 const sql = readFileSync(new URL("../supabase/migrations/0107_shop_daily.sql", import.meta.url), "utf8");
 /** Rows of a `values (...)` list inside the body of one SQL function. */
-const sql127 = readFileSync(new URL("../supabase/migrations/0127_new_avatars.sql", import.meta.url), "utf8");
+const sql127 = readFileSync(new URL("../supabase/migrations/0168_picture_cards.sql", import.meta.url), "utf8");
 const fnBody = (name: string) => { const i = sql.indexOf(`function public.${name}(`); expect(i, name).toBeGreaterThan(-1); return sql.slice(i, sql.indexOf("$$;", sql.indexOf("$$", i) + 2)); };
 
+const sql150 = readFileSync(new URL("../supabase/migrations/0150_rarer_legendaries.sql", import.meta.url), "utf8");
+const fnBodyAt = (src: string, name: string) => { const i = src.indexOf(`function public.${name}(`); expect(i, name).toBeGreaterThan(-1); return src.slice(i, src.indexOf("$$;", src.indexOf("$$", i) + 2)); };
 const fnBody127 = (name: string) => { const i = sql127.indexOf(`function public.${name}(`); expect(i, name).toBeGreaterThan(-1); return sql127.slice(i, sql127.indexOf("$$;", sql127.indexOf("$$", i) + 2)); };
 
 describe("daily bonus", () => {
@@ -52,12 +54,12 @@ describe("pack odds", () => {
   });
   it("maps a roll to the first slice that covers it", () => {
     const p = PACKS[0]!;
-    expect(rarityForRoll(p, 0)).toBe("common"); expect(rarityForRoll(p, 7699)).toBe("common"); expect(rarityForRoll(p, 7700)).toBe("rare");
-    expect(rarityForRoll(p, 9599)).toBe("rare"); expect(rarityForRoll(p, 9600)).toBe("epic"); expect(rarityForRoll(p, 9949)).toBe("epic"); expect(rarityForRoll(p, 9950)).toBe("legendary"); expect(rarityForRoll(p, 9999)).toBe("legendary");
+    expect(rarityForRoll(p, 0)).toBe("common"); expect(rarityForRoll(p, 7739)).toBe("common"); expect(rarityForRoll(p, 7740)).toBe("rare");
+    expect(rarityForRoll(p, 9639)).toBe("rare"); expect(rarityForRoll(p, 9640)).toBe("epic"); expect(rarityForRoll(p, 9989)).toBe("epic"); expect(rarityForRoll(p, 9990)).toBe("legendary"); expect(rarityForRoll(p, 9999)).toBe("legendary");
   });
   it("every rarity that can be rolled has something in it", () => { for (const r of PACK_RARITIES) expect(itemsOfRarity(r).length, r).toBeGreaterThan(0); });
   it("is mirrored by the SQL", () => {
-    const rows = [...fnBody("shop_packs").matchAll(/\((\d), +(\d+), +(\d+), +(\d+), +(\d+), +(\d+)\)/g)].map((m) => m.slice(1).map(Number));
+    const rows = [...fnBodyAt(sql150, "shop_packs").matchAll(/\((\d), +(\d+), +(\d+), +(\d+), +(\d+), +(\d+)\)/g)].map((m) => m.slice(1).map(Number));
     expect(rows).toEqual(PACKS.map((p) => [p.tier, p.price, p.odds.common, p.odds.rare, p.odds.epic, p.odds.legendary]));
     expect(fnBody("shop_limits")).toContain(`select ${REFUND_PCT}, ${DAILY_PACK_CAP}, ${PACK_GAP_SEC}`);
   });
@@ -66,8 +68,8 @@ describe("pack odds", () => {
 describe("catalogue", () => {
   it("has 100 numbered cards with unique ids, spread over every category", () => {
     expect(CARDS.length).toBe(CARD_TOTAL);
-    expect(CARDS.map((c) => c.n)).toEqual(Array.from({ length: 100 }, (_, i) => i + 1));
-    expect(new Set(CARDS.map((c) => c.id)).size).toBe(100);
+    expect(CARDS.map((c) => c.n)).toEqual(Array.from({ length: 110 }, (_, i) => i + 1));
+    expect(new Set(CARDS.map((c) => c.id)).size).toBe(110);
     for (const c of CARD_CATS) expect(cardsOfCat(c).length, c).toBeGreaterThanOrEqual(10);
     expect(CARDS.filter((c) => c.rarity === "legendary").length).toBeLessThan(CARDS.filter((c) => c.rarity === "epic").length);
   });
@@ -80,24 +82,24 @@ describe("catalogue", () => {
         expect(cardCaption(c.n, l).length, `${c.id} caption ${l}`).toBeGreaterThan(0); expect(cardCaption(c.n, l).length).toBeLessThanOrEqual(70);
       }
     }
-    for (const l of ["it", "en-US", "ja"] as const) expect(new Set(CARDS.map((c) => cardName(c.n, l))).size, l).toBe(100);
+    for (const l of ["it", "en-US", "ja"] as const) expect(new Set(CARDS.map((c) => cardName(c.n, l))).size, l).toBe(110);
   });
   it("holds the cards, the collectible avatars and the decorations no level unlocks", () => {
     const free = DECORATIONS.filter((d) => d.level === undefined);
     expect(SHOP_ITEMS.filter((i) => i.kind === "decoration").map((i) => i.id).sort()).toEqual(free.map((d) => d.id).sort());
     for (const d of free) expect(SHOP_ITEMS.find((i) => i.id === d.id)?.rarity).toBe(d.rarity);
-    expect(SHOP_ITEMS.filter((i) => i.kind === "avatar").length).toBe(12);
+    expect(SHOP_ITEMS.filter((i) => i.kind === "avatar").length).toBe(77);
     for (const a of DEFAULT_AVATARS) expect(SHOP_ITEMS.some((i) => i.id === a)).toBe(false);
-    expect(SHOP_ITEMS.length).toBe(117);
-    expect(new Set(SHOP_ITEMS.map((i) => itemKey(i.kind, i.id))).size).toBe(117);
+    expect(SHOP_ITEMS.length).toBe(201);
+    expect(new Set(SHOP_ITEMS.map((i) => itemKey(i.kind, i.id))).size).toBe(201);
     expect(SHOP_ITEMS.filter((i) => i.kind !== "card").every((i) => i.rarity !== "common")).toBe(true);
   });
-  it("looks are the rarer pulls", () => { for (const p of PACKS) { expect(lookChance(p.tier)).toBeGreaterThan(0); expect(lookChance(p.tier)).toBeLessThan(0.35); } });
+  it("looks are the rarer pulls", () => { for (const p of PACKS) { expect(lookChance(p.tier)).toBeGreaterThan(0); expect(lookChance(p.tier)).toBeLessThan(0.7); } });
   it("is mirrored by the SQL list, in the same order", () => {
     const rows = [...fnBody127("shop_items").matchAll(/\('(avatar|card|decoration)', '([a-z0-9]+)', '(common|rare|epic|legendary)'\)/g)].map((m) => `${m[1]}:${m[2]}:${m[3]}`);
     expect(rows.slice().sort()).toEqual(SHOP_ITEMS.map((i) => `${i.kind}:${i.id}:${i.rarity}`).sort());
   });
-  it("keeps the SQL default avatars", () => { expect(fnBody("default_avatars")).toContain(DEFAULT_AVATARS.map((a) => `'${a}'`).join(","));  });
+  it("keeps the SQL default avatars", () => { expect(fnBody127("default_avatars")).toContain(DEFAULT_AVATARS.map((a) => `'${a}'`).join(","));  });
 });
 
 describe("refund and sink", () => {
@@ -158,5 +160,24 @@ describe("deal of the day", () => {
     expect(sql128).toContain("array[20, 30, 25]");
     expect(sql128).toContain("1 + ((d / 3) % 3)");
     expect(sql128).toContain("floor(pk.price * dl.pct / 100.0)");
+  });
+});
+
+describe("supplies", () => {
+  const sql129 = readFileSync(new URL("../supabase/migrations/0129_shop_supplies.sql", import.meta.url), "utf8");
+  it("is mirrored by the SQL", () => {
+    const rows = [...sql129.matchAll(/\('(\w+)', +(\d+), (\d+), (\d+)\)/g)].map((m) => [m[1], Number(m[2]), Number(m[3]), Number(m[4])]);
+    expect(rows).toEqual(SUPPLIES.map((s) => [s.id, s.price, s.boosts, s.freezes]));
+  });
+  it("bundles are cheaper than the singles and a boost costs more than the most it can earn", () => {
+    const by = Object.fromEntries(SUPPLIES.map((s) => [s.id, s]));
+    expect(by.boost5!.price).toBeLessThan(5 * by.boost1!.price);
+    expect(by.kit!.price).toBeLessThan(3 * by.boost1!.price + 2 * by.freeze1!.price);
+    expect(by.boost1!.price).toBeLessThan(by.boost5!.price / 4);
+    expect(by.boost1!.price).toBeGreaterThan(700);
+  });
+  it("respects the stock caps", () => {
+    const kit = SUPPLIES.find((s) => s.id === "kit")!;
+    expect(supplyFull(kit, 17, 0)).toBe(false); expect(supplyFull(kit, 18, 0)).toBe(true); expect(supplyFull(kit, 0, 1)).toBe(true);
   });
 });

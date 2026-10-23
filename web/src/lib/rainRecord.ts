@@ -2,6 +2,7 @@
  * "How did this part of the day go lately?" for the rain hours of one city: read from the rain questions about it that have already closed (the same
  * markets table the starting chance of every rain quote is learned from; the rain that fell is stored with each answer). Nothing is estimated here.
  */
+import { dtf } from "./intl.ts";
 export type Part = "m" | "a" | "e";
 /** One closed rain question: the hour it was about and what fell. */
 export interface RainClosed { target_at: string; outcome: "yes" | "no" | null; evidence: { precipitationMm?: number } | null }
@@ -15,8 +16,8 @@ export interface RainRecord {
 /** Morning 05–12, afternoon 12–18, evening and night 18–05 (local hour). */
 export const partOfHour = (h: number): Part => (h >= 5 && h < 12 ? "m" : h >= 12 && h < 18 ? "a" : "e");
 const DAY = 86_400_000;
-const dayIn = (tz: string, ms: number) => new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(ms));
-const hourIn = (tz: string, ms: number) => Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: tz }).format(new Date(ms)));
+const dayIn = (tz: string, ms: number) => dtf("en-CA", { timeZone: tz }).format(new Date(ms));
+const hourIn = (tz: string, ms: number) => Number(dtf("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: tz }).format(new Date(ms)));
 
 /** The record of a band of the day ("all" = every hour) from the closed questions (pure). Null under six closed hours: too few to say anything. */
 export function buildRainRecord(rows: readonly RainClosed[], tz: string, part: Part | "all", nowMs: number): RainRecord | null {

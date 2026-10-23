@@ -1,6 +1,7 @@
 import type { Messages } from "../i18n/index.ts";
 import type { MarketRow } from "../lib/format.ts";
 import { daysUntil } from "../lib/format.ts";
+import { useBetCount } from "../lib/betcount.ts";
 
 type Hint = "yes" | "no" | null | undefined;
 
@@ -9,6 +10,7 @@ type Hint = "yes" | "no" | null | undefined;
  * the colours of the game's world, none of its artwork or logo.
  */
 export function HouseScene({ m, hint, msg, now }: { m: MarketRow; hint: Hint; msg: Messages; now: number }) {
+  const bets = useBetCount(m.id);
   const days = daysUntil(Number(m.params.releaseAt ?? 0) * 1000 || Date.parse(m.closes_at), now);
   const cls = `mscene tick house gta ${hint === "yes" ? "s-yes" : hint === "no" ? "s-no" : ""}`;
   const palm = (x: number, lean: number, s: number) => (
@@ -37,6 +39,7 @@ export function HouseScene({ m, hint, msg, now }: { m: MarketRow; hint: Hint; ms
         </g>
       </svg>
       <b>{msg.house.excl}{days > 0 ? ` · ${msg.house.inDays(days)}` : ""}</b>
+      {bets !== null && <i class="hs-bets">{msg.house.bets(bets)}</i>}
     </div>
   );
 }

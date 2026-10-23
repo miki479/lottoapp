@@ -39,10 +39,9 @@ describe("feed licence gate", () => {
     const it = load("italia");
     expect(usableFeeds(it, false).map((f) => f.id)).toEqual(["trenitalia-trip-updates", "italo-trip-updates"]);
     expect(usableFeeds(it, true).map((f) => f.id)).toEqual(["trenitalia-trip-updates", "italo-trip-updates", "it-train-viaggiatreno"]);
-    // ...and even if someone switched the bus on, the unverified feed stays blocked by default.
+    // Rome has no bus feed at all: the ATAC feed was removed because its terms limit use to travel support, so even switching the bus on offers nothing.
     const enabled = { ...rome, categories: { ...rome.categories, bus: { enabled: true } } };
-    expect(usableFeeds(enabled, false).map((f) => f.id)).toEqual(["open-meteo-rome"]);
-    expect(usableFeeds(enabled, true).map((f) => f.id)).toContain("rome-trip-update");
+    expect(usableFeeds(enabled, true).map((f) => f.id)).toEqual(["open-meteo-rome"]);
   });
   it("does not use feeds of disabled categories", () => {
     expect(usableFeeds(load("kumamoto"), true).every((f) => f.category !== "traffic" && f.category !== "train")).toBe(true);

@@ -1,3 +1,4 @@
+import { memo, forget } from "../lib/cache.ts";
 import { Gift } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -40,7 +41,7 @@ export function PersonalOffer(p: { msg: Messages; locale: Locale; now: number; r
   const [list, setList] = useState<Offer[]>([]);
   useEffect(() => {
     if (!p.registered) { setList([]); return; }
-    const load = () => { void sb.rpc("my_offers").then(({ data }) => setList((data ?? []) as Offer[]), () => setList([])); };
+    const load = () => { forget("my_offers"); void memo("my_offers", 90_000, () => sb.rpc("my_offers")).then(({ data }) => setList((data ?? []) as Offer[]), () => setList([])); };
     load();
     addEventListener(OFFER_EVENT, load);
     return () => removeEventListener(OFFER_EVENT, load);

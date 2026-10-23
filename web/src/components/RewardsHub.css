@@ -124,3 +124,23 @@
   .pkhalo, .pkwrap, .fgshine, .dbtile.ready, .dbtile.pop, .pkreveal .rvcard { animation: none !important; }
   .pkhalf { transition: none; }
 }
+
+/* daily bonus, compact: 4 + 3 big tiles (day 7 is wide), the explanation sits behind an (i) */
+.dbonus { gap: 8px; padding: 12px; }
+.dbinfo { width: 44px; height: 44px; margin: -6px -8px -6px 0; border: 0; border-radius: 50%; display: grid; place-items: center; background: none; color: var(--muted); cursor: pointer; }
+.dbinfo[aria-expanded="true"] { color: var(--action-ink); background: var(--action-soft); }
+.dbtext { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); }
+.dbgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.dbtile { min-height: 74px; padding: 8px 0 24px; border-radius: 14px; }
+.dbtile.last { grid-column: span 2; }
+.dbtile small { font-size: var(--fs-sm); } .dbtile b { font-size: var(--fs-md); }
+.dbtile .dbmark { bottom: 5px; height: 18px; }
+.dbtap { position: absolute; inset: 0; z-index: 1; border: 0; border-radius: inherit; background: none; cursor: pointer; }
+.dbtap:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
+
+/* picture cards: the empty plates of the rendered frame carry the number (top) and the name (bottom); light letters on the dark gunmetal plates, dark ones on silver and gold */
+.fig.pic { aspect-ratio: 3 / 4; background: none; border: 0; padding: 0; container-type: inline-size; --pt: #f2f4f9; --ps: rgba(0, 0, 0, .7); }
+.fig.pic.fr-rare { --pt: #1b1e25; --ps: rgba(255, 255, 255, .5); } .fig.pic.fr-epic { --pt: #1b1e25; --ps: rgba(255, 255, 255, .5); } .fig.pic.fr-legendary { --pt: #3a2600; --ps: rgba(255, 244, 200, .55); }
+.fig.pic .fgpic { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; }
+.fig.pic .fgpn { position: absolute; top: 6.8%; left: 12%; right: 12%; text-align: center; font-size: clamp(7px, 6.2cqw, 12px); font-weight: 800; line-height: 1; color: var(--pt); text-shadow: 0 1px 1px var(--ps); }
+.fig.pic .fgpname { position: absolute; left: 13%; right: 13%; bottom: 5.4%; height: 10.4%; display: grid; place-items: center; text-align: center; font-size: clamp(7px, 6.3cqw, 13px); font-weight: 800; line-height: 1.05; overflow: hidden; color: var(--pt); text-shadow: 0 1px 1px var(--ps); }

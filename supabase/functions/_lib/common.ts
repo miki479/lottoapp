@@ -33,7 +33,14 @@ export function safe(handler: (req: Request) => Promise<Response>): (req: Reques
   };
 }
 
-export { usableFeeds };
+/** Feeds switched off to spare the database's disk IO: bus lines nobody bets on (≤3 bets in 30 days against hundreds of questions) and road traffic. Switch back on by deleting the id. */
+const FEEDS_OFF = new Set([
+  "sta-trip-updates", "renfe-trip-update", "amtab-trip-updates", "apam-trip-updates", "trentino-trip-updates", "entur-ruter-trip-update", "tep-trip-updates",
+  "seta-mo-trip-updates", "actv-nav-trip-updates", "grandabus-trip-updates", "hsl-trip-update", "arriva-trip-updates", "tbm-bus-trip-update", "pid-bus-trip-update",
+  "naolib-bus-trip-update", "translink-seq-bus-trip-update", "zditm-trip-update", "entur-kol-trip-update", "entur-atb-trip-update", "translink-seq-train-trip-update",
+]);
+const usableFeedsOn = (city: CityConfig, allow: boolean): FeedConfig[] => usableFeeds(city, allow).filter((f) => !FEEDS_OFF.has(f.id) && f.type !== "digitraffic-tms");
+export { usableFeedsOn as usableFeeds };
 export type { CityConfig, FeedConfig };
 
 /** Key for a feed: ODPT-style tokens go in the URL, from the environment, never from code. */

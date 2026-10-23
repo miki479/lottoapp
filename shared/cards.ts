@@ -1,5 +1,5 @@
 /**
- * The collectible "figurine" cards of the pack shop: 100 numbered cards across every category of the app.
+ * The collectible "figurine" cards of the pack shop: 110 numbered cards across every category of the app.
  * Pure data, no text (the names and captions are in web/src/lib/cardText.ts, in four languages).
  * Mirrored by supabase/migrations/0107_shop_daily.sql (tests/shop.test.ts compares the ids and rarities with the SQL).
  */
@@ -7,7 +7,7 @@ export type PackRarity = "common" | "rare" | "epic" | "legendary";
 export type CardCat = "transport" | "weather" | "nature" | "sport" | "games" | "finance" | "culture" | "law";
 /** Album order. */
 export const CARD_CATS: readonly CardCat[] = ["transport", "weather", "nature", "sport", "games", "finance", "culture", "law"];
-export const CARD_TOTAL = 100;
+export const CARD_TOTAL = 110;
 
 export interface CardDef {
   /** 1..100: the number printed on the card ("n. 17 of 100"). */
@@ -18,11 +18,13 @@ export interface CardDef {
   rarity: PackRarity;
   /** Name of a lucide icon (the web app maps it to the component). */
   icon: string;
+  /** Picture cards (101..110): a rendered card in web/public/cards/<id>.webp, with the name plates left empty (name and number are written over them). */
+  img?: string;
 }
 
 const C = "common", R = "rare", E = "epic", L = "legendary";
 /** Category, rarity and icon of each card, in number order (card n is row n). Texts live in web/src/lib/cardText.ts, same order. */
-const ROWS: [CardCat, PackRarity, string][] = [
+const ROWS: [CardCat, PackRarity, string, boolean?][] = [
   // transport 1-24
   ["transport", C, "TrainFront"], ["transport", C, "TramFront"], ["transport", C, "Bike"], ["transport", C, "Bus"], ["transport", C, "TrainTrack"], ["transport", C, "Building2"], ["transport", C, "Building"],
   ["transport", C, "Footprints"], ["transport", C, "Car"], ["transport", C, "Signpost"], ["transport", C, "Clock"], ["transport", C, "Users"], ["transport", C, "BusFront"], ["transport", C, "Route"],
@@ -49,8 +51,11 @@ const ROWS: [CardCat, PackRarity, string][] = [
   // law 91-100
   ["law", C, "Gavel"], ["law", C, "Stamp"], ["law", C, "FileText"], ["law", C, "Ticket"], ["law", C, "Hourglass"],
   ["law", R, "Landmark"], ["law", R, "Vote"], ["law", R, "Scale"], ["law", R, "ScrollText"], ["law", E, "BadgeCheck"],
+  // picture cards 101-110
+  ["transport", C, "TrainFront", true], ["transport", C, "Users", true], ["transport", C, "BusFront", true], ["transport", C, "Clock", true], ["weather", R, "CloudLightning", true],
+  ["nature", R, "Footprints", true], ["transport", R, "TrainTrack", true], ["transport", R, "TrainFront", true], ["transport", L, "Crown", true], ["nature", L, "Zap", true],
 ];
 
-export const CARDS: readonly CardDef[] = ROWS.map(([cat, rarity, icon], i) => ({ n: i + 1, id: `c${String(i + 1).padStart(3, "0")}`, cat, rarity, icon }));
+export const CARDS: readonly CardDef[] = ROWS.map(([cat, rarity, icon, pic], i) => { const id = `c${String(i + 1).padStart(3, "0")}`; return { n: i + 1, id, cat, rarity, icon, ...(pic ? { img: `/cards/${id}.webp` } : {}) }; });
 export const cardById = (id: string): CardDef | undefined => CARDS.find((c) => c.id === id);
 export const cardsOfCat = (cat: CardCat): CardDef[] => CARDS.filter((c) => c.cat === cat);

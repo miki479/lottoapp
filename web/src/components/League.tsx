@@ -1,3 +1,4 @@
+import { memo, forget } from "../lib/cache.ts";
 import { X } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { LEAGUES, LEAGUE_BONUS, PROMOTE_CREDITS, PROMOTE_TOP, promoteSlots, promotionGap, resetBalance } from "../../../shared/leagues.ts";
@@ -83,7 +84,7 @@ function Board({ league, locale, msg, onProfile }: { league: number; locale: Loc
   const [rows, setRows] = useState<{ rank: number; user_id: string; display_name: string; credits: number; is_me: boolean }[] | null>(null);
   useEffect(() => {
     setRows(null); let live = true;
-    sb.rpc("league_board", { p_league: league, p_limit: 20 }).then(({ data }) => { if (live) setRows(((data ?? []) as typeof rows & object[]).map((r) => ({ ...r, rank: Number(r.rank), credits: Number(r.credits) }))); });
+    memo(`lgb:${league}:20`, 150_000, () => sb.rpc("league_board", { p_league: league, p_limit: 20 })).then(({ data }) => { if (live) setRows(((data ?? []) as typeof rows & object[]).map((r) => ({ ...r, rank: Number(r.rank), credits: Number(r.credits) }))); });
     return () => { live = false; };
   }, [league]);
   const looks = useLooks((rows ?? []).map((r) => r.user_id));
@@ -95,7 +96,7 @@ function Board({ league, locale, msg, onProfile }: { league: number; locale: Loc
       return (
         <div class={`row ${r.is_me ? "me" : ""}`} key={r.user_id}>
           <span class={`rank ${r.rank <= 3 ? "top" : ""}`}>{r.rank}</span>
-          {l ? <Look avatar={l.avatar} decoration={l.decoration} size={36} /> : <span class="lkph" />}
+          {l ? <Look avatar={l.avatar} decoration={l.decoration} aura={l.aura} size={36} /> : <span class="lkph" />}
           <button class="grow rowlink" onClick={() => onProfile(r.user_id)}><span class="nick"><b>{r.display_name}</b><LevelBadge level={l?.level} msg={msg} /></span><span class="subline">{r.is_me && <em class="youtag">{t.you}</em>}<PlayerTitle id={l?.title} locale={locale} /></span></button>
           <span class="scorebox"><span class="score num zero">{nf.format(r.credits)}</span><small class="scorelbl">{msg.ranking.monthLbl}</small></span>
         </div>

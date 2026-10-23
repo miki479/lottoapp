@@ -40,6 +40,19 @@ export async function buyPack(tier: number): Promise<PackOpen | { error: string 
   changed();
   return data as PackOpen;
 }
+export interface SupplyBought { item: string; price: number; balance: number; boosts: number; freezes: number }
+export async function buySupply(item: string): Promise<SupplyBought | { error: string }> {
+  const { data, error } = await sb.rpc("buy_supply", { p_item: item });
+  if (error) return { error: error.message };
+  changed();
+  return data as SupplyBought;
+}
+export async function buyLimitBreak(): Promise<{ balance: number; until: string; next: string } | { error: string }> {
+  const { data, error } = await sb.rpc("buy_limit_break");
+  if (error) return { error: error.message };
+  changed();
+  return data as { balance: number; until: string; next: string };
+}
 /** Avatars the player can wear: the free ones, the won ones and the one worn now. */
 export async function loadMyAvatars(): Promise<string[] | null> {
   const { data, error } = await sb.rpc("my_avatars");

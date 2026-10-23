@@ -44,7 +44,7 @@ function BalanceMove({ before, after, label, locale }: { before: number; after: 
  * The big, clear outcome screen. A win and a loss have the same structure and the same weight: an emblem, the word, the big figure, how the balance moved,
  * what happened, what the bet was. Colour is soft, and always backed by an icon and a word; a loss gets a calm icon, never a check.
  */
-export function ResultScreen({ bet, msg, locale, remaining, balance, onClose, onShare, onNext }: { bet: MyBet; msg: Messages; locale: Locale; remaining: number; balance?: { before: number; after: number } | null; onClose: () => void; onShare: () => void; onNext: () => void }) {
+export function ResultScreen({ bet, msg, locale, remaining, balance, onClose, onShare, onNext, onSkipAll }: { onSkipAll?: () => void; bet: MyBet; msg: Messages; locale: Locale; remaining: number; balance?: { before: number; after: number } | null; onClose: () => void; onShare: () => void; onNext: () => void }) {
   const st = bet.status as "won" | "lost" | "void";
   const m = bet.markets, city = cityOf(m.city_id);
   useEffect(() => { st === "won" ? haptic.success() : st === "lost" ? haptic.error() : haptic.tap(); }, [bet.id]);
@@ -69,6 +69,7 @@ export function ResultScreen({ bet, msg, locale, remaining, balance, onClose, on
       <div class="btns">
         <button class="btn primary wide" onClick={onShare}><Share2 size={18} />{msg.result.share}</button>
         {remaining > 0 ? <button class="btn secondary wide" onClick={onNext}>{msg.result.more(remaining)}</button> : <button class="btn secondary wide" onClick={onClose}>{msg.result.close}</button>}
+        {remaining >= 2 && onSkipAll && <button class="btn text wide" onClick={onSkipAll}>{msg.result.digest.skip}</button>}
         <ReportLink marketId={m.id} msg={msg} />
       </div>
     </div>

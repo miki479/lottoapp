@@ -2,13 +2,15 @@ import { computeOdds } from "./odds.ts";
 import { addDays, localDateString, zonedEpoch } from "./time.ts";
 
 /** Weather-style measurements beyond rain. One hourly value per place, compared with a threshold. */
-export type MetricId = "temp" | "wind" | "snow" | "uv" | "aqi" | "hail";
+export type MetricId = "temp" | "wind" | "snow" | "uv" | "aqi" | "hail" | "pollen";
 
 export interface MetricDef {
   /** Open-Meteo hourly variable. */
   api: string;
   /** The value stamped with an hour is the maximum or sum of the hour BEFORE it (Open-Meteo), so it belongs to the previous hour. */
   preceding?: boolean;
+  /** More Open-Meteo variables added to `api` (pollen: the species are summed into one count). */
+  also?: string[];
   /** "forecast" or "air-quality" API. */
   source: "forecast" | "air";
   unit: string;
@@ -31,6 +33,8 @@ export const METRICS: Record<MetricId, MetricDef> = {
   snow: { api: "snowfall", preceding: true, source: "forecast", unit: "cm", sigma: 0.3, step: 0.1, hour: 12, min: 0, max: 50 },
   uv: { api: "uv_index", source: "forecast", unit: "", sigma: 1.2, step: 1, hour: 13, min: 0, max: 16 },
   aqi: { api: "european_aqi", source: "air", unit: "", sigma: 12, step: 10, hour: 12, min: 0, max: 500 },
+  /** Pollen (grains per cubic metre, all the species Open-Meteo models added up): Europe only, so a place outside it simply has no value, and only offered in season. */
+  pollen: { api: "grass_pollen", also: ["birch_pollen", "olive_pollen", "ragweed_pollen", "alder_pollen", "mugwort_pollen"], source: "air", unit: "grains/m³", sigma: 12, step: 10, hour: 13, min: 0, max: 5000 },
   /** Hail: WMO weather code 96 or 99 (thunderstorm with hail) in that hour. Only offered through player-made questions. */
   hail: { api: "weather_code", source: "forecast", unit: "", sigma: 1, step: 1, hour: 15, min: 0, max: 1, transform: (v) => (v >= 96 ? 1 : 0) },
 };
@@ -64,6 +68,7 @@ export function worthOffering(metric: MetricId, forecast: number, tempAround?: n
   if (metric === "uv") return forecast >= 2;
   if (metric === "snow") return forecast >= 0.05 || (tempAround !== undefined && tempAround <= 1 && forecast > 0);
   if (metric === "wind") return forecast >= 15;
+  if (metric === "pollen") return forecast >= 20;
   return true;
 }
 

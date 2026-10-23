@@ -1,4 +1,4 @@
-import { Gift, Share2 } from "lucide-preact";
+import { Gift, Share2, X } from "lucide-preact";
 import { Sheet } from "./Sheet.tsx";
 import { money } from "../lib/format.ts";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -13,7 +13,7 @@ export function LossSheet(p: { msg: Messages; locale: Locale; credits: number; c
         <h2>{t.title}</h2>
         <p class="hint">{t.body(money(Math.max(0, p.credits), p.locale), money(1500, p.locale))}</p>
         <button class="btn primary wide" onClick={() => { if (p.canShare) p.onShare(); else p.onAuth(); }}><Share2 size={18} />{p.canShare ? t.share : t.signup}</button>
-        <button class="btn secondary wide" onClick={p.onClose}>{t.later}</button>
+        <button class="btn secondary wide" onClick={p.onClose} aria-label={t.later} title={t.later}><X size={18} /></button>
       </div>
     </Sheet>
   );

@@ -1,3 +1,4 @@
+import { memo, forget } from "../lib/cache.ts";
 import { TrendingDown, TrendingUp } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import type { Locale, Messages } from "../i18n/index.ts";
@@ -5,6 +6,7 @@ import { INTL_TAG } from "../i18n/index.ts";
 import { sb } from "../lib/api.ts";
 import { money } from "../lib/format.ts";
 import { moneySigned } from "../lib/num.ts";
+import { dtf } from "../lib/intl.ts";
 
 interface Day { day: string; net: number; bets: number }
 interface Cat { category: string; bets: number; won: number; lost: number; net: number }
@@ -13,8 +15,8 @@ interface Cat { category: string; bets: number; won: number; lost: number; net: 
 export function HistoryCard({ msg, locale }: { msg: Messages; locale: Locale }) {
   const h = msg.hist;
   const [days, setDays] = useState<Day[] | null>(null), [cats, setCats] = useState<Cat[]>([]), [span, setSpan] = useState(30);
-  useEffect(() => { let live = true; sb.rpc("my_balance_series", { p_days: span }).then(({ data }) => { if (live) setDays(((data ?? []) as Day[]).map((d) => ({ ...d, net: Number(d.net), bets: Number(d.bets) }))); }); return () => { live = false; }; }, [span]);
-  useEffect(() => { let live = true; sb.rpc("my_category_stats").then(({ data }) => { if (live) setCats(((data ?? []) as Cat[]).map((c) => ({ ...c, bets: Number(c.bets), won: Number(c.won), lost: Number(c.lost), net: Number(c.net) }))); }); return () => { live = false; }; }, []);
+  useEffect(() => { let live = true; memo(`mbs:${span}`, 120_000, () => sb.rpc("my_balance_series", { p_days: span })).then(({ data }) => { if (live) setDays(((data ?? []) as Day[]).map((d) => ({ ...d, net: Number(d.net), bets: Number(d.bets) }))); }); return () => { live = false; }; }, [span]);
+  useEffect(() => { let live = true; memo("mcs", 120_000, () => sb.rpc("my_category_stats")).then(({ data }) => { if (live) setCats(((data ?? []) as Cat[]).map((c) => ({ ...c, bets: Number(c.bets), won: Number(c.won), lost: Number(c.lost), net: Number(c.net) }))); }); return () => { live = false; }; }, []);
   if (days === null) return <section class="card hist"><div class="sk s" /></section>;
   if (days.length === 0 && cats.length === 0) return <section class="card hist"><b>{h.title}</b><p class="hint">{h.empty}</p></section>;
   let run = 0; const pts = days.map((d) => ({ ...d, cum: (run += d.net) }));
@@ -24,7 +26,7 @@ export function HistoryCard({ msg, locale }: { msg: Messages; locale: Locale }) 
   const up = total >= 0, best = cats[0], worst = cats.length > 1 ? cats[cats.length - 1] : undefined;
   const maxAbs = Math.max(1, ...cats.map((c) => Math.abs(c.net)));
   const fmt = (n: number) => moneySigned(n, locale);
-  const dayFmt = new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "short" });
+  const dayFmt = dtf(INTL_TAG[locale], { day: "numeric", month: "short" });
   return (
     <section class="card hist stack" style="gap:10px">
       <div class="histhead"><b>{h.title}</b><span class={`histtotal num ${up ? "pos" : "neg"}`}>{up ? <TrendingUp size={16} /> : <TrendingDown size={16} />}{fmt(total)}</span></div>

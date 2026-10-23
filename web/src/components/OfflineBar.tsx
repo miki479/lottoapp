@@ -1,4 +1,4 @@
-import { Wifi, WifiOff } from "lucide-preact";
+import { Wifi, WifiOff, RefreshCw } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Messages } from "../i18n/index.ts";
 
@@ -15,7 +15,7 @@ export function OfflineBar({ offline, msg, onRetry }: { offline: boolean; msg: M
     <div class={`offlinebar ${offline ? "down" : "up"}`} role="status" aria-live="polite">
       {offline ? <WifiOff size={18} /> : <Wifi size={18} />}
       <span>{offline ? msg.common.offline : msg.common.backOnline}</span>
-      {offline && <button class="link" onClick={onRetry}>{msg.common.retry}</button>}
+      {offline && <button class="link" onClick={onRetry} aria-label={msg.common.retry} title={msg.common.retry}><RefreshCw size={18} /></button>}
     </div>
   );
 }

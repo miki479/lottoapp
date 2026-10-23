@@ -6,15 +6,15 @@ export interface LiveDelay { market_id: string; delay_sec: number; observed_at: 
 export interface SlipLeg { m: import("./format.ts").MarketRow; pick: Pick }
 export interface ParlayRow { id: string; boosted?: boolean; stake: number; odds: number; status: "open" | "won" | "lost" | "void"; payout: number; placed_at: string; settled_at: string | null; parlay_legs: { market_id: string; pick: Pick; odds: number; status: string; markets: { id?: string; city_id: string; category?: string; kind: string; params: Record<string, unknown>; closes_at?: string; target_at?: string; odds_yes?: number; odds_no?: number; status?: string } }[] }
 export interface QuestRow { id: string; kind: "daily" | "once"; reward: number; done: boolean; claimed: boolean }
-export interface ActivityRow { kind: "placed" | "won" | "lost"; who: string | null; amount: number; market_kind: string; label: string; city_id: string; at: string }
+export interface ActivityRow { kind: "placed" | "won" | "lost"; who: string | null; amount: number; market_kind: string; label: string; city_id: string; at: string; category?: string; params?: Record<string, unknown>; closes_at?: string; target_at?: string; pick?: string }
 export interface ResultRow { target_at?: string; id: string; city_id: string; kind: MarketRow["kind"]; status: string; outcome: string | null; void_reason: string | null; params: Record<string, unknown>; evidence: { delaySec?: number } | null }
 export interface Profile {
-  id: string; credits: number; city_id: string; locale: string; timezone: string; country: string | null;
-  streak: number; best_streak: number; freezes: number; boosts: number; push_flash?: boolean; push_streak?: boolean; push_friends?: boolean; display_name: string | null; last_play_date: string | null; stake_factor?: number;
+  id: string; results_seen_at?: string | null; credits: number; city_id: string; locale: string; timezone: string; country: string | null;
+  streak: number; best_streak: number; freezes: number; boosts: number; push_flash?: boolean; push_streak?: boolean; push_friends?: boolean; display_name: string | null; last_play_date: string | null; stake_factor?: number; limit_break_until?: string | null; limit_break_at?: string | null;
 }
 export interface Progress { day: string; bus: number; train: number; weather: number; traffic: number; bonus_claimed: boolean }
 export interface MyBet {
-  settled_at?: string | null; id: string; pick: Pick; stake: number; odds: number; status: "open" | "won" | "lost" | "void"; payout: number; boosted?: boolean; vice_pct?: number; bonus?: "free" | "few" | "standing" | null; bonus_hit?: boolean | null;
+  settled_at?: string | null; placed_at?: string | null; id: string; pick: Pick; stake: number; odds: number; status: "open" | "won" | "lost" | "void"; payout: number; boosted?: boolean; vice_pct?: number; bonus?: "free" | "few" | "standing" | null; bonus_hit?: boolean | null;
   markets: MarketRow & { void_reason: string | null; outcome: string | null; evidence: { occ?: number; level?: number; delaySec?: number; precipitationMm?: number; value?: number; count?: number; maxMag?: number; present?: number; avgKmh?: number; home?: number; away?: number } | null };
 }
 export interface LbRow { rank: number; user_id: string; display_name: string; score: number; bets: number; streak: number; is_me: boolean }

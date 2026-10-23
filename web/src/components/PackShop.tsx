@@ -1,7 +1,7 @@
-import { Check, Crown, Gem, Lock, Sparkles, Star } from "lucide-preact";
+import { Check, Crown, Gem, Lock, Sparkles, Star, X } from "lucide-preact";
 import type { LucideIcon } from "lucide-preact";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { PACK_RARITIES, PACKS, dealOf, dealPrice, lookChance, packRefund, REFUND_PCT, type PackDef, type PackRarity } from "../../../shared/shop.ts";
+import { PACK_RARITIES, PACKS, dealOf, dealPrice, packPct, lookChance, packRefund, REFUND_PCT, type PackDef, type PackRarity } from "../../../shared/shop.ts";
 import { cardById } from "../../../shared/cards.ts";
 import { INTL_TAG, type Locale, type Messages } from "../i18n/index.ts";
 import { reducedMotion } from "../lib/anim.ts";
@@ -10,6 +10,7 @@ import { money } from "../lib/format.ts";
 import { haptic } from "../lib/haptics.ts";
 import { buyPack, errorCode, pending, type AlbumData, type PackOpen } from "../lib/shop.ts";
 import { hubText } from "../lib/shopText.ts";
+import { shopStatus, type ShopStatus } from "../lib/shopStatus.ts";
 import { Figurine } from "./Figurine.tsx";
 import { Card3D } from "./Card3D.tsx";
 import "./Pack3D.css";
@@ -47,8 +48,8 @@ function Burst({ n, big = false }: { n: number; big?: boolean }) {
 /** Odds as the player reads them: "77%", "3.5%", "0.5%". */
 const pct = (bps: number, locale: Locale): string => new Intl.NumberFormat(INTL_TAG[locale], { maximumFractionDigits: 1 }).format(bps / 100) + "%";
 
-export function PackShop({ locale, msg, album, credits, registered, onBought, onAlbum, onAuth }: {
-  locale: Locale; msg: Messages; album: AlbumData | null; credits: number; registered: boolean;
+export function PackShop({ locale, msg, album, credits, registered, onBought, onAlbum, onAuth, extra }: {
+  locale: Locale; msg: Messages; album: AlbumData | null; credits: number; registered: boolean; extra?: preact.ComponentChildren;
   onBought: (r: PackOpen) => void; onAlbum: () => void; onAuth: () => void;
 }) {
   const t = hubText(locale), s = t.shop;
@@ -58,7 +59,14 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
   const timer = useRef<number | undefined>(undefined), tapsRef = useRef(0);
   useEffect(() => () => clearTimeout(timer.current), []);
   // the deal of the day (UTC): one pack costs less, the server charges the same price
-  const deal = dealOf(Date.now()), priceOf = (pk: PackDef): number => (pk.tier === deal.tier ? dealPrice(pk.price, deal.pct) : pk.price);
+  const [status, setStatus] = useState<ShopStatus | null>(null);
+  useEffect(() => { shopStatus().then(setStatus).catch(() => undefined); }, []);
+  const deal = dealOf(Date.now()), promo = !!status?.promo_until && Date.parse(status.promo_until) > Date.now(), lucky = !!status?.lucky_until && Date.parse(status.lucky_until) > Date.now();
+  const pctOf = (pk: PackDef): number => packPct(pk.tier, promo, deal), priceOf = (pk: PackDef): number => dealPrice(pk.price, pctOf(pk));
+  const clock = (iso: string): string => {
+    const d = new Date(iso), sameDay = d.toDateString() === new Date().toDateString();
+    return new Intl.DateTimeFormat(INTL_TAG[locale], sameDay ? { hour: "2-digit", minute: "2-digit" } : { weekday: "short", hour: "2-digit", minute: "2-digit" }).format(d);
+  };
   const packOf = (tier: number): PackDef => PACKS.find((p) => p.tier === tier) ?? PACKS[0]!;
   const full = (album?.opened_today ?? 0) >= (album?.daily_cap ?? 12);
 
@@ -99,7 +107,7 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
         {err && <p class="dberr" role="alert">{err}</p>}
         {!ok && credits < priceOf(pack) && <p class="dberr">{s.notEnough}</p>}
         <button class="btn primary wide" disabled={!ok || stage.phase === "buying"} aria-busy={stage.phase === "buying"} onClick={() => buy(pack.tier)}>{s.pay(money(priceOf(pack), locale))}</button>
-        <button class="btn secondary wide" disabled={stage.phase === "buying"} onClick={close}>{s.notNow}</button>
+        <button class="btn secondary wide" disabled={stage.phase === "buying"} onClick={close} aria-label={s.notNow} title={s.notNow}><X size={18} /></button>
       </section>
     );
   }
@@ -112,7 +120,7 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
         <p class={`pkcount halo h-${r.rarity}`} aria-live="polite"><span class="sr">{s.tap(left)}</span>{!opening && <b key={left} aria-hidden="true">{left}</b>}</p>
         <div class={`pkplace pk3d halo h-${r.rarity} ${opening ? "burst" : ""}`} data-taps={stage.taps}>
           <i class="pkhalo" aria-hidden="true" />
-          <button class="pkbtn" onClick={tap} disabled={opening} aria-label={s.tapAria(left)}>
+          <button class="pkbtn" data-repeat onClick={tap} disabled={opening} aria-label={s.tapAria(left)}>
             <span class={`pkwrap s${shake % 2}`} key={shake}><PackArt pack={pack} name={s.packs[pack.tier - 1]!} taps={stage.taps} open={opening} big /></span>
           </button>
           {shake > 0 && <Burst key={`b${shake}${opening}`} n={opening ? 44 : 8 + stage.taps * 6} big={opening} />}
@@ -141,7 +149,7 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
         <p class="rvmeta"><span class={`rchip r-${r.rarity}`}>{t.album.rar[r.rarity]}</span><span>{card ? t.album.number(card.n) : r.kind === "avatar" ? t.album.avatar : t.album.decoration}</span></p>
         {card && <p class="rvcap">“{cardCaption(card.n, locale)}”</p>}
         <p class={`rvline ${r.duplicate ? "dup" : ""}`}><Check size={16} strokeWidth={3} />{r.duplicate ? s.dupBack(money(r.refund, locale)) : s.added}</p>
-        <button class="btn primary wide" onClick={close}>{s.done}</button>
+        <button class="btn primary wide" onClick={close} aria-label={s.done} title={s.done}><Check size={18} /></button>
         <button class="btn secondary wide" onClick={() => { close(); onAlbum(); }}>{s.seeAlbum}</button>
       </section>
     );
@@ -151,19 +159,20 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
   return (
     <section class="stack pkshop">
       <p class="hint">{s.intro}</p>
+      {(promo || lucky) && <div class={`pkoffer ${promo && lucky ? "both" : ""}`} role="status">{promo && <span class="po-promo"><Sparkles size={14} />{s.promoTag} · {s.until(clock(status!.promo_until!))}</span>}{lucky && <span class="po-lucky"><Star size={14} />{s.luckyTag} · {s.until(clock(status!.lucky_until!))}</span>}</div>}
       {!registered && <div class="card pkguest"><Lock size={18} /><p>{s.needAccount}</p><button class="btn primary" onClick={onAuth}>{s.makeProfile}</button></div>}
       <ul class="pklist">
         {PACKS.map((pack) => {
-          const name = s.packs[pack.tier - 1]!, price = priceOf(pack), onDeal = pack.tier === deal.tier, can = registered && credits >= price && !full;
+          const name = s.packs[pack.tier - 1]!, price = priceOf(pack), off = pctOf(pack), onDeal = off > 0, can = registered && credits >= price && !full;
           return (
-            <li key={pack.tier} class={`pkrow pt${pack.tier} ${onDeal ? "deal" : ""}`}>
-              <div class="pkmini"><PackArt pack={pack} name={name} />{onDeal && <span class="dealtag" aria-hidden="true">-{deal.pct}%</span>}</div>
+            <li key={pack.tier} class={`pkrow pt${pack.tier} ${onDeal ? "deal" : ""} ${full ? "off" : ""}`}>
+              <div class="pkmini"><PackArt pack={pack} name={name} />{onDeal && <span class="dealtag" aria-hidden="true">-{off}%</span>}</div>
               <div class="pkinfo">
-                <b>{name}{onDeal && <em class="dealname">{s.deal}</em>}</b>
+                <b>{name}{pack.tier === deal.tier && deal.pct >= off && <em class="dealname">{s.deal}</em>}</b>
                 <span class="pkbar" role="img" aria-label={s.odds}>{PACK_RARITIES.filter((r) => pack.odds[r] > 0).map((r) => <i key={r} class={`r-${r}`} style={`flex:${pack.odds[r]}`} />)}</span>
                 <span class="pkodds">{s.oddsLine(Object.fromEntries(PACK_RARITIES.map((r) => [r, pct(pack.odds[r], locale)])) as Record<PackRarity, string>)}</span>
               </div>
-              <button class="btn primary pkbuy" disabled={!registered || full} onClick={() => { setErr(null); setStage({ phase: "confirm", tier: pack.tier }); }} aria-label={`${name}: ${s.buy(money(price, locale))}${onDeal ? ` (-${deal.pct}%)` : ""}`}>
+              <button class="btn primary pkbuy" disabled={!registered || full} onClick={() => { setErr(null); setStage({ phase: "confirm", tier: pack.tier }); }} aria-label={`${name}: ${s.buy(money(price, locale))}${onDeal ? ` (-${off}%)` : ""}`}>
                 {onDeal && <s class="was">{money(pack.price, locale)}</s>}<span>{money(price, locale)}</span>{!can && registered && !full && <em>{s.notEnough}</em>}
               </button>
             </li>
@@ -173,6 +182,7 @@ export function PackShop({ locale, msg, album, credits, registered, onBought, on
       {album && <p class="hint">{full ? s.limitHit : s.limit(album.opened_today, album.daily_cap)}</p>}
       <p class="hint">{s.dupRule(REFUND_PCT, `${money(packRefund(60), locale)}–${money(packRefund(2000), locale)}`)}</p>
       <p class="hint">{s.sink}</p>
+      {extra}
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import type { MarketRow } from "./format.ts";
+import { dtf } from "./intl.ts";
 
 /**
  * "Why this quote": how a line did over the last seven days, read from the questions about it that have already closed (the same table the starting
@@ -22,7 +23,7 @@ export interface LineRecord {
 }
 
 const DAY = 86_400_000;
-const dayIn = (tz: string, ms: number) => new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(ms));
+const dayIn = (tz: string, ms: number) => dtf("en-CA", { timeZone: tz }).format(new Date(ms));
 
 /** The record of a line from its closed questions (pure). Null under two days of data. */
 export function buildRecord(rows: readonly Closed[], tz: string, nowMs: number): LineRecord | null {

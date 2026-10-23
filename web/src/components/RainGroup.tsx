@@ -8,14 +8,15 @@ import { countdown, fmtOdds, type MarketRow } from "../lib/format.ts";
 import { fmtDec } from "../lib/num.ts";
 import { buildRainRecord, partOfHour, type Part, type RainClosed } from "../lib/rainRecord.ts";
 import type { Pick } from "../lib/types.ts";
+import { dtf } from "../lib/intl.ts";
 
 interface Strings { title: (c: string) => string; all: string; m: string; a: string; e: string; threshold: (mm: string) => string; best: string; closes: string; hist: (rainy: number, hours: number, avg: string, max: string) => string; none: string; pick: string }
 const T: Record<string, Strings> = {
-  it: { title: (c) => `Pioverà a ${c}?`, all: "Tutte", m: "Mattina", a: "Pomeriggio", e: "Sera e notte", threshold: (mm) => `Pioggia almeno ${mm} mm`, best: "Quota migliore", closes: "Chiude tra", pick: "Scegli un'ora e il tuo Sì o No",
+  it: { title: (c) => `Pioverà a ${c}?`, all: "Tutte", m: "Mattina", a: "Pomeriggio", e: "Notte", threshold: (mm) => `Pioggia almeno ${mm} mm`, best: "Quota migliore", closes: "Chiude tra", pick: "Scegli un'ora e il tuo Sì o No",
     hist: (r, h, avg, max) => `Negli ultimi 7 giorni in questa fascia ha piovuto in ${r} ore su ${h}${r ? ` · media ${avg} mm, massimo ${max} mm` : ""}`, none: "Per questa fascia non ci sono ancora abbastanza ore concluse." },
-  "en-US": { title: (c) => `Will it rain in ${c}?`, all: "All", m: "Morning", a: "Afternoon", e: "Evening & night", threshold: (mm) => `Rain of at least ${mm} mm`, best: "Best odds", closes: "Closes in", pick: "Pick an hour and your Yes or No",
+  "en-US": { title: (c) => `Will it rain in ${c}?`, all: "All", m: "Morning", a: "Afternoon", e: "Night", threshold: (mm) => `Rain of at least ${mm} mm`, best: "Best odds", closes: "Closes in", pick: "Pick an hour and your Yes or No",
     hist: (r, h, avg, max) => `Over the last 7 days in this part of the day it rained in ${r} of ${h} hours${r ? ` · average ${avg} mm, highest ${max} mm` : ""}`, none: "Not enough finished hours for this part of the day yet." },
-  "en-GB": { title: (c) => `Will it rain in ${c}?`, all: "All", m: "Morning", a: "Afternoon", e: "Evening & night", threshold: (mm) => `Rain of at least ${mm} mm`, best: "Best odds", closes: "Closes in", pick: "Pick an hour and your Yes or No",
+  "en-GB": { title: (c) => `Will it rain in ${c}?`, all: "All", m: "Morning", a: "Afternoon", e: "Night", threshold: (mm) => `Rain of at least ${mm} mm`, best: "Best odds", closes: "Closes in", pick: "Pick an hour and your Yes or No",
     hist: (r, h, avg, max) => `Over the last 7 days in this part of the day it rained in ${r} of ${h} hours${r ? ` · average ${avg} mm, highest ${max} mm` : ""}`, none: "Not enough finished hours for this part of the day yet." },
   ja: { title: (c) => `${c}で雨は降る?`, all: "すべて", m: "朝", a: "午後", e: "夜", threshold: (mm) => `${mm}mm以上の雨`, best: "最高オッズ", closes: "締切まで", pick: "時間と「はい」か「いいえ」を選んでください",
     hist: (r, h, avg, max) => `過去7日間のこの時間帯は${h}時間中${r}時間で雨${r ? ` · 平均${avg}mm、最大${max}mm` : ""}`, none: "この時間帯はまだ十分なデータがありません。" },
@@ -55,10 +56,10 @@ export function RainGroup({ markets, locale, msg, now, onPick }: { markets: Mark
   const t = T[locale] ?? T["en-US"]!, c = cityOf(markets[0]!.city_id), tag = INTL_TAG[locale];
   const [part, setPart] = useState<Part | "all">("all");
   const closed = useRainClosed(c.id);
-  const hf = new Intl.DateTimeFormat(tag, { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: c.timezone });
-  const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: c.timezone }), dayName = new Intl.DateTimeFormat(tag, { weekday: "long", day: "numeric", month: "long", timeZone: c.timezone });
+  const hf = dtf(tag, { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: c.timezone });
+  const dayKey = dtf("en-CA", { timeZone: c.timezone }), dayName = dtf(tag, { weekday: "long", day: "numeric", month: "long", timeZone: c.timezone });
   const start = (m: MarketRow) => Math.floor(Date.parse(m.target_at) / 3600_000) * 3600_000;
-  const partOf = (m: MarketRow): Part => partOfHour(Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: c.timezone }).format(new Date(start(m)))));
+  const partOf = (m: MarketRow): Part => partOfHour(Number(dtf("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: c.timezone }).format(new Date(start(m)))));
   const open = [...markets].filter((m) => Date.parse(m.closes_at) > now).sort((a, b) => Date.parse(a.target_at) - Date.parse(b.target_at));
   if (open.length === 0) return null;
   const shown = part === "all" ? open : open.filter((m) => partOf(m) === part);

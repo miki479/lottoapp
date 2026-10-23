@@ -4,7 +4,7 @@ import { bankMultBps } from "../shared/bank.ts";
 import { closeSeason } from "../shared/leagues.ts";
 import { MAX_ODDS, computeOdds } from "../shared/odds.ts";
 import { offerPayout } from "../shared/offers.ts";
-import { FUN_STAKE, boostedPayout, delayStakeCap, parlayOdds, payout, singleStakeCap, stakeCap } from "../shared/wallet.ts";
+import { FUN_STAKE, LIMIT_BREAK, boostedPayout, delayStakeCap, limitBreakState, parlayOdds, payout, singleStakeCap, stakeCap, unlockedStakeCap } from "../shared/wallet.ts";
 
 describe("payout rounds like the database (exact cents, floor)", () => {
   it("does not lose a credit to floating point", () => {
@@ -108,5 +108,25 @@ describe("Italian train calibration and per-line memory", () => {
     expect(routePrior(0.26, 30, 24)).toBeGreaterThan(0.5);
     expect(routePrior(0.26, 30, 1)).toBeLessThan(0.1);
     expect(TRAIN_START_FLOOR).toBeGreaterThan(0.3);
+  });
+});
+
+describe("limit breaker", () => {
+  it("lifts the low limits to a single ceiling", () => {
+    expect(unlockedStakeCap(3)).toBeGreaterThan(delayStakeCap(3));
+    expect(unlockedStakeCap(51)).toBe(1000);
+    expect(unlockedStakeCap(1.5)).toBe(stakeCap(1.5));
+  });
+  it("is active for 24 h, then rests until 15 days after the purchase", () => {
+    const t0 = 1_000_000_000_000, h = 3_600_000, d = 24 * h;
+    expect(limitBreakState(null, null, t0).state).toBe("ready");
+    expect(limitBreakState(t0 + d, t0, t0 + h).state).toBe("active");
+    expect(limitBreakState(t0 + d, t0, t0 + d + 1).state).toBe("cooling");
+    expect(limitBreakState(t0 + d, t0, t0 + 15 * d).state).toBe("ready");
+  });
+  it("is mirrored by the SQL", () => {
+    const sql = readFileSync(new URL("../supabase/migrations/0130_limit_break.sql", import.meta.url), "utf8");
+    expect(sql).toContain(`credits < ${LIMIT_BREAK.price}`); expect(sql).toContain(`interval '${LIMIT_BREAK.cooldownDays} days'`); expect(sql).toContain(`interval '${LIMIT_BREAK.hours} hours'`);
+    expect(sql).toContain(`floor(${LIMIT_BREAK.maxProfit} / (base - 1))`);
   });
 });

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "preact/hooks";
 import { sb } from "./api.ts";
 
-export interface MyProgress { granted?: string[]; xp: number; level: number; avatar: string; decoration: string | null; owned: string[] }
-export interface LookInfo { avatar: string; decoration: string | null; level: number; title?: string | null }
+export interface MyProgress { granted?: string[]; xp: number; level: number; avatar: string; decoration: string | null; aura?: boolean; owned: string[] }
+export interface LookInfo { avatar: string; decoration: string | null; level: number; title?: string | null; aura?: boolean }
 export interface PublicProfileData {
-  id: string; name: string | null; avatar: string; decoration: string | null; level: number; title?: string | null; streak: number; best_streak: number; best_win: number; month_wins: number;
+  id: string; name: string | null; avatar: string; decoration: string | null; aura?: boolean; level: number; title?: string | null; streak: number; best_streak: number; best_win: number; month_wins: number;
   trophies: string[]; trophy_count: number; hidden: number; balance: number | null; relation: "me" | "friends" | "sent" | "received" | "none";
 }
 
@@ -38,7 +38,7 @@ export function useLooks(ids: string[]): Record<string, LookInfo> {
     need.forEach((i) => asked.add(i));
     let live = true;
     sb.rpc("looks", { ids: need }).then(({ data }) => {
-      for (const r of (data ?? []) as { user_id: string; avatar: string; decoration: string | null; level: number; title?: string | null }[]) cache.set(r.user_id, { avatar: r.avatar, decoration: r.decoration, level: r.level, title: r.title ?? null });
+      for (const r of (data ?? []) as { user_id: string; avatar: string; decoration: string | null; level: number; title?: string | null; aura?: boolean }[]) cache.set(r.user_id, { aura: r.aura, avatar: r.avatar, decoration: r.decoration, level: r.level, title: r.title ?? null });
       if (live) setV((n) => n + 1);
     });
     return () => { live = false; };
@@ -49,3 +49,9 @@ export function useLooks(ids: string[]): Record<string, LookInfo> {
 export const forgetLook = (id: string) => { cache.delete(id); asked.delete(id); changed(); };
 /** A fresh look is known (a profile was just opened): keep it for the lists instead of dropping it. */
 export const rememberLook = (id: string, l: LookInfo) => { cache.set(id, l); changed(); };
+
+/** Switch the aura on or off (level 50 and up). */
+export async function saveAura(on: boolean): Promise<boolean> {
+  const { error } = await sb.rpc("set_aura", { p_on: on });
+  return !error;
+}

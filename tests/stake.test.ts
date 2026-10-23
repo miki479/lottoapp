@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { MESSAGES } from "../web/src/i18n/index.ts";
+import { MESSAGES } from "../web/src/i18n/all.ts";
 import { balanceAfter, balanceMove, bigStakePct, netOf, outcomes } from "../web/src/lib/stake.ts";
 
 describe("the figures around a stake", () => {

@@ -12,7 +12,7 @@ import { detailsAvailable, fetchLineup, loadTable } from "../_lib/football.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
-const UA = { "User-Agent": "LateLotto/0.1 (satirical fake-credit game; https://latelotto.web.app)" };
+const UA = { "User-Agent": "LateLotto/0.1 (satirical fake-credit game; https://latebet.it)" };
 const PER_USER_PER_DAY = 10, PER_USER_OPEN = 6, MAX_OPEN_CUSTOM = 500;
 
 
@@ -193,7 +193,7 @@ Deno.serve(safe(async (req) => {
     let apiId = sp.apiId;
     if (isDetailBet(bet)) {
       if (!DETAIL_LEAGUES.includes(sp.league) || !(await detailsAvailable(sb))) return json({ error: "details_unavailable" }, 503);
-      if (!apiId) { try { apiId = String((await getJson(`https://www.thesportsdb.com/api/v1/json/${Deno.env.get("SPORTSDB_KEY") || "3"}/lookupevent.php?id=${eventId}`))?.events?.[0]?.idAPIfootball ?? "") || undefined; } catch { /* below */ } }
+      if (!apiId) { try { apiId = String((await getJson(`https://www.thesportsdb.com/api/v1/json/${(Deno.env.get("SPORTSDB_KEY") || "123")}/lookupevent.php?id=${eventId}`))?.events?.[0]?.idAPIfootball ?? "") || undefined; } catch { /* below */ } }
       if (!apiId) return json({ error: "details_unavailable" }, 503);
     }
     // older markets were made before these bets existed: price them from the same strengths

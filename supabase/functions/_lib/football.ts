@@ -1,6 +1,6 @@
 // Football helpers shared by the Edge Functions: team strengths from played matches, and the match-details source (API-Football).
 import { tableFromResults, type LineupPlayer, type PlayerFacts, type TableRow } from "../_shared/shared/sport.ts";
-import type { db } from "./common.ts";
+import { db } from "./common.ts";
 
 type Db = ReturnType<typeof db>;
 
@@ -18,19 +18,36 @@ export const apiKey = () => Deno.env.get("APIFOOTBALL_KEY") ?? "";
 
 export interface ApiReply { ok: boolean; json: { response?: unknown[]; errors?: unknown } | null; remaining: number | null; error?: string }
 
-/** One call to API-Football. `remaining` is what is left of today's free quota (read from the answer's headers). */
+/** Our own daily cap, under what the plan allows (the free plan is 100 a day): the source is never pushed to its limit. */
+const dailyCap = () => Number(Deno.env.get("APIFOOTBALL_DAILY_CAP")) || 80;
+const minutesToMidnight = () => { const n = new Date(); return Math.max(5, Math.ceil((Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() + 1) - n.getTime()) / 60_000)); };
+
+/** One call to API-Football. `remaining` is what is left of today's free quota (read from the answer's headers).
+ *  Every call is counted against our own daily cap; when the source complains (suspended, limit) or is nearly out, it is left alone: 24 h, until midnight UTC or a couple of minutes. */
 export async function apiFootball(path: string): Promise<ApiReply> {
   const key = apiKey();
   if (!key) return { ok: false, json: null, remaining: null, error: "no_key" };
+  const sb = db();
+  try {
+    const { data: go } = await sb.rpc("api_take", { p_source: "apifootball", p_cap: dailyCap() });
+    if (go === false) return { ok: false, json: null, remaining: null, error: "budget_paused" };
+  } catch { /* no budget table yet: carry on */ }
+  const report = async (remaining: number | null, mins: number, why: string) => { try { await sb.rpc("api_report", { p_source: "apifootball", p_remaining: remaining, p_pause_minutes: mins, p_reason: why }); } catch { /* best effort */ } };
   try {
     const res = await fetch(`${API}${path}`, { headers: { "x-apisports-key": key }, signal: AbortSignal.timeout(20_000) });
     const rem = Number(res.headers.get("x-ratelimit-requests-remaining"));
     const remaining = Number.isFinite(rem) && res.headers.has("x-ratelimit-requests-remaining") ? rem : null;
-    if (!res.ok) return { ok: false, json: null, remaining, error: `http_${res.status}` };
+    if (!res.ok) { await report(remaining, res.status === 429 ? 2 : 0, `http_${res.status}`); return { ok: false, json: null, remaining, error: `http_${res.status}` }; }
     const json = await res.json();
     const errs = json?.errors;
     const hasErr = Array.isArray(errs) ? errs.length > 0 : errs && typeof errs === "object" ? Object.keys(errs).length > 0 : false;
-    if (hasErr) return { ok: false, json, remaining, error: JSON.stringify(errs).slice(0, 200) };
+    if (hasErr) {
+      const text = JSON.stringify(errs);
+      const mins = /suspend|blocked|disabled|token|key/i.test(text) ? 24 * 60 : /rate/i.test(text) ? 2 : /request|limit|quota/i.test(text) ? minutesToMidnight() : 0;
+      await report(remaining, mins, text);
+      return { ok: false, json, remaining, error: text.slice(0, 200) };
+    }
+    await report(remaining, remaining !== null && remaining <= 3 ? minutesToMidnight() : 0, "low_quota");
     return { ok: true, json, remaining };
   } catch (e) { return { ok: false, json: null, remaining: null, error: String((e as Error).message ?? e).slice(0, 100) }; }
 }

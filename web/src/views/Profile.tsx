@@ -1,10 +1,10 @@
-import { MapPin, Bell, Gift, Rocket, ChevronRight, Flame, LogOut, Pencil, Percent, Share2, Snowflake, Trash2, Trophy, User, Volume2, Zap } from "lucide-preact";
+import { ChevronDown, Eye, Download, MapPin, Bell, Gift, Rocket, ChevronRight, Flame, LogOut, Pencil, Percent, Share2, Snowflake, Trash2, Trophy, User, Volume2, Zap, Check } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { Sheet } from "../components/Sheet.tsx";
 import { StreakCard } from "../components/StreakCard.tsx";
 import { BankCard } from "../components/BankCard.tsx";
 import { money } from "../lib/format.ts";
-import { LOCALES, TROPHY_IDS, TROPHY_RARITY, type Locale, type Messages } from "../i18n/index.ts";
+import { LOCALES, TROPHY_GROUPS, TROPHY_IDS, TROPHY_RARITY, type Locale, type Messages } from "../i18n/index.ts";
 import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
 import { HistoryCard } from "../components/HistoryCard.tsx";
@@ -27,9 +27,11 @@ export function ProfileView(p: {
   voice?: { on: boolean; label: string; toggle: () => void } | null;
   onAdmin: () => void; homeNode?: preact.ComponentChildren; missionsNode?: preact.ComponentChildren;
   giftCard: boolean; onGiftSeen: () => void; push: { on: boolean; denied: boolean; toggle: () => void; flash: boolean; streak: boolean; friends: boolean; setPrefs: (f: boolean, s: boolean, fr: boolean) => void } | null; referral: { code: string; invited: number; paid: number } | null; onShareReferral: () => void; progress: Progress | null; msg: Messages; locale: Locale; onLocale: (l: Locale) => void; profile: Profile | null; email: string | null; registered: boolean; trophies: Set<string>; fresh: Set<string>;
-  onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => Promise<void> | void; onDelete: () => Promise<void>;
+  onAuth: () => void; onNickname: () => void; onShareProfile: () => void; onSignOut: () => Promise<void> | void; onDelete: () => Promise<void>; onExport: () => Promise<void>;
 }) {
   const [intentOn, setIntentOn] = useState(() => readConsent() === "on");
+  const [showSeen, setShowSeen] = useState(true), [trOpen, setTrOpen] = useState(false);
+  useEffect(() => { if (!p.registered) return; let live = true; sb.rpc("show_last_seen").then(({ data }) => { if (live && typeof data === "boolean") setShowSeen(data); }); return () => { live = false; }; }, [p.registered]);
   const m = p.msg.profile;
   const [xpOpen, setXpOpen] = useState(false);
   const [stats, setStats] = useState<MyStats | null>(null);
@@ -44,6 +46,28 @@ export function ProfileView(p: {
   const owned = TROPHY_IDS.filter((t) => p.trophies.has(t)).length;
   const name = p.profile?.display_name ?? (p.registered ? m.guest : null) ?? m.guest;
 
+  const referralCard = (
+        <section class="card stack referral">
+            <div style="display:flex;gap:12px;align-items:center"><span class="refico"><Gift size={22} /></span><div><b>{p.msg.referral.title}</b><p class="hint">{p.msg.referral.body(money(1500, p.locale))} {p.msg.frd.referralNote}</p></div></div>
+            {p.referral
+              ? <><div class="refcode"><span class="detail">{p.msg.referral.code}</span><b class="num">{p.referral.code}</b></div>
+                  <button class="btn primary wide" onClick={p.onShareReferral}><Share2 size={18} />{p.msg.referral.share}</button>
+                  <p class="hint">{p.msg.referral.counts(p.referral.invited, p.referral.paid)}</p></>
+              : <p class="hint">{p.msg.referral.guest}</p>}
+          </section>
+  );
+  // a guest sees nothing of the profile: only the way in (and the invite card, which tells them the code comes with the profile)
+  if (!p.registered) return (
+    <div class="screen stack">
+      <h1>{m.title}</h1>
+      <section class="card stack idcard">
+        <b class="idname">{m.guest}</b>
+        <p class="hint">{m.guestHint}</p>
+        <button class="btn primary wide" onClick={p.onAuth}>{m.signIn}</button>
+      </section>
+      {referralCard}
+    </div>
+  );
   return (
     <div class="screen stack">
       <h1>{m.title}</h1>
@@ -51,17 +75,17 @@ export function ProfileView(p: {
         <section class="card giftcard">
           <span class="refico"><Gift size={22} /></span>
           <div style="flex:1"><b>{p.msg.boost.gift}</b><p class="hint">{p.msg.boost.explain}</p></div>
-          <button class="btn primary" onClick={p.onGiftSeen}>{p.msg.common.ok}</button>
+          <button class="btn primary" onClick={p.onGiftSeen} aria-label={p.msg.common.ok} title={p.msg.common.ok}><Check size={18} /></button>
         </section>
       )}
       <div class="profile-grid">
         <div class="stack">
           <section class="card stack idcard">
             <div class="idtop">
-              {p.look ? <button class="lkme" onClick={p.onLook} aria-label={p.msg.look.change}><Look avatar={p.look.avatar} decoration={p.look.decoration} size={72} /><span class="lvl num">{p.look.level}</span></button> : <span class="rank top" style="width:56px;height:56px;border-radius:18px;font-size:var(--fs-xl)"><User size={26} /></span>}
+              {p.look ? <button class="lkme" onClick={p.onLook} aria-label={p.msg.look.change}><Look avatar={p.look.avatar} decoration={p.look.decoration} aura={p.look.aura} size={72} /><span class="lvl num">{p.look.level}</span></button> : <span class="rank top" style="width:56px;height:56px;border-radius:18px;font-size:var(--fs-xl)"><User size={26} /></span>}
               <div class="idtxt">
                 <b class="idname">{name}</b>
-                {!p.registered && <span class="idmail">{m.guest}</span>}
+                {!p.registered && name !== m.guest && <span class="idmail">{m.guest}</span>}
                 <div class="idchips">{p.homeNode}{p.registered && <LeagueBadge locale={p.locale} registered={p.registered} />}</div>
               </div>
               {p.registered && <button class="iconbtn" onClick={p.onNickname} aria-label={m.nickname.title}><Pencil size={20} /></button>}
@@ -81,14 +105,7 @@ export function ProfileView(p: {
           {p.missionsNode}
           {p.registered && <BankCard locale={p.locale} credits={p.profile?.credits} />}
           <ProfileAlbum locale={p.locale} msg={p.msg} />
-          <section class="card stack referral">
-            <div style="display:flex;gap:12px;align-items:center"><span class="refico"><Gift size={22} /></span><div><b>{p.msg.referral.title}</b><p class="hint">{p.msg.referral.body(money(1500, p.locale))} {p.msg.frd.referralNote}</p></div></div>
-            {p.referral
-              ? <><div class="refcode"><span class="detail">{p.msg.referral.code}</span><b class="num">{p.referral.code}</b></div>
-                  <button class="btn primary wide" onClick={p.onShareReferral}><Share2 size={18} />{p.msg.referral.share}</button>
-                  <p class="hint">{p.msg.referral.counts(p.referral.invited, p.referral.paid)}</p></>
-              : <p class="hint">{p.msg.referral.guest}</p>}
-          </section>
+          {referralCard}
 
           <h2 style="margin-top:8px">{m.stats.title}</h2>
           {stats === null ? <div class="sk" /> : <div class="bento">
@@ -97,7 +114,7 @@ export function ProfileView(p: {
               <span class="detail"><Percent size={12} style="vertical-align:-1px" /> {m.stats.winRate}</span>
             </div>
             <div class="card cell span2" style="--i:1"><span class="detail">{m.stats.streak}</span><span class="v"><Flame size={22} class="ic" style="vertical-align:-3px;margin-right:6px" />{p.profile?.streak ?? 0}<small>{p.profile?.streak === 1 ? "" : ""}</small></span></div>
-            <div class="card cell span2" style="--i:2"><span class="detail">{m.stats.best}</span><span class="v num">{moneySigned(stats?.best_win ?? 0, p.locale)}</span></div>
+            <div class="card cell span2" style="--i:2"><span class="detail">{m.stats.best}</span>{(() => { const s = moneySigned(stats?.best_win ?? 0, p.locale); return <span class="v num" data-len={s.length >= 8 ? "long" : undefined}>{s}</span>; })()}</div>
             <div class="card cell" style="--i:3"><span class="detail">{m.stats.bets}</span><span class="v num">{stats?.total ?? 0}</span></div>
             <div class={`card cell ${net > 0 ? "won" : net < 0 ? "lost" : ""}`} style="--i:4"><span class="detail">{m.stats.net}</span><span class="v num">{moneySigned(net, p.locale)}</span></div>
             <div class="card cell span2" style="--i:5"><span class="detail">{m.stats.trophies}</span><span class="v num"><Trophy size={22} class="ic" style="vertical-align:-3px;margin-right:6px" />{owned}<small>/ {TROPHY_IDS.length}</small></span></div>
@@ -108,19 +125,28 @@ export function ProfileView(p: {
         </div>
 
         <div class="stack">
-          <h2>{m.trophies}</h2>
-          <div class="trophies">
-            {TROPHY_IDS.map((id) => {
-              const have = p.trophies.has(id), t = m.trophy[id];
-              return (
-                <div class={`card trophy ${have ? "" : "lock"} ${p.fresh.has(id) ? "fresh" : ""}`} key={id}>
-                  <span class="ti b3"><Trophy3D id={id} have={have} size={56} /></span>
-                  <b>{have ? t.name : "???"}</b><small>{have ? t.desc : m.locked}</small>
-                  <span class="detail">{m.rarity[TROPHY_RARITY[id]]}</span>
-                </div>
-              );
-            })}
-          </div>
+          <button class="trtoggle" aria-expanded={trOpen || p.fresh.size > 0} onClick={() => setTrOpen((v) => !v)}>
+            <h2>{m.trophies} <small class="num">{owned}/{TROPHY_IDS.length}</small></h2>
+            {!(trOpen || p.fresh.size > 0) && <span class="trpreview" aria-hidden="true">{TROPHY_IDS.filter((id) => p.trophies.has(id)).slice(-6).map((id) => <Trophy3D key={id} id={id} have size={32} />)}</span>}
+            <ChevronDown size={20} class="trchev" aria-hidden="true" />
+          </button>
+          {(trOpen || p.fresh.size > 0) && TROPHY_GROUPS.map((g) => (
+            <div class="tgroup" key={g.id}>
+              <h3 class="tghead">{m.groups[g.id]} <small class="num">{g.ids.filter((id) => p.trophies.has(id)).length}/{g.ids.length}</small></h3>
+              <div class="trophies">
+                {g.ids.map((id) => {
+                  const have = p.trophies.has(id), t = m.trophy[id];
+                  return (
+                    <div class={`card trophy ${have ? "" : "lock"} ${p.fresh.has(id) ? "fresh" : ""}`} key={id}>
+                      <span class="ti b3"><Trophy3D id={id} have={have} size={56} /></span>
+                      <b>{have ? t.name : "???"}</b><small>{have ? t.desc : m.locked}</small>
+                      <span class="detail">{m.rarity[TROPHY_RARITY[id]]}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
           <button class="btn secondary wide" onClick={p.onShareProfile}><Share2 size={18} />{m.shareCard}</button>
 
           <h2 style="margin-top:8px">{m.settings}</h2>
@@ -141,6 +167,10 @@ export function ProfileView(p: {
               <label class="switchrow"><span class="swlabel"><MapPin size={18} style="color:var(--action-ink);flex:none" /><span>{p.msg.fy.setTitle}</span></span><input type="checkbox" role="switch" checked={intentOn} onChange={(e) => { const on = (e.target as HTMLInputElement).checked; writeConsent(on ? "on" : "off"); setIntentOn(on); }} /></label>
               <p class="hint">{intentOn ? p.msg.fy.setOn : p.msg.fy.setOff}</p>
             </section>
+            {p.registered && <section class="card stack">
+              <label class="switchrow"><span class="swlabel"><Eye size={18} style="color:var(--action-ink);flex:none" /><span>{p.msg.presence.setTitle}</span></span><input type="checkbox" role="switch" checked={showSeen} onChange={(e) => { const on = (e.target as HTMLInputElement).checked; setShowSeen(on); void sb.rpc("set_show_last_seen", { p_on: on }); }} /></label>
+              <p class="hint">{showSeen ? p.msg.presence.setOn : p.msg.presence.setOff}</p>
+            </section>}
           </div>
           {p.voice && <section class="card stack"><label class="switchrow"><span class="swlabel"><Volume2 size={18} style="color:var(--action-ink);flex:none" /><span>{p.voice.label}</span></span><input type="checkbox" role="switch" checked={p.voice.on} onChange={p.voice.toggle} /></label></section>}
           <div class="list">
@@ -149,6 +179,7 @@ export function ProfileView(p: {
             </div>
             {admin && <button class="row" onClick={p.onAdmin}><span class="grow">{p.msg.admin.open}</span><ChevronRight size={18} /></button>}
             {p.registered && <button class="row" disabled={busy} aria-busy={busy} onClick={() => run(async () => { await p.onSignOut(); })}><LogOut size={20} /><span class="grow">{m.signOut}</span><ChevronRight size={18} /></button>}
+            {p.registered && <button class="row" disabled={busy} aria-busy={busy} onClick={() => run(async () => { await p.onExport(); })}><Download size={20} /><span class="grow">{busy ? m.exportData.busy : m.exportData.action}</span><ChevronRight size={18} /></button>}
             <button class="row" onClick={() => setConfirm(true)} style="color:var(--loss)"><Trash2 size={20} style="color:var(--loss)" /><span class="grow">{m.delete.action}</span></button>
           </div>
         </div>

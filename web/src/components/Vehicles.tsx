@@ -1,3 +1,4 @@
+import { Flame } from "./Flame.tsx";
 
 /** Side-view bus and train, both facing right (the way they travel in the animations). Same stroke style as the Lucide set. */
 type P = { size?: number; strokeWidth?: number; class?: string; style?: string };
@@ -197,6 +198,33 @@ export function CryptoGhost() {
   );
 }
 
+/** Games: a see-through console pad and a chess pawn. The buttons blink in turn and the pawn hops on hover or tap. */
+export function GamesGhost() {
+  return (
+    <svg viewBox="0 0 80 70" class="gh gh-games" aria-hidden="true">
+      <path d="M0 62Q22 56 44 61T80 59V70H0Z" fill="#e0527a" opacity=".22" />
+      <g class="gh-pad" transform="translate(22 14) scale(1.350)"><path d="M6 2h24c4 0 6 2 8 8l3 9c1 4-1 6-4 6-3 0-4-2-6-5H9c-2 3-3 5-6 5-3 0-5-2-4-6l3-9c2-6 4-8 8-8z" fill="#3a4152" stroke="#fff" stroke-width="1.100" stroke-opacity=".55" /><path d="M10 9v7M6.500 12.500h7" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".9" /><circle class="gh-btn b1" cx="30" cy="9" r="1.800" fill="#5ad07a" /><circle class="gh-btn b2" cx="34" cy="12.500" r="1.800" fill="#ff5a6a" /><circle class="gh-btn b3" cx="26" cy="12.500" r="1.800" fill="#4aa8ff" /><circle class="gh-btn b4" cx="30" cy="16" r="1.800" fill="#ffd54a" /><circle cx="15" cy="18" r="2.200" fill="#222836" stroke="#fff" stroke-width=".7" stroke-opacity=".5" /><circle cx="25" cy="18" r="2.200" fill="#222836" stroke="#fff" stroke-width=".7" stroke-opacity=".5" /></g>
+      <g class="gh-pawn" transform="translate(44 6) scale(1.450)"><circle cx="9" cy="47" r="3.200" fill="#f2f5ff" stroke="#2a2f3a" stroke-width="1.200" /><path d="M6.500 51.500h5c.5 3 2 5 2.500 7H4c.5-2 2-4 2.500-7z" fill="#f2f5ff" stroke="#2a2f3a" stroke-width="1.200" stroke-linejoin="round" /><rect x="2.500" y="58" width="13" height="2.600" rx="1.300" fill="#2a2f3a" /></g>
+    </svg>
+  );
+}
+
+/** Space & Earth: a ringed planet, a few stars and a rocket on its pad. The rocket lights up and climbs on hover or tap, then comes back. */
+export function SpaceGhost() {
+  return (
+    <svg viewBox="0 0 80 70" class="gh gh-space" aria-hidden="true">
+      <path d="M0 62Q22 57 44 61T80 59V70H0Z" fill="#4a6cf0" opacity=".25" />
+      <g fill="#fff" opacity=".85"><circle class="gh-tw a" cx="10" cy="12" r="1.200" /><circle class="gh-tw b" cx="30" cy="6" r="1" /><circle class="gh-tw c" cx="66" cy="10" r="1.200" /><circle class="gh-tw b" cx="72" cy="30" r="1" /><circle class="gh-tw a" cx="16" cy="34" r="1" /></g>
+      <g class="gh-p2"><circle cx="13" cy="22" r="4.500" fill="#ff8f6b" /><path d="M10 21q3-2 6 0" stroke="#fff" stroke-width=".9" fill="none" opacity=".4" /></g>
+      <g class="gh-p3"><circle cx="46" cy="9" r="2.800" fill="#5fd0b4" /></g>
+      <g class="gh-planet"><circle cx="58" cy="26" r="11" fill="#7d6bff" /><path d="M50 22q8-5 16 0" stroke="#fff" stroke-width="1.200" fill="none" opacity=".35" /><ellipse cx="58" cy="28" rx="19" ry="4.500" fill="none" stroke="#ffb86b" stroke-width="2.200" transform="rotate(-18 58 28)" /></g>
+      <g class="gh-moon"><circle cx="58" cy="10" r="2" fill="#e8ecf5" /></g>
+      <g class="gh-rocket"><path d="M30 14c-6 7-6 21-6 29h12c0-8 0-22-6-29z" fill="#ffffff" stroke="#3b4a8a" stroke-width="1.600" stroke-linejoin="round" /><path d="M30 14c-3 3-5 7-5.500 12h11C35 21 33 17 30 14z" fill="#ff5a4d" /><circle cx="30" cy="31" r="3.200" fill="#4a7bff" /><path d="M24 38l-6 8 6-2zM36 38l6 8-6-2z" fill="#ff5a4d" stroke="#3b4a8a" stroke-width="1.200" stroke-linejoin="round" /><g class="gh-fpos" transform="translate(30 43) scale(.55)"><g class="gh-fire"><Flame /></g></g></g>
+      <rect x="20" y="58" width="20" height="3" rx="1.500" fill="#2a2f3a" opacity=".55" />
+    </svg>
+  );
+}
+
 /** Cultura: a clapperboard and a popcorn bucket. The clapper snaps shut on hover or tap. */
 export function CultureGhost() {
   return (
@@ -306,6 +334,33 @@ export function GovGhost() {
       <g fill="#cfd6e4"><rect x="18" y="35" width="6" height="22" /><rect x="29" y="35" width="6" height="22" /><rect x="45" y="35" width="6" height="22" /><rect x="56" y="35" width="6" height="22" /></g>
       <rect x="12" y="57" width="56" height="5" rx="1" fill="#8a96ad" />
       <rect x="21" y="8" width="2" height="14" fill="#8a5a36" /><path class="gh-flag" d="M23 9h14q-3 4 0 8H23z" fill="#e5484d" />
+    </svg>
+  );
+}
+
+/** Aerei: a passenger jet seen from the side (windows, cockpit, engine under a swept wing, blue tail) over a runway and a few clouds. It banks and crosses on hover or tap, then comes back. */
+export function PlaneGhost() {
+  return (
+    <svg viewBox="0 0 80 70" class="gh gh-flights" aria-hidden="true">
+      <defs>
+        <linearGradient id="gpf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" /><stop offset="1" stop-color="#cdd9ee" /></linearGradient>
+        <linearGradient id="gpt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d8cf0" /><stop offset="1" stop-color="#2459c4" /></linearGradient>
+      </defs>
+      <rect x="0" y="62" width="80" height="2" fill="#8a96ad" opacity=".75" /><path d="M2 65.500h76" stroke="#8a96ad" stroke-width="1.200" stroke-dasharray="4 3" opacity=".6" />
+      <g class="gh-cloud" fill="#fff" opacity=".92"><ellipse cx="14" cy="52" rx="10" ry="4" /><ellipse cx="23" cy="50" rx="8" ry="4.500" /><ellipse cx="64" cy="12" rx="9" ry="3.600" /><ellipse cx="71" cy="10.500" rx="6" ry="4" /></g>
+      <g class="gh-plane" transform="translate(3 6)">
+        <path d="M-2 30H8M-4 33H6M0 36H9" stroke="#fff" stroke-width="1.400" stroke-linecap="round" opacity=".55" />
+        <path d="M10 28L8 12h7l13 17z" fill="url(#gpt)" stroke="#1c3f8f" stroke-width=".8" stroke-linejoin="round" /><path d="M10 21h4" stroke="#fff" stroke-width="1.600" stroke-linecap="round" opacity=".85" />
+        <path d="M14 33l-9 4h12l9-3z" fill="#aebfdc" stroke="#7d94bd" stroke-width=".8" stroke-linejoin="round" />
+        <path d="M9 29H62Q74 29 75 34Q73 40 62 40H18Q9 40 8 33Q8 30 9 29z" fill="url(#gpf)" stroke="#8aa2c8" stroke-width="1" stroke-linejoin="round" />
+        <path d="M12 38H64Q70 38 73 37.500Q70 40 62 40H18Q10 40 9 37z" fill="#5d7299" opacity=".18" />
+        <path d="M11 34.500H71" stroke="#2f7de1" stroke-width="1.800" stroke-linecap="round" />
+        <g fill="#3b5a8c">{Array.from({ length: 9 }, (_, i) => <rect key={i} x={18 + i * 4.300} y="31" width="2.400" height="2.800" rx=".9" />)}</g>
+        <path d="M64 30.500Q69 30.500 72 33H64z" fill="#243d6b" />
+        <path d="M31 38.500H49L36 57H27z" fill="#e3ebf8" stroke="#8aa2c8" stroke-width="1" stroke-linejoin="round" /><path d="M34 41h12" stroke="#9db2d6" stroke-width="1" opacity=".7" />
+        <rect x="32" y="45.500" width="12" height="5.400" rx="2.700" fill="#bcc9e2" stroke="#7d94bd" stroke-width=".9" /><ellipse cx="43.200" cy="48.200" rx="1.300" ry="2.300" fill="#26365a" />
+        <circle cx="8.500" cy="12.600" r="1.200" fill="#ff4d4d" /><circle cx="74" cy="34.500" r="1" fill="#fff3b0" />
+      </g>
     </svg>
   );
 }
