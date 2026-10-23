@@ -325,6 +325,7 @@ async function pingUsgs(sb: ReturnType<typeof db>, now: number, last: number): P
  * The same readings price the new questions and, once the hour is over, settle them.
  */
 async function ingestMetrics(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
+  return "off"; // weather-metric questions (2 bets in 7 days) are not created: they were the main writer of metric_observations
   if (now - last < 3600 - 5) return "not due";
   await sb.from("feed_health").upsert({ feed_id: "open-meteo-metrics", last_attempt_at: new Date(now * 1000).toISOString() });
   const targets: { id: string; lat: number; lon: number; tz: string }[] = [];
