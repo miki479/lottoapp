@@ -313,6 +313,16 @@ const BROADCAST = {
     },
     url: "https://latebet.it/",
   },
+  // sarcastic apology for the outage of 23 October, with 10,000 credits and a boost inside (see scripts/send-ddos.sql)
+  ddos_v1: {
+    headings: { en: "🛡️ Extraordinary maintenance (a DDoS, allegedly)", it: "🛡️ Manutenzione straordinaria (un DDoS, pare)", ja: "🛡️ 緊急メンテナンス（DDoS攻撃、らしい）" },
+    contents: {
+      en: "A very serious, very mysterious hacker DDoS attack knocked us offline. Nothing to do with servers running out of breath, of course. We fought them off heroically, and 10,000 credits and a boost are waiting for you in the app. Come and spend them.",
+      it: "Un gravissimo e misteriosissimo attacco hacker DDoS ci ha mandato offline. Niente a che vedere con server a corto di fiato, ovviamente. Li abbiamo respinti con eroismo e per i disagi ti aspettano 10.000 crediti e un boost nell'app. Vieni a spenderli.",
+      ja: "非常に深刻でとても謎めいたハッカーのDDoS攻撃でオフラインになりました。サーバーが息切れしたわけでは、もちろんありません。英雄的に撃退したお詫びに、アプリで10,000クレジットとブーストが待っています。使いに来てください。",
+    },
+    url: "https://latebet.it/",
+  },
   // a plain push with no gift: set app_settings broadcast_pending = 'bomb_v2'
   bomb_v2: {
     headings: { en: "💣 Don't look under the bed. Look at the app.", it: "💣 Non guardare sotto il letto. Guarda l'app.", ja: "💣 ベッドの下は見ないで。アプリを見て。" },
