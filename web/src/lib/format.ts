@@ -1,6 +1,7 @@
 import { INTL_TAG, type Locale, type Messages } from "../i18n/index.ts";
 import { ALWAYS, currencySymbol, fmtDec, fmtInt, fmtNum, fmtOdds, money, MINUS, numLocale } from "./num.ts";
 import { alertLabel, teamName } from "./names.ts";
+import { dtf } from "./intl.ts";
 
 // every figure on screen is written by lib/num.ts; these stay importable from here
 export { currencySymbol, fmtOdds, money };
@@ -8,7 +9,7 @@ export { currencySymbol, fmtOdds, money };
 export interface MarketRow {
   id: string;
   city_id: string;
-  category: "bus" | "train" | "weather" | "traffic" | "nature" | "strike" | "finance" | "culture" | "sport" | "law";
+  category: "bus" | "train" | "weather" | "traffic" | "nature" | "strike" | "finance" | "culture" | "sport" | "law" | "space" | "games" | "flights";
   kind: "bus_delay_gt" | "train_delay_gt" | "rain_at" | "metric_gt" | "quake_m" | "strike_on" | "traffic_speed_lt" | "tick_gt" | "match_bet" | "bus_full";
   params: Record<string, unknown>;
   closes_at: string;
@@ -25,12 +26,12 @@ export interface MarketRow {
 export function formatWhen(iso: string, locale: Locale, timeZone: string, now = new Date()): string {
   const d = new Date(iso);
   const tag = INTL_TAG[locale];
-  const day = (x: Date) => new Intl.DateTimeFormat("en-CA", { timeZone }).format(x);
-  const time = new Intl.DateTimeFormat(tag, { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(d);
+  const day = (x: Date) => dtf("en-CA", { timeZone }).format(x);
+  const time = dtf(tag, { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(d);
   if (day(d) === day(now)) return time;
   // the questions read "alle <time>": in Italian the day goes after the hour ("alle 16:00 di martedì"), not before it
-  if (locale === "it") return `${time} di ${new Intl.DateTimeFormat(tag, { weekday: "long", timeZone }).format(d)}`;
-  return `${new Intl.DateTimeFormat(tag, { weekday: "short", timeZone }).format(d)} ${time}`;
+  if (locale === "it") return `${time} di ${dtf(tag, { weekday: "long", timeZone }).format(d)}`;
+  return `${dtf(tag, { weekday: "short", timeZone }).format(d)} ${time}`;
 }
 
 const TRAIN_NAMES: Record<string, [string, string, string]> = { it: ["Alta velocità", "Intercity", "REGIONALE"], "en-US": ["High-speed", "Intercity", "Regional"], "en-GB": ["High-speed", "Intercity", "Regional"] };
@@ -45,6 +46,16 @@ export function trainLabel(route: string, kind: string, locale: string): string 
   return label ? `${label} ${m[2]}` : route;
 }
 
+const LINE_WORD: Record<string, [string, string]> = { it: ["Bus", "Treno"], "en-US": ["Bus", "Train"], "en-GB": ["Bus", "Train"], ja: ["バス", "電車"] };
+/** A line named so that it reads on its own in a strip of text: "L" → "Bus L", "C1" → "Treno C1", "REG 4340" → "REGIONALE 4340". */
+export function lineLabel(route: string, kind: string, locale: string): string {
+  const r = route.trim();
+  if (!r) return "";
+  const words = LINE_WORD[locale] ?? LINE_WORD["en-US"]!, named = trainLabel(r, kind, locale);
+  if (named !== r) return named;
+  return `${kind === "train_delay_gt" ? words[1] : words[0]} ${r}`;
+}
+
 export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: string, timeZone: string, now = new Date()): string {
   const time = formatWhen(m.target_at, locale, timeZone, now);
   // a question we wrote ourselves carries its own text in every language
@@ -53,11 +64,11 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
   if (m.kind === "bus_full") return msg.question.full({ occ: m.params.occ as "empty", route: String(m.params.routeName ?? ""), stop: String(m.params.stopName ?? ""), time });
   // the answer counts the whole hour: the question names the hour, not the middle of it
   const h0 = new Date(Math.floor(new Date(m.target_at).getTime() / 3600_000) * 3600_000).toISOString(), h1 = new Date(Date.parse(h0) + 3600_000).toISOString();
-  const hourFrom = formatWhen(h0, locale, timeZone, now), hourTo = new Intl.DateTimeFormat(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(new Date(h1));
+  const hourFrom = formatWhen(h0, locale, timeZone, now), hourTo = dtf(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(new Date(h1));
   if (m.kind === "rain_at") return msg.question.rain({ city: cityName, time: hourFrom, to: hourTo });
   if (m.kind === "metric_gt") return msg.question.metric({ metric: m.params.metric as "temp", city: cityName, time: hourFrom, to: hourTo, value: Number(m.params.threshold), unit: String(m.params.unit ?? "") });
   if (m.kind === "traffic_speed_lt") {
-    const h0 = new Date(m.target_at).getTime() - 30 * 60_000, hh = (t: number) => new Intl.DateTimeFormat(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(new Date(t));
+    const h0 = new Date(m.target_at).getTime() - 30 * 60_000, hh = (t: number) => dtf(INTL_TAG[locale], { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(new Date(t));
     return msg.question.traffic({ site: String(m.params.siteName ?? ""), toward: String(m.params.toward ?? ""), from: hh(h0), to: hh(h0 + 3600_000), kmh: Number(m.params.thresholdKmh) });
   }
   if (m.kind === "match_bet" && /^(pg|pa|ps):/.test(String(m.params.bet))) return msg.question.player({ kind: String(m.params.bet).slice(0, 2) as "pg", name: String((m.params.player as { name?: string } | undefined)?.name ?? ""), home: teamName(String(m.params.home), locale), away: teamName(String(m.params.away), locale), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
@@ -68,27 +79,37 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
   if (m.kind === "match_bet") return msg.question.match({ bet: m.params.bet as "home_win", home: teamName(String(m.params.home), locale), away: teamName(String(m.params.away), locale), time: formatWhen(new Date(Number(m.params.kickoff) * 1000).toISOString(), locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
   if (m.kind === "tick_gt" && /^tv:\d+$/.test(String(m.params.series))) {
     const ep = `S${String(m.params.season ?? 0).padStart(2, "0")}E${String(m.params.number ?? 0).padStart(2, "0")}`;
-    return msg.question.episode({ show: String(m.params.label ?? ""), ep, value: fmtDec(Number(m.params.threshold), 1, locale), date: new Intl.DateTimeFormat(INTL_TAG[locale], { weekday: "short", day: "numeric", month: "short" }).format(new Date(m.target_at)) });
+    return msg.question.episode({ show: String(m.params.label ?? ""), ep, value: fmtDec(Number(m.params.threshold), 1, locale), date: dtf(INTL_TAG[locale], { weekday: "short", day: "numeric", month: "short" }).format(new Date(m.target_at)) });
   }
   if (m.kind === "tick_gt" && String(m.params.series).startsWith("tm:")) {
-    const dm = (iso: unknown) => new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(String(iso)));
+    const dm = (iso: unknown) => dtf(INTL_TAG[locale], { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(String(iso)));
     return msg.question.concerts({ place: String(m.params.label ?? "").replace(/^Concerti /, ""), from: dm(m.params.from), to: dm(m.params.to), value: fmtDec(Math.round(Number(m.params.threshold)), 0, locale), time: formatWhen(m.target_at, locale, Intl.DateTimeFormat().resolvedOptions().timeZone, now) });
   }
   if (m.kind === "tick_gt") {
     const series = String(m.params.series), at = m.target_at, thr = Number(m.params.threshold);
     const nf = new Intl.NumberFormat(INTL_TAG[locale], { maximumFractionDigits: 0, useGrouping: ALWAYS });
     const own = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (series.startsWith("alert:")) return msg.question.tick({ kind: "alert", label: alertLabel(series, msg, String(m.params.label)), value: msg.alertNames[String(m.params.note) as "yellow"] ?? String(m.params.note), time: "", from: "", to: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(new Date(Date.parse(at) - 3600_000)) });
+    if (series.startsWith("alert:")) return msg.question.tick({ kind: "alert", label: alertLabel(series, msg, String(m.params.label)), value: msg.alertNames[String(m.params.note) as "yellow"] ?? String(m.params.note), time: "", from: "", to: "", day: dtf(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "Europe/Rome" }).format(new Date(Date.parse(at) - 3600_000)) });
     if (series.startsWith("storm:")) return msg.question.tick({ kind: "storm", label: String(m.params.label), value: `${thr} kt${m.params.note ? ` (${m.params.note})` : ""}`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("lastfm:")) return msg.question.tick({ kind: "listeners", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("hf:")) { const nm = String(m.params.label), lb = locale === "it" ? `Mi piace su Hugging Face di ${nm}` : locale === "ja" ? `Hugging Faceの「${nm}」のいいね数` : `Hugging Face likes of ${nm}`; return msg.question.tick({ kind: "price", label: lb, value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" }); }
     if (series === "sw") return msg.question.tick({ kind: "price", label: locale === "it" ? "Vento solare" : locale === "ja" ? "太陽風の速さ" : "Solar wind speed", value: `${nf.format(thr)} km/s`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series.startsWith("bikes:")) return msg.question.tick({ kind: "bikes", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
-    if (series.startsWith("steam:")) return msg.question.tick({ kind: "players", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (/^neo:\d{8}$/.test(series)) { const d = (iso: unknown) => dtf(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${String(iso)}T00:00:00Z`)); return msg.question.tick({ kind: "neo", label: "", value: String(m.params.note ?? 10), time: "", from: d(m.params.from), to: d(m.params.to), day: "" }); }
+    if (series.startsWith("eonet:")) { const names: Record<string, [string, string, string]> = { volcanoes: ["eruzioni vulcaniche", "volcanic", "火山"], storms: ["tempeste violente", "severe storm", "激しい嵐"], ice: ["ghiacci marini e lacustri", "sea and lake ice", "海氷・湖氷"] }; const n = names[series.slice(6)] ?? ["", "", ""]; return msg.question.tick({ kind: "eonet", label: locale === "it" ? n[0] : locale === "ja" ? n[2] : n[1], value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" }); }
+    if (series === "hn:max") return msg.question.tick({ kind: "hn", label: "", value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series.startsWith("chess:")) return msg.question.tick({ kind: "chess", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series.startsWith("launch:")) return msg.question.tick({ kind: "launch", label: String(m.params.label), value: "", time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series.startsWith("f1:")) return msg.question.tick({ kind: series.endsWith(":w") ? "f1win" : "f1podium", label: String(m.params.label), value: "", time: dtf(INTL_TAG[locale], { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3 * 3600_000)), from: "", to: "", day: String(m.params.note ?? "") });
+    if (series.startsWith("steam:")) return msg.question.tick({ kind: series === "steam:dota_live" ? "viewers" : "players", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series.startsWith("wave:")) return msg.question.tick({ kind: "wave", label: String(m.params.label), value: `${new Intl.NumberFormat(INTL_TAG[locale], { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(thr)} m`, time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series.startsWith("air:")) return msg.question.tick({ kind: "air", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series === "flights:it") return msg.question.tick({ kind: "flights", label: "", value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
+    if (series.startsWith("mf:")) return msg.question.tick({ kind: "manifold", label: String(m.params.label), value: nf.format(thr), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
     if (series === "kp") return msg.question.tick({ kind: "kp", label: "Kp", value: String(thr), time: "", from: formatWhen(new Date(Date.parse(at) - 3 * 3600_000).toISOString(), locale, own, now), to: formatWhen(at, locale, own, now), day: "" });
-    if (series.startsWith("wiki:")) return msg.question.tick({ kind: "wiki", label: String(m.params.label), value: nf.format(thr), time: "", from: "", to: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3600_000)) });
+    if (series.startsWith("wiki:")) return msg.question.tick({ kind: "wiki", label: String(m.params.label), value: nf.format(thr), time: "", from: "", to: "", day: dtf(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3600_000)) });
     const dg = typeof m.params.digits === "number" ? m.params.digits : 0, nd = new Intl.NumberFormat(INTL_TAG[locale], { minimumFractionDigits: dg, maximumFractionDigits: dg, useGrouping: ALWAYS }), lab = msg.cm[String(m.params.label)] ?? String(m.params.label);
-    const day = new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3600_000));
+    const day = dtf(INTL_TAG[locale], { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.parse(at) - 3600_000));
     // Italian puts the currency after the number ("4.200 $"); English and Japanese put it in front ("$4,200")
     const cur = (sym: string) => (locale === "it" ? `${nd.format(thr)} ${sym}` : `${sym}${nd.format(thr)}`);
     if (series.startsWith("fuel:")) return msg.question.tick({ kind: "fuel", label: lab, value: cur("€"), time: "", from: "", to: "", day });
@@ -102,7 +123,7 @@ export function question(m: MarketRow, msg: Messages, locale: Locale, cityName: 
     if (series.startsWith("oil:")) return msg.question.tick({ kind: "oil", label: lab, value: cur("$"), time: "", from: "", to: "", day });
     return msg.question.tick({ kind: "price", label: lab, value: cur("$"), time: formatWhen(at, locale, own, now), from: "", to: "", day: "" });
   }
-  if (m.kind === "strike_on") return msg.question.strike({ date: "", day: new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "long", timeZone }).format(new Date(m.target_at)), who: [m.params.sector, m.params.unions].filter(Boolean).join(" · "), hours: String(m.params.hours ?? "") });
+  if (m.kind === "strike_on") return msg.question.strike({ date: "", day: dtf(INTL_TAG[locale], { day: "numeric", month: "long", timeZone }).format(new Date(m.target_at)), who: [m.params.sector, m.params.unions].filter(Boolean).join(" · "), hours: String(m.params.hours ?? "") });
   if (m.kind === "quake_m") {
     // The window is global, so it is shown in the player's own time zone.
     // A regional question is told in that region's local time; a worldwide one in the player's own.
@@ -157,7 +178,7 @@ export const potentialWin = (stake: number, odds: number, boosted = false, viceP
 export const per10 = (odds: number) => Math.floor(10 * odds);
 
 /** Local calendar day "YYYY-MM-DD" in a timezone. */
-export const dayIn = (tz: string, d = new Date()) => new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(d);
+export const dayIn = (tz: string, d = new Date()) => dtf("en-CA", { timeZone: tz }).format(d);
 
 /** Days left in the current calendar month (UTC), at least 1. */
 export function seasonDaysLeft(now = new Date()): number {
@@ -176,12 +197,13 @@ export function tickValueText(series: string, v: number, digits: number, locale:
   const nd = (x: number) => fmtDec(x, digits, locale), cur = (sym: string) => (locale === "it" ? `${nd(v)} ${sym}` : `${sym}${nd(v)}`);
   if (series === "kp") return fmtDec(v, 1, locale);
   if (series.startsWith("storm:")) return `${fmtInt(v, locale)} kt`;
-  if (/^(lastfm|bikes|steam|wiki|tv|tm|alert):/.test(series)) return fmtInt(v, locale);
+  if (/^(lastfm|bikes|steam|wiki|tv|tm|alert|chess|launch|f1|neo|eonet|air|flights):/.test(series) || series === "hn:max") return fmtInt(v, locale);
   if (series.startsWith("fuel:")) return cur("€");
   if (series.startsWith("fx:") || series === "feargreed" || series === "nws:us") return nd(v);
   if (series === "carbon:gb") return `${nd(v)} g/kWh`;
   if (series === "power:it") return `${nd(v)} €/MWh`;
-  if (series.startsWith("tide:")) return `${nd(v)} m`;
+  if (series.startsWith("tide:") || series.startsWith("wave:")) return `${nd(v)} m`;
+  if (series.startsWith("mf:")) return `${fmtDec(v, 0, locale)}%`;
   if (series.startsWith("river:")) return `${nd(v)} cm`;
   return cur("$");
 }

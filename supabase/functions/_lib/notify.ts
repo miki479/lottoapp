@@ -26,7 +26,7 @@ const TEXT = {
 } as const;
 
 export const lastNotifyError: { msg: string | null } = { msg: null };
-export async function send(userIds: string[], heading: string, body: string, url = "https://latelotto.web.app/?open=bets"): Promise<boolean> {
+export async function send(userIds: string[], heading: string, body: string, url = "https://latebet.it/?open=bets"): Promise<boolean> {
   const key = Deno.env.get("ONESIGNAL_REST_API_KEY")?.trim().replace(/^(Key|Basic)\s+/i, ""), app = Deno.env.get("ONESIGNAL_APP_ID");
   if (!key || !app || userIds.length === 0) return false;
   const r = await fetch("https://api.onesignal.com/notifications", {
@@ -94,9 +94,10 @@ export async function notifyStreak(sb: Db): Promise<number> {
 }
 
 /** Announce results settled in the last 30 minutes, once each. Returns how many were handled. */
-export async function notifyResults(sb: Db): Promise<number> {
+/** `windowMin`: how far back a settled bet still counts as news (30 minutes; a manual run may widen it to resend what a push outage lost). */
+export async function notifyResults(sb: Db, windowMin = 30): Promise<number> {
   if (!Deno.env.get("ONESIGNAL_REST_API_KEY")) return 0;
-  const since = new Date(Date.now() - 30 * 60_000).toISOString();
+  const since = new Date(Date.now() - windowMin * 60_000).toISOString();
   const { data: bets } = await sb.from("bets").select("id,user_id,status,stake,payout,markets(params,city_id,kind),profiles(locale)")
     .eq("notified", false).neq("status", "open").gte("settled_at", since).limit(200);
   const { data: pars } = await sb.from("parlays").select("id,user_id,status,stake,payout,profiles(locale)")
@@ -154,7 +155,7 @@ export async function notifyInvites(sb: Db): Promise<number> {
   for (const r of (data ?? []) as unknown as { challenge_id: string; user_id: string; friend_challenges: { code: string } | null; me: { locale: string } | null; by: { display_name: string | null } | null }[]) {
     const loc = (r.me?.locale && r.me.locale in INVITE ? r.me.locale : "en-US") as keyof typeof INVITE;
     const who = r.by?.display_name?.trim() || WHO[loc];
-    if (r.friend_challenges?.code && !(await send([r.user_id], "LateBet", INVITE[loc](who), `https://latelotto.web.app/?c=${r.friend_challenges.code}`))) continue;
+    if (r.friend_challenges?.code && !(await send([r.user_id], "LateBet", INVITE[loc](who), `https://latebet.it/?c=${r.friend_challenges.code}`))) continue;
     await sb.from("challenge_invites").update({ notified: true }).eq("challenge_id", r.challenge_id).eq("user_id", r.user_id);
     n++;
   }
@@ -178,7 +179,7 @@ export async function notifyFriendRequests(sb: Db): Promise<number> {
   for (const r of (data ?? []) as unknown as { from_id: string; to_id: string; me: { locale: string } | null; by: { display_name: string | null } | null }[]) {
     const loc = (r.me?.locale && r.me.locale in FRIEND_REQ ? r.me.locale : "en-US") as keyof typeof FRIEND_REQ;
     const who = r.by?.display_name?.trim() || WHO[loc];
-    if (!(await send([r.to_id], "LateBet", FRIEND_REQ[loc](who), "https://latelotto.web.app/?open=friends"))) continue;
+    if (!(await send([r.to_id], "LateBet", FRIEND_REQ[loc](who), "https://latebet.it/?open=friends"))) continue;
     await sb.from("friend_requests").update({ notified: true }).eq("from_id", r.from_id).eq("to_id", r.to_id);
     n++;
   }
@@ -280,7 +281,27 @@ const BROADCAST = {
       it: "Nuove decorazioni, immagini profilo e distintivi MOLTO più difficili da ottenere. Sì, anche quelli che pensavi di avere già. Vai a dare un'occhiata. Non è una minaccia. È un fatto, e i fatti a volte fanno paura.",
       ja: "新しいデコレーション、プロフィール画像、そしてはるかに手に入りにくいバッジが登場。すでに持っていると思っていたものも例外ではありません。見に行ってください。脅しではありません。事実です。事実は時々怖いものです。",
     },
-    url: "https://latelotto.web.app/?open=profile",
+    url: "https://latebet.it/?open=profile",
+  },
+  // the new profile pictures, rings and trophies, with the launch promo on every pack: opens the app on the home banner
+  pictures_v1: {
+    headings: { en: "New pictures, new challenges ✨", it: "Nuove immagini, nuove sfide ✨", ja: "新しい画像、新しいチャレンジ ✨" },
+    contents: {
+      en: "New profile pictures, rings and trophies just landed. For 72 hours only: up to 25% off every pack. Open the app and take a look.",
+      it: "Sono arrivati nuove immagini profilo, decorazioni e trofei. Solo per 72 ore: fino al -25% su tutte le bustine. Apri l'app e dai un'occhiata.",
+      ja: "新しいプロフィール画像、フレーム、トロフィーが登場。72時間限定で、すべてのパックが最大25%オフ。アプリを開いてチェックしてください。",
+    },
+    url: "https://latebet.it/?open=news",
+  },
+  // the new kinds of questions (F1, chess, Hacker News, space launches, asteroids, natural events): opens the app on Culture
+  categories_v1: {
+    headings: { en: "Six new things to bet on 🚀", it: "Sei nuove cose su cui scommettere 🚀", ja: "新しい予想が6つ登場 🚀" },
+    contents: {
+      en: "Formula 1, chess, Hacker News, rocket launches, asteroids and natural events: all new, all with a prediction waiting. Come and christen them.",
+      it: "Formula 1, scacchi, Hacker News, lanci di razzi, asteroidi ed eventi naturali: tutto nuovo, ognuno con la sua domanda che aspetta. Vieni a battezzarli.",
+      ja: "F1、チェス、Hacker News、ロケット打ち上げ、小惑星、自然現象。すべて新登場で、予想が待っています。最初に挑戦してみて。",
+    },
+    url: "https://latebet.it/?open=culture",
   },
   // everybody who allowed notifications; the in-app gift (credits and boosts) is written first, see scripts/send-bomb.sql
   bomb_v1: {
@@ -290,7 +311,17 @@ const BROADCAST = {
       it: "Gli altri stanno già facendo la loro partita. Ti abbiamo lasciato una 💣 nell'app: 1.500 crediti e 2 boost. Vieni a farti una partita, c'è una domanda fresca sul tuo bus.",
       ja: "みんなはもう一局始めています。アプリの中に💣を置いておきました：クレジット1,500と、ブースト2つ。ひと勝負どうぞ。あなたのバスに新しい予想があります。",
     },
-    url: "https://latelotto.web.app/",
+    url: "https://latebet.it/",
+  },
+  // sarcastic apology for the outage of 23 October, with 10,000 credits and a boost inside (see scripts/send-ddos.sql)
+  ddos_v1: {
+    headings: { en: "🛡️ Extraordinary maintenance (a DDoS, allegedly)", it: "🛡️ Manutenzione straordinaria (un DDoS, pare)", ja: "🛡️ 緊急メンテナンス（DDoS攻撃、らしい）" },
+    contents: {
+      en: "A very serious, very mysterious hacker DDoS attack knocked us offline. Nothing to do with servers running out of breath, of course. We fought them off heroically, and 10,000 credits and a boost are waiting for you in the app. Come and spend them.",
+      it: "Un gravissimo e misteriosissimo attacco hacker DDoS ci ha mandato offline. Niente a che vedere con server a corto di fiato, ovviamente. Li abbiamo respinti con eroismo e per i disagi ti aspettano 10.000 crediti e un boost nell'app. Vieni a spenderli.",
+      ja: "非常に深刻でとても謎めいたハッカーのDDoS攻撃でオフラインになりました。サーバーが息切れしたわけでは、もちろんありません。英雄的に撃退したお詫びに、アプリで10,000クレジットとブーストが待っています。使いに来てください。",
+    },
+    url: "https://latebet.it/",
   },
   // a plain push with no gift: set app_settings broadcast_pending = 'bomb_v2'
   bomb_v2: {
@@ -300,7 +331,7 @@ const BROADCAST = {
       it: "Abbiamo piazzato una bomba. Tranquillo: è piena di quote e di bus in ritardo, quindi il vero pericolo è quanto tempo ci perderai dentro. Entra, o la prossima volta il tuo bus sarà puntuale e vorresti non averlo mai scoperto.",
       ja: "爆弾を仕掛けました。ご安心を。中身はオッズと遅れたバスだけなので、本当の危険は、そこでどれだけ時間を失うかです。入ってください。さもないと次はあなたのバスが定刻通りに来て、知らなければよかったと思うことになります。",
     },
-    url: "https://latelotto.web.app/",
+    url: "https://latebet.it/",
   },
   // the sarcastic bomb again, with 1,000 in the player's own money and a gift to choose inside (see scripts/send-gift-choice.sql). Sent per language: the money differs.
   gift_v1: {
@@ -310,7 +341,7 @@ const BROADCAST = {
       "en-GB": { h: "💣 Don't look under the bed. Look at the app.", c: "We planted a bomb. Relax: inside there is £1,000 and a gift of your choice, and the real danger is how much time you will lose in the app. Come in, or next time your bus will be on time, and you will wish you had never found out." },
       ja: { h: "💣 ベッドの下は見ないで。アプリを見て。", c: "爆弾を仕掛けました。ご安心を。中には1,000円とお好きなプレゼントがひとつ入っています。本当の危険は、アプリで失う時間です。入ってください。さもないと次はあなたのバスが定刻通りに来て、知らなければよかったと思うことになります。" },
     },
-    url: "https://latelotto.web.app/",
+    url: "https://latebet.it/",
   },
   // the apology after the outage of 14 October (1,000 in the player's own money and a gift to choose: scripts/send-sorry.sql). Per language: the money differs.
   sorry_v1: {
@@ -320,7 +351,17 @@ const BROADCAST = {
       "en-GB": { h: "We are back online ✅", c: "Sorry for the technical problem. To make up for it, £1,000 and a gift of your choice are waiting in the app." },
       ja: { h: "オンラインに戻りました ✅", c: "技術的な問題でご迷惑をおかけしました。お詫びに1,000円とお好きなプレゼントをアプリでお受け取りください。" },
     },
-    url: "https://latelotto.web.app/",
+    url: "https://latebet.it/",
+  },
+  // the Limit Breaker in the shop (legendary item): a plain push to everybody, per language
+  limit_v1: {
+    byLocale: {
+      it: { h: "Nuovo nel Negozio: il Rompilimiti ✨", c: "Oggetto Leggendario: per 24 ore toglie i limiti bassi alle puntate singole, treni e bus compresi. Se ne può comprare uno ogni 15 giorni." },
+      "en-US": { h: "New in the Shop: the Limit Breaker ✨", c: "Legendary item: for 24 hours it lifts the low limits on single bets, trains and buses included. You can buy one every 15 days." },
+      "en-GB": { h: "New in the Shop: the Limit Breaker ✨", c: "Legendary item: for 24 hours it lifts the low limits on single bets, trains and buses included. You can buy one every 15 days." },
+      ja: { h: "ショップに新登場：リミットブレイカー ✨", c: "レジェンドアイテム：24時間、電車やバスを含む単発の予想の低い上限を解除します。15日に1回購入できます。" },
+    },
+    url: "https://latebet.it/?open=shop",
   },
   // ready for the day the frisbee questions go live: set app_settings broadcast_pending = 'frisbee_v1'
   frisbee_v1: {
@@ -330,7 +371,7 @@ const BROADCAST = {
       it: "Sono arrivate le domande sul frisbee. Sì, lo sport in cui l'arbitro è l'onore. Vieni a vedere se il tuo intuito regge anche col vento.",
       ja: "アルティメットフリスビーの予想が登場。審判は「名誉」というあのスポーツです。風の中でも勘が当たるか試してみて。",
     },
-    url: "https://latelotto.web.app/",
+    url: "https://latebet.it/",
   },
 } as const;
 export async function notifyBroadcast(sb: Db): Promise<number> {
@@ -504,7 +545,7 @@ export async function notifyDirect(sb: Db): Promise<number> {
     if (m?.user && m.heading && m.body) {
       // the in-app message (with its gifts) is stored first, so a player without push, or a push that is refused, still gets it
       await sb.from("user_messages").insert({ user_id: m.user, heading: m.heading, body: m.body, gifts: m.gifts ?? null });
-      if (Deno.env.get("ONESIGNAL_REST_API_KEY")) await send([m.user], m.heading, m.body, m.url ?? "https://latelotto.web.app/?open=profile");
+      if (Deno.env.get("ONESIGNAL_REST_API_KEY")) await send([m.user], m.heading, m.body, m.url ?? "https://latebet.it/?open=profile");
       n++;
     }
     await sb.from("app_settings").delete().eq("key", r.key as string);
@@ -613,7 +654,7 @@ const SMART = {
     tip: (by: string) => `${by || "友達"}さんがこの予想をおすすめしています。`,
   },
 } as const;
-const HOME = "https://latelotto.web.app/";
+const HOME = "https://latebet.it/";
 const LOSS_AT = 1000;
 
 /** Claims (player, kind, day) in push_log; false when it was already taken today. */

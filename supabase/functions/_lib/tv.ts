@@ -1,6 +1,6 @@
 // TV series from TVmaze (no key; data CC BY-SA, credit TVmaze): episode ratings are the thing bets are about.
 const BASE = "https://api.tvmaze.com";
-const UA = { "User-Agent": "LateLotto/0.1 (satirical fake-credit game; https://latelotto.web.app)" };
+const UA = { "User-Agent": "LateLotto/0.1 (satirical fake-credit game; https://latebet.it)" };
 
 export interface TvEpisode { id: number; season: number; number: number; airstamp: string | null; rating: number | null; name: string }
 

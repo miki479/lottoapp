@@ -16,6 +16,8 @@ Deno.serve(safe(async (req) => {
   const denied = requireCron(req);
   if (denied) return denied;
   const sb = db();
+  // "?notify_window=360" (minutes, up to 12 h) resends results that a push outage left unannounced; the normal call looks back 30 minutes
+  const nw = Number(new URL(req.url).searchParams.get("notify_window")), notifyWindow = nw > 30 && nw <= 720 ? nw : 30;
   const nowIso = new Date().toISOString();
   const now = Math.floor(Date.now() / 1000);
   const cities = new Map((await loadCities()).map((c) => [c.id, c]));
@@ -50,6 +52,67 @@ Deno.serve(safe(async (req) => {
   // are visited in a random order for at most ~40 s, and what is left waits for the next minute. Random, so markets that cannot be settled yet never hog the front.
   const t0 = Date.now(), dueList = [...((due ?? []) as (MarketRow & { id: string })[])];
   for (let i = dueList.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [dueList[i], dueList[j]] = [dueList[j]!, dueList[i]!]; }
+  // The observations the due markets need are read in a few batches (one request per market used to be the bulk of all the API traffic). A key missing from these
+  // maps means its batch was not read (too many rows or an error): that market then asks for its own rows, as before.
+  const hourOf = (t: number) => Math.floor(t / 3600) * 3600;
+  const chunks = <T,>(a: T[], n: number): T[][] => { const o: T[][] = []; for (let i = 0; i < a.length; i += n) o.push(a.slice(i, i + n)); return o; };
+  // a batch can hold more than the 1000 rows one request returns: read it page by page (null: a page failed, so the markets fall back to their own request)
+  const readAll = async <R,>(page: (from: number, to: number) => PromiseLike<{ data: R[] | null; error: unknown }>): Promise<R[] | null> => {
+    const all: R[] = [];
+    for (let from = 0; from < 20_000; from += 1000) { const { data, error: e } = await page(from, from + 999); if (e) return null; all.push(...(data ?? [])); if ((data?.length ?? 0) < 1000) return all; }
+    return null;
+  };
+  const delayRows = new Map<string, DelayObservation[]>(), metricRows = new Map<string, MetricObservation[]>(), rainRows = new Map<string, WeatherObservation[]>(), tickRows = new Map<string, TickObservation[]>(), matchRows = new Map<string, MatchObservation>(), matchDone = new Set<string>();
+  try {
+    const need = { delay: [] as { feedId: string; tripId: string }[], metric: [] as { feedId: string; metric: string; hour: number }[], rain: [] as { feedId: string; hour: number }[], tick: [] as { series: string; at: number }[], match: new Set<string>() };
+    for (const row of dueList) {
+      try {
+        const e = marketToEvent(row);
+        if (e.kind === "metric_gt") need.metric.push({ feedId: e.feedId, metric: e.metric, hour: hourOf(e.targetAt) });
+        else if (e.kind === "rain_at") need.rain.push({ feedId: e.feedId, hour: hourOf(e.targetAt) });
+        else if (e.kind === "tick_gt") need.tick.push({ series: e.series, at: e.targetAt });
+        else if (e.kind === "match_bet") need.match.add(e.eventId);
+        else if (e.kind === "bus_delay_gt" || e.kind === "train_delay_gt") need.delay.push({ feedId: e.feedId, tripId: e.tripId });
+      } catch { /* the loop below reports it */ }
+    }
+    const iso = (t: number) => new Date(t * 1000).toISOString();
+    for (const part of chunks([...new Set(need.delay.map((x) => x.tripId))], 25)) {
+      const data = await readAll((a, b) => sb.from("delay_observations").select("feed_id,trip_id,stop_id,stop_sequence,route_id,observed_at,delay_sec,predicted_at").in("trip_id", part).order("feed_id").order("trip_id").order("observed_at").order("stop_id").range(a, b));
+      if (!data) continue;
+      for (const x of need.delay) if (part.includes(x.tripId)) delayRows.set(`${x.feedId}|${x.tripId}`, []);
+      for (const d of data) delayRows.get(`${d.feed_id}|${d.trip_id}`)?.push({
+        feedId: d.feed_id, tripId: d.trip_id, stopId: d.stop_id, stopSequence: d.stop_sequence ?? undefined, routeId: d.route_id,
+        observedAt: Date.parse(d.observed_at) / 1000, delaySec: d.delay_sec, predictedAt: d.predicted_at ? Date.parse(d.predicted_at) / 1000 : undefined,
+      });
+    }
+    for (const part of chunks([...new Set(need.metric.map((x) => x.feedId))], 40)) {
+      const hours = [...new Set(need.metric.filter((x) => part.includes(x.feedId)).map((x) => x.hour))];
+      const data = await readAll((a, b) => sb.from("metric_observations").select("feed_id,metric,hour_start,value,fetched_at").in("feed_id", part).in("hour_start", hours.map(iso)).order("feed_id").order("metric").order("hour_start").range(a, b));
+      if (!data) continue;
+      for (const x of need.metric) if (part.includes(x.feedId)) metricRows.set(`${x.feedId}|${x.metric}|${x.hour}`, []);
+      for (const w of data ?? []) metricRows.get(`${w.feed_id}|${w.metric}|${hourOf(Date.parse(w.hour_start) / 1000)}`)?.push({ feedId: w.feed_id, metric: w.metric, hourStart: Date.parse(w.hour_start) / 1000, value: Number(w.value), fetchedAt: Date.parse(w.fetched_at) / 1000 });
+    }
+    for (const part of chunks([...new Set(need.rain.map((x) => x.feedId))], 80)) {
+      const hours = [...new Set(need.rain.filter((x) => part.includes(x.feedId)).map((x) => x.hour))];
+      const data = await readAll((a, b) => sb.from("weather_observations").select("feed_id,hour_start,precipitation_mm,fetched_at").in("feed_id", part).in("hour_start", hours.map(iso)).order("feed_id").order("hour_start").range(a, b));
+      if (!data) continue;
+      for (const x of need.rain) if (part.includes(x.feedId)) rainRows.set(`${x.feedId}|${x.hour}`, []);
+      for (const w of data ?? []) rainRows.get(`${w.feed_id}|${hourOf(Date.parse(w.hour_start) / 1000)}`)?.push({ feedId: w.feed_id, hourStart: Date.parse(w.hour_start) / 1000, precipitationMm: Number(w.precipitation_mm), fetchedAt: Date.parse(w.fetched_at) / 1000 });
+    }
+    for (const part of chunks([...new Set(need.tick.map((x) => x.series))], 40)) {
+      const ats = [...new Set(need.tick.filter((x) => part.includes(x.series)).map((x) => x.at))];
+      const data = await readAll((a, b) => sb.from("tick_observations").select("series,at,value,fetched_at").in("series", part).in("at", ats.map(iso)).order("series").order("at").range(a, b));
+      if (!data) continue;
+      for (const x of need.tick) if (part.includes(x.series)) tickRows.set(`${x.series}|${x.at}`, []);
+      for (const o of data ?? []) tickRows.get(`${o.series}|${Date.parse(o.at) / 1000}`)?.push({ series: o.series, at: Date.parse(o.at) / 1000, value: Number(o.value), fetchedAt: Date.parse(o.fetched_at) / 1000 });
+    }
+    for (const part of chunks([...need.match], 150)) {
+      const { data, error: e } = await sb.from("match_results").select("event_id,home_goals,away_goals,status,fetched_at").in("event_id", part);
+      if (e) continue;
+      for (const id of part) matchDone.add(id);
+      for (const d of data ?? []) matchRows.set(d.event_id, { eventId: d.event_id, homeGoals: d.home_goals, awayGoals: d.away_goals, status: d.status, fetchedAt: Date.parse(d.fetched_at) / 1000 });
+    }
+  } catch (e) { console.error("prefetch", e); }
   for (const row of dueList) {
     if (Date.now() - t0 > 40_000) { out.skipped++; continue; }
     if ((pendingUntil.get(row.id) ?? 0) > Date.now()) { out.skipped++; continue; } // waiting for data a moment ago: not worth asking again before a few minutes
@@ -78,8 +141,10 @@ Deno.serve(safe(async (req) => {
         quake = await usgsWindow(event.closesAt, event.targetAt, event.minMag, event.bbox, event.circle);
         if (quake) await sb.from("feed_health").upsert({ feed_id: "usgs", last_ok_at: new Date().toISOString(), last_error: null });
       } else if (event.kind === "match_bet") {
-        const { data } = await sb.from("match_results").select("event_id,home_goals,away_goals,status,fetched_at").eq("event_id", event.eventId).maybeSingle();
-        if (data) match = { eventId: data.event_id, homeGoals: data.home_goals, awayGoals: data.away_goals, status: data.status, fetchedAt: Date.parse(data.fetched_at) / 1000 };
+        if (matchDone.has(event.eventId)) match = matchRows.get(event.eventId) ?? null; else {
+          const { data } = await sb.from("match_results").select("event_id,home_goals,away_goals,status,fetched_at").eq("event_id", event.eventId).maybeSingle();
+          if (data) match = { eventId: data.event_id, homeGoals: data.home_goals, awayGoals: data.away_goals, status: data.status, fetchedAt: Date.parse(data.fetched_at) / 1000 };
+        }
         if (match && (isDetailBet(event.bet) || isPlayerBet(event.bet))) {
           const { data: d } = await sb.from("match_details").select("ht_home,ht_away,corners,cards,reds,players,fetched_at").eq("event_id", event.eventId).maybeSingle();
           if (d?.fetched_at) match = { ...match, htHome: d.ht_home, htAway: d.ht_away, corners: d.corners, cards: d.cards, reds: d.reds, players: d.players };
@@ -89,24 +154,36 @@ Deno.serve(safe(async (req) => {
         const { data } = await sb.from("occupancy_observations").select("feed_id,trip_id,at,level").eq("feed_id", event.feedId).eq("trip_id", event.tripId).gte("at", lo).lte("at", hi);
         occupancy = (data ?? []).map((o) => ({ feedId: o.feed_id, tripId: o.trip_id, at: Date.parse(o.at) / 1000, level: o.level }));
       } else if (event.kind === "tick_gt") {
-        const { data } = await sb.from("tick_observations").select("series,at,value,fetched_at").eq("series", event.series).eq("at", new Date(event.targetAt * 1000).toISOString());
-        ticks = (data ?? []).map((o) => ({ series: o.series, at: Date.parse(o.at) / 1000, value: Number(o.value), fetchedAt: Date.parse(o.fetched_at) / 1000 }));
+        const hit = tickRows.get(`${event.series}|${event.targetAt}`);
+        if (hit) ticks = hit; else {
+          const { data } = await sb.from("tick_observations").select("series,at,value,fetched_at").eq("series", event.series).eq("at", new Date(event.targetAt * 1000).toISOString());
+          ticks = (data ?? []).map((o) => ({ series: o.series, at: Date.parse(o.at) / 1000, value: Number(o.value), fetchedAt: Date.parse(o.fetched_at) / 1000 }));
+        }
       } else if (event.kind === "metric_gt") {
         const hour = new Date(Math.floor(event.targetAt / 3600) * 3600 * 1000).toISOString();
-        const { data } = await sb.from("metric_observations").select("feed_id,metric,hour_start,value,fetched_at").eq("feed_id", event.feedId).eq("metric", event.metric).eq("hour_start", hour);
-        metrics = (data ?? []).map((w) => ({ feedId: w.feed_id, metric: w.metric, hourStart: Date.parse(w.hour_start) / 1000, value: Number(w.value), fetchedAt: Date.parse(w.fetched_at) / 1000 }));
+        const hit = metricRows.get(`${event.feedId}|${event.metric}|${hourOf(event.targetAt)}`);
+        if (hit) metrics = hit; else {
+          const { data } = await sb.from("metric_observations").select("feed_id,metric,hour_start,value,fetched_at").eq("feed_id", event.feedId).eq("metric", event.metric).eq("hour_start", hour);
+          metrics = (data ?? []).map((w) => ({ feedId: w.feed_id, metric: w.metric, hourStart: Date.parse(w.hour_start) / 1000, value: Number(w.value), fetchedAt: Date.parse(w.fetched_at) / 1000 }));
+        }
       } else if (event.kind === "rain_at") {
         const hour = new Date(Math.floor(event.targetAt / 3600) * 3600 * 1000).toISOString();
-        const { data } = await sb.from("weather_observations").select("feed_id,hour_start,precipitation_mm,fetched_at").eq("feed_id", event.feedId).eq("hour_start", hour);
-        weather = (data ?? []).map((w) => ({ feedId: w.feed_id, hourStart: Date.parse(w.hour_start) / 1000, precipitationMm: Number(w.precipitation_mm), fetchedAt: Date.parse(w.fetched_at) / 1000 }));
+        const hit = rainRows.get(`${event.feedId}|${hourOf(event.targetAt)}`);
+        if (hit) weather = hit; else {
+          const { data } = await sb.from("weather_observations").select("feed_id,hour_start,precipitation_mm,fetched_at").eq("feed_id", event.feedId).eq("hour_start", hour);
+          weather = (data ?? []).map((w) => ({ feedId: w.feed_id, hourStart: Date.parse(w.hour_start) / 1000, precipitationMm: Number(w.precipitation_mm), fetchedAt: Date.parse(w.fetched_at) / 1000 }));
+        }
       } else {
-        const { data } = await sb.from("delay_observations").select("feed_id,trip_id,stop_id,stop_sequence,route_id,observed_at,delay_sec,predicted_at")
-          .eq("feed_id", event.feedId).eq("trip_id", event.tripId);
-        delays = (data ?? []).map((d) => ({
-          feedId: d.feed_id, tripId: d.trip_id, stopId: d.stop_id, stopSequence: d.stop_sequence ?? undefined, routeId: d.route_id,
-          observedAt: Date.parse(d.observed_at) / 1000, delaySec: d.delay_sec,
-          predictedAt: d.predicted_at ? Date.parse(d.predicted_at) / 1000 : undefined,
-        }));
+        const hit = delayRows.get(`${event.feedId}|${event.tripId}`);
+        if (hit) delays = hit; else {
+          const { data } = await sb.from("delay_observations").select("feed_id,trip_id,stop_id,stop_sequence,route_id,observed_at,delay_sec,predicted_at")
+            .eq("feed_id", event.feedId).eq("trip_id", event.tripId);
+          delays = (data ?? []).map((d) => ({
+            feedId: d.feed_id, tripId: d.trip_id, stopId: d.stop_id, stopSequence: d.stop_sequence ?? undefined, routeId: d.route_id,
+            observedAt: Date.parse(d.observed_at) / 1000, delaySec: d.delay_sec,
+            predictedAt: d.predicted_at ? Date.parse(d.predicted_at) / 1000 : undefined,
+          }));
+        }
       }
 
       const res = resolveEvent({
@@ -143,7 +220,9 @@ Deno.serve(safe(async (req) => {
   }
   const minute = new Date().getUTCMinutes();
   const safeCount = (p: Promise<number>) => p.catch((e) => { console.error("notify failed", e); return 0; });
-  const notified = await safeCount(notifyResults(sb)) + await safeCount(notifyFlash(sb)) + await safeCount(notifyStreak(sb)) + await safeCount(notifyModeration(sb)) + await safeCount(notifyInvites(sb)) + await safeCount(notifySupers(sb)) + await safeCount(notifyFriendWins(sb)) + await safeCount(notifyFriendRequests(sb)) + await safeCount(notifyReminders(sb)) + await safeCount(notifyBroadcast(sb)) + await safeCount(notifyDirect(sb)) + await safeCount(notifyLiveDelay(sb)) + await safeCount(notifyOffers(sb)) + (minute % 2 === 0 ? await safeCount(notifyRewards(sb)) : 0) + await safeCount(notifyTips(sb)) + (minute % 5 === 1 ? await safeCount(notifyOvertaken(sb)) : 0) + (minute % 10 === 3 ? await safeCount(notifyDaily(sb)) + await safeCount(notifyVotes(sb)) : 0) + (minute % 10 === 7 ? await safeCount(notifyLoss(sb)) : 0) + (minute % 10 === 0 ? await safeCount(notifyRecap(sb)) + await safeCount(notifyComeback(sb)) : 0);
+  // the pending-push checks cost one database request each: run them every third minute, or at once when something was just settled (a result push must not wait)
+  const checkPushes = out.settled + out.voided > 0 || minute % 3 === 0;
+  const notified = (checkPushes ? await safeCount(notifyResults(sb, notifyWindow)) + await safeCount(notifyFlash(sb)) + await safeCount(notifyStreak(sb)) + await safeCount(notifyModeration(sb)) + await safeCount(notifyInvites(sb)) + await safeCount(notifySupers(sb)) + await safeCount(notifyFriendWins(sb)) + await safeCount(notifyFriendRequests(sb)) + await safeCount(notifyReminders(sb)) + await safeCount(notifyBroadcast(sb)) + await safeCount(notifyDirect(sb)) + await safeCount(notifyLiveDelay(sb)) + await safeCount(notifyOffers(sb)) + (minute % 2 === 0 ? await safeCount(notifyRewards(sb)) : 0) + await safeCount(notifyTips(sb)) + (minute % 5 === 1 ? await safeCount(notifyOvertaken(sb)) : 0) + (minute % 10 === 3 ? await safeCount(notifyDaily(sb)) + await safeCount(notifyVotes(sb)) : 0) + (minute % 10 === 7 ? await safeCount(notifyLoss(sb)) : 0) + (minute % 10 === 0 ? await safeCount(notifyRecap(sb)) + await safeCount(notifyComeback(sb)) : 0) : 0);
   return Response.json({ ...out, notified, notifyError: lastNotifyError.msg });
 }));
 

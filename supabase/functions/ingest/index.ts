@@ -10,13 +10,15 @@ import type { RtFeed, ScheduleByStop, ScheduleLookup } from "../_shared/shared/a
 import { buildTrafficMarkets, parseDigitrafficTms } from "../_shared/shared/traffic.ts";
 import { buildStrikeMarkets, parseStrikeRss } from "../_shared/shared/strikes.ts";
 import { tvReference, tvRating, tvUpcoming } from "../_lib/tv.ts";
-import { RIVERS, TIDES, buildPowerMarkets, buildRiverMarkets, buildTideMarkets, isPower, isRiver, isTide, type RiverKey, type TideKey } from "../_shared/shared/ticks.ts";
-import { FX, buildCarbonMarkets, buildFearGreedMarkets, buildFxMarkets, isCarbon, isFearGreed, isFx, type FxKey } from "../_shared/shared/ticks.ts";
+import { RIVERS, TIDES, WAVES, AIRQ, buildPowerMarkets, buildRiverMarkets, buildTideMarkets, buildHourlyMarkets, buildFlightMarkets, buildManifoldMarkets, isPower, isRiver, isTide, isWave, isAir, isFlights, isMf, type RiverKey, type TideKey, type WaveKey, type AirKey } from "../_shared/shared/ticks.ts";
+import { EONET, NEO_LD, buildEonetMarkets, buildNeoMarkets, isEonet, isNeo, type EonetKey, CHESS, buildChessMarkets, buildF1Markets, buildHnMarkets, buildLaunchMarkets, isChess, isHn, isLaunch, isF1, type ChessKey, FX, buildCarbonMarkets, buildFearGreedMarkets, buildFxMarkets, isCarbon, isFearGreed, isFx, type FxKey } from "../_shared/shared/ticks.ts";
 import { TM_PLACES, buildTicketMarkets, buildTvMarket, isTicket, isTv, tmWindow, type TmPlace } from "../_shared/shared/ticks.ts";
 import { FUELS, METALS, OIL, buildFuelMarkets, buildMetalMarkets, buildOilMarkets, isFuel, isMetal, isOil, type FuelKey, type MetalKey, type OilKey } from "../_shared/shared/ticks.ts";
 import { LASTFM, buildLastfmMarkets, BIKES, buildBikesMarkets, bikesPlausible, buildNwsMarkets, isNws } from "../_shared/shared/ticks.ts";
 import { CRYPTO, STEAM, WIKI_ARTICLES, buildSteamMarkets, buildStormMarkets, buildAlertMarkets, alertLevel, alertQueryDate, ALERT_AREAS, ALERT_HAZARDS, ALERT_URL, buildCryptoMarkets, buildKpMarkets, buildWikiMarkets, isCrypto, isSpot, CRYPTO_GRACE_SEC, type CryptoSeries } from "../_shared/shared/ticks.ts";
 import { bookPriors, buildMatchMarkets, CLUB_TOWN, DETAIL_BETS, DETAIL_LEAGUES, FINISHED, isDetailBet, isPlayerBet, LEAGUES, MIN_FORM_GAMES, type Fixture, type Geo, type MatchBet, type TableRow } from "../_shared/shared/sport.ts";
+import { sameTeam } from "../_shared/shared/live.ts";
+import { FD_CODES, fdFixtures, fdKey, fdResult } from "../_lib/footballdata.ts";
 import { apiFootball, apiKey, deepTable, discoverFixtures, fetchBookQuotes, fetchDetails, fetchPlayerFacts, isItalianClub, loadTable, tsdbGate } from "../_lib/football.ts";
 import { METRICS, METRIC_IDS, buildMetricMarkets, type MetricId } from "../_shared/shared/metrics.ts";
 import { DEFAULT_YES_PROBABILITY, TRAIN_START_FLOOR, TRAIN_START_STOPS, calibrateTrainYes, computeOdds, delayContextAt, learnedPrior, liveYesProbability, rainYesProbability, routePrior } from "../_shared/shared/odds.ts";
@@ -61,6 +63,18 @@ Deno.serve(safe(async (req) => {
     if (p.stopId) trips.get(p.tripId)!.add(p.stopId);
   }
 
+  // ViaggiaTreno gives the delay of a train as soon as it is on the board, so its open questions are read from 3 hours ahead (soonest first): the departures board needs them
+  {
+    const { data: vtm } = await sb.from("markets").select("feed_id,params,target_at").eq("feed_id", "it-train-viaggiatreno").eq("status", "open").gte("deadline_at", since).lte("target_at", new Date((now + 3 * 3600) * 1000).toISOString()).order("target_at").limit(300);
+    for (const m of vtm ?? []) {
+      const p = m.params as { tripId?: string; stopId?: string };
+      if (!p.tripId) continue;
+      if (!tracked.has(m.feed_id)) tracked.set(m.feed_id, new Map());
+      const trips = tracked.get(m.feed_id)!;
+      if (!trips.has(p.tripId)) trips.set(p.tripId, new Set());
+      if (p.stopId) trips.get(p.tripId)!.add(p.stopId);
+    }
+  }
   const seen = new Set<string>(), okRows: Record<string, unknown>[] = [], errRows: Record<string, unknown>[] = [];
   // Same rule as the resolve job: stay inside ~45 s so that runs never pile up. The cities are visited from a different one each minute, so no feed is always last.
   const t0 = Date.now(), allCities = await loadCities(), rot = allCities.length ? new Date().getUTCMinutes() % allCities.length : 0;
@@ -90,8 +104,8 @@ Deno.serve(safe(async (req) => {
       if (!!feed.heavy !== heavyRun) continue;
       if (seen.has(feed.id)) continue;
       seen.add(feed.id);
-      // ViaggiaTreno refuses datacenter addresses: it is read by scripts/viaggiatreno-local.mjs on a normal connection, not here
-      if (feed.type === "viaggiatreno" && !Deno.env.get("VIAGGIATRENO_BASE_URL")) { report[feed.id] = "local-only"; continue; }
+      // ViaggiaTreno: read from here (the Supabase servers are accepted); VIAGGIATRENO_BASE_URL can still point to a relay
+
       if (now - (lastAttempt.get(feed.id) ?? 0) < feed.pollSeconds - 5) { report[feed.id] = "not due"; continue; }
       await sb.from("feed_health").upsert({ feed_id: feed.id, last_attempt_at: new Date(now * 1000).toISOString() });
       const tf = Date.now();
@@ -100,7 +114,7 @@ Deno.serve(safe(async (req) => {
         const n = feed.occupancyOnly ? 0 : await ingestFeed(sb, city, feed, now, tracked.get(feed.id) ?? new Map(), rtCache); // occupancyOnly: no delay question exists, only the vehicles are read
         okRows.push({ feed_id: feed.id, last_ok_at: new Date().toISOString(), last_error: null });
         report[feed.id] = `ok ${n} ${Date.now() - tf}ms`;
-        if (feed.vehiclesUrl) report[`${feed.id}-vehicles`] = await ingestVehicles(sb, feed, now, trackedVeh.get(feed.id) ?? new Set()).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
+        if (feed.vehiclesUrl && feed.category !== "bus") report[`${feed.id}-vehicles`] = await ingestVehicles(sb, feed, now, trackedVeh.get(feed.id) ?? new Set()).catch((e) => `error: ${String((e as Error).message ?? e).slice(0, 200)}`);
       } catch (e) {
         const msg = String((e as Error).message ?? e).slice(0, 300);
         errRows.push({ feed_id: feed.id, last_error: msg, last_error_at: new Date().toISOString() });
@@ -159,10 +173,12 @@ async function learnedPriors(sb: ReturnType<typeof db>, now: number): Promise<(c
     const byCountry = new Map<string, string[]>();
     for (const c of cities) byCountry.set(c.country, [...(byCountry.get(c.country) ?? []), c.id]);
     const map = new Map<string, number>();
-    for (const [cc, ids] of byCountry) for (const kind of ["bus_delay_gt", "train_delay_gt"] as const) {
-      const { data } = await sb.from("markets").select("outcome").eq("kind", kind).eq("status", "resolved").is("params->>ladderOf", null).in("city_id", ids).order("target_at", { ascending: false }).limit(1000);
-      const n = data?.length ?? 0, yes = (data ?? []).filter((r) => r.outcome === "yes").length;
-      map.set(`${cc}|${kind}`, learnedPrior(yes, n, DEFAULT_YES_PROBABILITY[kind]));
+    // one cached call (the database keeps the counts for half an hour) instead of one query per country and kind on every cold start
+    const { data: counts } = await sb.rpc("learned_prior_counts", { p_max_age_s: 1800 });
+    const seen = new Map<string, { yes: number; n: number }>(((counts ?? []) as { country: string; kind: string; yes: number; n: number }[]).map((r) => [`${r.country}|${r.kind}`, { yes: r.yes, n: r.n }]));
+    for (const cc of byCountry.keys()) for (const kind of ["bus_delay_gt", "train_delay_gt"] as const) {
+      const r = seen.get(`${cc}|${kind}`) ?? { yes: 0, n: 0 };
+      map.set(`${cc}|${kind}`, learnedPrior(r.yes, r.n, DEFAULT_YES_PROBABILITY[kind]));
     }
     priorCache = { at: now, map };
     (priorCache as unknown as { country: Map<string, string> }).country = country;
@@ -321,6 +337,7 @@ async function pingUsgs(sb: ReturnType<typeof db>, now: number, last: number): P
  * The same readings price the new questions and, once the hour is over, settle them.
  */
 async function ingestMetrics(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
+  return "off"; // weather-metric questions (2 bets in 7 days) are not created: they were the main writer of metric_observations
   if (now - last < 3600 - 5) return "not due";
   await sb.from("feed_health").upsert({ feed_id: "open-meteo-metrics", last_attempt_at: new Date(now * 1000).toISOString() });
   const targets: { id: string; lat: number; lon: number; tz: string }[] = [];
@@ -342,7 +359,8 @@ async function ingestMetrics(sb: ReturnType<typeof db>, now: number, last: numbe
         return Array.isArray(json) ? json : [json];
       };
       const forecast = await get("https://api.open-meteo.com/v1/forecast", fapi);
-      const air = await get("https://air-quality-api.open-meteo.com/v1/air-quality", METRICS.aqi.api).catch(() => null);
+      const airVars = [...new Set(METRIC_IDS.filter((m) => METRICS[m].source === "air").flatMap((m) => [METRICS[m].api, ...(METRICS[m].also ?? [])]))].join(",");
+      const air = await get("https://air-quality-api.open-meteo.com/v1/air-quality", airVars).catch(() => null);
       const obsRows: Record<string, unknown>[] = [];
       const fetchedAt = new Date().toISOString();
       const markets: Record<string, unknown>[] = [];
@@ -350,7 +368,10 @@ async function ingestMetrics(sb: ReturnType<typeof db>, now: number, last: numbe
         const series: Partial<Record<MetricId, Map<number, number>>> = {};
         for (const m of METRIC_IDS) {
           const src = METRICS[m].source === "forecast" ? forecast[k] : air?.[k];
-          const times: string[] | undefined = src?.hourly?.time; const vals: Array<number | null> | undefined = src?.hourly?.[METRICS[m].api];
+          const times: string[] | undefined = src?.hourly?.time; let vals: Array<number | null> | undefined = src?.hourly?.[METRICS[m].api];
+          const extra = (METRICS[m].also ?? []).map((a) => src?.hourly?.[a] as Array<number | null> | undefined);
+          // several variables added into one count; an hour with none of them (outside the model's area) has no value
+          if (vals && extra.length) vals = vals.map((x, h) => { const parts = [x, ...extra.map((e) => e?.[h] ?? null)].filter((n): n is number => typeof n === "number"); return parts.length ? parts.reduce((a, b) => a + b, 0) : null; });
           if (!times || !vals) continue;
           const map = new Map<number, number>();
           times.forEach((ts, h) => { const raw = vals[h]; if (typeof raw !== "number") return; const v = METRICS[m].transform ? METRICS[m].transform!(raw) : raw; const e = Date.parse(`${ts}:00Z`) / 1000 - (METRICS[m].preceding ? 3600 : 0); if (!Number.isFinite(e)) return; map.set(e, v); obsRows.push({ feed_id: `om-${t.id}`, metric: m, hour_start: new Date(e * 1000).toISOString(), value: v, fetched_at: fetchedAt }); });
@@ -452,7 +473,7 @@ async function precipFallback(sb: ReturnType<typeof db>, targets: { id: string; 
 }
 
 async function fetchBytes(url: string, extra: Record<string, string> = {}, timeoutMs = FETCH_TIMEOUT_MS): Promise<Uint8Array> {
-  const res = await fetch(url, { headers: { ...extra, "User-Agent": `LateLotto/0.1 (play-money game; contact: ${Deno.env.get("CONTACT_EMAIL") ?? "unset"})`, "Accept-Encoding": "gzip" }, signal: AbortSignal.timeout(timeoutMs) });
+  const res = await fetch(url, { headers: { "User-Agent": `LateLotto/0.1 (play-money game; contact: ${Deno.env.get("CONTACT_EMAIL") ?? "unset"})`, ...extra, "Accept-Encoding": "gzip" }, signal: AbortSignal.timeout(timeoutMs) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   // Never hold a huge answer in memory just to find out it is too big (a feed that grew to 26 MB was killing the worker every run): look at the declared size,
   // then read in pieces and stop as soon as the limit is passed.
@@ -490,6 +511,8 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
   }
 
   if (feed.type === "digitraffic-tms") return await ingestTraffic(sb, city, feed, now);
+
+  if (feed.type === "viaggiatreno") return await ingestPerTrain(sb, city, feed, now, tracked);
 
   const adapter = delayAdapterFor(feed);
   if (!adapter) throw new Error(`no adapter for ${feed.type}/${feed.kind}`);
@@ -558,8 +581,9 @@ const MAX_TRAINS_PER_RUN = 40;
 async function ingestPerTrain(sb: ReturnType<typeof db>, city: CityConfig, feed: FeedConfig, now: number, tracked: Map<string, Set<string>>): Promise<number> {
   const adapter = trainJsonAdapterFor(feed)!;
   // Datacenter IPs are refused upstream: VIAGGIATRENO_BASE_URL + RELAY_SECRET point to scripts/viaggiatreno-relay.mjs on a normal connection.
-  const base = (Deno.env.get("VIAGGIATRENO_BASE_URL") ?? feed.url).replace(/\/$/, "");
-  const relayHeaders: Record<string, string> = Deno.env.get("RELAY_SECRET") ? { "x-relay-secret": Deno.env.get("RELAY_SECRET")! } : {};
+  const base = (Deno.env.get("VIAGGIATRENO_BASE_URL") || feed.url).replace(/\/$/, "");
+  // ViaggiaTreno's firewall refuses a long User-Agent with a URL in it: a short one is accepted
+  const relayHeaders: Record<string, string> = { "User-Agent": "LateLotto/0.1", ...(Deno.env.get("RELAY_SECRET") ? { "x-relay-secret": Deno.env.get("RELAY_SECRET")! } : {}) };
   const trips = [...tracked.keys()].slice(0, MAX_TRAINS_PER_RUN);
   if (trips.length === 0) return 0;
   const rows: Record<string, unknown>[] = [];
@@ -573,8 +597,11 @@ async function ingestPerTrain(sb: ReturnType<typeof db>, city: CityConfig, feed:
       const json = JSON.parse(new TextDecoder().decode(await fetchBytes(`${base}/andamentoTreno/${t.codOrigine}/${t.numero}/${t.serviceDayMs}`, relayHeaders)));
       ok++;
       gone.push(...viaggiatrenoCancellations(json, tripId));
-      for (const o of adapter(json, { feedId: feed.id, fetchedAt: now, tripId })) {
-        if (!tracked.get(tripId)?.has(o.stopId)) continue;
+      const seen = adapter(json, { feedId: feed.id, fetchedAt: now, tripId });
+      // the stops the questions ask about, plus the latest stop reached ("how late is it right now", the departures board)
+      const latest = seen.reduce<typeof seen[number] | null>((a, o) => (!a || (o.stopSequence ?? 0) >= (a.stopSequence ?? 0) ? o : a), null);
+      for (const o of seen) {
+        if (!tracked.get(tripId)?.has(o.stopId) && o !== latest) continue;
         rows.push({
           city_id: city.id, feed_id: feed.id, route_id: o.routeId, trip_id: o.tripId, stop_id: o.stopId, stop_sequence: o.stopSequence ?? null,
           observed_at: new Date(o.observedAt * 1000).toISOString(), delay_sec: Math.round(o.delaySec), predicted_at: null,
@@ -594,7 +621,7 @@ async function ingestPerTrain(sb: ReturnType<typeof db>, city: CityConfig, feed:
 
 
 // ---- Global "number at an instant" questions: coin prices (CoinGecko), Kp index (NOAA SWPC), Wikipedia page views (Wikimedia) ----
-const UA = { "User-Agent": "LateLotto/0.1 (satirical fake-credit game; https://latelotto.web.app)" };
+const UA = { "User-Agent": "LateLotto/0.1 (satirical fake-credit game; https://latebet.it)" };
 const getJson = async (url: string) => JSON.parse(new TextDecoder().decode(await fetchBytes(url, UA)));
 const KP_URL = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json";
 const COINGECKO = (ids: string) => `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&precision=2`;
@@ -617,9 +644,18 @@ async function activeStorms(): Promise<{ id: string; name: string; kt: number; c
 
 async function steamCounts(): Promise<Record<string, number>> {
   const out: Record<string, number> = {};
-  for (const id of Object.keys(STEAM)) {
-    try { const j = await getJson(`https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${id}`); const n = j?.response?.player_count; if (typeof n === "number" && n > 0) out[id] = n; } catch { /* skip this game */ }
-  }
+  await Promise.all(Object.keys(STEAM).map(async (id) => {
+    try {
+      if (id === "dota_live") {
+        // everybody watching the live Dota 2 matches that OpenDota lists right now
+        const j = await getJson("https://api.opendota.com/api/live");
+        const n = Array.isArray(j) ? (j as { spectators?: number }[]).reduce((s, g) => s + (Number(g.spectators) || 0), 0) : 0;
+        if (n > 0) out[id] = n;
+        return;
+      }
+      const j = await getJson(`https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${id}`); const n = j?.response?.player_count; if (typeof n === "number" && n > 0) out[id] = n;
+    } catch { /* skip this game */ }
+  }));
   return out;
 }
 
@@ -718,6 +754,88 @@ async function fetchCarbon(now: number): Promise<number | null> {
   return typeof v === "number" && v > 0 && Number.isFinite(to) && now - to <= 3600 ? v : null;
 }
 
+/** Hacker News: the highest score on the current front page (Algolia HN search, keyless). */
+async function fetchHnMax(): Promise<number | null> {
+  const j = await getJson("https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=30");
+  const pts = ((j?.hits ?? []) as Array<{ points?: unknown }>).map((h) => Number(h.points)).filter((n) => Number.isFinite(n) && n >= 0);
+  return pts.length >= 10 ? Math.max(...pts) : null;
+}
+/** Chess.com blitz ratings of the players we ask about (PubAPI, keyless). One that fails is simply left out. */
+async function fetchChess(): Promise<Partial<Record<ChessKey, number>>> {
+  const out: Partial<Record<ChessKey, number>> = {};
+  for (const k of Object.keys(CHESS) as ChessKey[]) {
+    try { const r = Number((await getJson(`https://api.chess.com/pub/player/${k}/stats`))?.chess_blitz?.last?.rating); if (Number.isFinite(r) && r > 0) out[k] = r; } catch { /* leave out */ }
+  }
+  return out;
+}
+/** Launch Library 2 (free tier: 15 calls an hour, so one list per run): upcoming launches, and the last ones with their status. */
+async function fetchLaunchesUpcoming(): Promise<{ id: string; name: string; net: number; go: boolean }[]> {
+  const j = await getJson("https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=25&mode=list");
+  return ((j?.results ?? []) as Array<{ id?: string; name?: string; net?: string; status?: { id?: number } }>).flatMap((r) => { const net = Date.parse(String(r.net ?? "")) / 1000; return r.id && r.name && Number.isFinite(net) ? [{ id: r.id, name: r.name, net, go: r.status?.id === 1 }] : []; });
+}
+async function fetchLaunchesPrevious(): Promise<Map<string, { status: number; net: number }>> {
+  const j = await getJson("https://ll.thespacedevs.com/2.2.0/launch/previous/?limit=40&mode=list");
+  const out = new Map<string, { status: number; net: number }>();
+  for (const r of (j?.results ?? []) as Array<{ id?: string; net?: string; status?: { id?: number } }>) { const net = Date.parse(String(r.net ?? "")) / 1000; if (r.id && Number.isFinite(net)) out.set(r.id, { status: Number(r.status?.id ?? 0), net }); }
+  return out;
+}
+/** Formula 1 from Jolpica (the Ergast successor, keyless): the next race, the championship, and the finishing order of a race. */
+async function fetchF1Next(): Promise<{ season: number; round: number; name: string; start: number } | null> {
+  const r = (await getJson("https://api.jolpi.ca/ergast/f1/current/next.json"))?.MRData?.RaceTable?.Races?.[0];
+  const start = Date.parse(`${r?.date}T${r?.time ?? "12:00:00Z"}`) / 1000;
+  return r && Number.isFinite(start) ? { season: Number(r.season), round: Number(r.round), name: String(r.raceName), start } : null;
+}
+async function fetchF1Standings(): Promise<{ code: string; name: string; points: number }[]> {
+  const list = (await getJson("https://api.jolpi.ca/ergast/f1/current/driverStandings.json"))?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings ?? [];
+  return (list as Array<{ points?: string; Driver?: { code?: string; familyName?: string } }>).flatMap((d) => d.Driver?.code ? [{ code: d.Driver.code, name: String(d.Driver.familyName ?? d.Driver.code), points: Number(d.points) }] : []);
+}
+/** OpenF1 (free, keyless) as the second source for a race result when Jolpica has none: the race session starting within six hours of `startEpoch`, its finishing order and the drivers' three-letter codes. */
+async function fetchF1ResultsOpenF1(startEpoch: number): Promise<Map<string, number> | null> {
+  const year = new Date(startEpoch * 1000).getUTCFullYear();
+  const sessions = (await getJson(`https://api.openf1.org/v1/sessions?year=${year}&session_name=Race`)) as Array<{ session_key?: number; date_start?: string }>;
+  const hit = (Array.isArray(sessions) ? sessions : []).find((x) => Math.abs(Date.parse(String(x.date_start ?? "")) / 1000 - startEpoch) <= 6 * 3600);
+  if (!hit?.session_key) return null;
+  const [res, drivers] = await Promise.all([getJson(`https://api.openf1.org/v1/session_result?session_key=${hit.session_key}`), getJson(`https://api.openf1.org/v1/drivers?session_key=${hit.session_key}`)]);
+  if (!Array.isArray(res) || res.length < 10 || !Array.isArray(drivers)) return null;
+  const code = new Map((drivers as Array<{ driver_number?: number; name_acronym?: string }>).flatMap((d) => d.name_acronym ? [[Number(d.driver_number), d.name_acronym] as [number, string]] : []));
+  return new Map((res as Array<{ position?: number | null; driver_number?: number; dns?: boolean; dsq?: boolean }>).flatMap((r) => { const c = code.get(Number(r.driver_number)); return c ? [[c, r.dns || r.dsq || !r.position ? 99 : Number(r.position)] as [string, number]] : []; }));
+}
+async function fetchF1Results(season: number, round: number): Promise<Map<string, number> | null> {
+  const res = (await getJson(`https://api.jolpi.ca/ergast/f1/${season}/${round}/results.json`))?.MRData?.RaceTable?.Races?.[0]?.Results;
+  if (!Array.isArray(res) || res.length < 10) return null;
+  return new Map((res as Array<{ position?: string; Driver?: { code?: string } }>).flatMap((r) => r.Driver?.code ? [[r.Driver.code, Number(r.position)] as [string, number]] : []));
+}
+
+/** NASA EONET: how many events are open in each category we ask about (public, keyless). */
+async function fetchEonet(): Promise<Partial<Record<EonetKey, number>>> {
+  const out: Partial<Record<EonetKey, number>> = {};
+  for (const k of Object.keys(EONET) as EonetKey[]) {
+    try { const j = await getJson(`https://eonet.gsfc.nasa.gov/api/v3/events?status=open&category=${EONET[k].id}&limit=2000`); if (Array.isArray(j?.events)) out[k] = j.events.length; } catch { /* leave out */ }
+  }
+  return out;
+}
+/** NASA NeoWs: the closest approach, in lunar distances, of any asteroid listed for the seven days from `startYmd` (needs NASA_KEY; 7 days is the most one call may span). */
+async function neoClosest(startYmd: string): Promise<number | null> {
+  const key = (Deno.env.get("NASA_KEY") ?? "").trim();
+  if (!key) return null;
+  const end = new Date(Date.parse(`${startYmd}T00:00:00Z`) + 6 * 86400_000).toISOString().slice(0, 10);
+  const j = await getJson(`https://api.nasa.gov/neo/rest/v1/feed?start_date=${startYmd}&end_date=${end}&api_key=${encodeURIComponent(key)}`);
+  const objs = Object.values((j?.near_earth_objects ?? {}) as Record<string, Array<{ close_approach_data?: Array<{ miss_distance?: { lunar?: string } }> }>>).flat();
+  if (!objs.length) return null;
+  const lds = objs.map((o) => Number(o.close_approach_data?.[0]?.miss_distance?.lunar)).filter((n) => Number.isFinite(n));
+  return lds.length ? Math.min(...lds) : null;
+}
+/** How many of the last eight finished weeks had an asteroid within NEO_LD lunar distances (the base rate the question is priced from). */
+async function neoHistory(now: number): Promise<{ weeks: number; hits: number } | null> {
+  const day = Math.floor(now / 86400), dow = (day + 3) % 7;
+  let weeks = 0, hits = 0;
+  for (let w = 1; w <= 8; w++) {
+    const start = new Date((day - dow - 7 * w) * 86400_000).toISOString().slice(0, 10);
+    try { const d = await neoClosest(start); if (d !== null) { weeks++; if (d < NEO_LD) hits++; } } catch { /* skip the week */ }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  return weeks >= 4 ? { weeks, hits } : null;
+}
 /** US weather alerts in force on land zones (NWS, keyless; a User-Agent is required). */
 async function fetchNws(): Promise<number | null> {
   const j = await getJson("https://api.weather.gov/alerts/active/count");
@@ -740,6 +858,36 @@ async function fetchTide(k: TideKey, now: number): Promise<{ at: number; v: numb
   const d = j?.data?.[0], v = Number(d?.v), at = Date.parse(`${String(d?.t ?? "").replace(" ", "T")}:00Z`) / 1000;
   return Number.isFinite(v) && Number.isFinite(at) && now - at <= 1800 ? { at, v } : null;
 }
+/** Open-Meteo hourly model values by unix second for the sea waves (Marine) or the air quality (European AQI) of one city, from yesterday to the day after tomorrow. */
+async function fetchOmHourly(kind: "wave" | "air", k: string): Promise<Record<number, number>> {
+  const loc = kind === "wave" ? WAVES[k as WaveKey] : AIRQ[k as AirKey];
+  if (!loc) return {};
+  const base = kind === "wave" ? "https://marine-api.open-meteo.com/v1/marine" : "https://air-quality-api.open-meteo.com/v1/air-quality", v = kind === "wave" ? "wave_height" : "european_aqi";
+  const j = await getJson(`${base}?latitude=${loc.lat}&longitude=${loc.lon}&hourly=${v}&past_days=1&forecast_days=3&timeformat=unixtime&timezone=GMT${kind === "wave" ? "&cell_selection=sea" : ""}`);
+  const ts = j?.hourly?.time, xs = j?.hourly?.[v], out: Record<number, number> = {};
+  if (Array.isArray(ts) && Array.isArray(xs)) ts.forEach((tm: number, i: number) => { if (typeof xs[i] === "number" && Number.isFinite(xs[i])) out[Number(tm)] = xs[i]; });
+  return out;
+}
+
+/** Aircraft in flight over Italy (OpenSky Network, one anonymous request: the bounding box of the country); null when the service does not answer. */
+async function fetchFlights(): Promise<number | null> {
+  const j = await getJson("https://opensky-network.org/api/states/all?lamin=36.4&lomin=6.6&lamax=47.1&lomax=18.6");
+  return Array.isArray(j?.states) ? (j.states as unknown[][]).filter((s) => s[8] === false).length : null;
+}
+
+/** The most liquid open binary questions on Manifold that stay open for days and are still undecided (probability 10-90%). */
+async function fetchManifold(now: number): Promise<{ id: string; question: string; prob: number }[]> {
+  const j = await getJson("https://api.manifold.markets/v0/search-markets?term=&sort=liquidity&filter=open&contractType=BINARY&limit=40");
+  if (!Array.isArray(j)) return [];
+  return (j as { id: string; question: string; probability: number; closeTime?: number; isResolved?: boolean; uniqueBettorCount?: number }[])
+    .filter((m) => !m.isResolved && typeof m.probability === "number" && m.probability >= 0.12 && m.probability <= 0.88 && (m.closeTime ?? Infinity) > (now + 4 * 86400) * 1000 && (m.uniqueBettorCount ?? 0) >= 40 && m.question.length <= 150)
+    .slice(0, 8).map((m) => ({ id: m.id, question: m.question, prob: m.probability }));
+}
+async function fetchManifoldProb(id: string): Promise<number | null> {
+  const j = await getJson(`https://api.manifold.markets/v0/market/${id}`);
+  return typeof j?.probability === "number" && !j?.isResolved ? Math.round(j.probability * 1000) / 10 : null;
+}
+
 /** NOAA CO-OPS hourly tide predictions (metres above MLLW, GMT) from the start of yesterday to the end of tomorrow, by unix second. */
 async function fetchTidePred(k: TideKey, now: number): Promise<Record<number, number>> {
   const ymd = (t: number) => isoDay(t).replace(/-/g, "");
@@ -889,6 +1037,43 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       if (carbonDue.length) { const v = await fetchCarbon(now); if (v !== null) for (const { x, at } of carbonDue) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); }
     } catch (e) { notes.push(`carbon: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
+      const hnDue = [...need.keys()].filter(isHn).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (hnDue.length) { const v = await fetchHnMax(); if (v !== null) for (const { x, at } of hnDue) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); }
+    } catch (e) { notes.push(`hn: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const chessDue = [...need.keys()].filter(isChess).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (chessDue.length) { const r = await fetchChess(); for (const { x, at } of chessDue) { const v = r[x.slice(6) as ChessKey]; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
+    } catch (e) { notes.push(`chess: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      // a launch is a fact read once its three hours are over: 1 when it is in the list of past launches (lifted off, or flew and failed) no later than the line
+      const launchDue = [...need.keys()].filter(isLaunch).flatMap((x) => todo(x).map((at) => ({ x, at })));
+      if (launchDue.length) { const prev = await fetchLaunchesPrevious(); for (const { x, at } of launchDue) { const l = prev.get(x.slice(7)); rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: l && [3, 4, 6, 7].includes(l.status) && l.net <= at ? 1 : 0, fetched_at: fetchedAt }); } }
+    } catch (e) { notes.push(`launch: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const f1Due = [...need.keys()].filter(isF1).flatMap((x) => todo(x).map((at) => ({ x, at })));
+      const byRace = new Map<string, typeof f1Due>();
+      for (const d of f1Due) { const k = d.x.split(":")[1]!; byRace.set(k, [...(byRace.get(k) ?? []), d]); }
+      for (const [k, list] of byRace) {
+        const [season, round] = k.split("-").map(Number) as [number, number];
+        let order = await fetchF1Results(season, round).catch(() => null);
+        // Jolpica has nothing (yet, or it is down): OpenF1 is asked once the race has been over for two hours
+        if (!order && now - Math.min(...list.map((d) => d.at)) >= -3 * 3600 + 2 * 3600) order = await fetchF1ResultsOpenF1(Math.min(...list.map((d) => d.at)) - 3 * 3600).catch(() => null);
+        if (!order) continue; // the result is not published yet: look again next run
+        for (const { x, at } of list) { const [, , code, what] = x.split(":"); const pos = order.get(code!) ?? 99; rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: pos <= (what === "w" ? 1 : 3) ? 1 : 0, fetched_at: fetchedAt }); }
+      }
+    } catch (e) { notes.push(`f1: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const eonetDue = [...need.keys()].filter(isEonet).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (eonetDue.length) { const c = await fetchEonet(); for (const { x, at } of eonetDue) { const v = c[x.slice(6) as EonetKey]; if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } }
+    } catch (e) { notes.push(`eonet: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      // an asteroid week is read once it is a day over: 1 when any asteroid came within NEO_LD lunar distances
+      for (const { x, at } of [...need.keys()].filter(isNeo).flatMap((x) => todo(x).map((at) => ({ x, at })))) {
+        const d = await neoClosest(`${x.slice(4, 8)}-${x.slice(8, 10)}-${x.slice(10, 12)}`);
+        if (d !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: d < NEO_LD ? 1 : 0, fetched_at: fetchedAt });
+      }
+    } catch (e) { notes.push(`neo: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
       const nwsDue = [...need.keys()].filter(isNws).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
       if (nwsDue.length) { const v = await fetchNws(); if (v !== null) for (const { x, at } of nwsDue) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); }
     } catch (e) { notes.push(`nws: ${String((e as Error).message ?? e).slice(0, 80)}`); }
@@ -896,6 +1081,23 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       const tideDue = [...need.keys()].filter(isTide).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
       for (const { x, at } of tideDue) { try { const r = await fetchTide(x.slice(5) as TideKey, now); if (r && Math.abs(r.at - at) <= 12 * 60) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: r.v, fetched_at: fetchedAt }); } catch (e) { notes.push(`${x}: ${String((e as Error).message ?? e).slice(0, 60)}`); } } // one gauge failing must not stop the others
     } catch (e) { notes.push(`tide: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      // sea waves and air quality: the model's value for the hour that is due; flights and Manifold: the reading now
+      const cache = new Map<string, Record<number, number>>();
+      const modelDue = [...need.keys()].filter((x) => isWave(x) || isAir(x)).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      for (const { x, at } of modelDue) {
+        try {
+          const kind = x.startsWith("wave:") ? "wave" : "air", k = x.slice(kind === "wave" ? 5 : 4), ck = `${kind}:${k}`;
+          if (!cache.has(ck)) cache.set(ck, await fetchOmHourly(kind, k));
+          const v = cache.get(ck)![at];
+          if (v !== undefined) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt });
+        } catch (e) { notes.push(`${x}: ${String((e as Error).message ?? e).slice(0, 60)}`); }
+      }
+      const flDue = [...need.keys()].filter(isFlights).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      if (flDue.length) { const n = await fetchFlights().catch(() => null); if (n !== null) for (const { x, at } of flDue) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: n, fetched_at: fetchedAt }); }
+      const mfDue = [...need.keys()].filter(isMf).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
+      for (const { x, at } of mfDue) { try { const v = await fetchManifoldProb(x.slice(3)); if (v !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } catch (e) { notes.push(`${x}: ${String((e as Error).message ?? e).slice(0, 60)}`); } }
+    } catch (e) { notes.push(`om: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
       const riverDue = [...need.keys()].filter(isRiver).flatMap((x) => todo(x).filter((at) => now - at <= CRYPTO_GRACE_SEC).map((at) => ({ x, at })));
       for (const { x, at } of riverDue) { try { const v = await fetchRiver(x.slice(6) as RiverKey, now); if (v !== null) rows.push({ series: x, at: new Date(at * 1000).toISOString(), value: v, fetched_at: fetchedAt }); } catch (e) { notes.push(`${x}: ${String((e as Error).message ?? e).slice(0, 60)}`); } }
@@ -1017,6 +1219,12 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
     let metalsNow: Partial<Record<MetalKey, number>> = {};
     try { const mp = await fetchMetals(now); metalsNow = mp; markets.push(...buildMetalMarkets(mp, now)); for (const [k, v] of Object.entries(mp)) extraHist.push({ series: `metal:${k}`, at: hourIso, value: v }); ok++; } catch (e) { notes.push(`metals: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try { const c = await fetchCarbon(now); markets.push(...buildCarbonMarkets(c, now)); if (c !== null) extraHist.push({ series: "carbon:gb", at: hourIso, value: c }); ok++; } catch (e) { notes.push(`carbon: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { const v = await fetchHnMax(); markets.push(...buildHnMarkets(v, now)); ok++; } catch (e) { notes.push(`hn: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { markets.push(...buildChessMarkets(await fetchChess(), now)); ok++; } catch (e) { notes.push(`chess: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { markets.push(...buildLaunchMarkets(await fetchLaunchesUpcoming(), now)); ok++; } catch (e) { notes.push(`launch: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { const race = await fetchF1Next(); if (race && race.start < now + 6 * 86400) markets.push(...buildF1Markets(race, await fetchF1Standings(), now)); ok++; } catch (e) { notes.push(`f1: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { markets.push(...buildEonetMarkets(await fetchEonet(), now)); ok++; } catch (e) { notes.push(`eonet: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try { if ((Deno.env.get("NASA_KEY") ?? "").trim() && Math.floor(now / 3600) % 6 === 0) markets.push(...buildNeoMarkets(await neoHistory(now), now)); ok++; } catch (e) { notes.push(`neo: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try { const c = await fetchNws(); markets.push(...buildNwsMarkets(c, now)); if (c !== null) extraHist.push({ series: "nws:us", at: hourIso, value: c }); ok++; } catch (e) { notes.push(`nws: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
       const pw = await fetchPower(isoDay(now - 86400), isoDay(now + 2 * 86400));
@@ -1033,6 +1241,23 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
       }
       markets.push(...buildTideMarkets(g, now)); ok++;
     } catch (e) { notes.push(`tide: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const wv: Record<string, Record<number, number>> = {}, aq: Record<string, Record<number, number>> = {}, h0 = Math.floor(now / 3600) * 3600;
+      await Promise.all([
+        ...(Object.keys(WAVES) as WaveKey[]).map(async (k) => { const m = await fetchOmHourly("wave", k).catch(() => ({} as Record<number, number>)); if (Object.keys(m).length) { wv[k] = m; if (m[h0] !== undefined) extraHist.push({ series: `wave:${k}`, at: hourIso, value: m[h0]! }); } }),
+        ...(Object.keys(AIRQ) as AirKey[]).map(async (k) => { const m = await fetchOmHourly("air", k).catch(() => ({} as Record<number, number>)); if (Object.keys(m).length) { aq[k] = m; if (m[h0] !== undefined) extraHist.push({ series: `air:${k}`, at: hourIso, value: m[h0]! }); } }),
+      ]);
+      markets.push(...buildHourlyMarkets("wave", wv, now), ...buildHourlyMarkets("air", aq, now)); ok++;
+    } catch (e) { notes.push(`om: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const n = await fetchFlights().catch(async (e) => { const m = String((e as Error).message ?? e).slice(0, 200); notes.push(`flights: ${m}`); await sb.from("feed_health").upsert({ feed_id: "opensky", last_error: m, last_error_at: new Date().toISOString() }); return null; });
+      if (n !== null) { extraHist.push({ series: "flights:it", at: hourIso, value: n }); markets.push(...buildFlightMarkets(n, now)); ok++; }
+    } catch (e) { notes.push(`flights: ${String((e as Error).message ?? e).slice(0, 80)}`); }
+    try {
+      const list = await fetchManifold(now);
+      for (const q of list) extraHist.push({ series: `mf:${q.id}`, at: hourIso, value: Math.round(q.prob * 1000) / 10 });
+      markets.push(...buildManifoldMarkets(list, now)); ok++;
+    } catch (e) { notes.push(`manifold: ${String((e as Error).message ?? e).slice(0, 80)}`); }
     try {
       const lv: Partial<Record<RiverKey, number>> = {};
       for (const k of Object.keys(RIVERS) as RiverKey[]) { const v = await fetchRiver(k, now).catch(() => null); if (v !== null) { lv[k] = v; extraHist.push({ series: `river:${k}`, at: hourIso, value: v }); } }
@@ -1128,13 +1353,16 @@ async function ingestTicks(sb: ReturnType<typeof db>, now: number, last: number)
 }
 
 
-// ---- Football (Serie A) from TheSportsDB. The free test key ("3") is for development: markets made with it are private (testOnly) until a paid key is set. ----
+// ---- Football (Serie A) from TheSportsDB. The free key is "123" (the old "3" now answers 403). ----
 async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number): Promise<string> {
-  const key = Deno.env.get("SPORTSDB_KEY") || "3";
+  const key = (Deno.env.get("SPORTSDB_KEY") || "123").replace(/^3$/, "123");
   const base = `https://www.thesportsdb.com/api/v1/json/${key}`;
   const notes: string[] = [];
   /** Every TheSportsDB call goes through the gate: the free key answers 429 above 30 a minute. */
   const tsdb = async (url: string) => { await tsdbGate(); return await getJson(url); };
+  // The league loop keeps going when TheSportsDB refuses (403, limit): football-data.org can still list the matches; the failure is raised below only if nothing else answered.
+  let tsdbDown: unknown = null;
+  const tsdbSoft = async (url: string) => { try { return await tsdb(url); } catch (e) { tsdbDown = e; return null; } };
   // 1. Matches that should be over: store the final score once it is published.
   const { data: open } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").lte("target_at", new Date(now * 1000).toISOString()).order("target_at").limit(100);
   const ids = [...new Set((open ?? []).map((m) => String((m.params as { eventId: string }).eventId)))];
@@ -1142,8 +1370,24 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
     const { data: have } = await sb.from("match_results").select("event_id,status").in("event_id", ids);
     const done = new Set((have ?? []).filter((r) => FINISHED.has(String(r.status))).map((r) => r.event_id as string));
     const rows: Record<string, unknown>[] = [];
-    for (const id of ids.filter((x) => !done.has(x)).slice(0, 12)) {
+    // The final score the live feed already holds (state "post", unchanged for 20 minutes) is taken when TheSportsDB has nothing final yet: a finished match must not wait for
+    // a slow free feed until its question is refunded. TheSportsDB still wins whenever it answers first.
+    const kick = new Map((open ?? []).map((m) => { const p = m.params as { eventId: string; kickoff?: number }; return [String(p.eventId), Number(p.kickoff ?? 0)] as const; }));
+    const pending = ids.filter((x) => !done.has(x));
+    const { data: fin } = pending.length ? await sb.from("live_scores").select("event_id,home_score,away_score,updated_at").eq("state", "post").in("event_id", pending) : { data: [] };
+    const fromLive = new Set<string>();
+    for (const r of (fin ?? []) as { event_id: string; home_score: number; away_score: number; updated_at: string }[]) {
+      if (Date.now() - Date.parse(r.updated_at) < 20 * 60_000 || !kick.get(r.event_id)) continue;
+      rows.push({ event_id: r.event_id, kickoff: new Date((kick.get(r.event_id) as number) * 1000).toISOString(), home_goals: r.home_score, away_goals: r.away_score, status: "FT", fetched_at: new Date().toISOString() });
+      fromLive.add(r.event_id);
+    }
+    for (const id of pending.filter((x) => !fromLive.has(x)).slice(0, 12)) {
       try {
+        if (String(id).startsWith("fd")) { // a match listed by football-data.org: its result comes from there
+          const r = await fdResult(String(id));
+          if (r) rows.push({ event_id: id, kickoff: new Date((kick.get(id) as number) * 1000).toISOString(), home_goals: r.hg, away_goals: r.ag, status: r.status, fetched_at: new Date().toISOString() });
+          continue;
+        }
         const e = ((await tsdb(`${base}/lookupevent.php?id=${id}`))?.events ?? [])[0];
         if (!e) continue;
         const hg = e.intHomeScore === null || e.intHomeScore === undefined ? null : Number(e.intHomeScore), ag = e.intAwayScore === null || e.intAwayScore === undefined ? null : Number(e.intAwayScore);
@@ -1212,22 +1456,40 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
     for (const league of LEAGUES.filter((_, i) => Math.floor(i / 2) === slot)) {
       try {
         // every match of the next 7 days, day by day (the "round" calls of the free tier are capped at 5)
+        tsdbDown = null;
         const fixtures: Fixture[] = [];
         let season = "";
         for (let d = 0; d < 7; d++) {
           const day = new Date((now + d * 86400) * 1000).toISOString().slice(0, 10);
-          const evs = ((await tsdb(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
+          const evs = ((await tsdbSoft(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
           await new Promise((r) => setTimeout(r, 150)); // the free tier is polite-use: about 30 calls a minute
           for (const e of evs) {
             const k = Date.parse(`${e.strTimestamp}Z`) / 1000;
             if (e.idEvent && e.strHomeTeam && e.strAwayTeam && Number.isFinite(k)) { fixtures.push({ eventId: e.idEvent, league: league.name, home: e.strHomeTeam, away: e.strAwayTeam, kickoff: k, ...(e.idAPIfootball ? { apiId: e.idAPIfootball } : {}), ...(e.strHomeTeamBadge ? { homeBadge: e.strHomeTeamBadge } : {}), ...(e.strAwayTeamBadge ? { awayBadge: e.strAwayTeamBadge } : {}) }); season = season || String(e.strSeason ?? ""); }
           }
         }
+        // football-data.org lists every match of its leagues: the ones TheSportsDB did not give (it shows only a few a day) are added, and when it answers
+        // the slow scoreboard search below is skipped. When it does not answer (no key, limit, down) everything below works as before.
+        let fdOk = false;
+        if (fdKey() && FD_CODES[league.name]) {
+          try {
+            const { data: openFx } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").eq("params->>league", league.name).limit(600);
+            const held = (openFx ?? []).map((m) => m.params as { home: string; away: string; kickoff: number });
+            const known = [...new Set([...fixtures.flatMap((f) => [f.home, f.away]), ...held.flatMap((h) => [h.home, h.away])])];
+            const iso = (d: number) => new Date((now + d * 86400) * 1000).toISOString().slice(0, 10);
+            const listed = await fdFixtures(league.name, iso(0), iso(7), known);
+            fdOk = true;
+            const same = (a: { home: string; away: string; kickoff: number }, b: { home: string; away: string; kickoff: number }) => Math.abs(a.kickoff - b.kickoff) <= 6 * 3600 && sameTeam(a.home, b.home) && sameTeam(a.away, b.away);
+            let added = 0;
+            for (const f of listed) if (!fixtures.some((x) => same(x, f)) && !held.some((h) => same(h, f))) { fixtures.push(f); added++; }
+            notes.push(`${league.name}: football-data ${listed.length} listed, +${added}`);
+          } catch (e) { notes.push(`${league.name}: football-data ${String((e as Error).message ?? e).slice(0, 40)} (TheSportsDB takes over)`); }
+        }
         // the last three days: finished matches feed the team strengths
         const played: Record<string, unknown>[] = [];
         for (let d = 1; d <= 3; d++) {
           const day = new Date((now - d * 86400) * 1000).toISOString().slice(0, 10);
-          const evs = ((await tsdb(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
+          const evs = ((await tsdbSoft(`${base}/eventsday.php?d=${day}&l=${league.id}`))?.events ?? []) as Record<string, string>[];
           await new Promise((r) => setTimeout(r, 150));
           for (const e of evs) {
             const k = Date.parse(`${e.strTimestamp}Z`) / 1000, hg = e.intHomeScore, ag = e.intAwayScore;
@@ -1238,7 +1500,8 @@ async function ingestSport(sb: ReturnType<typeof db>, now: number, last: number)
         }
         if (played.length) await sb.from("team_form").upsert(played, { onConflict: "event_id" });
         // European football: the day listing shows only 3 matches a day, the rest comes from the ESPN scoreboard
-        if (league.deep) {
+        if (!fdOk && tsdbDown) throw tsdbDown;
+        if (league.deep && !fdOk) {
           const { data: openM } = await sb.from("markets").select("params").eq("kind", "match_bet").eq("status", "open").eq("params->>league", league.name).limit(600);
           const have = new Map<string, Fixture>();
           for (const m of openM ?? []) { const p = m.params as { eventId: string; home: string; away: string; kickoff: number }; have.set(String(p.eventId), { eventId: String(p.eventId), league: league.name, home: p.home, away: p.away, kickoff: Number(p.kickoff) }); }

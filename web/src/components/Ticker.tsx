@@ -9,10 +9,11 @@ const T0 = Date.now(), MAX_LINES = 4;
  * The strip is built only when its lines really change (not on every tick of the app's clock): rebuilding the moving strip all the time made phones
  * draw it half empty for a moment.
  */
-export function Ticker({ items, label }: { items: { id: string; text?: string; node: ComponentChildren }[]; label: string }) {
+export function Ticker({ items, label }: { items: { id: string; text?: string; node: ComponentChildren; pin?: boolean }[]; label: string }) {
   // At most four distinct lines at a time (a different four every two minutes): the moving strip is drawn as one picture, and iPhones cannot draw one that is wider
   // than about 16,000 device pixels (the text past that point goes missing until the strip comes round again). Four lines twice over (about 3,600 CSS pixels) stay well under it.
-  const win = items.length <= MAX_LINES ? items : Array.from({ length: MAX_LINES }, (_, k) => items[(Math.floor(Date.now() / 120_000) * MAX_LINES + k) % items.length]!);
+  const pins = items.filter((i) => i.pin).slice(0, 2), rest = items.filter((i) => !i.pin), room = MAX_LINES - pins.length;
+  const win = items.length <= MAX_LINES ? items : [...pins, ...Array.from({ length: room }, (_, k) => rest[(Math.floor(Date.now() / 120_000) * room + k) % rest.length]!)];
   const sig = win.map((i) => `${i.id}:${i.text ?? ""}`).join("|");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   return useMemo(() => {

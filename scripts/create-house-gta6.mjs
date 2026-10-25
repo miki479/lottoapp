@@ -4,7 +4,7 @@ import { computeOdds } from "../shared/odds.ts";
 import { supabaseUrl } from "./lib-env.mjs";
 
 const SB = supabaseUrl(), KEY = process.env.SUPABASE_SERVICE_ROLE_KEY, apply = process.argv.includes("--apply");
-const closes = Date.parse("2026-11-18T23:00:00Z"), at = Date.parse("2026-11-20T00:00:00Z") / 1000, p = 0.9, odds = computeOdds(p);
+const closes = Date.parse("2026-11-18T23:00:00Z"), at = Date.parse("2026-11-20T00:00:00Z") / 1000, p = 0.7, odds = computeOdds(p);
 const row = {
   city_id: "world", category: "culture", kind: "tick_gt", feed_id: "tick-house:gta6",
   params: {

@@ -1,8 +1,8 @@
-import { BusGhost, CloudRainGhost, CryptoGhost, CultureGhost, GovGhost, SportGhost, StrikeGhost, TrafficGhost, TrainGhost, TreeGhost } from "./Vehicles.tsx";
+import { BusGhost, CloudRainGhost, CryptoGhost, CultureGhost, GamesGhost, GovGhost, PlaneGhost, SpaceGhost, SportGhost, StrikeGhost, TrafficGhost, TrainGhost, TreeGhost } from "./Vehicles.tsx";
 import { LawGhost } from "./Cannabis.tsx";
 import { useState } from "preact/hooks";
 
-export type CatId = "bus" | "train" | "weather" | "nature" | "strike" | "traffic" | "finance" | "culture" | "sport" | "law" | "gov";
+export type CatId = "bus" | "train" | "weather" | "nature" | "strike" | "traffic" | "finance" | "culture" | "sport" | "law" | "space" | "games" | "flights" | "gov";
 export interface CatTile { id: CatId; label: string; count: number; disabled?: boolean; soon?: string }
 
 /** The chip's picture: big, see-through, filling most of the chip. */
@@ -15,6 +15,9 @@ function Art({ id }: { id: CatId }) {
   if (id === "finance") return <CryptoGhost />;
   if (id === "culture") return <CultureGhost />;
   if (id === "sport") return <SportGhost />;
+  if (id === "space") return <SpaceGhost />;
+  if (id === "games") return <GamesGhost />;
+  if (id === "flights") return <PlaneGhost />;
   if (id === "law") return <LawGhost />;
   if (id === "gov") return <GovGhost />;
   return <TrafficGhost />;

@@ -1,5 +1,6 @@
+import { BetInfo } from "../components/BetInfo.tsx";
 import { Q } from "../components/Q.tsx";
-import { ArrowDownToLine, Check, Clock, Flame, RotateCcw, Ticket, TrendingDown, X } from "lucide-preact";
+import { ArrowDownToLine, Check, Clock, Flame, RotateCcw, Ticket, TrendingDown, X, ChevronDown } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { sb } from "../lib/api.ts";
 import { INTL_TAG } from "../i18n/index.ts";
@@ -19,6 +20,7 @@ import type { MarketRow } from "../lib/format.ts";
 import { moneySigned } from "../lib/num.ts";
 import { subjectOf } from "../lib/names.ts";
 import { WhyBlock } from "../components/WhyBlock.tsx";
+import { dtf } from "../lib/intl.ts";
 
 /** The days the figures at the top are counted over. */
 const SUMMARY_DAYS = 30;
@@ -33,7 +35,7 @@ export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge
   const [tab, setTab] = useState<"open" | "settled">("open");
   const [st, setSt] = useState<"all" | "won" | "lost" | "void">("all"), [cat, setCat] = useState("all");
   // football apart from the other sports (basketball, American football, hockey, baseball…): the leagues played to a winner are the "two-way" ones
-  const keyOf = (b: MyBet) => (b.markets.category === "sport" ? (TWO_WAY_LEAGUES.includes(String(b.markets.params.league ?? "")) ? "othersport" : "football") : b.markets.category);
+  const keyOf = (b: MyBet) => (b.markets.category === "sport" ? (TWO_WAY_LEAGUES.includes(String(b.markets.params.league ?? "")) || String(b.markets.params.series ?? "").startsWith("f1:") ? "othersport" : "football") : b.markets.category);
   const inTab = (status: string) => (tab === "open") === (status === "open");
   const cats = [...new Set(bets.filter((b) => inTab(b.status)).map((b) => keyOf(b)))];
   const catNow = (cats as string[]).includes(cat) ? cat : "all";
@@ -45,7 +47,7 @@ export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge
   const [series, setSeries] = useState<DayNet[] | null>(null);
   useEffect(() => { let live = true; sb.rpc("my_balance_series", { p_days: SUMMARY_DAYS }).then(({ data, error }) => { if (live) setSeries(error ? [] : ((data ?? []) as DayNet[]).map((d) => ({ day: String(d.day), net: Number(d.net), bets: Number(d.bets) }))); }); return () => { live = false; }; }, [nDone]);
   const sum = series ? summarize(series) : null, sm = msg.bets.summary;
-  const dayFmt = new Intl.DateTimeFormat(INTL_TAG[locale], { day: "numeric", month: "short", timeZone: "UTC" });
+  const dayFmt = dtf(INTL_TAG[locale], { day: "numeric", month: "short", timeZone: "UTC" });
   return (
     <div class="screen stack">
       <h1>{msg.bets.title}</h1>
@@ -83,6 +85,7 @@ export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge
           const label = st === "won" ? msg.bets.won : st === "lost" ? msg.bets.lost : st === "void" ? msg.bets.void : msg.bets.open;
           return (
             <div class="card bet parlaycard" key={x.id} style={`--i:${Math.min(i, 10)}`}>
+              <BetInfo id={x.id} placedAt={x.placed_at} closesAt={null} targetAt={null} settledAt={x.settled_at} stake={x.stake} odds={Number(x.odds)} boosted={x.boosted} locale={locale} />
               <div class="row1">
                 <span class={`pill ${st === "won" ? "won" : st === "lost" ? "lost" : ""}`}><Icon size={14} strokeWidth={2.6} />{label}</span>
                 <span class="detail">{msg.slip.title} · {msg.slip.legs(x.parlay_legs.length)}</span>
@@ -110,6 +113,7 @@ export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge
           const label = st === "won" ? msg.bets.won : st === "lost" ? msg.bets.lost : st === "void" ? msg.bets.void : m.kind === "match_bet" && now < Number(m.params.kickoff ?? 0) * 1000 ? msg.bets.upcoming : msg.bets.open;
           return (
             <div class="betwrap" key={b.id}>
+            <BetInfo id={b.id} placedAt={b.placed_at} closesAt={m.closes_at} targetAt={m.target_at} settledAt={b.settled_at} stake={b.stake} odds={Number(b.odds)} boosted={b.boosted} locale={locale} />
             <button class="card bet pressable" style={`--i:${Math.min(i, 10)}; text-align:left`} onClick={() => (st !== "open" ? onOpen(b) : undefined)} disabled={st === "open"}>
               <div class="row1">
                 <span class={`pill ${st === "won" ? "won" : st === "lost" ? "lost" : ""}`}><Icon size={14} strokeWidth={2.6} />{label}</span>
@@ -132,7 +136,7 @@ export function Bets({ streak, canMore, onMore, invites, challenges, onChallenge
           );
         })}
       </div>
-      {canMore && tab === "settled" && <button class="btn secondary wide" onClick={onMore}>{msg.hist.more}</button>}
+      {canMore && tab === "settled" && <button class="btn secondary wide" onClick={onMore}><ChevronDown size={18} />{msg.hist.more}</button>}
     </div>
   );
 }

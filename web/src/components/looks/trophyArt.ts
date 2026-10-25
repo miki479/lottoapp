@@ -1,3 +1,4 @@
+import { MORE_TROPHIES } from "../../../../shared/trophies-more.ts";
 import { GLYPHS } from "./glyphs";
 import { M } from "./art";
 import { Metal, Pt, edgeFacing, f, inset, light, mix, poly, polar, pt, ramp, rad, smooth, star } from "./geo";
@@ -43,18 +44,40 @@ const SPEC: Record<string, () => Spec> = {
   parlay_5: () => ({ shape: stamp(50, 11), metal: M.amethyst!, enamel: ["#a77bff", "#321a7a"] }),
   friends_10: () => ({ shape: squircleOf(53), metal: M.mithril!, enamel: ["#ff9ec0", "#b0245f"] }),
   level_25: () => ({ shape: smooth([[-36, -52, 6], [36, -52, 6], [54, -30, 6], [54, 18, 8], [28, 50, 10], [-28, 50, 10], [-54, 18, 8], [-54, -30, 6]], 5), metal: M.platinum!, enamel: ["#2a3350", "#080b18"], stars: true }),
+  limit_breaker: () => ({ shape: starOf(10, 60, 50, 2.4), metal: M.gold!, enamel: ["#ffd24a", "#6b3f00"], stars: true }),
   level_50: () => ({ shape: starOf(12, 60, 48, 2), metal: M.diamond!, enamel: ["#6a3de8", "#150a40"], stars: true }),
   chest_30: () => ({ shape: octagonOf(57), metal: M.gold!, enamel: ["#c97b2d", "#4a2200"] }),
   collector: () => ({ shape: rosetteOf(20, 54, 4), metal: M.opal!, enamel: ["#1b1450", "#05030f"], stars: true }),
   ghost_feed: () => ({ shape: smooth([[-44, -46, 8], [0, -57, 4], [44, -46, 8], [48, 0, 8], [0, 58, 4], [-48, 0, 8]], 5), metal: M.obsidian!, enamel: ["#6a54c4", "#1c1448"], stars: true }),
 };
 const RINGS = ["#ff4f93", "#b9f53c", "#37e3ff"];
+/** The later trophies have no rendered picture yet: a badge is drawn for each, its shape from its group, its metal from its rarity, the level ones with the number on them. */
+const GROUP_LOOK: Record<string, { shape: () => Pt[]; enamel: [string, string]; glyph: string }> = {
+  wins: { shape: () => starOf(10, 58, 48, 2), enamel: ["#3de08f", "#0a6b3d"], glyph: "wins_100" },
+  streaks: { shape: () => smooth([[0, -56, 6], [48.5, -28, 6], [48.5, 28, 6], [0, 56, 6], [-48.5, 28, 6], [-48.5, -28, 6]], 5), enamel: ["#ff9a3d", "#8f1500"], glyph: "streak_30" },
+  play: { shape: () => rosetteOf(16, 53, 3), enamel: ["#37d6ff", "#0a4aa0"], glyph: "all_categories" },
+  social: { shape: () => squircleOf(53), enamel: ["#ff9ec0", "#b0245f"], glyph: "friends_10" },
+  level: { shape: () => starOf(12, 60, 48, 2), enamel: ["#6a3de8", "#150a40"], glyph: "level_50" },
+  special: { shape: () => octagonOf(57), enamel: ["#c97b2d", "#4a2200"], glyph: "collector" },
+};
+const RARITY_METAL: Record<string, Metal> = { common: M.silver!, rare: M.gold!, epic: M.diamond!, legendary: M.platinum!, mythic: M.adamantium! };
+const ALIAS: Record<string, string> = {};
+for (const t of MORE_TROPHIES) {
+  const g = GROUP_LOOK[t.group]!;
+  ALIAS[t.id] = g.glyph;
+  if (!SPEC[t.id]) SPEC[t.id] = () => ({ shape: g.shape(), metal: RARITY_METAL[t.rarity]!, enamel: g.enamel, stars: t.rarity === "mythic" || t.rarity === "legendary" });
+}
 
 const node = ([tag, a]: [string, Record<string, string>]) => `<${tag} ${Object.entries(a).map(([k, v]) => `${k}="${v}"`).join(" ")}/>`;
 const S = 2.15;
 /** The icon drawn as a little tube: a dark edge, the body, and a thin highlight, so it looks pressed into the metal. */
 function glyph(id: string, p: Metal, have: boolean, dy: number): string {
-  const nodes = GLYPHS[id]!;
+  if (id.startsWith("level_")) {
+    const n = id.slice(6), size = n.length > 2 ? 34 : 44, txt = (dx: number, dyy: number, fill: string, stroke: string, sw: number, op: number) => `<text x="${60 + dx}" y="${f(60 + dy + dyy + size * 0.35)}" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="${size}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" fill-opacity="${op}" stroke-opacity="${op}">${n}</text>`;
+    if (!have) return txt(0.5, 0.7, "#363c4b", "#10121a", 2, 0.9);
+    return txt(0.5, 0.8, "#000", "#000", 3, 0.35) + txt(0, 0, ramp(p, 0.64), ramp(p, 0.12), 2.4, 1) + txt(-0.3, -0.4, ramp(p, 0.98), "none", 0, 0.55);
+  }
+  const nodes = GLYPHS[id] ?? GLYPHS[ALIAS[id] ?? "first_win"]!;
   const g = (items: [string, Record<string, string>][], width: number, color: string, dx: number, dyy: number, op = 1) =>
     `<g transform="translate(${f(60 - 12 * S + dx)} ${f(60 - 12 * S + dy + dyy)}) scale(${S})" fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="${op}">${items.map(node).join("")}</g>`;
   if (!have) return g(nodes, 2.2, "#10121a", 0.5, 0.7, 0.8) + g(nodes, 1.9, "#363c4b", 0, 0);

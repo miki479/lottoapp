@@ -39,7 +39,7 @@ export function FriendPicker(p: { code: string; locale: Locale; msg: Messages; o
           const st = inside.get(f.user_id), done = !!st, on = sel.has(f.user_id), name = f.display_name || t.anon;
           return (
             <button key={f.user_id} class={`frchip ${on ? "on" : ""} ${done ? "done" : ""}`} disabled={done} aria-pressed={on} onClick={() => toggle(f.user_id)}>
-              <span class="fav" aria-hidden="true">{looks[f.user_id] ? <Look avatar={looks[f.user_id]!.avatar} decoration={looks[f.user_id]!.decoration} size={30} /> : on || done ? <Check size={14} strokeWidth={3} /> : name.slice(0, 1).toUpperCase()}</span>
+              <span class="fav" aria-hidden="true">{looks[f.user_id] ? <Look avatar={looks[f.user_id]!.avatar} decoration={looks[f.user_id]!.decoration} aura={looks[f.user_id]!.aura} size={30} /> : on || done ? <Check size={14} strokeWidth={3} /> : name.slice(0, 1).toUpperCase()}</span>
               <span class="fn"><span>{name}</span><PlayerTitle id={looks[f.user_id]?.title} locale={p.locale} />{done && <em>{st === "joined" ? t.invJoined : t.invDone}</em>}</span>
             </button>
           );

@@ -1,10 +1,11 @@
 import { sb } from "../lib/api.ts";
 import { oddsWord } from "../lib/oddsWord.ts";
-import { FUN_STAKE, balanceStakeCap, delayStakeCap, singleStakeCap } from "../../../shared/wallet.ts";
+import { FUN_STAKE, balanceStakeCap, delayStakeCap, singleStakeCap, unlockedStakeCap } from "../../../shared/wallet.ts";
 import { BetHead } from "./BetHead.tsx";
 import { BetFoot } from "./BetFoot.tsx";
 import { MarketVs, noOf, reasonOf } from "./MatchVs.tsx";
-import { Gift, Layers, Share2, Sparkles, UserPlus, X } from "lucide-preact";
+import { Crown, Gift, Layers, Share2, Sparkles, UserPlus, X } from "lucide-preact";
+import { hubText } from "../lib/shopText.ts";
 import { TipPicker } from "./TipPicker.tsx";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { cityName, cityOf } from "../lib/cities.ts";
@@ -39,7 +40,7 @@ const OPEN_HINT: Record<string, string> = { it: "Puntate aperte (contano anche q
 export function BetSheet(p: {
   m: MarketRow; initial: Pick; msg: Messages; locale: Locale; credits: number; stakeFactor?: number; ready: boolean; needJoin: boolean; googleOn: boolean; inSlip: boolean; boosts: number; now: number; mm?: number; live?: LiveDelay; occ?: { level: number }; ladder: MarketRow[]; onSwitch: (m: MarketRow) => void;
   onClose: () => void; onAddSlip: (m: MarketRow, pick: Pick) => void; onJoined: () => Promise<void>; onPlace: (m: MarketRow, pick: Pick, stake: number, boost: boolean, bonus?: string | null, vice?: boolean, offerId?: string | null) => Promise<string | null>;
-  offer?: OfferUse; openBets?: number; tipFrom?: string | null; canTip?: boolean;
+  offer?: OfferUse; openBets?: number; tipFrom?: string | null; canTip?: boolean; unlocked?: boolean;
 }) {
   const [tipOpen, setTipOpen] = useState(false);
   // the step of the "sorry for the delay" ladder is chosen here, so every tap on a step re-prices the sheet from that step's own market
@@ -75,7 +76,7 @@ export function BetSheet(p: {
   // Upper limit: what the odds allow (all-but-certain picks are closed), or the whole balance when it is lower (the server checks it again).
   // a personal offer has its own small stake limit instead of the odds-based one, and still refuses a pick whose real quote has become all but certain
   const factor = p.stakeFactor ?? 1;
-  const baseCap = offer ? offer.maxStake : ["bus_delay_gt", "train_delay_gt", "bus_full"].includes(M.kind) ? delayStakeCap(odds) : singleStakeCap(odds);
+  const baseCap = offer ? offer.maxStake : p.unlocked ? unlockedStakeCap(odds) : ["bus_delay_gt", "train_delay_gt", "bus_full"].includes(M.kind) ? delayStakeCap(odds) : singleStakeCap(odds);
   // a reduced stake factor (someone who keeps cashing in on near-certain picks) shrinks the limit on such picks, as the server does
   const factored = !offer && baseCap > FUN_STAKE && factor < 1 ? Math.max(FUN_STAKE, Math.floor(baseCap * factor)) : baseCap;
   const oddsCap = offer ? factored : Math.min(factored, balanceStakeCap(p.credits));
@@ -97,6 +98,7 @@ export function BetSheet(p: {
     <Sheet foot onClose={p.onClose} label={p.msg.sheet.title}>
       <div class="shead"><h2>{p.msg.sheet.title}</h2><span class="grow" />{p.canTip && <button class="iconbtn" onClick={() => setTipOpen((v) => !v)} aria-expanded={tipOpen} aria-label={p.msg.tip.btn} title={p.msg.tip.btn}><UserPlus size={20} /></button>}<button class="iconbtn" onClick={share} aria-label={p.msg.maker.share}><Share2 size={20} /></button><button class="iconbtn" onClick={p.onClose} aria-label={p.msg.common.close}><X size={22} /></button></div>
       {p.tipFrom !== undefined && p.tipFrom !== null && <p class="tipbanner" role="status"><UserPlus size={15} />{p.msg.tip.banner(p.tipFrom)}</p>}
+      {p.unlocked && !offer && <p class="lbactive" role="status"><Crown size={15} />{hubText(p.locale).shop.supply.limit.on}</p>}
       {tipOpen && <TipPicker marketId={M.id} pick={pick} locale={p.locale} msg={p.msg} />}
       {copied && <p class="hint" role="status">{p.msg.maker.copied}</p>}
       {offer && <div class="pobanner" role="status"><Gift size={18} />{offerText(p.locale).banner(offer.mult, offer.maxStake)}</div>}

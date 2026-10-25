@@ -1,6 +1,6 @@
 import { sb } from "./api.ts";
 
-export interface FriendRow { rank: number; user_id: string; display_name: string | null; score: number; bets: number; streak: number; is_me: boolean; prev_rank: number }
+export interface FriendRow { rank: number; user_id: string; display_name: string | null; score: number; bets: number; streak: number; is_me: boolean; prev_rank: number; last_seen: string | null }
 
 /** Me and my friends, ranked by this month's score (friends without bets included). */
 export async function loadFriends(): Promise<FriendRow[]> {

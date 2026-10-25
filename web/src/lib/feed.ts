@@ -8,6 +8,8 @@ export interface FeedItem {
   text: string;
   /** The player behind the line, when it is something a player did. */
   who?: string | null;
+  /** Always in the strip (a rare event worth showing at once, like a legendary purchase). */
+  pin?: boolean;
 }
 
 export interface FeedRules {

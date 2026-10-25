@@ -1,4 +1,5 @@
-import { ArrowDown, ArrowUp, Trophy, TrendingDown, TrendingUp, Users } from "lucide-preact";
+import { memo } from "../lib/cache.ts";
+import { ArrowDown, ArrowUp, Trophy, TrendingDown, TrendingUp, Users, Plus, LogIn } from "lucide-preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { every } from "../lib/poll.ts";
 import { Empty } from "../components/Empty.tsx";
@@ -54,7 +55,7 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
     if (up.size) { setClimbed(up); const to = setTimeout(() => setClimbed(new Set()), 3500); return () => clearTimeout(to); }
   }, [rows]);
   const looks = useLooks([...(rows ?? []).map((r) => r.user_id), ...(friends ?? []).map((r) => r.user_id)]);
-  const face = (id: string) => { const l = looks[id]; return l ? <Look avatar={l.avatar} decoration={l.decoration} size={36} /> : <span class="lkph" />; };
+  const face = (id: string) => { const l = looks[id]; return l ? <Look avatar={l.avatar} decoration={l.decoration} aura={l.aura} size={36} /> : <span class="lkph" />; };
 
   const loadGroups = async () => {
     const { data } = await sb.from("groups").select("code,name").order("created_at", { ascending: false });
@@ -68,14 +69,14 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
     if (scope === "near" && !p.home) { setRows([]); return; }
     setRows(null);
     let live = true; // a slower answer for a scope the player already left must not replace the current list
-    const load = () => sb.rpc("leaderboard", { p_scope: scope === "friends" ? "group" : scope, p_key: key ?? null, p_limit: 50 }).then(({ data }) => {
+    const load = () => memo(`lb:${scope}:${key ?? ""}`, 150_000, () => sb.rpc("leaderboard", { p_scope: scope === "friends" ? "group" : scope, p_key: key ?? null, p_limit: 50 })).then(({ data }) => {
       if (!live) return;
       const r = ((data ?? []) as LbRow[]).map((x) => ({ ...x, rank: Number(x.rank), score: Number(x.score) }));
       setRows(r); if (scope === "global") p.onRank(r.find((x) => x.is_me)?.rank ?? null, m.scopes.global);
     });
     load();
     // the board refreshes by itself while it is on screen: people who climb slide up past the others
-    const stop = every(() => { if (document.visibilityState === "visible") void load(); }, 45_000);
+    const stop = every(() => { if (document.visibilityState === "visible") void load(); }, 180_000);
     return () => { live = false; stop(); };
   }, [scope, key, p.registered, p.home?.id, board]);
 
@@ -94,6 +95,7 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
       <div class="seg" role="tablist">{(["world", "local", "friends"] as Tab[]).map((x) => <button key={x} role="tab" class={tab === x ? "on" : ""} aria-selected={tab === x} onClick={() => setTab(x)}>{p.msg.rankTabs[x]}</button>)}</div>
       {tab === "local" && (
         <section class="card stack">
+          <p class="hint">{p.msg.rankTabs.localHint}</p>
           <div class="mkchips">{(["near", "city", "country"] as Local[]).map((x) => <button key={x} class={`mkchip ${local === x ? "on" : ""}`} aria-pressed={local === x} onClick={() => setLocal(x)}>{p.msg.rankTabs[x]}</button>)}</div>
           {local === "near" && !p.home && <><p class="hint">{p.msg.rankTabs.needHome}</p><HomePlaceField msg={p.msg} locale={p.locale} value={p.home} onChange={p.onHome} /></>}
           {local === "near" && p.home && <><div class="mkchips">{RADII.map((r) => <button key={r} class={`mkchip ${km === r ? "on" : ""}`} aria-pressed={km === r} onClick={() => setKm(r)}>{r} {p.msg.rankTabs.km}</button>)}</div><HomePlaceField msg={p.msg} locale={p.locale} value={p.home} onChange={p.onHome} /></>}
@@ -128,8 +130,8 @@ export function Ranking(p: { locale: Locale; msg: Messages; profile: Profile | n
           {groups.length > 0 && <div class="chiprow">{groups.map((g) => <button key={g.code} class={`chip ${g.code === group ? "on" : ""}`} onClick={() => setGroup(g.code)}>{g.name}</button>)}</div>}
           {group && <button class="btn secondary" onClick={() => { navigator.clipboard?.writeText(group); p.onToast(p.msg.common.copied); }}><Users size={18} />{m.groups.yourCode(group)}</button>}
           {groups.length === 0 && <p class="hint">{m.groups.none}</p>}
-          <div style="display:flex;gap:8px"><input class="field" value={gname} placeholder={m.groups.namePh} maxLength={30} onInput={(e) => setGname((e.target as HTMLInputElement).value)} /><button class="btn secondary" aria-busy={gbusy} disabled={gbusy || gname.trim().length < 2} onClick={create}>{m.groups.create}</button></div>
-          <div style="display:flex;gap:8px"><input class="field" value={code} placeholder={m.groups.codePh} maxLength={6} onInput={(e) => setCode((e.target as HTMLInputElement).value.toUpperCase())} /><button class="btn secondary" aria-busy={gbusy} disabled={gbusy || code.length < 6} onClick={join}>{m.groups.join}</button></div>
+          <div style="display:flex;gap:8px"><input class="field" value={gname} placeholder={m.groups.namePh} maxLength={30} onInput={(e) => setGname((e.target as HTMLInputElement).value)} /><button class="btn secondary" aria-busy={gbusy} disabled={gbusy || gname.trim().length < 2} onClick={create}><Plus size={18} />{m.groups.create}</button></div>
+          <div style="display:flex;gap:8px"><input class="field" value={code} placeholder={m.groups.codePh} maxLength={6} onInput={(e) => setCode((e.target as HTMLInputElement).value.toUpperCase())} /><button class="btn secondary" aria-busy={gbusy} disabled={gbusy || code.length < 6} onClick={join}><LogIn size={18} />{m.groups.join}</button></div>
         </section>
       )}
       {!board && rows === null && [0, 1, 2, 3].map((i) => <div class="sk s" key={i} />)}

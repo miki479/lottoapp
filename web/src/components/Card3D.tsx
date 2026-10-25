@@ -36,12 +36,12 @@ export function Card3D({ front, rarity, spin = true }: { front: ComponentChildre
   const move = (e: PointerEvent) => { const s = st.current; if (!s.drag) return; const dx = e.clientX - s.lx, dy = e.clientY - s.ly; s.lx = e.clientX; s.ly = e.clientY; s.y += dx * 0.7; s.x -= dy * 0.7; s.vy = dx * 0.7; s.vx = -dy * 0.7; };
   const up = () => { st.current.drag = false; };
   return (
-    <div class={`c3 c3-${rarity}`} ref={root} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} role="group">
-      {rarity !== "common" && <span class="c3sparks" aria-hidden="true">{Array.from({ length: rarity === "legendary" ? 14 : 8 }, (_, i) => <i key={i} style={`--i:${i};--a:${(i * 137) % 360}deg;--r:${90 + ((i * 53) % 50)}px;--d:${(i % 5) * 0.5}s`} />)}</span>}
-      <div class="c3body">
-        {[1, 2, 3, 4, 5].map((z) => <i key={z} class="c3edge" style={`--z:${-z * 1.4}px`} aria-hidden="true" />)}
-        <div class="c3face c3front">{front}<i class="c3glare" aria-hidden="true" /><i class="c3holo" aria-hidden="true" /></div>
-        <div class="c3face c3back" aria-hidden="true"><i class="c3backpat" /><span class="c3logo"><BrandMark /></span><b>LateBET</b><i class="c3glare" /></div>
+    <div class={`card3d card3d-${rarity}`} ref={root} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} role="group">
+      {rarity !== "common" && <span class="card3dsparks" aria-hidden="true">{Array.from({ length: rarity === "legendary" ? 14 : 8 }, (_, i) => <i key={i} style={`--i:${i};--a:${(i * 137) % 360}deg;--r:${90 + ((i * 53) % 50)}px;--d:${(i % 5) * 0.5}s`} />)}</span>}
+      <div class="card3dbody">
+        {[1, 2, 3, 4, 5].map((z) => <i key={z} class="card3dedge" style={`--z:${-z * 1.4}px`} aria-hidden="true" />)}
+        <div class="card3dface card3dfront">{front}<i class="card3dglare" aria-hidden="true" /><i class="card3dholo" aria-hidden="true" /></div>
+        <div class="card3dface card3dback" aria-hidden="true"><i class="card3dbackpat" /><span class="card3dlogo"><BrandMark /></span><b>LateBET</b><i class="card3dglare" /></div>
       </div>
     </div>
   );

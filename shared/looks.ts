@@ -2,7 +2,16 @@
  * How a player looks: one of the app's cartoon characters, inside a decoration ring made of a material.
  * Ring decorations unlock with the level (copper, bronze ... adamantium) or drop at random from the daily chest and the flash mission.
  */
-export const AVATARS = ["conductor", "busbot", "cloud", "fox", "ball", "bolt", "alien", "astro", "clock", "kandinsky", "robot", "panda", "wizard", "samurai", "dragon", "lion"] as const;
+/** The cartoon characters first; the "Forged" collection (rendered, faceted amber and amethyst) after them. */
+export const FORGED_AVATARS = ["pilot", "star", "emerald", "orb", "bear", "ziggurat", "gear", "goldspiral", "falcon", "ninja", "steelspiral", "cobra", "shogun", "cosmonaut", "eagle", "raven", "sculpt", "owl", "lionheart", "wyvern", "tiger", "knight", "drop", "panther", "mech", "vixen", "prism", "twinrings", "ember", "wolf"] as const;
+/** The "Routes" collection: the app's own worlds (bus, train, weather) as faceted crystal and steel objects. */
+export const ROUTE_AVATARS = ["coach", "rail", "skycloud", "grove", "horn"] as const;
+/** The "In the city" collection: the same worlds as soft, bright 3D objects (bus, train, traffic light, loudspeaker, tree, weather). */
+export const CITY_AVATARS = ["citybus", "express", "traffic", "loudspeaker", "oak", "sunny", "clapper", "shades", "wheel", "growth", "spark", "xeno", "curve", "fist", "spacesuit", "beats", "leaf", "junction", "greyalien", "capboy", "bull", "shadesgirl", "busstop", "greenalien", "trainwheel", "basket", "greyhoodie", "peak", "reel", "android"] as const;
+/** The "Crew" collection: the people who keep the lines and the forecasts running, as detailed rendered portraits. */
+export const CREW_AVATARS = ["trainmaster", "stationmaster", "inspector", "dispatcher", "foreman", "mechanic", "planner", "tramdriver", "sentinel", "analyst"] as const;
+export const AVATARS = ["conductor", "busbot", "cloud", "fox", "ball", "bolt", "alien", "astro", "clock", "kandinsky", "robot", "panda", "wizard", "samurai", "dragon", "lion", ...FORGED_AVATARS, ...ROUTE_AVATARS, ...CITY_AVATARS, ...CREW_AVATARS] as const;
+export const CLASSIC_AVATARS = AVATARS.filter((a) => !(FORGED_AVATARS as readonly string[]).includes(a) && !(ROUTE_AVATARS as readonly string[]).includes(a) && !(CITY_AVATARS as readonly string[]).includes(a) && !(CREW_AVATARS as readonly string[]).includes(a));
 export type AvatarId = (typeof AVATARS)[number];
 export const isAvatar = (s: unknown): s is AvatarId => (AVATARS as readonly string[]).includes(String(s));
 
@@ -24,6 +33,15 @@ export const DECORATIONS: DecorationDef[] = [
   { id: "sapphire", rarity: "epic" },
   { id: "obsidian", rarity: "legendary" },
   { id: "opal", rarity: "legendary" },
+  { id: "cinder", rarity: "epic" },
+  { id: "rosegold", rarity: "legendary" },
+  { id: "starlight", rarity: "legendary" },
+  { id: "aurum", rarity: "legendary" },
+  { id: "glacier", rarity: "epic" },
+  { id: "crimson", rarity: "legendary" },
+  { id: "azure", rarity: "epic" },
+  { id: "vortex", rarity: "legendary" },
+  { id: "onyx", rarity: "legendary" },
 ];
 export type DecorationId = string;
 export const isDecoration = (s: unknown): boolean => DECORATIONS.some((d) => d.id === s);
@@ -49,3 +67,10 @@ export function levelProgress(xp: number): { level: number; into: number; need: 
 export const unlockedByLevel = (level: number): string[] => DECORATIONS.filter((d) => d.level !== undefined && d.level <= level).map((d) => d.id);
 /** The next level-based decoration and the level it needs, if any. */
 export const nextUnlock = (level: number): DecorationDef | null => DECORATIONS.filter((d) => d.level !== undefined && d.level > level).sort((a, b) => a.level! - b.level!)[0] ?? null;
+
+/** The colour of each ring, used for the soft aura around the picture of a player from level 50. */
+export const AURA_COLOR: Record<string, string> = {
+  copper: "#d98245", bronze: "#c08a45", silver: "#cfd8e6", gold: "#ffc933", diamond: "#7fe3ff", amethyst: "#a56bff", platinum: "#e3ebf5", mithril: "#6fe0d0",
+  orichalcum: "#ff8a4a", adamantium: "#ff4b6a", jade: "#3fd18a", ruby: "#ff3d5e", sapphire: "#3d7bff", obsidian: "#9a78ff", opal: "#9fe8ff", cinder: "#ff6a2a",
+  rosegold: "#ff9aa8", starlight: "#ffe27a", aurum: "#ffb800", glacier: "#8fdcff", crimson: "#e0203a", azure: "#3aa0ff", vortex: "#7a5cff", onyx: "#b4b8cf",
+};

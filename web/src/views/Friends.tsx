@@ -8,6 +8,7 @@ import { useBusy } from "../lib/busy.ts";
 import { sb } from "../lib/api.ts";
 import { countdown } from "../lib/format.ts";
 import { loadFriends, type FriendRow } from "../lib/friends.ts";
+import { seenLabel } from "../lib/presence.ts";
 import { PlayerTitle } from "../components/PlayerTitle.tsx";
 import { LevelBadge } from "../components/LevelBadge.tsx";
 import { useLooks } from "../lib/looks.ts";
@@ -27,7 +28,7 @@ export function Friends(p: { locale: Locale; msg: Messages; registered: boolean;
   useEffect(() => { if (p.registered) { refresh(); loadFeed(); } }, [p.registered]);
   useEffect(() => { if (p.registered) loadReqs(); }, [p.registered, p.reqTick]);
   const looks = useLooks([...(friends ?? []).map((r) => r.user_id), ...reqs.map((r) => r.user_id)]);
-  const face = (id: string) => { const l = looks[id]; return l ? <Look avatar={l.avatar} decoration={l.decoration} size={36} /> : <span class="lkph" />; };
+  const face = (id: string) => { const l = looks[id]; return l ? <Look avatar={l.avatar} decoration={l.decoration} aura={l.aura} size={36} /> : <span class="lkph" />; };
   const [busy, run] = useBusy(), oops = () => p.onToast(p.msg.errors.generic!, "err");
   const declineAll = () => run(async () => { const { error } = await sb.rpc("decline_all_friend_requests"); if (error) { oops(); return; } await loadReqs(); p.onReqs?.(); }, oops);
   const answer = (id: string, ok: boolean) => run(async () => { const { error } = await sb.rpc("respond_friend", { p_user: id, p_accept: ok }); if (error) { oops(); return; } if (ok) p.onToast(p.msg.look.nowFriends); await Promise.all([loadReqs(), refresh()]); p.onReqs?.(); }, oops);
@@ -40,7 +41,7 @@ export function Friends(p: { locale: Locale; msg: Messages; registered: boolean;
       <LeaguePanel locale={p.locale} msg={p.msg} registered={p.registered} onProfile={p.onProfile} />
       {reqs.length > 0 && (
         <section class="card stack reqcard">
-          <div class="reqhead"><b>{p.msg.look.requests} · {reqs.length}</b>{reqs.length > 2 && <button class="linkbtn" disabled={busy} onClick={declineAll}>{p.msg.look.declineAll}</button>}</div>
+          <div class="reqhead"><b>{p.msg.look.requests} · {reqs.length}</b>{reqs.length > 2 && <button class="linkbtn" disabled={busy} onClick={declineAll} aria-label={p.msg.look.declineAll} title={p.msg.look.declineAll}><X size={18} /></button>}</div>
           {(showAll ? reqs : reqs.slice(0, 5)).map((r) => (
             <div class="reqrow" key={r.user_id}>
               {face(r.user_id)}
@@ -76,7 +77,7 @@ export function Friends(p: { locale: Locale; msg: Messages; registered: boolean;
           {friends.map((r) => (
             <div class="row" key={r.user_id}>
               {face(r.user_id)}
-              <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><span class="nick"><b>{r.display_name || f.anon}</b><LevelBadge level={looks[r.user_id]?.level} msg={p.msg} /></span><PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} /></button>
+              <button class="grow rowlink" onClick={() => p.onProfile(r.user_id)}><span class="nick"><b>{r.display_name || f.anon}</b><LevelBadge level={looks[r.user_id]?.level} msg={p.msg} /></span><PlayerTitle id={looks[r.user_id]?.title} locale={p.locale} />{(() => { const s = seenLabel(r.last_seen, Date.now(), p.locale, p.msg.presence); return s ? <small class={`seen ${s.online ? "on" : ""}`}>{s.text}</small> : null; })()}</button>
               <button class="iconbtn frdx" aria-label={`${f.remove} ${r.display_name ?? ""}`} onClick={() => setAskId(askId === r.user_id ? null : r.user_id)}><UserMinus size={16} /></button>
               {askId === r.user_id && <div class="frask" role="alert"><span>{f.removeAsk(r.display_name || f.anon)}</span><button class="btn secondary" onClick={() => setAskId(null)}>{f.removeNo}</button><button class="btn primary" disabled={busy} aria-busy={busy} onClick={() => removeFriend(r.user_id)}>{f.removeYes}</button></div>}
             </div>

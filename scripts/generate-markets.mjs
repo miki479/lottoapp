@@ -136,8 +136,8 @@ async function delayMarketsForDay(feed, dir, dayEpoch, budget, rtTrips = null) {
     const key = historyKey(marketToEvent({ ...draft, id: "x" }), city.timezone);
     const priced = buildDelayMarket({ ...{ cityId: city.id, tz: city.timezone, feedId: feed.id, category: feed.category, routeId: trip.route_id, routeName: nameOf(trip), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, thresholdSec: threshold }, history: hist(key), priorYes });
     if (!feed.occupancyOnly) markets.push(withExtras(priced, stop.stopId));
-    // Buses that report how full they are: one more question on the same trip (empty / few seats left / standing room), a third of the time or so.
-    if (feed.occupancy && (feed.occupancyOnly || rand() < 0.5)) {
+    // SWITCHED OFF (4 bets in 7 days, spares disk IO): buses that report how full they are: one more question on the same trip (empty / few seats left / standing room), a third of the time or so.
+    if (false && feed.occupancy && (feed.occupancyOnly || rand() < 0.5)) {
       const r = rand(), occ = r < 0.4 ? "empty" : r < 0.75 ? "few" : "standing";
       const oargs = { cityId: city.id, tz: city.timezone, feedId: feed.id, routeId: trip.route_id, routeName: nameOf(trip), headsign: trip.trip_headsign, tripId: tid, stop, stopName: stopNames.get(stop.stopId) ?? stop.stopId, serviceDayEpoch: dayEpoch, kind: occ };
       const od = buildOccupancyMarket({ ...oargs, history: null });
@@ -164,7 +164,7 @@ function vtDate(epoch) {
 const hms = (secs) => `${pad(Math.floor(secs / 3600))}:${pad(Math.floor((secs % 3600) / 60))}:${pad(secs % 60)}`;
 
 async function trainMarkets(feed) {
-  const base = (process.env.VIAGGIATRENO_BASE_URL ?? feed.url).replace(/\/$/, "");
+  const base = (process.env.VIAGGIATRENO_BASE_URL || feed.url).replace(/\/$/, "");
   const headers = { "User-Agent": "LateLotto-markets/0.1", ...(process.env.RELAY_SECRET ? { "x-relay-secret": process.env.RELAY_SECRET } : {}) };
   const vt = async (path) => {
     if (pause) await new Promise((r) => setTimeout(r, pause));

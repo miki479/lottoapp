@@ -74,7 +74,7 @@ export interface RainEvent extends BaseEvent {
 export interface MetricEvent extends BaseEvent {
   kind: "metric_gt";
   category: "weather";
-  metric: "temp" | "wind" | "snow" | "uv" | "aqi" | "hail";
+  metric: "temp" | "wind" | "snow" | "uv" | "aqi" | "hail" | "pollen";
   threshold: number;
 }
 

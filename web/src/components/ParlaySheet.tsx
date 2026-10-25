@@ -60,7 +60,7 @@ export function ParlaySheet(p: {
       <StakeControl value={amount} onChange={setStake} cap={cap} balance={p.credits} odds={odds} boost={boost && p.boosts > 0} locale={p.locale} msg={m} />
       {p.boosts > 0 && <BoostRow on={boost} onToggle={setBoost} boosts={p.boosts} stake={amount} odds={odds} locale={p.locale} msg={m} />}
       <p class="hint">{m.slip.maxWin}</p>
-      <button class="btn secondary wide" onClick={p.onClear}>{m.slip.clear}</button>
+      <button class="btn secondary wide" onClick={p.onClear} aria-label={m.slip.clear} title={m.slip.clear}><Trash2 size={18} /></button>
       <BetFoot amount={amount} balance={p.credits} label={`${m.slip.confirm} · ${money(amount, p.locale)}`} busy={busy} disabled={p.legs.length < PARLAY_MIN_LEGS} err={err} msg={m} locale={p.locale} onGo={p.needJoin ? () => setJoining(true) : place} reset={`${boost}|${p.legs.length}`} />
     </Sheet>
   );

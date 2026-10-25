@@ -99,13 +99,13 @@ export function ChallengeSheet(p: { code: string; msg: Messages; locale: Locale;
       </>}
       {awaiting && c.judge_mode === "creator" && !c.is_creator && <p class="hint">{f.waitJudge}: {c.creator || p.msg.ticker.anon}</p>}
       {isOpen && c.is_creator && (asking
-        ? <div class="frask" role="alert"><span>{c.yes + c.no - (c.my_pick ? 1 : 0) > 0 ? f.askJoined : f.askSolo}</span><button class="btn secondary" disabled={busy} onClick={() => setAsking(false)}>{f.deleteNo}</button><button class="btn primary" disabled={busy} aria-busy={busy} onClick={remove}>{f.deleteYes}</button></div>
+        ? <div class="frask" role="alert"><span>{c.yes + c.no - (c.my_pick ? 1 : 0) > 0 ? f.askJoined : f.askSolo}</span><button class="btn secondary" disabled={busy} onClick={() => setAsking(false)}>{f.deleteNo}</button><button class="btn primary" disabled={busy} aria-busy={busy} onClick={remove} aria-label={f.deleteYes} title={f.deleteYes}><Check size={18} /></button></div>
         : <button class="btn secondary" onClick={() => setAsking(true)}>{f.deleteBtn}</button>)}
       {c.visibility === "public" && !c.is_creator && <button class="btn secondary" disabled={reported || reporting} aria-busy={reporting} onClick={report}>{reported ? p.msg.fx.reported : p.msg.fx.report}</button>}
       {c.people.length > 0 && <div class="tickchart"><div class="tchead"><b>{f.people}</b></div>
         {[...c.people].sort((a, b) => (a.name === "?" ? "~" : a.name).localeCompare(b.name === "?" ? "~" : b.name, p.locale)).map((x, i) => (
           <div key={i} class="pplrow">
-            <span class="lkwrap">{x.uid && looks[x.uid] ? <Look avatar={looks[x.uid]!.avatar} decoration={looks[x.uid]!.decoration} size={26} /> : <span class="lkph" />}</span>
+            <span class="lkwrap">{x.uid && looks[x.uid] ? <Look avatar={looks[x.uid]!.avatar} decoration={looks[x.uid]!.decoration} aura={looks[x.uid]!.aura} size={26} /> : <span class="lkph" />}</span>
             <span class="pplname">{x.name === "?" ? p.msg.ticker.anon : x.name}<PlayerTitle id={x.uid ? looks[x.uid]?.title : null} locale={p.locale} /></span>
             <span class="num pplpick"><b>{x.pick === null ? <Check size={14} aria-label="✓" /> : x.pick === "yes" ? f.yes : f.no}</b>{(x.payout ?? 0) > 0 && c.status === "resolved" ? ` · ${f.won} ${money(x.payout ?? 0, p.locale)}` : ""}</span>
           </div>
