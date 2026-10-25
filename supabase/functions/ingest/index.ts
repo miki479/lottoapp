@@ -63,6 +63,18 @@ Deno.serve(safe(async (req) => {
     if (p.stopId) trips.get(p.tripId)!.add(p.stopId);
   }
 
+  // ViaggiaTreno gives the delay of a train as soon as it is on the board, so its open questions are read from 3 hours ahead (soonest first): the departures board needs them
+  {
+    const { data: vtm } = await sb.from("markets").select("feed_id,params,target_at").eq("feed_id", "it-train-viaggiatreno").eq("status", "open").gte("deadline_at", since).lte("target_at", new Date((now + 3 * 3600) * 1000).toISOString()).order("target_at").limit(300);
+    for (const m of vtm ?? []) {
+      const p = m.params as { tripId?: string; stopId?: string };
+      if (!p.tripId) continue;
+      if (!tracked.has(m.feed_id)) tracked.set(m.feed_id, new Map());
+      const trips = tracked.get(m.feed_id)!;
+      if (!trips.has(p.tripId)) trips.set(p.tripId, new Set());
+      if (p.stopId) trips.get(p.tripId)!.add(p.stopId);
+    }
+  }
   const seen = new Set<string>(), okRows: Record<string, unknown>[] = [], errRows: Record<string, unknown>[] = [];
   // Same rule as the resolve job: stay inside ~45 s so that runs never pile up. The cities are visited from a different one each minute, so no feed is always last.
   const t0 = Date.now(), allCities = await loadCities(), rot = allCities.length ? new Date().getUTCMinutes() % allCities.length : 0;
@@ -585,8 +597,11 @@ async function ingestPerTrain(sb: ReturnType<typeof db>, city: CityConfig, feed:
       const json = JSON.parse(new TextDecoder().decode(await fetchBytes(`${base}/andamentoTreno/${t.codOrigine}/${t.numero}/${t.serviceDayMs}`, relayHeaders)));
       ok++;
       gone.push(...viaggiatrenoCancellations(json, tripId));
-      for (const o of adapter(json, { feedId: feed.id, fetchedAt: now, tripId })) {
-        if (!tracked.get(tripId)?.has(o.stopId)) continue;
+      const seen = adapter(json, { feedId: feed.id, fetchedAt: now, tripId });
+      // the stops the questions ask about, plus the latest stop reached ("how late is it right now", the departures board)
+      const latest = seen.reduce<typeof seen[number] | null>((a, o) => (!a || (o.stopSequence ?? 0) >= (a.stopSequence ?? 0) ? o : a), null);
+      for (const o of seen) {
+        if (!tracked.get(tripId)?.has(o.stopId) && o !== latest) continue;
         rows.push({
           city_id: city.id, feed_id: feed.id, route_id: o.routeId, trip_id: o.tripId, stop_id: o.stopId, stop_sequence: o.stopSequence ?? null,
           observed_at: new Date(o.observedAt * 1000).toISOString(), delay_sec: Math.round(o.delaySec), predicted_at: null,
