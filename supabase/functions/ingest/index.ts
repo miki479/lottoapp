@@ -92,8 +92,8 @@ Deno.serve(safe(async (req) => {
       if (!!feed.heavy !== heavyRun) continue;
       if (seen.has(feed.id)) continue;
       seen.add(feed.id);
-      // ViaggiaTreno refuses datacenter addresses: it is read by scripts/viaggiatreno-local.mjs on a normal connection, not here
-      if (feed.type === "viaggiatreno" && !Deno.env.get("VIAGGIATRENO_BASE_URL")) { report[feed.id] = "local-only"; continue; }
+      // ViaggiaTreno: read from here (the Supabase servers are accepted); VIAGGIATRENO_BASE_URL can still point to a relay
+
       if (now - (lastAttempt.get(feed.id) ?? 0) < feed.pollSeconds - 5) { report[feed.id] = "not due"; continue; }
       await sb.from("feed_health").upsert({ feed_id: feed.id, last_attempt_at: new Date(now * 1000).toISOString() });
       const tf = Date.now();
@@ -461,7 +461,7 @@ async function precipFallback(sb: ReturnType<typeof db>, targets: { id: string; 
 }
 
 async function fetchBytes(url: string, extra: Record<string, string> = {}, timeoutMs = FETCH_TIMEOUT_MS): Promise<Uint8Array> {
-  const res = await fetch(url, { headers: { ...extra, "User-Agent": `LateLotto/0.1 (play-money game; contact: ${Deno.env.get("CONTACT_EMAIL") ?? "unset"})`, "Accept-Encoding": "gzip" }, signal: AbortSignal.timeout(timeoutMs) });
+  const res = await fetch(url, { headers: { "User-Agent": `LateLotto/0.1 (play-money game; contact: ${Deno.env.get("CONTACT_EMAIL") ?? "unset"})`, ...extra, "Accept-Encoding": "gzip" }, signal: AbortSignal.timeout(timeoutMs) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   // Never hold a huge answer in memory just to find out it is too big (a feed that grew to 26 MB was killing the worker every run): look at the declared size,
   // then read in pieces and stop as soon as the limit is passed.
@@ -499,6 +499,8 @@ async function ingestFeed(sb: ReturnType<typeof db>, city: CityConfig, feed: Fee
   }
 
   if (feed.type === "digitraffic-tms") return await ingestTraffic(sb, city, feed, now);
+
+  if (feed.type === "viaggiatreno") return await ingestPerTrain(sb, city, feed, now, tracked);
 
   const adapter = delayAdapterFor(feed);
   if (!adapter) throw new Error(`no adapter for ${feed.type}/${feed.kind}`);
@@ -568,7 +570,8 @@ async function ingestPerTrain(sb: ReturnType<typeof db>, city: CityConfig, feed:
   const adapter = trainJsonAdapterFor(feed)!;
   // Datacenter IPs are refused upstream: VIAGGIATRENO_BASE_URL + RELAY_SECRET point to scripts/viaggiatreno-relay.mjs on a normal connection.
   const base = (Deno.env.get("VIAGGIATRENO_BASE_URL") || feed.url).replace(/\/$/, "");
-  const relayHeaders: Record<string, string> = Deno.env.get("RELAY_SECRET") ? { "x-relay-secret": Deno.env.get("RELAY_SECRET")! } : {};
+  // ViaggiaTreno's firewall refuses a long User-Agent with a URL in it: a short one is accepted
+  const relayHeaders: Record<string, string> = { "User-Agent": "LateLotto/0.1", ...(Deno.env.get("RELAY_SECRET") ? { "x-relay-secret": Deno.env.get("RELAY_SECRET")! } : {}) };
   const trips = [...tracked.keys()].slice(0, MAX_TRAINS_PER_RUN);
   if (trips.length === 0) return 0;
   const rows: Record<string, unknown>[] = [];
